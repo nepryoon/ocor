@@ -50,6 +50,193 @@
     "ram_source": "MemTotal 64199668 kB read on nep-LEGION in the regression session",
     "threads": 24
   },
+  "independent_verification": {
+    "candidate_json_sha256": "6424dfe08fb26ac48015a594abc2f029d9dde3c55241213bad35750a869ec87f",
+    "commands": [
+      {
+        "command": "source env.sh; python3 scripts/preflight_environment.py (preflight.json del loop riletto) e confronto degli sha256 di environment.json con i lock",
+        "exit_code": 0,
+        "summary": "Ambiente standard del verifier: environment.json sha256 dc6a79d66dd980036b60896abdca82907d825de48cd54d1ac0dae7d811f6d2f5; preflight PASS, docker READY, nessun secret presente. Host: Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Alimentazione: ADP0 online=1 (rete elettrica) a inizio (21:37:46Z) e fine (22:07:29Z) campagna."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS; git diff --quiet 2278be4..HEAD -- inputs/",
+        "exit_code": 0,
+        "summary": "PASS: inputs/ intatto; HEAD:inputs = 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35, uguale all'inputs_tree dei record."
+      },
+      {
+        "command": "git diff --name-status 2278be4180de5d91d1fec9d7608027b0f287b545..63ca98ef6805fd562c9d849924e361915e2ef5b4; git diff --stat 394fa12..HEAD; git diff --stat 7e9c16b..HEAD",
+        "exit_code": 0,
+        "summary": "28 percorsi: 23 aggiunti, 5 modificati solo per aggiunta (tre MANIFEST +10/-0, indice inverso +125/-0, allowlist di validate_ocor_development_plan.py +24/-0) piu il solo hash del validatore in OCOR_PLAN_RUN_STATE.json. Backlog approvato, schema, DAG, piano di tracciabilita, Register, ADD, LLD, contratti, schemi, EXECUTION_STATE.json, registro di conformita, workflow e guard invariati; nessun record sigillato modificato. Il diff 7e9c16b..HEAD tocca solo 15 file di evidenza. origin/main = base."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed (log sha256 82b3e6a6c090a576...)."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 152 source files (log 8c02c3cc45094c35...)."
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK (log 0043e5c71880b869...)."
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base 2278be4180de5d91d1fec9d7608027b0f287b545 --head HEAD --branch governed/ocor-dev-rem-0062-post-poc-plan",
+        "exit_code": 0,
+        "summary": "PASS: 28 changed path(s); immutable surfaces untouched; task ledger stable."
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 75 task controllati, 0 input con drift."
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "verdict PASS: 37 PASS, 2 NOT_EXECUTED opzionali preesistenti (markdownlint/Mermaid esterni, fallback deterministico eseguito)."
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0005|0050|0082 --manifest reports/evidence/G0|G5|G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS per i tre task."
+      },
+      {
+        "command": "python3 scripts/validate_test_reverse_traceability.py",
+        "exit_code": 0,
+        "summary": "PASS, nessun finding (i due file di test nuovi sono nell'indice)."
+      },
+      {
+        "command": "python3 scripts/validate_post_poc_plan.py",
+        "exit_code": 0,
+        "summary": "PASS: 93 beyond-PoC requirements (log e694a639af188493...)."
+      },
+      {
+        "command": "python3 -m pytest -p no:cacheprovider -q reports/tests/test_validate_post_poc_plan.py reports/tests/test_check_execution_commit_inputs.py",
+        "exit_code": 0,
+        "summary": "22 passed, 13 subtests passed, zero skip."
+      },
+      {
+        "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 7e9c16b4ebb36c79c26d39bd3dd05ab91ef940e5 --record <3 riqualifiche> --record reports/assurance/OCOR-DEV-REM-0062-RCCAD/OCOR-DEV-REM-0062.json",
+        "exit_code": 0,
+        "summary": "PASS: 4 record, 27 input, 0 finding. Con il campo head riportato a 7e9c16b l'output ha sha256 93cbad2ac18d90ab7672a67219771ba462a9311a627378ffa881d50008677eaf, identico a execution_commit_digest_check.stdout_sha256 del record (VF-003 del ciclo 0 chiuso). Sonda: un record copiato con un digest d'input alterato da FAIL 'input hash mismatch'."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py test_ocor_dev_0050.py test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "summary": "214 passed, zero skip: coerente con il raw log dei tre record di regressione (sha256 e4d05b5677c82a65...). Record: requalification_kind regression, qualifies_requirements false, nessun requirement_results, supersedes verso i record rem0059 SEALED dello stesso task con sha256 corrispondente, raw log content-addressed, voci MANIFEST con sha256 corrispondenti."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -q reports/tests/test_backlog_generator_reality_parity.py test_runtime_evidence_validator.py test_evidence_input_drift.py test_qualifying_campaign_guard.py test_kind_teardown_observation.py",
+        "exit_code": 0,
+        "summary": "266 passed, 147 subtests passed: parita del backlog generato, validatori dell'evidenza e guard di campagna invariati e verdi."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -q reports/tests/test_normative_conformance_register.py",
+        "exit_code": 0,
+        "summary": "15 passed, 913 subtests: test d'integrita del registro di conformita verde; registro invariato rispetto alla base."
+      },
+      {
+        "command": "scanner in-repo di .github/workflows/ocor-supply-chain.yml (estratto ed eseguito su git archive HEAD)",
+        "exit_code": 0,
+        "summary": "secrets, static, dependencies e summary PASS, 0 finding bloccanti; solo le tre voci sospese del registro REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER preesistenti."
+      },
+      {
+        "command": "ricalcolo indipendente dal Register v1.1 approvato (parser proprio, colonne Release* e Metodo* per nome) e confronto con OCOR_POST_POC_BACKLOG.json e il grafo",
+        "exit_code": 0,
+        "summary": "285 requisiti, 93 con release diversa da 'PoC'; ognuno ha esattamente un task REALISE e uno VERIFY; nessun requisito in piu; il criterio 'Verify <id> by the Register method: <metodo>.' coincide per tutti i 93; 74 task tutti PLANNED_NOT_ACTIVE nei gate G8-G11; G8 = BR-004, BR-016, BR-017 (tipo BR); grafo aciclico, 323 archi = hard_dependencies, ogni VERIFY dipende dal gemello REALISE; nessuna cartella reports/evidence/G8-G11."
+      },
+      {
+        "command": "VF-001 ciclo 0: lettura di FR-048 nel Register (riga 144) e dei task OCOR-POST-G11-WS09-REALISE/VERIFY",
+        "exit_code": 0,
+        "summary": "Chiuso: i due task portano sia il criterio A2A ristretto ai contratti A2A ('The A2A contracts of FR-048 are realised only as a boundary adapter behind C8...') sia il criterio SDK ('Additional SDKs of FR-048, including Rust, keep a capability contract and a conformance profile for each language and protocol before implementation'), coerente con il criterio del Register; negativo SDK aggiunto; il validatore rifiuta la vecchia restrizione (FR048_SCOPE, scripts/validate_post_poc_plan.py:1053-1056); README allineato."
+      },
+      {
+        "command": "VF-002 ciclo 0: sonde su copia git archive HEAD con python3 -I scripts/validate_post_poc_plan.py --root .",
+        "exit_code": 0,
+        "summary": "Chiuso: copia intatta PASS; EXECUTION_STATE.json e NORMATIVE_CONFORMANCE_REGISTER.json modificati (o perfino rimossi) -> PASS; metodo di FR-048 cambiato nel Register -> DISK_MISMATCH exit 1; ultima riga del piano di tracciabilita rimossa -> exit 1; byte aggiunto al backlog approvato -> exit 1; ripristino -> PASS. I due sha256 fissati in BASELINE_SOURCE_SHA256 coincidono con git show 2278be4:<path> | sha256sum."
+      },
+      {
+        "command": "RED riprodotto: test_validate_post_poc_plan.py dell'HEAD eseguito contro git archive 394fa12",
+        "exit_code": 1,
+        "summary": "3 failed per la ragione attesa: test_fr048_a2a_only_restriction_is_rejected ('FR048_SCOPE' not found), test_generated_fr048_keeps_sdk_and_a2a_parts (FR048_SDK_POSITIVE assente), test_state_and_conformance_edits_still_pass (main restituisce 1); 13 passed. Vedi VF-001 di questo verdetto per l'assenza di questo RED dall'evidenza."
+      },
+      {
+        "command": "sonda di check_execution_commit_inputs.py con record senza 'inputs' e con 'inputs': {}",
+        "exit_code": 0,
+        "summary": "Entrambi PASS con checked_inputs 0. Vedi VF-003."
+      },
+      {
+        "command": "env -i HOME USER LOGNAME LANG=C.UTF-8 bash --noprofile --norc; source env.sh; python3 scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0062-63ca98ef6805-1/campaign/work --expected-head 63ca98ef6805fd562c9d849924e361915e2ef5b4 --tool-bin /home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0062-63ca98ef6805-1/bin",
+        "exit_code": 0,
+        "summary": "Shell pulita; unica variabile OCOR_* presente OCOR_VERIFIER_WORKTREE (da env.sh); nessuna credenziale esportata, bootstrap.env mai caricato, nessuno strumento dell'implementatore eseguito. Quota Docker Hub verificata prima (77/100 alle 21:37Z). Ammissione FOUR_LANE (MemAvailable 56790372 kB, soglia 25681.2 MiB, guardia 3000 MiB); in ogni corsia bootstrap PASS con fuseki_max_heap_bytes = 1073741824 e 'control-plane SVID' exit 0. Campagna 63ca98ef6805-1794519466, 21:37:46Z-22:07:29Z, status PASS, 5826 test, 0 failures, 0 errors, 0 skipped; unione JUnit = raccolta (5826, nessun mancante, duplicato o inatteso; collected_sha256 f382c46e... identico a quello del record dell'implementatore); 0048: 196 casi, 0049: 390 casi, tutti passati, zero skip (controllo compensativo CI-0048-REAL-BACKEND). Durata 1782.694 s, margine 3617.3 s sul tetto di 5400 s e 1817.3 s sulla soglia di 3600 s. Teardown delle quattro sandbox PASS; host_residue vuoto (nessun container, rete o volume residuo). JUnit sha256 5d13e0563666bcfc..., log sha256 44b3667def5fdfdc..."
+      },
+      {
+        "command": "reports/development/decision_requests/POST-POC-BACKLOG-ACTIVATION.md: lettura e controllo DR-FORMATO-OPZIONI",
+        "exit_code": 0,
+        "summary": "Stato OPEN_PO_NORMATIVE_DECISION_REQUIRED; tre opzioni nel formato '1. **Titolo.**' sotto '## Opzioni'; nessuna raccomandazione sul momento; nessuna voce FABLE52 applicata senza decisione."
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "Il red.log del ciclo di riparazione registra solo i 6 fallimenti di reports/tests/test_check_execution_commit_inputs.py (script assente). Non contiene il RED dei test che chiudono i due bloccanti del ciclo 0: test_fr048_a2a_only_restriction_is_rejected, test_generated_fr048_keeps_sdk_and_a2a_parts (VF-001) e test_state_and_conformance_edits_still_pass (VF-002). Test e correzione sono nello stesso commit 7e9c16b, quindi la storia non mostra il RED. L'ho riprodotto io: con il file di test dell'HEAD su git archive 394fa12 i tre test falliscono per la ragione attesa ('FR048_SCOPE' not found in set(); FR048_SDK_POSITIVE assente; main restituisce 1 invece di 0). Il merito e quindi corretto; manca la prova registrata.",
+        "id": "VF-001",
+        "path": "reports/assurance/OCOR-DEV-REM-0062-RCCAD/red.log:1-23 (e OCOR-DEV-REM-0062.log:1)",
+        "required_fix": "Nel prossimo record o state sync, registrare il RED dei tre test contro 394fa12 (comando, exit code, fingerprint, sha256 del log). Non serve cambiare codice.",
+        "severity": "medium"
+      },
+      {
+        "blocking": false,
+        "evidence": "test_state_and_conformance_edits_still_pass e test_register_byte_change_fails_closed riscrivono sul posto, nella checkout reale (ROOT), reports/development/EXECUTION_STATE.json, reports/development/NORMATIVE_CONFORMANCE_REGISTER.json e il Register approvato ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md, e li ripristinano solo nel finally. Se il processo viene ucciso fra scrittura e ripristino (timeout, SIGKILL, OOM), la checkout resta con un registro normativo modificato. Un altro processo che legge la stessa checkout in quella finestra vede byte alterati. main() accetta gia --root, quindi le sonde potrebbero lavorare su una copia temporanea. Nella mia esecuzione git status e rimasto pulito.",
+        "id": "VF-002",
+        "path": "reports/tests/test_validate_post_poc_plan.py:222-244",
+        "required_fix": "Far lavorare le due sonde su una copia temporanea del repository (shutil.copytree dei file necessari o git archive) passata con --root, senza scrivere file tracciati.",
+        "severity": "low"
+      },
+      {
+        "blocking": false,
+        "evidence": "Un record senza il campo 'inputs', oppure con 'inputs': {}, da status PASS con checked_inputs 0. Sonda: due record /tmp con solo 'commit' = 7e9c16b... -> 'PASS 0 2', exit 0. Il docstring lo dichiara e il test lo fissa come comportamento atteso. Per i quattro record di questa unita non incide, perche tutti hanno input (27 controllati). Per un uso futuro come controllo di AUTOCONTROLLO-DIGEST-COMMIT, pero, un record di evidenza privo di input passerebbe senza segnalazione.",
+        "id": "VF-003",
+        "path": "scripts/check_execution_commit_inputs.py:99-107 (e reports/tests/test_check_execution_commit_inputs.py:173)",
+        "required_fix": "Emettere almeno un finding o un campo esplicito (per esempio records_without_inputs) e, per i record di riqualifica, rifiutare inputs assente o vuoto; oppure documentare nel record dell'unita che il PASS con zero input non vale come controllo delle impronte.",
+        "severity": "low"
+      }
+    ],
+    "findings_disposition": "GO_FOR_EVIDENCE_SEAL with three non-blocking findings. VF-001 (medium) is registered here and changes no code: red.log of repair cycle 1 records only the six failures of test_check_execution_commit_inputs.py, because the three tests that close cycle-0 VF-001 and VF-002 share commit 7e9c16b4ebb36c79c26d39bd3dd05ab91ef940e5 with the fix. Reproduced on 2026-11-12 from git archive 394fa1259d2b07e13170240f3d1394ae5b9e1722 with reports/tests/test_validate_post_poc_plan.py taken from 63ca98ef6805fd562c9d849924e361915e2ef5b4 (sha256 5a6efcc279b737ad1b3567bf8d38199c4e356f66cb0d74ae3ed0ef0d097a7fa8) and the archive validator (sha256 092d0f2a98f74b1fe1b38381b77b99efbe25235dbb9e17e6fc3402300eadeb6c). Command: ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q --tb=line reports/tests/test_validate_post_poc_plan.py, run in that archive. Exit 1. 3 failed, 13 passed, 13 subtests passed in 0.20s. Fingerprints: test_fr048_a2a_only_restriction_is_rejected AssertionError FR048_SCOPE not found in set(); test_generated_fr048_keeps_sdk_and_a2a_parts AttributeError FR048_SDK_POSITIVE absent; test_state_and_conformance_edits_still_pass AssertionError 1 != 0 with stdout DISK_MISMATCH. Log sha256 5af7442dec6d66f169b3ecb981cfd4d2337853bbc33c5f87adcd4f8994840e60, retained outside the repository next to the campaign artefacts. VF-002 (low) and VF-003 (low) stay uncorrected in this seal. Changing the probes or scripts/check_execution_commit_inputs.py would leave the tree the verifier accepted. They do not block the seal. Raw logs are unchanged. The execution commit stays 7e9c16b4ebb36c79c26d39bd3dd05ab91ef940e5.",
+    "head_sha": "63ca98ef6805fd562c9d849924e361915e2ef5b4",
+    "not_executed": [],
+    "repair_cycle": 1,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-12T22:09:24Z",
+    "verdict_file_sha256": "43a21745ca851de9d27e53497bea2e10bf1aaf152d726d1b772d6036bd298c5e",
+    "verdict_head_sha": "63ca98ef6805fd562c9d849924e361915e2ef5b4",
+    "verdict_request_id": "OCOR-DEV-REM-0062-63ca98ef6805-1",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Claude Code (claude-opus-5-5, Anthropic)",
+    "verifier_configuration": {
+      "effort": "high",
+      "independence_limits": "Processo e contesto separati dall'implementatore. Verifier: Claude Code, modello claude-opus-5-5 (Anthropic). Implementatori secondo la sezione 'Ruoli di questa verifica': Codex (OpenAI) e Grok Build (xAI). Richiesta e record dichiarano il solo Grok Build grok-4.7 (xAI), citando i log del loop. Revisore preventivo: Cursor CLI cursor-grok-4.6-xhigh (xAI), di riserva. Nessuno di questi agenti e del mio fornitore. Le decisioni FABLE52 nascono da un audit di Claude Fable 5.2, stesso fornitore Anthropic del verifier; l'audit non e stato usato come prova. Il verdetto del ciclo 0 (OCOR-DEV-REM-0062-394fa1259d2b-0) e stato scritto dallo stesso modello in un contesto separato. L'ho usato solo per conoscere i finding da ricontrollare, e ogni chiusura e stata rieseguita qui.",
+      "model": "claude-opus-5-5",
+      "process": "Claude Code (Anthropic), sessione non interattiva, contesto pulito, effort high",
+      "provider": "Anthropic"
+    },
+    "verifier_environment": {
+      "campaign_shell": "env -i HOME USER LOGNAME LANG=C.UTF-8 bash --noprofile --norc + source env.sh; variabili OCOR_* presenti: solo OCOR_VERIFIER_WORKTREE (env.sh); nessuna variabile esportata in piu; .ocor/bootstrap.env mai caricato; nessuno strumento dell'implementatore eseguito",
+      "environment_json_sha256": "dc6a79d66dd980036b60896abdca82907d825de48cd54d1ac0dae7d811f6d2f5",
+      "host_profile": "Intel(R) Core(TM) Ultra 9 275HX, 24 thread, RAM 64199668 kB",
+      "power": "rete elettrica (ADP0 online=1) a inizio e fine campagna",
+      "stack": "quattro corsie sandbox con dockerd privato, bootstrap_ci_environment per corsia (heap Fuseki 1 GiB, SVID control-plane presente); stack host non toccato; nessun residuo"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "reports/tests/qualify_rem0029_teardown.py": "e2c3d205283166528be54e81cc5a90176fc2073e028321660369ee9f917361a0",
@@ -82,6 +269,12 @@
   "result": "PASS",
   "review_scope": "regression-only: the task tests of 0005, 0050 and 0082 passed together at the REM-0062 execution head after the allowlist change; not a re-assessment of conformance",
   "roles": {
+    "effective_verifier": {
+      "agent": "Claude Code",
+      "independence": "Processo e contesto separati dall'implementatore. Verifier: Claude Code, modello claude-opus-5-5 (Anthropic). Implementatori secondo la sezione 'Ruoli di questa verifica': Codex (OpenAI) e Grok Build (xAI). Richiesta e record dichiarano il solo Grok Build grok-4.7 (xAI), citando i log del loop. Revisore preventivo: Cursor CLI cursor-grok-4.6-xhigh (xAI), di riserva. Nessuno di questi agenti e del mio fornitore. Le decisioni FABLE52 nascono da un audit di Claude Fable 5.2, stesso fornitore Anthropic del verifier; l'audit non e stato usato come prova. Il verdetto del ciclo 0 (OCOR-DEV-REM-0062-394fa1259d2b-0) e stato scritto dallo stesso modello in un contesto separato. L'ho usato solo per conoscere i finding da ricontrollare, e ogni chiusura e stata rieseguita qui.",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic"
+    },
     "implementers": [
       {
         "agent": "Grok Build",
@@ -90,13 +283,20 @@
         "scope": "OCOR-DEV-REM-0062 regression requalification of OCOR-DEV-0082 after the plan allowlist change on repair cycle 1"
       }
     ],
+    "integration_agent": {
+      "agent": "Grok Build",
+      "model": "grok-4.7",
+      "provider": "xAI",
+      "scope": "metadata-only evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
     "verifier_excluded_providers": [
       "xAI"
     ],
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "schema_version": "1.0",
-  "status": "PASS",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-0082-requalified-rem0059-636975eaacd7",
   "supersession_scope": "Regression-only after the OCOR-DEV-REM-0062 change of scripts/validate_ocor_development_plan.py. The task tests are unchanged. Not a re-assessment of conformance and never evidence of a requirement.",
   "task_id": "OCOR-DEV-0082",
