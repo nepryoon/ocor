@@ -181,9 +181,9 @@ def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[di
                     "task_id": task_id,
                 })
             continue
-        task_id = data.get("task_id")
-        if isinstance(task_id, str) and task_id:
-            records.setdefault(task_id, []).append(path)
+        record_task = data.get("task_id")
+        if isinstance(record_task, str) and record_task:
+            records.setdefault(record_task, []).append(path)
     return records, findings
 
 
