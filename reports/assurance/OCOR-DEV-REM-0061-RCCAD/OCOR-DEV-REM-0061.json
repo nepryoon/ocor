@@ -39,6 +39,11 @@
   "execution_commit_digest_check": {
     "citation": "AUTOCONTROLLO-DIGEST-COMMIT (2026-11-11)",
     "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root . --execution-commit --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
+    "cycle_3_rerun_at_commit": "8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa",
+    "cycle_3_rerun_note": "Re-run on the listed-successor validator. Five records, findings empty, same output digest as the check at 62be586f2d3f and the re-run at 7bb8ee685cfc. The recording commit does not change the validator or the five records.",
+    "cycle_3_rerun_output_sha256": "35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c",
+    "cycle_3_rerun_preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-8f90b9386e07.json",
+    "cycle_3_rerun_status": "PASS",
     "executed_at_commit": "62be586f2d3f367a40deb1e9cd9e9cc12b06612a",
     "output_sha256": "35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c",
     "preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-62be586.json",
@@ -82,20 +87,20 @@
       }
     ],
     "cell_scan": {
-      "cells": 108,
+      "cells": 114,
       "citation": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "cited_tests_collected": 49,
+      "cited_tests_collected": 60,
       "command": "python3 /home/luca/.ocor-codex/rem-0061/scan_self_check.py",
       "counts": {
-        "FIXED": 7,
-        "N/A": 34,
+        "FIXED": 10,
+        "N/A": 37,
         "PASS": 67
       },
       "errors_found_and_corrected": [],
       "head": "18e76b0c1e3cbaedca6ed083f9201b0a248258f9",
-      "note": "Repair cycle 2 adds the execution-commit parser row on top of the mount, quota and admission rows. The head is 18e76b0c1e3cbaedca6ed083f9201b0a248258f9, the commit that contains this table. A later commit records this head and the scan digest and does not change the table or the role identity. The output digest is of the scan of the table and the role fields.",
-      "output_sha256": "5db36ad09d8421c7fa6b33de8c97e2b2e7a5a496df71c4a71e0ca8ba6694758e",
-      "rows": 18
+      "note": "Repair cycle 3 adds the listed-successor row and corrects the two renamed admission tests. The head is the commit that contains this table. A later commit records this head and the scan digest and does not change the table or the role identity. The output digest is of the scan of the table and the role fields.",
+      "output_sha256": "90ad73034a9fd728d7066209c3feb1ef57141fcbe038faa34061568221f01e99",
+      "rows": 19
     },
     "columns": {
       "boundary_digests": "digests recomputed or full-matched before compare",
@@ -116,10 +121,10 @@
         "reports/tests/test_local_lane_image_cache.py": "0; the live proof calls prepare and seed and does not parse a second format",
         "scripts/local_lane_image_cache.py": 11,
         "scripts/run_local_lane_campaign.py": 6,
-        "scripts/validate_evidence_input_drift.py": 1,
+        "scripts/validate_evidence_input_drift.py": 2,
         "scripts/validate_ocor_development_plan.py": "0; the edit adds allowlist strings and does not add a parser"
       },
-      "consumers_examined": 18,
+      "consumers_examined": 19,
       "functions_examined": [
         "decode_json",
         "_reject_duplicate_keys",
@@ -151,13 +156,16 @@
         "_shape_findings",
         "_raw_findings",
         "drift_for_record",
-        "execution_commit_findings"
+        "execution_commit_findings",
+        "_manifest_record_tasks",
+        "discover_records"
       ],
       "searches": [
         "ast walk of function definitions in scripts/local_lane_image_cache.py",
         "functions in scripts/run_local_lane_campaign.py whose names contain cache, seed, prepare_image or timeout",
         "functions in scripts/run_local_lane_campaign.py that parse mountinfo, the quotactl_fd result, or the lane admission figure",
-        "functions in scripts/validate_evidence_input_drift.py that read a record, an inputs digest, or raw_output_sha256"
+        "functions in scripts/validate_evidence_input_drift.py that read a record, an inputs digest, or raw_output_sha256",
+        "functions in scripts/validate_evidence_input_drift.py that index a manifest-listed record or refuse a hollow successor"
       ],
       "unparsed_callers": "execute_campaign and lifecycle_check call prepare_image_cache and seed_lane_images. They store the returned mapping and do not decode the lock, the inspect text, the manifest or the archive."
     },
@@ -165,10 +173,10 @@
       "citation": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
       "command": "python3 /home/luca/.ocor-codex/rem-0061/scan_self_check.py",
       "errors_found_and_corrected": [],
-      "fields_compared": 26,
+      "fields_compared": 27,
       "head": "18e76b0c1e3cbaedca6ed083f9201b0a248258f9",
-      "note": "Repeated with the cell scan on 18e76b0c1e3cbaedca6ed083f9201b0a248258f9, the commit that contains the execution-commit parser row. The command compared 26 role fields and found no error. A later commit records this head and the scan digest and does not change the table or the role identity.",
-      "output_sha256": "5db36ad09d8421c7fa6b33de8c97e2b2e7a5a496df71c4a71e0ca8ba6694758e"
+      "note": "Repeated with the cell scan on the commit that contains the listed-successor row. A later commit records this head and the scan digest and does not change the table or the role identity.",
+      "output_sha256": "90ad73034a9fd728d7066209c3feb1ef57141fcbe038faa34061568221f01e99"
     },
     "table": [
       {
@@ -494,7 +502,7 @@
           "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
           "finite_numbers": "PASS: a finite free figure is an integer compared with the lane budget; an unlimited quota is not that comparison.",
           "processes_and_resources": "PASS: a short finite quota and an unreadable quota raise CampaignError before provisioning.",
-          "strict_decoding": "PASS: admission uses the quota object. An unset hard limit is enough. A filesystem figure copied into free_bytes is not the quota.",
+          "strict_decoding": "PASS: admission uses the quota object. An unset hard limit does not admit a short filesystem, and a filesystem figure copied into free_bytes is not the quota.",
           "types_before_conversions": "PASS: a non-integer finite free figure is refused, and hard_kib is read as an integer before the unlimited decision."
         },
         "file": "scripts/run_local_lane_campaign.py",
@@ -502,13 +510,15 @@
         "paths": "admission of the lane budget against the /tmp user quota",
         "rereads_stored_data": true,
         "tests": [
-          "reports/tests/test_local_lane_campaign.py::test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_below_the_budget",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_an_unlimited_quota_when_filesystem_free_is_below_the_budget",
           "reports/tests/test_local_lane_campaign.py::test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_above_the_budget",
-          "reports/tests/test_local_lane_campaign.py::test_lane_launch_ignores_a_filesystem_figure_when_the_hard_limit_is_unset",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_a_short_filesystem_when_the_hard_limit_is_unset",
           "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_when_tmp_quota_cannot_hold_the_lanes",
-          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_when_the_tmp_user_quota_is_unreadable"
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_when_the_tmp_user_quota_is_unreadable",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_a_short_filesystem_when_usrquota_is_absent",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_a_short_filesystem_when_the_finite_quota_holds"
         ],
-        "text_form": "Admission: filesystem free below or above the budget does not refuse an unset hard limit, and a filesystem figure stored as free_bytes is ignored when the hard limit is unset. reports/tests/test_local_lane_campaign.py::test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_below_the_budget; reports/tests/test_local_lane_campaign.py::test_lane_launch_ignores_a_filesystem_figure_when_the_hard_limit_is_unset"
+        "text_form": "Admission: an unlimited quota is refused when filesystem free is below the lane budget, and a short filesystem is refused when the hard limit is unset. reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_an_unlimited_quota_when_filesystem_free_is_below_the_budget; reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_a_short_filesystem_when_the_hard_limit_is_unset"
       },
       {
         "checks": {
@@ -536,6 +546,32 @@
           "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_git_invocation_errors_are_findings"
         ],
         "text_form": "Record JSON: a non-string digest (null, bool, int, float, object, list), a non-UTF-8 body, NaN, Infinity, -Infinity and a lone surrogate are findings before compare, and a valid surrogate pair in an unused field is accepted. reports/tests/test_evidence_input_drift.py::EvidenceInputDriftValidatorTests::test_head_scan_rejects_a_non_string_digest; reports/tests/test_evidence_input_drift.py::EvidenceInputDriftValidatorTests::test_head_scan_rejects_a_non_utf8_record_without_a_traceback; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_non_string_input_digests; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_a_record_that_is_not_utf8; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_nan_and_infinities_before_use; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_a_lone_surrogate_in_a_key_and_in_a_nested_value; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_accepts_a_valid_surrogate_pair_in_an_unused_field Fixed-form digest: empty, non-ASCII, wrong-length and uppercase text is a finding before git show. reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_digest_text_that_is_empty_non_ascii_or_the_wrong_shape; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_raw_output_digests_that_are_not_sha256_text Process errors: OSError from git is a finding. reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_git_invocation_errors_are_findings"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest; the digest compare is the execution_commit_findings row of the same document.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "FIXED: a non-finite successor is unreadable and stays a finding (test_a_non_finite_successor_is_not_replaced_by_its_predecessor); it is not replaced by the predecessor.",
+          "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
+          "strict_decoding": "FIXED: a non-UTF-8 body and a lone surrogate are findings for the listed task (test_a_non_utf8_successor_is_not_replaced_by_its_predecessor; test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor).",
+          "types_before_conversions": "FIXED: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, and empty or missing inputs are findings (test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; test_an_empty_object_successor_is_not_replaced_by_its_predecessor; test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; test_an_empty_or_missing_inputs_successor_does_not_pass). A sole record without inputs stays accepted (test_a_sole_record_without_inputs_stays_accepted)."
+        },
+        "file": "scripts/validate_evidence_input_drift.py",
+        "function": "discover_records, _manifest_record_tasks",
+        "paths": "manifest-listed evidence JSON; main refuses a hollow successor before the predecessor can stand in",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_missing_listed_successor_is_not_replaced_by_its_predecessor",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_object_successor_is_not_replaced_by_its_predecessor",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_manifest_whose_artifacts_are_not_a_list_fails_closed",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_or_missing_inputs_successor_does_not_pass",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_sole_record_without_inputs_stays_accepted",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_utf8_successor_is_not_replaced_by_its_predecessor",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_finite_successor_is_not_replaced_by_its_predecessor",
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor"
+        ],
+        "text_form": "Listed successor: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, empty or missing inputs, a non-UTF-8 body, a non-finite number and a lone surrogate are findings and the predecessor does not stand in. A sole record without inputs stays accepted. reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_object_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_or_missing_inputs_successor_does_not_pass; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_sole_record_without_inputs_stays_accepted; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_utf8_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_finite_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor"
       }
     ]
   },
@@ -555,6 +591,19 @@
     "citation": "PRE-CAMPAIGN-GATE (2026-10-26)",
     "executed_steps": 54,
     "failed_steps": 0,
+    "gates_json_sha256": "73a558b3d0b1ad31393ccb795b5e5f49ce52bc1f8a1a3ed4f9075df70ad4bbbd",
+    "head": "8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa",
+    "log_dir": "/home/luca/.ocor-codex/rem-0061/gate/gates-8f90b9386e07",
+    "node": "v20.20.2",
+    "not_executed": "CI-only steps that need repository secrets, the CI bootstrap and the four-lane suite are outside this local gate and were not started.",
+    "result": "PASS",
+    "stdout_sha256": "f0ce9f1f493bb0987a4cda39c1a360704fd671a352f757bc7094ff5819061759"
+  },
+  "pre_campaign_gate_cycle_2": {
+    "base": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
+    "citation": "PRE-CAMPAIGN-GATE (2026-10-26)",
+    "executed_steps": 54,
+    "failed_steps": 0,
     "gates_json_sha256": "eccb3ee798c7acf62955a0792e5f857c3ebcc4a22523582a99c7a172d3d1bd5a",
     "head": "7bb8ee685cfcea053444e78a393f098c47d76172",
     "log_dir": "/home/luca/.ocor-codex/rem-0061/gate/gates-7bb8ee685cfc",
@@ -564,6 +613,35 @@
     "stdout_sha256": "d65b2594d9e1eabd5aa8a57c24201a91e26bc4201c1d3a425415314f88f53365"
   },
   "preventive_review": {
+    "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
+    "dispositions": [
+      {
+        "decision": "ACCEPTED_AND_FIXED. A listed successor that is missing, unreadable, has no usable task_id, has empty or missing inputs, or whose manifest artifacts are not a list is a finding and does not let the predecessor stand in. The tests name the class. A sole historical record without inputs stays accepted.",
+        "id": "P1",
+        "severity": "blocking"
+      },
+      {
+        "decision": "ACCEPTED_AND_FIXED. The two renamed admission tests are cited, the listed-successor row is in the table, and the cell scan is repeated on the commit that contains the table.",
+        "id": "P2",
+        "severity": "advisory"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 1,
+      "blocking": 1
+    },
+    "outcome_sha256": "d71bd093f83c9e6b3f1d8f71f8d8aa8adbeb57b6218e627c9591fce444881567",
+    "request_id": "OCOR-DEV-REM-0061-cf3739600e1f-pre",
+    "result": "BLOCKING_FINDINGS",
+    "reviewed_head": "cf3739600e1ffa59f6b332fcf915f45f6543b5d4",
+    "reviewer": {
+      "agent": "Cursor",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "reserve": true
+    }
+  },
+  "preventive_review_cycle_2": {
     "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
     "dispositions": [
       {
@@ -642,8 +720,8 @@
   "qualifying_campaign": {
     "citation": "LOCAL-FULL-SUITE-CAP-90",
     "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
-    "duration_seconds": 1770.213,
-    "head": "7bb8ee685cfcea053444e78a393f098c47d76172",
+    "duration_seconds": 1775.039,
+    "head": "8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa",
     "image_cache": {
       "fuseki_base": "PRESENT",
       "images": 14,
@@ -658,24 +736,24 @@
     },
     "lanes_run": 4,
     "limit_seconds": 5400,
-    "margin_to_limit_seconds": 3629.787,
-    "margin_to_notification_seconds": 1829.787,
+    "margin_to_limit_seconds": 3624.961,
+    "margin_to_notification_seconds": 1824.961,
     "mode": "FOUR_LANE",
     "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225",
     "po_decision_required": false,
     "power_end": {
-      "read_at": "2026-11-11T23:54:00Z",
+      "read_at": "2026-11-12T07:33:03Z",
       "source": "MAINS"
     },
     "power_start": {
-      "read_at": "2026-11-11T23:24:29Z",
+      "read_at": "2026-11-12T07:03:28Z",
       "source": "MAINS"
     },
-    "residue": "Four lane teardowns passed and the host residue check found no containers, networks, volumes or root image. The work directory is on the home filesystem, so the image cache was kept. Lane checkouts were removed.",
+    "residue": "Four lane teardowns passed and the host residue check found no containers, networks, volumes or root image. The script then removed the lane checkouts and the run image cache. No work_removal failure is recorded.",
     "result": "PASS",
-    "result_path": "/home/luca/.ocor-codex/rem-0061/campaign-7bb8ee685cfc/campaign_result.json",
-    "result_sha256": "db8c68c061a9cb008e1476b6391c9557700695ea8d214d20aa57efd055a92ab1",
-    "runs": "Qualifying run of repair cycle 2 on 7bb8ee685cfcea053444e78a393f098c47d76172, after the execution-commit parser fix. The cycle-1 run on a68c47dad3610a1c284020e0ea28ef0c85c6be57 and the run on 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3 do not qualify this head. The run on 73e5c4ad18e4ce3747548bafa7acea53e824551d stays diagnostic. Collection and partition digests are unchanged. The shared image cache was mounted read-only in all four lanes. Fourteen locked host images, including the Fuseki base, were transferred and not pulled. The work directory is under the home filesystem, so the /tmp user-quota check was recorded and did not apply. Duration 1770.213 s, 3629.787 s under the 5400 s cap and 1829.787 s under the 3600 s notification. Power was MAINS at both readings. The commit that records this paragraph is not the executed head.",
+    "result_path": "/home/luca/.ocor-codex/rem-0061/campaign-8f90b9386e07/campaign_result.json",
+    "result_sha256": "ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe",
+    "runs": "Qualifying run of repair cycle 3 on 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa, after the listed-successor fix. The cycle-1 run on a68c47dad3610a1c284020e0ea28ef0c85c6be57, the cycle-2 run on 7bb8ee685cfcea053444e78a393f098c47d76172 and the run on 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3 do not qualify this head. The run on 73e5c4ad18e4ce3747548bafa7acea53e824551d stays diagnostic. Collection and partition digests are unchanged. The shared image cache was mounted read-only in all four lanes. Fourteen locked host images, including the Fuseki base, were transferred and not pulled. The work directory is under the home filesystem, so the /tmp user-quota check was recorded and did not apply. Duration 1775.039 s, 3624.961 s under the 5400 s cap and 1824.961 s under the 3600 s notification. Power was MAINS at both readings. The commit that records this paragraph is not the executed head.",
     "union": {
       "collected": 5826,
       "duplicated": 0,
@@ -729,6 +807,51 @@
       "unexpected": 0
     }
   },
+  "qualifying_campaign_cycle_2": {
+    "citation": "LOCAL-FULL-SUITE-CAP-90",
+    "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
+    "duration_seconds": 1770.213,
+    "head": "7bb8ee685cfcea053444e78a393f098c47d76172",
+    "image_cache": {
+      "fuseki_base": "PRESENT",
+      "images": 14,
+      "mount": "read-only",
+      "present": 14
+    },
+    "junit": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5826
+    },
+    "lanes_run": 4,
+    "limit_seconds": 5400,
+    "margin_to_limit_seconds": 3629.787,
+    "margin_to_notification_seconds": 1829.787,
+    "mode": "FOUR_LANE",
+    "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225",
+    "po_decision_required": false,
+    "power_end": {
+      "read_at": "2026-11-11T23:54:00Z",
+      "source": "MAINS"
+    },
+    "power_start": {
+      "read_at": "2026-11-11T23:24:29Z",
+      "source": "MAINS"
+    },
+    "residue": "Four lane teardowns passed and the host residue check found no containers, networks, volumes or root image. The work directory is on the home filesystem, so the image cache was kept. Lane checkouts were removed.",
+    "result": "PASS",
+    "result_path": "/home/luca/.ocor-codex/rem-0061/campaign-7bb8ee685cfc/campaign_result.json",
+    "result_sha256": "db8c68c061a9cb008e1476b6391c9557700695ea8d214d20aa57efd055a92ab1",
+    "runs": "Qualifying run of repair cycle 2 on 7bb8ee685cfcea053444e78a393f098c47d76172, after the execution-commit parser fix. The cycle-1 run on a68c47dad3610a1c284020e0ea28ef0c85c6be57 and the run on 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3 do not qualify this head. The run on 73e5c4ad18e4ce3747548bafa7acea53e824551d stays diagnostic. Collection and partition digests are unchanged. The shared image cache was mounted read-only in all four lanes. Fourteen locked host images, including the Fuseki base, were transferred and not pulled. The work directory is under the home filesystem, so the /tmp user-quota check was recorded and did not apply. Duration 1770.213 s, 3629.787 s under the 5400 s cap and 1829.787 s under the 3600 s notification. Power was MAINS at both readings. The commit that records this paragraph is not the executed head.",
+    "union": {
+      "collected": 5826,
+      "duplicated": 0,
+      "executed": 5826,
+      "missing": 0,
+      "unexpected": 0
+    }
+  },
   "red": {
     "commit": "dcfe515545007bc04e7f72874783279c9267c4d1",
     "failed": 46,
@@ -750,7 +873,15 @@
     "note": "No separate red commit. The four failing tests and the fix are together in b22debf2e08e805db56643030b17efafdd5e4da5. The historical red fingerprint f477a92adce5c4180f1648a7462e4fbae41a1e2e492b134a0de6f0800725c17b is not reused.",
     "separate_commit": false
   },
-  "repair_cycle": 2,
+  "red_repair_cycle_3": {
+    "failed": 8,
+    "fingerprint_sha256": "7a10b6619f9305b915d060693c279500d3d619e2555339babdbbde6788b3237c",
+    "fix_commit": "8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa",
+    "log": "/home/luca/.ocor-codex/rem-0061/red-cycle3-p1.log",
+    "note": "Separate red commit 678f30c05db5c3f5462d22a95ae72d9fca9a41d4 before the fix. Eleven tests, eight failures. The historical fingerprints are not reused.",
+    "separate_commit": true
+  },
+  "repair_cycle": 3,
   "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json (record_id OCOR-DEV-REM-0037-requalified-rem0061-b22debf2e08e) and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json (record_id OCOR-DEV-REM-0056-requalified-rem0061-b22debf2e08e). Both cite commit b22debf2e08e805db56643030b17efafdd5e4da5, the commit on which the regression command ran, and replace the unsealed records on the same paths that cited 83d9b74648c14a2afb14904a2a83183274ece7c9. supersedes still names the sealed predecessors OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3; those files are unchanged. Both sealed records hash the lane files, the plan validator and the plan run state. completed_evidence_tasks does not list these two tasks, so the drift validator does not select them; that is not because the hashes are absent.",
   "requalifications_written": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
@@ -765,14 +896,14 @@
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer"
+        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer. REM-0061-REPAIR-BUDGET (2026-11-12) also names Codex (OpenAI). Codex did not author a commit on this branch, so this scan entry stays the only implementer."
       }
     ],
     "preventive_reviewer": {
       "agent": "Cursor",
       "model": "cursor-grok-4.6-xhigh",
       "provider": "xAI",
-      "request_id": "OCOR-DEV-REM-0061-55c3272cf1ef-pre",
+      "request_id": "OCOR-DEV-REM-0061-cf3739600e1f-pre",
       "reserve": true,
       "result": "BLOCKING_FINDINGS"
     },
@@ -785,6 +916,7 @@
       "result": "NO_GO"
     },
     "verifier_excluded_providers": [
+      "OpenAI",
       "xAI"
     ],
     "verifier_started_by_implementer": false
@@ -814,6 +946,18 @@
     },
     "head_sha": "1c8a94b9e71e9c60e8d4b3c4365b43e402715e2f",
     "request_id": "OCOR-DEV-REM-0061-1c8a94b9e71e-1",
+    "result": "NO_GO",
+    "severity": "high"
+  },
+  "verification_cycle_2": {
+    "findings_by_severity": {
+      "critical": 0,
+      "high": 4,
+      "low": 0,
+      "medium": 0
+    },
+    "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+    "request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
     "result": "NO_GO",
     "severity": "high"
   }
