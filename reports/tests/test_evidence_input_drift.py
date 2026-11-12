@@ -695,6 +695,30 @@ def _apply_successor_perturbation(name: str, successor: dict[str, object], conte
         successor.pop("inputs", None)
     elif name == "manifest_not_canonical":
         context["manifest_path"] = "./latest.json"
+    elif name == "manifest_path_trailing_space":
+        context["manifest_path"] = "latest.json "
+        context["drop"] = True
+    elif name == "manifest_path_leading_space":
+        context["manifest_path"] = " latest.json"
+        context["drop"] = True
+    elif name == "manifest_path_extra_suffix":
+        context["manifest_path"] = "latest.json.bak"
+        context["drop"] = True
+    elif name == "manifest_path_json_log":
+        context["manifest_path"] = "latest.json.log"
+        context["drop"] = True
+    elif name == "manifest_path_empty":
+        context["manifest_path"] = ""
+        context["drop"] = True
+    elif name == "manifest_path_non_ascii":
+        context["manifest_path"] = "latest.json\u00e9"
+        context["drop"] = True
+    elif name == "manifest_path_wrong_case":
+        context["manifest_path"] = "latest.JSON"
+        context["drop"] = True
+    elif name == "manifest_path_trailing_newline":
+        context["manifest_path"] = "latest.json\n"
+        context["drop"] = True
     elif name == "manifest_not_object":
         context["manifest_entry"] = "latest.json"
     elif name == "record_absent":
@@ -713,6 +737,14 @@ _SUCCESSOR_PERTURBATIONS = (
     "inputs_not_per_file",
     "inputs_absent",
     "manifest_not_canonical",
+    "manifest_path_trailing_space",
+    "manifest_path_leading_space",
+    "manifest_path_extra_suffix",
+    "manifest_path_json_log",
+    "manifest_path_empty",
+    "manifest_path_non_ascii",
+    "manifest_path_wrong_case",
+    "manifest_path_trailing_newline",
     "manifest_not_object",
     "record_absent",
     "record_unreadable",
@@ -767,6 +799,48 @@ class ListedSuccessorClassTests(unittest.TestCase):
             any(item.get("task_id") in {"", "OCOR-DEV-0005"} for item in payload["findings"]),
             payload,
         )
+
+    def test_a_bare_log_path_stays_outside_the_record_index(self) -> None:
+        digest = hashlib.sha256(b"current input\n").hexdigest()
+        current = _supersession_successor(
+            {
+                "created_at": "2026-01-01T00:00:00Z",
+                "inputs": {"module.py": digest},
+                "record_id": "previous",
+                "task_id": "OCOR-DEV-0005",
+            },
+            {"module.py": digest},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_supersession_chain(base, json.dumps(current).encode())
+            evidence = base / "reports" / "evidence" / "G0"
+            manifest_path = evidence / "MANIFEST.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["artifacts"].append({
+                "path": "OCOR-DEV-0005.requalified-rem0059.log",
+                "sha256": "0" * 64,
+                "task_id": "OCOR-DEV-0005",
+            })
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            result = _run_validator(base)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual("PASS", json.loads(result.stdout)["status"])
+
+    def test_a_string_path_that_is_not_a_bare_json_or_log_name_does_not_pass_on_the_predecessor(self) -> None:
+        names = (
+            "manifest_path_trailing_space",
+            "manifest_path_leading_space",
+            "manifest_path_extra_suffix",
+            "manifest_path_json_log",
+            "manifest_path_empty",
+            "manifest_path_non_ascii",
+            "manifest_path_wrong_case",
+            "manifest_path_trailing_newline",
+        )
+        for name in names:
+            with self.subTest(name=name):
+                self._assert_not_predecessor_pass((name,))
 
     def test_a_matching_listed_successor_still_passes(self) -> None:
         digest = hashlib.sha256(b"current input\n").hexdigest()
