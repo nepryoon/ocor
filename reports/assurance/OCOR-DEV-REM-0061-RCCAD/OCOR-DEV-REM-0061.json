@@ -133,11 +133,11 @@
         "reports/tests/test_local_lane_campaign.py": "0; tests, not a production parser",
         "reports/tests/test_local_lane_image_cache.py": "0; the live proof calls prepare and seed and does not parse a second format",
         "scripts/local_lane_image_cache.py": 11,
-        "scripts/run_local_lane_campaign.py": 6,
+        "scripts/run_local_lane_campaign.py": 7,
         "scripts/validate_evidence_input_drift.py": 2,
         "scripts/validate_ocor_development_plan.py": "0; the edit adds allowlist strings and does not add a parser"
       },
-      "consumers_examined": 19,
+      "consumers_examined": 20,
       "functions_examined": [
         "decode_json",
         "_reject_duplicate_keys",
@@ -171,14 +171,19 @@
         "drift_for_record",
         "execution_commit_findings",
         "_manifest_record_tasks",
-        "discover_records"
+        "discover_records",
+        "locked_tool_declarations",
+        "_canonical_record_name",
+        "_canonical_log_name"
       ],
       "searches": [
         "ast walk of function definitions in scripts/local_lane_image_cache.py",
         "functions in scripts/run_local_lane_campaign.py whose names contain cache, seed, prepare_image or timeout",
         "functions in scripts/run_local_lane_campaign.py that parse mountinfo, the quotactl_fd result, or the lane admission figure",
         "functions in scripts/validate_evidence_input_drift.py that read a record, an inputs digest, or raw_output_sha256",
-        "functions in scripts/validate_evidence_input_drift.py that index a manifest-listed record or refuse a hollow successor"
+        "functions in scripts/validate_evidence_input_drift.py that index a manifest-listed record or refuse a hollow successor",
+        "functions in scripts/run_local_lane_campaign.py that read a toolchain-lock tool command or integrity",
+        "functions in scripts/validate_evidence_input_drift.py that classify a manifest path as a record or a log"
       ],
       "unparsed_callers": "execute_campaign and lifecycle_check call prepare_image_cache and seed_lane_images. They store the returned mapping and do not decode the lock, the inspect text, the manifest or the archive."
     },
@@ -535,6 +540,30 @@
       },
       {
         "checks": {
+          "boundary_digests": "FIXED: empty, short, uppercase, non-hex, trailing-space and non-ASCII integrity text is refused before compare (test_locked_tool_declarations_refuse_an_integrity_that_is_not_sha256_text). A digest that is not the lock is refused (test_locked_tool_declarations_refuse_a_digest_that_is_not_the_lock).",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "FIXED: NaN in the toolchain lock is refused at decode (test_locked_tool_declarations_refuse_a_lock_that_is_not_utf8_or_not_a_tool_list).",
+          "processes_and_resources": "FIXED: a missing tool bin is CampaignError before any digest is read (test_locked_tool_declarations_refuse_a_missing_directory_and_an_unknown_name).",
+          "strict_decoding": "FIXED: a non-UTF-8 toolchain lock is refused before use (test_locked_tool_declarations_refuse_a_lock_that_is_not_utf8_or_not_a_tool_list).",
+          "types_before_conversions": "FIXED: a tools object, a non-object tool and an unknown file name are refused before hashing (test_locked_tool_declarations_refuse_a_lock_that_is_not_utf8_or_not_a_tool_list; test_locked_tool_declarations_refuse_a_missing_directory_and_an_unknown_name)."
+        },
+        "file": "scripts/run_local_lane_campaign.py",
+        "function": "locked_tool_declarations",
+        "paths": "toolchain.lock.json tools command and integrity, and the bytes of each file in the tool bin",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_refuse_an_integrity_that_is_not_sha256_text",
+          "reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_refuse_a_lock_that_is_not_utf8_or_not_a_tool_list",
+          "reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_refuse_a_digest_that_is_not_the_lock",
+          "reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_record_a_matching_symlink_target",
+          "reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_accept_an_empty_directory",
+          "reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_refuse_a_missing_directory_and_an_unknown_name",
+          "reports/tests/test_local_lane_campaign.py::test_execute_refuses_a_tool_bin_digest_before_provision"
+        ],
+        "text_form": "Toolchain integrity is lowercase SHA-256 text. Empty, short, uppercase, non-hex, trailing-space and non-ASCII values are refused before compare. reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_refuse_an_integrity_that_is_not_sha256_text A non-UTF-8 lock, NaN, a tools object and a non-object tool are refused at decode. reports/tests/test_local_lane_campaign.py::test_locked_tool_declarations_refuse_a_lock_that_is_not_utf8_or_not_a_tool_list"
+      },
+      {
+        "checks": {
           "boundary_digests": "FIXED: empty, non-ASCII, wrong-length and uppercase digests are findings before git show (test_rejects_digest_text_that_is_empty_non_ascii_or_the_wrong_shape).",
           "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
           "finite_numbers": "FIXED: NaN, Infinity and -Infinity are refused at decode (test_rejects_nan_and_infinities_before_use), and a float digest is not a string.",
@@ -567,7 +596,7 @@
           "finite_numbers": "FIXED: a non-finite successor is unreadable and stays a finding (test_a_non_finite_successor_is_not_replaced_by_its_predecessor); it is not replaced by the predecessor.",
           "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
           "strict_decoding": "FIXED: a non-UTF-8 body and a lone surrogate are findings for the listed task (test_a_non_utf8_successor_is_not_replaced_by_its_predecessor; test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor).",
-          "types_before_conversions": "FIXED: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, and empty or missing inputs are findings (test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; test_an_empty_object_successor_is_not_replaced_by_its_predecessor; test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; test_an_empty_or_missing_inputs_successor_does_not_pass). A sole record without inputs stays accepted (test_a_sole_record_without_inputs_stays_accepted)."
+          "types_before_conversions": "FIXED: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, and empty or missing inputs are findings (test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; test_an_empty_object_successor_is_not_replaced_by_its_predecessor; test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; test_an_empty_or_missing_inputs_successor_does_not_pass). A sole record without inputs stays accepted (test_a_sole_record_without_inputs_stays_accepted). A string path that is not a bare *.json name and not a bare *.log name is a finding (test_a_string_path_that_is_not_a_bare_json_or_log_name_does_not_pass_on_the_predecessor). A bare log name is not a record (test_a_bare_log_path_stays_outside_the_record_index)."
         },
         "file": "scripts/validate_evidence_input_drift.py",
         "function": "discover_records, _manifest_record_tasks",
@@ -582,9 +611,13 @@
           "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_sole_record_without_inputs_stays_accepted",
           "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_utf8_successor_is_not_replaced_by_its_predecessor",
           "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_finite_successor_is_not_replaced_by_its_predecessor",
-          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor"
+          "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor",
+          "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_string_path_that_is_not_a_bare_json_or_log_name_does_not_pass_on_the_predecessor",
+          "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_each_listed_successor_perturbation_and_each_pair_refuses_the_predecessor",
+          "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_bare_log_path_stays_outside_the_record_index",
+          "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_matching_listed_successor_still_passes"
         ],
-        "text_form": "Listed successor: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, empty or missing inputs, a non-UTF-8 body, a non-finite number and a lone surrogate are findings and the predecessor does not stand in. A sole record without inputs stays accepted. reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_object_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_or_missing_inputs_successor_does_not_pass; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_sole_record_without_inputs_stays_accepted; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_utf8_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_finite_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor"
+        "text_form": "Listed successor: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, empty or missing inputs, a non-UTF-8 body, a non-finite number and a lone surrogate are findings and the predecessor does not stand in. A sole record without inputs stays accepted. reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_object_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_an_empty_or_missing_inputs_successor_does_not_pass; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_sole_record_without_inputs_stays_accepted; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_utf8_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_finite_successor_is_not_replaced_by_its_predecessor; reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor A string path that is not a bare *.json name and not a bare *.log name is a finding (test_a_string_path_that_is_not_a_bare_json_or_log_name_does_not_pass_on_the_predecessor). A bare log name is not a record (test_a_bare_log_path_stays_outside_the_record_index)."
       }
     ]
   },
@@ -1000,7 +1033,7 @@
       "independence_limits": "Same provider as implementer Grok Build (xAI), different Grok generation (cursor-grok-4.6). PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) point 1 and GROK-50X point 2.",
       "model": "cursor-grok-4.6-xhigh",
       "provider": "xAI",
-      "request_id": "OCOR-DEV-REM-0061-cf3739600e1f-pre",
+      "request_id": "OCOR-DEV-REM-0061-cf6552131fe2-pre",
       "reserve": true,
       "result": "BLOCKING_FINDINGS"
     },
@@ -1057,5 +1090,81 @@
     "request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
     "result": "NO_GO",
     "severity": "high"
+  },
+  "preventive_review_cycle_4": {
+    "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
+    "dispositions": [
+      {
+        "decision": "ACCEPTED_AND_FIXED. A string manifest path that is not a bare *.json record name and not a bare *.log name is a finding for that task, so the predecessor is not a PASS. The tests cover a trailing space, a leading space, an extra suffix, a .json.log spelling, an empty name, a non-ASCII suffix, a wrong-case suffix and a trailing newline. A bare log name stays outside the record index. Removing the control makes the new test report PASS with empty findings.",
+        "id": "P1",
+        "severity": "blocking"
+      },
+      {
+        "decision": "ACCEPTED. locked_tool_declarations is in the inventory and in the table. The cell scan and the roles scan are repeated on the commit that contains that row.",
+        "id": "P2",
+        "severity": "advisory"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 1,
+      "blocking": 1
+    },
+    "outcome_sha256": "134b9c9ed5b47e88b7fc22508f0e5e0724b8ba82523aec065f1da3c0bebcb9e3",
+    "request_id": "OCOR-DEV-REM-0061-cf6552131fe2-pre",
+    "result": "BLOCKING_FINDINGS",
+    "reviewed_head": "cf6552131fe293fa3e78cf348370d1978116065a",
+    "reviewer": {
+      "agent": "Cursor",
+      "independence_limits": "Same provider as implementer Grok Build (xAI), different Grok generation (cursor-grok-4.6). PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) point 1 and GROK-50X point 2.",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "reserve": true
+    }
+  },
+  "red_repair_cycle_4_path_form": {
+    "commit": "f7a3436d6124253543bae1547e36d16e0e5a5ae0",
+    "failed": 7,
+    "fingerprint_sha256": "82b5e8089eccbcba310c9f1ce2438b9b1e45a8e41dd8eb31a9ed76a2076ad7ed",
+    "fix_commit": "PENDING",
+    "log": "/home/luca/.ocor-codex/rem-0061/red-cycle4-p1-path-form.log",
+    "note": "Separate red commit f7a3436d6124253543bae1547e36d16e0e5a5ae0 before the path-form control. Seven subtests failed with status PASS and empty findings. The leading-space subtest was already fail-closed because that name still ended in .json. The historical fingerprints are not reused.",
+    "separate_commit": true
+  },
+  "mutation_probes_cycle_4_path_form": {
+    "citation": "SELF-CHECK-CLASS-COVERAGE (2026-11-08) and REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12) point 2",
+    "command": "python3 /home/luca/.ocor-codex/rem-0061/mutation_probes_path_form.py",
+    "note": "The path-form control was narrowed back to endswith('.json') and then removed. In both cases the new test failed and the captured output showed status PASS with empty findings. The validator bytes were restored. backup_sha256 is the validator before the probe.",
+    "probes": [
+      {
+        "control": "manifest-path-form",
+        "exit_code": 1,
+        "failed": true,
+        "output_sha256": "e5cf02023f29836bd1e1027c8f05b39206c5a4553ed13264a87044c0cb6f43e1",
+        "tail": [
+          "  \"drifted_inputs\": 0,",
+          "  \"drifted_tasks\": [],",
+          "  \"findings\": [],",
+          "  \"status\": \"PASS\"",
+          "}",
+          "7 failed, 1 passed, 1 subtests passed in 0.29s"
+        ]
+      },
+      {
+        "control": "manifest-artifact-canonical-path",
+        "exit_code": 1,
+        "failed": true,
+        "output_sha256": "79c7867b60226fe8a9bb42e2bfbc56a83858cc2a1f8a2374f94ebc31750ff823",
+        "tail": [
+          "  \"drifted_inputs\": 0,",
+          "  \"drifted_tasks\": [],",
+          "  \"findings\": [],",
+          "  \"status\": \"PASS\"",
+          "}",
+          "8 failed, 1 passed in 0.29s"
+        ]
+      }
+    ],
+    "restored": true,
+    "validator_sha256_before_probe": "3109c011d2a19f89b2439cfa7e9bb06a9237d1a7aab68fb54fe69372c90d4b78"
   }
 }

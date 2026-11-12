@@ -30,6 +30,8 @@ from typing import Any
 
 _REVISION = re.compile(r"[0-9a-f]{40}\Z")
 _SHA256_HEX = re.compile(r"[0-9a-f]{64}\Z")
+_BARE_JSON_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\.json\Z")
+_BARE_LOG_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\.log\Z")
 
 # Directories under reports/evidence that hold non-qualifying or historical records;
 # they are not the canonical evidence for a completed task.
@@ -133,21 +135,39 @@ def _raw_findings(task_id: str, record: dict[str, Any], record_path: Path) -> li
 
 
 def _canonical_record_name(relative: object) -> bool:
-    """A manifest record path is one bare ``*.json`` name, never a log or a traversal."""
+    """A manifest record path is one bare ``*.json`` name, never a log or a traversal.
+
+    The form is the whole string: ASCII letters, digits, dot, underscore and
+    hyphen, then ``.json``. A trailing space, a suffix, a wrong case or a
+    leading mark is not that name.
+    """
     return (
         isinstance(relative, str)
-        and relative.endswith(".json")
-        and "/" not in relative
-        and not relative.startswith(".")
+        and _BARE_JSON_NAME.fullmatch(relative) is not None
         and relative != "MANIFEST.json"
+    )
+
+
+def _canonical_log_name(relative: object) -> bool:
+    """A manifest log path is one bare ``*.log`` name that is not a record spelling.
+
+    ``latest.json.log`` is not a log: dropping it would hide a listed successor.
+    """
+    return (
+        isinstance(relative, str)
+        and _BARE_LOG_NAME.fullmatch(relative) is not None
+        and ".json" not in relative
     )
 
 
 def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], list[dict[str, Any]]]:
     """Map a manifest-listed JSON record to its task ids. An unreadable manifest is a finding.
 
-    A non-object artifact, or a ``*.json`` path that is not a bare name, is a finding.
-    Dropping it would leave the predecessor as a silent PASS. Log paths are not records.
+    A non-object artifact, or a string path that is neither a bare ``*.json``
+    record name nor a bare ``*.log`` name, is a finding. A check that only
+    looks at ``endswith(".json")`` would drop ``latest.json `` and
+    ``latest.json.bak`` and leave the predecessor as a silent PASS.
+    Log paths are not records.
     """
     index: dict[Path, set[str]] = {}
     findings: list[dict[str, Any]] = []
@@ -180,7 +200,12 @@ def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], li
                 continue
             task_id = artifact.get("task_id")
             relative = artifact.get("path")
-            if isinstance(relative, str) and relative.endswith(".json") and not _canonical_record_name(relative):
+            if _canonical_log_name(relative):
+                continue
+            # CONTROL: manifest-artifact-canonical-path
+            # Every string path is a bare record name or a bare log name.
+            # Anything else is a finding, including a name that does not end in .json.
+            if isinstance(relative, str) and not _canonical_record_name(relative):
                 findings.append({
                     "path": relative,
                     "reason": "manifest artifact path is not canonical",

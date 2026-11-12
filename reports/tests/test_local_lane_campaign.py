@@ -3185,6 +3185,32 @@ def test_locked_tool_declarations_accept_an_empty_directory(tmp_path):
     assert LANES.locked_tool_declarations([tool_bin], lock) == []
 
 
+@pytest.mark.parametrize('integrity', ['', 'b' * 63, 'B' * 64, 'g' * 64, 'b' * 64 + ' ', 'é' + 'b' * 63])
+def test_locked_tool_declarations_refuse_an_integrity_that_is_not_sha256_text(tmp_path, integrity):
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': integrity}])
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    with pytest.raises(CAMPAIGN.CampaignError, match='integrity is not a sha256'):
+        LANES.locked_tool_declarations([tool_bin], lock)
+
+
+def test_locked_tool_declarations_refuse_a_lock_that_is_not_utf8_or_not_a_tool_list(tmp_path):
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    raw = tmp_path / 'toolchain.lock.json'
+    raw.write_bytes(b'\xff{"tools": []}')
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.locked_tool_declarations([tool_bin], raw)
+    for body in (
+        '{"tools": {}}',
+        '{"tools": [5]}',
+        '{"tools": [{"command": "uv", "integrity": NaN}]}',
+    ):
+        raw.write_text(body)
+        with pytest.raises(CAMPAIGN.CampaignError):
+            LANES.locked_tool_declarations([tool_bin], raw)
+
+
 def test_locked_tool_declarations_refuse_a_missing_directory_and_an_unknown_name(tmp_path):
     lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': 'a' * 64}])
     with pytest.raises(CAMPAIGN.CampaignError, match='not a directory'):
