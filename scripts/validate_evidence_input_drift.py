@@ -149,6 +149,11 @@ def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], li
             continue
         artifacts = data.get("artifacts")
         if not isinstance(artifacts, list):
+            findings.append({
+                "path": manifest.name,
+                "reason": "manifest artifacts is not a list",
+                "task_id": "",
+            })
             continue
         for artifact in artifacts:
             if not isinstance(artifact, dict):
@@ -164,17 +169,26 @@ def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], li
 
 
 def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[dict[str, Any]]]:
-    """Index canonical evidence records. Decode errors of manifest-listed records are findings."""
+    """Index canonical evidence records.
+
+    A manifest-listed record that is missing, unreadable, or has no usable
+    task_id is a finding. Dropping it would let an older record stand in for
+    the listed successor.
+    """
     records: dict[str, list[Path]] = {}
     listed, findings = _manifest_record_tasks(evidence_dir)
+    seen: set[Path] = set()
     for path in sorted(evidence_dir.rglob("*.json")):
         if path.name == "MANIFEST.json":
             continue
         if _EXCLUDED_PARTS & set(path.parts):
             continue
+        resolved = path.resolve()
+        seen.add(resolved)
         data, error = _read_json_object(path)
+        listed_tasks = listed.get(resolved, ())
         if error is not None or data is None:
-            for task_id in sorted(listed.get(path.resolve(), ())):
+            for task_id in sorted(listed_tasks):
                 findings.append({
                     "path": path.name,
                     "reason": f"record unreadable: {error}",
@@ -184,6 +198,22 @@ def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[di
         record_task = data.get("task_id")
         if isinstance(record_task, str) and record_task:
             records.setdefault(record_task, []).append(path)
+            continue
+        for task_id in sorted(listed_tasks):
+            findings.append({
+                "path": path.name,
+                "reason": "record task_id is not a non-empty string",
+                "task_id": task_id,
+            })
+    for resolved, task_ids in sorted(listed.items(), key=lambda item: str(item[0])):
+        if resolved in seen:
+            continue
+        for task_id in sorted(task_ids):
+            findings.append({
+                "path": resolved.name,
+                "reason": "record missing",
+                "task_id": task_id,
+            })
     return records, findings
 
 
@@ -421,6 +451,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             findings.append({
                 "path": record_path.name,
                 "reason": f"record unreadable: {error}",
+                "task_id": task_id,
+            })
+            continue
+        # A hollow successor must not retire another record of the same task.
+        # A sole historical record without inputs stays accepted.
+        if len(records[task_id]) > 1 and ("inputs" not in record or record.get("inputs") == {}):
+            findings.append({
+                "path": "inputs",
+                "reason": "inputs is missing" if "inputs" not in record else "inputs is empty",
                 "task_id": task_id,
             })
             continue
