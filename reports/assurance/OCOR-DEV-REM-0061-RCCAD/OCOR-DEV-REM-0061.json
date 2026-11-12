@@ -44,6 +44,19 @@
     "cycle_3_rerun_output_sha256": "35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c",
     "cycle_3_rerun_preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-8f90b9386e07.json",
     "cycle_3_rerun_status": "PASS",
+    "cycle_4_command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root . --execution-commit --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
+    "cycle_4_executed_at_commit": "1d36603b5119092d65ec1db79cddcf9ffe402819",
+    "cycle_4_note": "Five records changed on this branch versus the merge-base. Findings empty. REM-0037 and REM-0056 cite 1d36603, the regression commit. Their input bytes match git show of that commit and are unchanged at that HEAD. The other three records still match their declared commits. The preserved file includes the EXIT:0 line.",
+    "cycle_4_output_sha256": "6f8be2db9d653b11cd387787d88b1aef87e5ef6b621d5c585a93bce5bbe92a55",
+    "cycle_4_preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-1d36603b5119.json",
+    "cycle_4_records": [
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json",
+      "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json",
+      "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json"
+    ],
+    "cycle_4_status": "PASS",
     "executed_at_commit": "62be586f2d3f367a40deb1e9cd9e9cc12b06612a",
     "output_sha256": "35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c",
     "preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-62be586.json",
@@ -575,6 +588,75 @@
       }
     ]
   },
+  "mutation_probes_cycle_4": {
+    "citation": "SELF-CHECK-CLASS-COVERAGE (2026-11-08) and REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12) point 2",
+    "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python /tmp/rem0061-mutation-probes.py",
+    "fix_commit": "1d36603b5119092d65ec1db79cddcf9ffe402819",
+    "note": "Each listed-successor control was removed alone against the cycle-4 validator before 1d36603b5119092d65ec1db79cddcf9ffe402819. ListedSuccessorClassTests then failed, and the captured output showed status PASS with empty findings. The validator bytes were restored and the class passed (3 passed, 58 subtests).",
+    "probes": [
+      {
+        "control": "manifest-artifact-object",
+        "exit_code": 1,
+        "failed": true,
+        "output_sha256": "1208683ce32c17e7ed5f8cb2bc20d21fb92d46f32a24a4911656f06320151aaf",
+        "tail": [
+          "  \"findings\": [],",
+          "  \"status\": \"PASS\"",
+          "}",
+          "3 failed, 3 passed, 55 subtests passed in 1.63s"
+        ]
+      },
+      {
+        "control": "manifest-artifact-canonical-path",
+        "exit_code": 1,
+        "failed": true,
+        "output_sha256": "8405479fb05653bb8efa253111491e06a342cc59c3d15a2ea30f8cc317b0ad83",
+        "tail": [
+          "  \"findings\": [],",
+          "  \"status\": \"PASS\"",
+          "}",
+          "3 failed, 3 passed, 55 subtests passed in 1.62s"
+        ]
+      },
+      {
+        "control": "record-task-id-matches-manifest",
+        "exit_code": 1,
+        "failed": true,
+        "output_sha256": "767460faabae3607bbbfe83e08423b28b5355974311f4afcb0d47c77aa4a09c0",
+        "tail": [
+          "  \"findings\": [],",
+          "  \"status\": \"PASS\"",
+          "}",
+          "9 failed, 3 passed, 49 subtests passed in 1.63s"
+        ]
+      },
+      {
+        "control": "per-file-digest-when-multiple",
+        "exit_code": 1,
+        "failed": true,
+        "output_sha256": "4e6318fbcb05e18da0907d5196695c04cda772195f69921028fcc46c18503811",
+        "tail": [
+          "  \"findings\": [],",
+          "  \"status\": \"PASS\"",
+          "}",
+          "1 failed, 3 passed, 57 subtests passed in 1.63s"
+        ]
+      },
+      {
+        "control": "unselected-record-created-at",
+        "exit_code": 1,
+        "failed": true,
+        "output_sha256": "0efbf1e57cf58a8e7f4caf906337c93517e4a277b19d14bd797c367cffeb605e",
+        "tail": [
+          "  \"findings\": [],",
+          "  \"status\": \"PASS\"",
+          "}",
+          "12 failed, 3 passed, 46 subtests passed in 1.65s"
+        ]
+      }
+    ],
+    "restored": true
+  },
   "open_decision_request": {
     "decision": "TMP-RESIDUI-CAMPAGNA (2026-11-11), neither option 1 nor option 2",
     "historical_pin_commit": "83d9b74648c14a2afb14904a2a83183274ece7c9",
@@ -636,6 +718,7 @@
     "reviewed_head": "cf3739600e1ffa59f6b332fcf915f45f6543b5d4",
     "reviewer": {
       "agent": "Cursor",
+      "independence_limits": "Same provider as implementer Grok Build (xAI), different Grok generation (cursor-grok-4.6). PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) point 1 and GROK-50X point 2.",
       "model": "cursor-grok-4.6-xhigh",
       "provider": "xAI",
       "reserve": true
@@ -670,6 +753,7 @@
     "reviewed_head": "55c3272cf1efaaa35403c89dcade965053caf2bc",
     "reviewer": {
       "agent": "Cursor",
+      "independence_limits": "Same provider as implementer Grok Build (xAI), different Grok generation (cursor-grok-4.6). PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) point 1 and GROK-50X point 2.",
       "model": "cursor-grok-4.6-xhigh",
       "provider": "xAI",
       "reserve": true
@@ -712,6 +796,7 @@
     "reviewed_head": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
     "reviewer": {
       "agent": "Cursor",
+      "independence_limits": "Same provider as implementer Grok Build (xAI), different Grok generation (cursor-grok-4.6). PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) point 1 and GROK-50X point 2.",
       "model": "cursor-grok-4.6-xhigh",
       "provider": "xAI",
       "reserve": true
@@ -881,8 +966,13 @@
     "note": "Separate red commit 678f30c05db5c3f5462d22a95ae72d9fca9a41d4 before the fix. Eleven tests, eight failures. The historical fingerprints are not reused.",
     "separate_commit": true
   },
-  "repair_cycle": 3,
-  "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json (record_id OCOR-DEV-REM-0037-requalified-rem0061-b22debf2e08e) and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json (record_id OCOR-DEV-REM-0056-requalified-rem0061-b22debf2e08e). Both cite commit b22debf2e08e805db56643030b17efafdd5e4da5, the commit on which the regression command ran, and replace the unsealed records on the same paths that cited 83d9b74648c14a2afb14904a2a83183274ece7c9. supersedes still names the sealed predecessors OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3; those files are unchanged. Both sealed records hash the lane files, the plan validator and the plan run state. completed_evidence_tasks does not list these two tasks, so the drift validator does not select them; that is not because the hashes are absent.",
+  "red_repair_cycle_4": {
+    "fix_commit": "1d36603b5119092d65ec1db79cddcf9ffe402819",
+    "note": "No separate red commit. Before the controls in this commit, ListedSuccessorClassTests returned predecessor PASS, an unsearchable lane output raised PermissionError outside teardown, a one-byte host /tmp reading failed the unpatched launch, and a tool-bin digest was not refused. The mutation probes record each removed control.",
+    "separate_commit": false
+  },
+  "repair_cycle": 4,
+  "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json (record_id OCOR-DEV-REM-0037-requalified-rem0061-1d36603b5119) and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json (record_id OCOR-DEV-REM-0056-requalified-rem0061-1d36603b5119). Both cite commit 1d36603b5119092d65ec1db79cddcf9ffe402819, the commit on which the regression command ran (635 passed, 105 subtests, raw sha256 0f40968f0e56839015b80a8725207f2235f51f049adc80962cf2f2438ada41d4), and replace the unsealed records on the same paths that cited b22debf2e08e805db56643030b17efafdd5e4da5. supersedes still names the sealed predecessors OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3; those files are unchanged. completed_evidence_tasks does not list these two tasks, so the head drift scan does not select them.",
   "requalifications_written": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
     "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
@@ -896,11 +986,18 @@
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer. REM-0061-REPAIR-BUDGET (2026-11-12) also names Codex (OpenAI). Codex did not author a commit on this branch, so this scan entry stays the only implementer."
+        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer. Repair cycle 4 is this entry."
+      },
+      {
+        "agent": "Codex",
+        "model": "NOT_EXPOSED_BY_RUNTIME",
+        "provider": "OpenAI",
+        "scope": "Declared implementer by REM-0061-REPAIR-BUDGET (2026-11-12). Codex authored no commit on this branch."
       }
     ],
     "preventive_reviewer": {
       "agent": "Cursor",
+      "independence_limits": "Same provider as implementer Grok Build (xAI), different Grok generation (cursor-grok-4.6). PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) point 1 and GROK-50X point 2.",
       "model": "cursor-grok-4.6-xhigh",
       "provider": "xAI",
       "request_id": "OCOR-DEV-REM-0061-cf3739600e1f-pre",
