@@ -455,6 +455,121 @@ class ExecutionCommitDigestTests(unittest.TestCase):
             )
 
 
+def _supersession_successor(previous: dict[str, object], inputs: dict[str, str]) -> dict[str, object]:
+    return {
+        **previous,
+        "created_at": "2026-02-01T00:00:00Z",
+        "inputs": inputs,
+        "record_id": "latest",
+        "supersedes": "previous",
+    }
+
+
+def _write_supersession_chain(base: Path, successor: bytes) -> None:
+    evidence = base / "reports" / "evidence" / "G0"
+    evidence.mkdir(parents=True)
+    (base / "reports" / "development").mkdir(parents=True)
+    (base / "reports" / "development" / "EXECUTION_STATE.json").write_text(
+        json.dumps({"completed_evidence_tasks": ["OCOR-DEV-0005"]}) + "\n",
+        encoding="utf-8",
+    )
+    digest = hashlib.sha256(b"current input\n").hexdigest()
+    (base / "module.py").write_bytes(b"current input\n")
+    previous = {
+        "created_at": "2026-01-01T00:00:00Z",
+        "inputs": {"module.py": digest},
+        "record_id": "previous",
+        "task_id": "OCOR-DEV-0005",
+    }
+    previous_bytes = json.dumps(previous).encode()
+    (evidence / "previous.json").write_bytes(previous_bytes)
+    (evidence / "latest.json").write_bytes(successor)
+    manifest = {
+        "artifacts": [
+            {
+                "path": "latest.json",
+                "sha256": hashlib.sha256(successor).hexdigest(),
+                "task_id": "OCOR-DEV-0005",
+            },
+            {
+                "path": "previous.json",
+                "sha256": hashlib.sha256(previous_bytes).hexdigest(),
+                "task_id": "OCOR-DEV-0005",
+            },
+        ],
+        "gate": "G0",
+    }
+    (evidence / "MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+class CanonicalSupersessionDecodeTests(unittest.TestCase):
+    def _previous(self) -> dict[str, object]:
+        return {
+            "created_at": "2026-01-01T00:00:00Z",
+            "inputs": {"module.py": hashlib.sha256(b"current input\n").hexdigest()},
+            "record_id": "previous",
+            "task_id": "OCOR-DEV-0005",
+        }
+
+    def test_a_readable_successor_with_a_bad_hash_stays_a_mismatch(self) -> None:
+        current = _supersession_successor(self._previous(), {"module.py": "0" * 64})
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_supersession_chain(base, json.dumps(current).encode())
+            result = _run_validator(base)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("FAIL", payload["status"])
+            self.assertTrue(
+                any(item["reason"] == "input hash mismatch" and item["path"] == "module.py" for item in payload["findings"])
+            )
+
+    def test_a_readable_matching_successor_passes(self) -> None:
+        digest = hashlib.sha256(b"current input\n").hexdigest()
+        current = _supersession_successor(self._previous(), {"module.py": digest})
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_supersession_chain(base, json.dumps(current).encode())
+            result = _run_validator(base)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual("PASS", json.loads(result.stdout)["status"])
+
+    def _assert_unreadable_successor(self, successor: bytes, marker: str) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_supersession_chain(base, successor)
+            result = _run_validator(base)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("FAIL", payload["status"])
+            self.assertTrue(
+                any(
+                    item.get("task_id") == "OCOR-DEV-0005"
+                    and item.get("path") == "latest.json"
+                    and marker in item["reason"]
+                    for item in payload["findings"]
+                ),
+                payload,
+            )
+            self.assertFalse(any(item.get("reason") == "input hash mismatch" for item in payload["findings"]))
+
+    def test_a_non_utf8_successor_is_not_replaced_by_its_predecessor(self) -> None:
+        current = _supersession_successor(self._previous(), {"module.py": "0" * 64})
+        self._assert_unreadable_successor(json.dumps(current).encode() + b"\xff", "UnicodeDecodeError")
+
+    def test_a_non_finite_successor_is_not_replaced_by_its_predecessor(self) -> None:
+        current = _supersession_successor(self._previous(), {"module.py": "0" * 64})
+        current["unused"] = float("nan")
+        self._assert_unreadable_successor(json.dumps(current).encode(), "JSONDecodeError")
+
+    def test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor(self) -> None:
+        current = _supersession_successor(self._previous(), {"module.py": "0" * 64})
+        current["unused"] = "\ud800"
+        self._assert_unreadable_successor(json.dumps(current).encode(), "lone surrogate")
+
+
 def _write_object_record(base: Path, record: dict[str, object]) -> Path:
     evidence = base / "reports" / "evidence" / "G9"
     evidence.mkdir(parents=True, exist_ok=True)

@@ -2938,16 +2938,18 @@ def test_measure_tmp_space_keeps_an_unlimited_quota_distinct_from_filesystem_fre
     assert reading['quota_unlimited'] is True
 
 
-def test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_below_the_budget(host_world, monkeypatch):
+def test_lane_launch_refuses_an_unlimited_quota_when_filesystem_free_is_below_the_budget(host_world, monkeypatch):
+    """An unset hard limit removes only the quota check. The filesystem limit stays."""
     _hook_unlimited_tmp_quota(monkeypatch, 1)
     monkeypatch.setattr(LANES, '_same_device', lambda left, right: True, raising=False)
     result = execute(host_world, selection=nodes())
-    assert result['status'] == 'PASS', result.get('error')
-    assert result['tmp_space']['applies'] is True and result['tmp_space']['decision'] == 'enough'
-    assert result['tmp_space']['quota_unlimited'] is True
-    assert result['tmp_space']['filesystem_free_bytes'] == 1
-    assert 'tmp space is not enough' not in result.get('error', '')
-    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert 'filesystem free 1 bytes' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    assert 'unlimited' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
 
 
 def test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_above_the_budget(host_world, monkeypatch):
@@ -2960,17 +2962,21 @@ def test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_above_the
     assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
 
 
-def test_lane_launch_ignores_a_filesystem_figure_when_the_hard_limit_is_unset(host_world, monkeypatch):
-    """The admission figure is the quota, not filesystem free copied into free_bytes."""
+def test_lane_launch_refuses_a_short_filesystem_when_the_hard_limit_is_unset(host_world, monkeypatch):
+    """A caller-supplied free_bytes does not waive a short /tmp filesystem."""
     patch_tmp_space(monkeypatch, {
         'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': True,
         'quota': {'hard_kib': 0, 'hard_bytes': None, 'used_bytes': 0, 'free_bytes': None},
         'quota_error': None, 'free_bytes': 1,
     }, same=True)
     result = execute(host_world, selection=nodes())
-    assert result['status'] == 'PASS', result.get('error')
-    assert result['tmp_space']['decision'] == 'enough' and result['tmp_space']['quota_unlimited'] is True
-    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert 'filesystem free 1 bytes' in result['error']
+    assert 'unlimited' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
 
 
 def test_measure_tmp_space_reads_filesystem_free_and_user_quota_when_enabled():
@@ -3031,14 +3037,61 @@ def test_lane_launch_proceeds_when_the_tmp_quota_holds_the_lanes(host_world, mon
     assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
 
 
-def test_lane_launch_does_not_compare_filesystem_free_when_usrquota_is_absent(host_world, monkeypatch):
+def test_lane_launch_refuses_a_short_filesystem_when_usrquota_is_absent(host_world, monkeypatch):
     patch_tmp_space(monkeypatch, {
         'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': False,
         'quota': None, 'quota_error': None, 'free_bytes': 1,
     }, same=True)
     result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert 'filesystem free 1 bytes' in result['error']
+    assert 'no user quota' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_lane_launch_refuses_a_short_filesystem_when_the_finite_quota_holds(host_world, monkeypatch):
+    budget = tmp_budget(2)
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': True,
+        'quota': {'hard_kib': 1, 'hard_bytes': budget + 10, 'used_bytes': 0, 'free_bytes': budget + 10},
+        'quota_error': None, 'free_bytes': budget + 10,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'filesystem free 1 bytes' in result['error']
+    assert f'required {budget} bytes for 2 lanes' in result['error']
+    assert 'quota free' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_lane_launch_names_quota_and_filesystem_when_both_are_short(host_world, monkeypatch):
+    reading = tight_tmp_reading()
+    reading['filesystem_free_bytes'] = 1
+    patch_tmp_space(monkeypatch, reading, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'free 1000000000 bytes' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    assert 'filesystem free 1 bytes is below the required' in result['error']
+    assert 'quota hard 8000000000 bytes, used 7000000000 bytes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names
+
+
+def test_lane_launch_admits_when_usrquota_is_absent_and_the_filesystem_holds_the_lanes(host_world, monkeypatch):
+    budget = tmp_budget(2)
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': budget + 1, 'usrquota': False,
+        'quota': None, 'quota_error': None, 'free_bytes': budget + 1,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
     assert result['status'] == 'PASS', result.get('error')
-    assert result['tmp_space']['applies'] is False and result['tmp_space']['decision'] == 'not_applicable'
+    assert result['tmp_space']['applies'] is True and result['tmp_space']['decision'] == 'enough'
+    assert result['tmp_space']['usrquota'] is False
     assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
 
 
@@ -3066,6 +3119,20 @@ def test_lifecycle_refuses_before_provision_when_tmp_quota_cannot_hold_the_lanes
     report = lifecycle(life_world)
     assert report['status'] == 'FAIL'
     assert 'tmp space is not enough' in report['error']
+    assert f'required {tmp_budget(4)} bytes for 4 lanes' in report['error']
+    names = [call[0] for call in life_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'bootstrap' not in names
+
+
+def test_lifecycle_refuses_a_short_filesystem_before_provision_when_usrquota_is_absent(life_world, monkeypatch):
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': False,
+        'quota': None, 'quota_error': None, 'free_bytes': 1,
+    }, same=True)
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL'
+    assert 'filesystem free 1 bytes' in report['error']
+    assert 'no user quota' in report['error']
     assert f'required {tmp_budget(4)} bytes for 4 lanes' in report['error']
     names = [call[0] for call in life_world['calls']]
     assert 'prepare_image_cache' not in names and 'provision' not in names and 'bootstrap' not in names
@@ -3126,12 +3193,12 @@ def test_discard_removes_a_tmp_quota_cache_and_keeps_the_result(tmp_path):
     assert (out / 'lane_runner.log').read_text() == 'log\n'
 
 
-def test_discard_keeps_the_image_cache_when_work_does_not_consume_tmp_quota(tmp_path):
+def test_discard_removes_the_image_cache_when_work_does_not_consume_tmp_quota(tmp_path):
     work, cache, repo, out, lane = _lane_residue(tmp_path)
     LANES.discard_script_work_trees(work, [lane], consumes_tmp_quota=False)
-    assert cache.is_dir() and (cache / 'blob').read_text() == 'image'
-    assert not repo.exists()
-    assert (work / 'campaign_result.json').is_file() and (out / 'lane_runner.log').is_file()
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
 
 
 def test_a_delivered_sigterm_removes_tmp_trees_and_keeps_the_result(tmp_path):
@@ -3183,11 +3250,139 @@ def test_execute_release_removes_only_a_tmp_quota_cache(host_world, monkeypatch)
     assert not cache.exists()
 
 
-def test_execute_release_keeps_the_cache_when_tmp_quota_does_not_apply(host_world, monkeypatch):
+def test_execute_release_removes_the_cache_when_tmp_quota_does_not_apply(host_world, monkeypatch):
     cache = host_world['work'] / 'image-cache'
     cache.mkdir(parents=True)
     (cache / 'kept').write_text('archive')
     patch_tmp_space(monkeypatch, tight_tmp_reading(), same=False)
     result = execute(host_world, selection=nodes())
     assert result['status'] == 'PASS', result.get('error')
-    assert (cache / 'kept').read_text() == 'archive'
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+
+
+def test_a_delivered_sigterm_removes_the_cache_without_usrquota(tmp_path):
+    work, cache, repo, out, _lane = _lane_residue(tmp_path)
+    code = (
+        'import os, signal, sys\n'
+        'from pathlib import Path\n'
+        'sys.path.insert(0, sys.argv[1])\n'
+        'import run_local_lane_campaign as lanes\n'
+        'work = Path(sys.argv[2])\n'
+        'lane = lanes.Lane(1, "aaaaaaaaaaaa-1", work / "lane-1", work / "home", 1, 1)\n'
+        'def release():\n'
+        '    lanes.discard_script_work_trees(work, [lane], consumes_tmp_quota=False)\n'
+        'lanes.bind_campaign_stop_signals(release)\n'
+        'os.kill(os.getpid(), signal.SIGTERM)\n'
+        'print("STILL_ALIVE", flush=True)\n'
+    )
+    proc = subprocess.run([sys.executable, '-c', code, str(ROOT / 'scripts'), str(work)],
+                          cwd=ROOT, capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 128 + signal.SIGTERM, proc.stderr
+    assert 'STILL_ALIVE' not in proc.stdout
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
+
+
+@pytest.mark.parametrize('usrquota', [True, False])
+def test_a_failed_launch_removes_the_image_cache(host_world, monkeypatch, usrquota):
+    budget = tmp_budget(2)
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    reading = {
+        'path': '/tmp', 'filesystem_free_bytes': budget + 1, 'usrquota': usrquota,
+        'quota': None, 'quota_error': None, 'free_bytes': budget + 1,
+    }
+    if usrquota:
+        reading['quota'] = {
+            'hard_kib': 1, 'hard_bytes': budget + 1, 'used_bytes': 0, 'free_bytes': budget + 1,
+        }
+    patch_tmp_space(monkeypatch, reading, same=True)
+    host_world['fail_provision'] = 1
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'provisioning failed' in result['error']
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+
+
+_LANE_SECRET = 'synthetic-lane-password'
+
+
+def _plant_lane_secret(world, *, raw):
+    real = world['launcher']
+
+    def launcher(argv, log):
+        process = real(argv, log)
+        index = int(argv[argv.index('--run-lane') + 1].split('/lane-')[-1].split('/')[0])
+        if index != 1:
+            return process
+        item = next(entry for entry in world['lanes'] if entry.index == index)
+        (item.repository / '.ocor').mkdir(parents=True, exist_ok=True)
+        (item.repository / '.ocor/bootstrap.env').write_text(
+            f'OCOR_LOCAL_POSTGRES_PASSWORD={_LANE_SECRET}\n')
+        log.write_bytes(raw)
+        return process
+
+    world['launcher'] = launcher
+
+
+def _enough_tmp(monkeypatch, *, usrquota):
+    budget = tmp_budget(2)
+    reading = {
+        'path': '/tmp', 'filesystem_free_bytes': budget + 1, 'usrquota': usrquota,
+        'quota': None, 'quota_error': None, 'free_bytes': budget + 1,
+    }
+    if usrquota:
+        reading['quota'] = {
+            'hard_kib': 1, 'hard_bytes': budget + 1, 'used_bytes': 0, 'free_bytes': budget + 1,
+        }
+    patch_tmp_space(monkeypatch, reading, same=True)
+
+
+def test_a_non_utf8_lane_log_is_redacted_and_does_not_skip_teardown(host_world, monkeypatch):
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    _enough_tmp(monkeypatch, usrquota=False)
+    _plant_lane_secret(host_world, raw=b'password ' + _LANE_SECRET.encode() + b' \xff\n')
+    result = execute(host_world, selection=nodes())
+    rendered = json.dumps(result)
+    assert result['status'] == 'FAIL'
+    assert 'UnicodeDecodeError' in result['error']
+    assert _LANE_SECRET not in rendered
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+    assert 'remove_root_image' in [call[0] for call in host_world['calls']]
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+    log = host_world['work'] / 'lane-1' / 'out' / 'lane_runner.log'
+    assert log.is_file()
+    assert _LANE_SECRET.encode() not in log.read_bytes()
+
+
+def test_a_redactor_io_error_does_not_skip_teardown_or_expose_the_secret(host_world, monkeypatch):
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    _enough_tmp(monkeypatch, usrquota=True)
+
+    def boom(repository, path):
+        del repository, path
+        raise OSError('log unreadable ' + _LANE_SECRET)
+
+    monkeypatch.setattr(LANES.bootstrap_ci, 'redact_campaign_log', boom)
+    _plant_lane_secret(host_world, raw=f'password {_LANE_SECRET}\n'.encode())
+    result = execute(host_world, selection=nodes())
+    rendered = json.dumps(result)
+    assert result['status'] == 'FAIL'
+    assert 'OSError' in result['error']
+    assert _LANE_SECRET not in rendered
+    assert 'log unreadable' not in rendered
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+    assert not cache.exists()
+    log = host_world['work'] / 'lane-1' / 'out' / 'lane_runner.log'
+    assert log.is_file()
+    assert _LANE_SECRET.encode() not in log.read_bytes()
