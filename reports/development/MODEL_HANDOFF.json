@@ -1,21 +1,22 @@
 {
   "assumptions": [
-    "Il verdetto OCOR-DEV-REM-0061-1c8a94b9e71e-1 e NO_GO. I conteggi della campagna del verifier non si trasferiscono al ciclo 2.",
-    "La campagna del ciclo 1 su 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3 e quella su a68c47dad3610a1c284020e0ea28ef0c85c6be57 non qualificano l'head 55c3272cf1efaaa35403c89dcade965053caf2bc.",
-    "La corsa su 73e5c4ad18e4ce3747548bafa7acea53e824551d e diagnostica: status FAIL, durata 647,481 s, nessun conteggio di test, teardown FAIL, nessuna chiave supervision. Non qualifica.",
-    "TMP-RESIDUI-CAMPAGNA (2026-11-11) decide REM-0061-VERIFIER-TMP-QUOTA e non e l'opzione 1 ne l'opzione 2. Nessun nuovo DEC."
+    "Il verdetto OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO. I conteggi della campagna non si trasferiscono a un ciclo successivo.",
+    "Il ciclo 2 e l'ultimo ciclo di riparazione ordinario. Il ciclo 3 non e avviato.",
+    "La PR 595 resta bozza e non si integra senza GO_FOR_EVIDENCE_SEAL.",
+    "La decision request REM-0061-REPAIR-BUDGET e aperta e non e una decisione del PO."
   ],
   "base_sha": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
   "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
-  "branch": "governed/state-sync-rem0061-cycle2-pre-20261111",
+  "branch": "governed/state-sync-rem0061-cycle2-nogo-20261112",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
     "draft_pr": 595,
-    "head_sha": "55c3272cf1efaaa35403c89dcade965053caf2bc",
-    "note": "Unita in corso, non sigillata. La revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre e richiesta e l'esito non e scritto dall'implementatore. Nessuna verifica indipendente richiesta in questa iterazione.",
-    "pre_campaign_gate": "54 steps, 0 failures, at 55c3272cf1efaaa35403c89dcade965053caf2bc",
-    "qualifying_campaign_head": null,
-    "repair_cycle": 2
+    "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+    "integration": "NOT_AUTHORIZED",
+    "repair_cycle": 2,
+    "verdict": "NO_GO",
+    "verdict_request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
+    "verdict_sha256": "6585d51d9f02d17d2acdedc309ada4f6f935138de9a375ef74bf2769817cae7f"
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -57,9 +58,9 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0061, ciclo di riparazione 2, in attesa della revisione preventiva",
+  "current_task": "OCOR-DEV-REM-0061, ciclo 2 NO_GO, budget di riparazione esaurito",
   "evidence_paths": [],
-  "exact_next_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. Non avviare la suite a quattro corsie prima di quell'esito. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Non integrare la PR 595. Il ciclo 2 e l'ultimo ciclo di riparazione ordinario.",
+  "exact_next_action": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.",
   "full_campaign": {
     "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
     "counts": {
@@ -129,8 +130,8 @@
       "unexpected": 0
     }
   },
-  "head_sha": "55c3272cf1efaaa35403c89dcade965053caf2bc",
-  "head_sha_role": "unit head of repair cycle 2 before the preventive review; not a sealed candidate and not a qualifying campaign head",
+  "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+  "head_sha_role": "cycle 2 head, verdict NO_GO, not a sealed candidate",
   "historical_seal_hashes": {
     "requalified": {
       "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json": {
@@ -181,13 +182,30 @@
       "verifier": "Codex / OpenAI",
       "verifier_started_by_implementer": false
     },
+    "cycle_2": {
+      "excluded_providers": [
+        "xAI",
+        "OpenAI"
+      ],
+      "findings_by_severity": {
+        "critical": 0,
+        "high": 4,
+        "low": 0,
+        "medium": 0
+      },
+      "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+      "request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
+      "result": "NO_GO",
+      "verifier": "Codex / OpenAI",
+      "verifier_started_by_implementer": false
+    },
     "decision_request": "REM-0061-VERIFIER-TMP-QUOTA",
     "excluded_providers": [
       "xAI"
     ],
     "po_decision": "TMP-RESIDUI-CAMPAGNA (2026-11-11)",
     "repair_cycle": 2,
-    "status": "NOT_REQUESTED_PENDING_PREVENTIVE_REVIEW"
+    "status": "NO_GO_REPAIR_BUDGET_EXHAUSTED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -257,9 +275,11 @@
     "pre_campaign_gate": "PASS 54/54",
     "stdout_sha256": "d7f7ec484570c9a0ecab9e7f58641f81ebbeb0e3e2bd165b1d65bf46f345f88d"
   },
-  "next_task": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. Non avviare la suite a quattro corsie prima di quell'esito. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Non integrare la PR 595. Il ciclo 2 e l'ultimo ciclo di riparazione ordinario.",
-  "phase": "REM_0061_REPAIR_CYCLE_2_PRE_CAMPAIGN_REVIEW",
-  "po_decisions_pending": [],
+  "next_task": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.",
+  "phase": "REM_0061_REPAIR_BUDGET_EXHAUSTED",
+  "po_decisions_pending": [
+    "REM-0061-REPAIR-BUDGET"
+  ],
   "previous_exact_next_action": "Attendere la decisione del PO su REM-0061-VERIFIER-TMP-QUOTA (branch governed/ocor-dev-rem-0061-lane-image-cache, commit 83d9b74648c14a2afb14904a2a83183274ece7c9, path reports/development/decision_requests/REM-0061-VERIFIER-TMP-QUOTA.md, sha256 89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed). Non richiedere la verifica indipendente prima di quella decisione. La campagna qualificante del ciclo di riparazione 1 \u00e8 PASS sull'head 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3; l'head del branch \u00e8 2baa4aaa71136203863b61130ad9c772fad1e9c0. Non avviare NCP-U12.",
   "previous_full_campaign": {
     "attempts": 2,
@@ -414,18 +434,38 @@
   },
   "raw_evidence_location": "~/.ocor-codex/rem-0060/iter8/attempts/full-1 e full-2; kit iter9; copia diagnostica redatta nel WIP b869cc9",
   "repair_cycle_2_campaign": {
-    "diagnostic_head": "73e5c4ad18e4ce3747548bafa7acea53e824551d",
-    "diagnostic_result": "/home/luca/.ocor-codex/rem-0061/campaign-73e5c4ad18e4/campaign_result.json",
-    "diagnostic_status": "FAIL",
-    "duration_seconds": 647.481,
-    "qualifying": false,
-    "reason": "Interrotta durante la supervisione, prima della revisione preventiva del ciclo 2. Nessun conteggio di test. Non e una riesecuzione di infrastruttura qualificata.",
-    "status": "NOT_STARTED"
+    "diagnostic_run": {
+      "diagnostic_head": "73e5c4ad18e4ce3747548bafa7acea53e824551d",
+      "diagnostic_result": "/home/luca/.ocor-codex/rem-0061/campaign-73e5c4ad18e4/campaign_result.json",
+      "diagnostic_status": "FAIL",
+      "duration_seconds": 647.481,
+      "qualifying": false,
+      "reason": "Interrotta durante la supervisione, prima della revisione preventiva del ciclo 2. Nessun conteggio di test. Non e una riesecuzione di infrastruttura qualificata.",
+      "status": "NOT_STARTED"
+    },
+    "integration_qualified": false,
+    "qualifying_run": {
+      "counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 5826
+      },
+      "duration_seconds": 1770.213,
+      "head": "7bb8ee685cfcea053444e78a393f098c47d76172",
+      "mode": "FOUR_LANE",
+      "power": "MAINS",
+      "record_head": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+      "result_sha256": "db8c68c061a9cb008e1476b6391c9557700695ea8d214d20aa57efd055a92ab1",
+      "status": "PASS",
+      "transfers_to_a_later_cycle": false
+    }
   },
   "requirement_ids": [],
   "roles": {
     "cycle_0_verifier": "Codex / OpenAI, result NO_GO, request OCOR-DEV-REM-0061-69bbc51fb031-0; verifier_started_by_implementer false",
     "cycle_1_verifier": "Codex / OpenAI, result NO_GO, request OCOR-DEV-REM-0061-1c8a94b9e71e-1; verifier_started_by_implementer false",
+    "cycle_2_verifier": "Codex / OpenAI, result NO_GO, request OCOR-DEV-REM-0061-42b5840f35ab-2; verifier_started_by_implementer false",
     "implementers": [
       {
         "agent": "Grok Build",
@@ -435,7 +475,7 @@
         "scope": "OCOR-DEV-REM-0061 from the first iteration through repair cycle 2; no earlier implementer of this unit"
       }
     ],
-    "preventive_review_cycle_2": "REQUESTED OCOR-DEV-REM-0061-55c3272cf1ef-pre; outcome not written by the implementer",
+    "preventive_review_cycle_2": "OCOR-DEV-REM-0061-55c3272cf1ef-pre, BLOCKING_FINDINGS corrected before the campaign, sha256 adbe38fd2806a924527391122361b9aead8265bc89c2176d3efc20545733880e, not repeated",
     "preventive_reviewer": "Cursor / cursor-grok-4.6-xhigh / xAI, reserve, request OCOR-DEV-REM-0061-26d8f30c6dbd-pre, result NO_BLOCKING_FINDINGS, reviewed head 26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
     "verifier_excluded_providers": [
       "xAI"
@@ -464,8 +504,9 @@
     "repair_cycle": 2
   },
   "unresolved_blockers": [
+    "OCOR-DEV-REM-0061",
     "OCOR-DEV-REM-0060"
   ],
-  "updated_at": "2026-11-11T13:38:15.561039+00:00",
+  "updated_at": "2026-11-12T00:43:45.863461+00:00",
   "worktree": ".ocor/worktrees/state-sync-rem0061-cycle2"
 }

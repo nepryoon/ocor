@@ -1,23 +1,24 @@
 {
   "active_iteration": {
     "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
-    "branch": "governed/state-sync-rem0061-cycle2-pre-20261111",
+    "branch": "governed/state-sync-rem0061-cycle2-nogo-20261112",
     "campaign_background_processes_remaining": false,
     "change_set": "OCOR-DEV-REM-0061",
     "executor": "Grok Build grok-4.7 / xAI",
     "host_memory_at_sync": {
-      "MemAvailable": 57453316,
+      "MemAvailable": 57052932,
       "MemTotal": 64199668
     },
-    "next_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. Non avviare la suite a quattro corsie prima di quell'esito. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Non integrare la PR 595. Il ciclo 2 e l'ultimo ciclo di riparazione ordinario.",
-    "phase": "REM_0061_REPAIR_CYCLE_2_PRE_CAMPAIGN_REVIEW",
-    "qualifying_campaign_head": null,
-    "qualifying_campaign_note": "Nessuna campagna qualificante del ciclo 2. Le campagne del ciclo 1 non qualificano l'head 55c3272cf1efaaa35403c89dcade965053caf2bc.",
+    "next_action": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.",
+    "phase": "REM_0061_REPAIR_BUDGET_EXHAUSTED",
+    "qualifying_campaign_head": "7bb8ee685cfcea053444e78a393f098c47d76172",
+    "qualifying_campaign_note": "La campagna a quattro corsie sull'head 7bb8ee685cfcea053444e78a393f098c47d76172 e PASS (5826 test, zero skip, unione esatta, 1770.213 s) e non qualifica l'integrazione: il verdetto OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO.",
     "repair_cycle": 2,
     "started_at": "2026-11-11T13:36:25.984889+00:00",
-    "state_sync_pr": 598,
+    "state_sync_pr": null,
     "unit": "OCOR-DEV-REM-0061",
-    "unit_head": "55c3272cf1efaaa35403c89dcade965053caf2bc"
+    "unit_head": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+    "verification_request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1743,6 +1744,24 @@
           "process": "Cursor CLI, processo e contesto separati, loop esterno"
         }
       }
+    },
+    "OCOR-DEV-REM-0061": {
+      "cycles_exhausted": 2,
+      "decision_request": "reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md",
+      "decision_request_commit": "f5f7656e17c656e9505b3b65d983abb5a3aba857",
+      "decision_request_sha256": "362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1",
+      "escalation_record": "reports/development/OCOR_DEV_REM_0061_ESCALATION.md",
+      "escalation_record_commit": "f5f7656e17c656e9505b3b65d983abb5a3aba857",
+      "escalation_record_sha256": "3dbb1536dd7b63723d3f877485352d0d10819e974c90e706fd56697ce23d077c",
+      "final_verdict": {
+        "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+        "request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
+        "result": "NO_GO",
+        "sha256": "6585d51d9f02d17d2acdedc309ada4f6f935138de9a375ef74bf2769817cae7f"
+      },
+      "minimal_unblock_action": "Decisione del PO sulla request REM-0061-REPAIR-BUDGET. Senza di essa il ciclo 3 non parte e la PR 595 non si integra.",
+      "status": "BLOCKED_REPAIR_BUDGET_EXHAUSTED",
+      "terminal_disposition": "CONTINUE_WITH_PO_DECISION_PENDING"
     }
   },
   "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
@@ -8265,7 +8284,7 @@
       "id": "REM-0060-LANE-IMAGE-PROVISIONING",
       "po_decision": "REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10), opzione 1, decisa su delega completa del PO, modello grok-4.7, effort xhigh",
       "recommendation": "Option 1: remediation separata per cache locale verificata di sole immagini gi\u00e0 presenti, pull ufficiali e budget invariati; poi nuova campagna NCP-U12 sul nuovo HEAD.",
-      "resolution": "Opzione 1 adottata. OCOR-DEV-REM-0060 resta bloccato fino al merge di REM-0061 e alla nuova campagna di NCP-U12. I due run citati restano diagnostici e i loro conteggi non si trasferiscono. Il commit e lo sha256 di evidence restano quelli del file prima della disposition. La disposition e sul commit 55fb1d0e42afc87163b1c3bde3472954756200bb, intestazione DECIDED_BY_PO. Nessun nuovo DEC. Claim invariati. Aggiornamento 2026-11-11: il verdetto del ciclo 1 di OCOR-DEV-REM-0061 e NO_GO (OCOR-DEV-REM-0061-1c8a94b9e71e-1). Il ciclo 2 e in corso sul branch governed/ocor-dev-rem-0061-lane-image-cache, head 55c3272cf1efaaa35403c89dcade965053caf2bc, in attesa della revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata.",
+      "resolution": "Opzione 1 adottata. OCOR-DEV-REM-0060 resta bloccato fino al merge di REM-0061 e alla nuova campagna di NCP-U12. I due run citati restano diagnostici e i loro conteggi non si trasferiscono. Il commit e lo sha256 di evidence restano quelli del file prima della disposition. La disposition e sul commit 55fb1d0e42afc87163b1c3bde3472954756200bb, intestazione DECIDED_BY_PO. Nessun nuovo DEC. Claim invariati. Aggiornamento 2026-11-11: il verdetto del ciclo 1 di OCOR-DEV-REM-0061 e NO_GO (OCOR-DEV-REM-0061-1c8a94b9e71e-1). Il ciclo 2 e in corso sul branch governed/ocor-dev-rem-0061-lane-image-cache, head 55c3272cf1efaaa35403c89dcade965053caf2bc, in attesa della revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata. Aggiornamento 2026-11-12: il verdetto del ciclo 2 OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO sull'head 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, quattro finding high. Il budget ordinario e esaurito. Il ciclo 3 non e avviato. La decision request REM-0061-REPAIR-BUDGET e aperta sul commit f5f7656e17c656e9505b3b65d983abb5a3aba857.",
       "status": "DECIDED_BY_PO",
       "status_history": [
         {
@@ -8273,7 +8292,7 @@
           "until": "2026-11-10T23:03:06.683153+00:00"
         }
       ],
-      "updated_at": "2026-11-11T13:36:25.984889+00:00"
+      "updated_at": "2026-11-12T00:43:45.863461+00:00"
     },
     {
       "blocked_scope": "Nessun task resta bloccato da questa voce. NCP-U12 resta in coda fino al merge di REM-0061.",
@@ -8295,7 +8314,7 @@
       "id": "REM-0061-VERIFIER-TMP-QUOTA",
       "po_decision": "TMP-RESIDUI-CAMPAGNA (2026-11-11)",
       "recommendation": "Opzione 1 del file: quota sufficiente sulla directory temporanea, poi lo stesso comando di verifica. L'opzione 2 tiene la quota e sposta la directory di lavoro sul filesystem radice.",
-      "resolution": "TMP-RESIDUI-CAMPAGNA (2026-11-11) decide la voce. Non e l'opzione 1 ne l'opzione 2. Il pin storico del file aperto resta il commit 83d9b74648c14a2afb14904a2a83183274ece7c9, sha256 89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed. La disposition e sul commit a68c47dad3610a1c284020e0ea28ef0c85c6be57, intestazione DECIDED_BY_PO, sha256 68996279450a5a50b74acdd9198e83f91cbb6db48c01f50d7c811c773306420d. Nessun nuovo DEC. Claim invariati. La verifica del ciclo 1 OCOR-DEV-REM-0061-1c8a94b9e71e-1, verifier Codex / OpenAI, e NO_GO (VF-001 high, VF-002 high, VF-003 medium) sull'head 1c8a94b9e71e9c60e8d4b3c4365b43e402715e2f. Il ciclo 2, ultimo ciclo di riparazione ordinario, e all'head 55c3272cf1efaaa35403c89dcade965053caf2bc e attende la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata. La corsa su 73e5c4ad18e4ce3747548bafa7acea53e824551d e diagnostica e non qualifica.",
+      "resolution": "TMP-RESIDUI-CAMPAGNA (2026-11-11) decide la voce. Non e l'opzione 1 ne l'opzione 2. Il pin storico del file aperto resta il commit 83d9b74648c14a2afb14904a2a83183274ece7c9, sha256 89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed. La disposition e sul commit a68c47dad3610a1c284020e0ea28ef0c85c6be57, intestazione DECIDED_BY_PO, sha256 68996279450a5a50b74acdd9198e83f91cbb6db48c01f50d7c811c773306420d. Nessun nuovo DEC. Claim invariati. La verifica del ciclo 1 OCOR-DEV-REM-0061-1c8a94b9e71e-1, verifier Codex / OpenAI, e NO_GO (VF-001 high, VF-002 high, VF-003 medium) sull'head 1c8a94b9e71e9c60e8d4b3c4365b43e402715e2f. Il ciclo 2, ultimo ciclo di riparazione ordinario, e all'head 55c3272cf1efaaa35403c89dcade965053caf2bc e attende la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata. La corsa su 73e5c4ad18e4ce3747548bafa7acea53e824551d e diagnostica e non qualifica. Aggiornamento 2026-11-12: il verdetto del ciclo 2 OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO sull'head 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, quattro finding high. Il budget ordinario e esaurito. Il ciclo 3 non e avviato. La decision request REM-0061-REPAIR-BUDGET e aperta sul commit f5f7656e17c656e9505b3b65d983abb5a3aba857.",
       "status": "DECIDED_BY_PO",
       "status_history": [
         {
@@ -8303,7 +8322,32 @@
           "until": "2026-11-11T13:36:25.984889+00:00"
         }
       ],
-      "updated_at": "2026-11-11T13:36:25.984889+00:00"
+      "updated_at": "2026-11-12T00:43:45.863461+00:00"
+    },
+    {
+      "blocked_scope": "Ciclo 3 di OCOR-DEV-REM-0061 e integrazione della PR 595. OCOR-DEV-REM-0060 resta in coda fino al merge di REM-0061.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0061",
+        "OCOR-DEV-REM-0060"
+      ],
+      "created_at": "2026-11-12T00:43:45.863461+00:00",
+      "decision_level": "OPERATIVE",
+      "evidence": {
+        "branch": "governed/decision-request-rem0061-repair-budget",
+        "commit": "f5f7656e17c656e9505b3b65d983abb5a3aba857",
+        "escalation_path": "reports/development/OCOR_DEV_REM_0061_ESCALATION.md",
+        "escalation_sha256": "3dbb1536dd7b63723d3f877485352d0d10819e974c90e706fd56697ce23d077c",
+        "path": "reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md",
+        "pr": 601,
+        "sha256": "362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1",
+        "verdict_request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
+        "verdict_sha256": "6585d51d9f02d17d2acdedc309ada4f6f935138de9a375ef74bf2769817cae7f"
+      },
+      "finding": "Verdetto NO_GO del ciclo 2, quattro finding high su filesystem e quota, pulizia della cache, teardown dopo errore di redazione, e record illeggibili nel gate dei digest. Budget ordinario di due cicli esaurito.",
+      "id": "REM-0061-REPAIR-BUDGET",
+      "recommendation": "Option 1: un solo ciclo di riparazione 3 di OCOR-DEV-REM-0061, limitato a VF-001, VF-002, VF-003 e VF-004 del verdetto OCOR-DEV-REM-0061-42b5840f35ab-2.",
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "updated_at": "2026-11-12T00:43:45.863461+00:00"
     }
   ],
   "checkpoint_consolidation": {
@@ -10462,7 +10506,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. Non avviare la suite a quattro corsie prima di quell'esito. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Non integrare la PR 595. Il ciclo 2 e l'ultimo ciclo di riparazione ordinario.",
+  "next_executable_action": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -11016,16 +11060,16 @@
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
-    "blocked_by_po_decision": [],
-    "completed_evidence_tasks_count": 75,
-    "executable_now": [],
-    "executable_now_note": "OCOR-DEV-REM-0061 ciclo 2 attende la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. Nessuna decisione del PO e aperta per questa unita. OCOR-DEV-REM-0060 resta in coda fino al merge di REM-0061.",
-    "in_progress": [
+    "blocked_by_po_decision": [
       "OCOR-DEV-REM-0061"
     ],
+    "completed_evidence_tasks_count": 75,
+    "executable_now": [],
+    "executable_now_note": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.",
+    "in_progress": [],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-11T13:36:25.984889+00:00",
+    "observed_at": "2026-11-12T00:43:45.863461+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U12"
@@ -39702,9 +39746,7 @@
         "NCP-U12-REASON-CODE-ENTRIES-PLAN",
         "REM-0060-LANE-IMAGE-PROVISIONING"
       ],
-      "decision_requests_open": [
-        "REM-0060-LANE-IMAGE-PROVISIONING"
-      ],
+      "decision_requests_open": [],
       "decisions_applied": {
         "NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS": "A1 (normative decision of the PO, not on delegation; question B does not apply) on commit 98030e7; disposition 3d2c54ecc6b4; applied (b1c9f66, 86e4f57), entry NCR-C6-017 (first free id, point 2)",
         "NCP-U12-CONTRACT-ERROR-CODES": "A1/B1/C1, decisa su delega completa del PO, modello grok-4.7, effort xhigh; fonte ed75f85493f3c8814c08e0c162c4dd25d26c962e verificata per sha256; disposition 95a4f93310e91372f400f76eb3d367727c3ca81b; applicazione 60eb8bfe2198f850b1275b3c41c375d99127dbce",
@@ -39967,6 +40009,7 @@
         "request_id": "OCOR-DEV-REM-0060-3d6a01d329d1-pre",
         "reviewer": "Codex CLI / GPT-6 (Codex; variante esatta non esposta alla sessione) / OpenAI"
       },
+      "queue_note": "REM-0060-LANE-IMAGE-PROVISIONING e decisa. Il task resta in coda fino al merge di OCOR-DEV-REM-0061. Il ciclo 2 di REM-0061 e NO_GO e il budget ordinario e esaurito.",
       "register_entries_planned": [
         "NCR-TESTS-001",
         "NCR-TESTS-002",
@@ -39990,7 +40033,7 @@
           "OCOR-DEV-0082"
         ]
       },
-      "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED",
+      "status": "BLOCKED_UNTIL_REM_0061_MERGE",
       "tdd": {
         "GREEN_002": {
           "commit": "0049871",
@@ -40064,7 +40107,7 @@
         }
       },
       "trial_composition_iteration_2": "trial composition of the mission thread with the retained C1-C8 components, outside Git, on the CI stack bootstrapped in the unit worktree (15 containers, typed health PASS): C1 OaC compiler, generators, DSSE signer and release admission (test_ocor_dev_rem_0047 world); C2 gateway IdentityBackedAuthority and C8 Coordination Kernel Fusion/Identity task completed with FusionIdentityFinding@1 (c8_orchestrator_fixture.TeamWorld); C3 PostgresC3Service; C4 TypeDBProjectionAdapter exact-at-commit and PROJECTION_NOT_READY on an observed, unapplied commit, Jena/SHACL projection with the canonical classification marking; governed-memory context assembly over Qdrant, PostgreSQL and OpenBao (test_ocor_dev_0057 world); C5 canonical event backbone on an isolated broker with stop/start (c5_backbone_fixture.C5Rig); C6 engine; C7 runtime estimate_intervention on the golden SCM of the unit (ESTIMATED, effect -4.0, verify_reproduction PASS): the five tests of the adapted module passed (5 passed in 36.57 s); legacy imports left: IdentityRegistry/IdentityRecord (c2/gateway.py:209) and EmissionFence (c6/engine.py:595), both in the A1 list",
-      "updated_at": "2026-11-10T19:01:26.107453+00:00",
+      "updated_at": "2026-11-12T00:43:45.863461+00:00",
       "worktree": ".ocor/worktrees/rem-0060"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -41485,17 +41528,17 @@
     "planning_optional_checks": "2 NOT_EXECUTED; not counted as PASS",
     "status": "PASS"
   },
-  "status": "AWAITING_PREVENTIVE_REVIEW",
+  "status": "BLOCKED_REPAIR_BUDGET_EXHAUSTED",
   "terminal_loop_disposition": {
     "decision_requests": [
-      "REM-0061-VERIFIER-TMP-QUOTA"
+      "REM-0061-REPAIR-BUDGET"
     ],
     "loop_status": "CONTINUE",
-    "next_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. Non avviare la suite a quattro corsie prima di quell'esito. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Non integrare la PR 595. Il ciclo 2 e l'ultimo ciclo di riparazione ordinario.",
-    "reason": "TMP-RESIDUI-CAMPAGNA e gia decisa. Il verdetto del ciclo 1 e NO_GO. Il ciclo 2 attende la revisione preventiva e non ha una suite qualificante. OCOR-DEV-REM-0060 non e terminale.",
-    "recorded_at": "2026-11-11T13:36:25.984889+00:00"
+    "next_action": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.",
+    "reason": "Il ciclo 2 di OCOR-DEV-REM-0061 e NO_GO e chiude il budget ordinario. Il ciclo 3 non e avviato. La PR 595 non si integra. OCOR-DEV-REM-0060 resta in coda fino al merge di REM-0061. La decisione operativa REM-0061-REPAIR-BUDGET e aperta.",
+    "recorded_at": "2026-11-12T00:43:45.863461+00:00"
   },
-  "updated_at": "2026-11-11T13:38:15.561039+00:00",
+  "updated_at": "2026-11-12T00:43:45.863461+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
@@ -42097,6 +42140,20 @@
       "task_id": "OCOR-DEV-REM-0059",
       "verdict_file_sha256": "6425f1b9d8bf1fc9ba25c7a151b44c6075729b78a419b23c518479e49ca8f8c4",
       "verdict_recorded_at": "2026-11-09T22:02:21.637642+00:00"
+    },
+    {
+      "base_sha": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
+      "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
+      "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+      "repair_cycle": 2,
+      "request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
+      "result": "NO_GO",
+      "review_type": "REMEDIATION",
+      "status": "COMPLETED_NO_GO_REPAIR_BUDGET_EXHAUSTED",
+      "task_id": "OCOR-DEV-REM-0061",
+      "verdict_file_sha256": "6585d51d9f02d17d2acdedc309ada4f6f935138de9a375ef74bf2769817cae7f",
+      "verdict_recorded_at": "2026-11-12T01:35:41+01:00",
+      "verifier": "Codex / OpenAI"
     }
   ]
 }
