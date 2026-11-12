@@ -9,19 +9,34 @@ falls back to the serial suite below the measured start threshold.
 PO LOCAL-SUITE-FOUR-LANES (2026-11-07): four lanes, admitted in three levels
 (FOUR_LANE, TWO_LANE with the unchanged threshold, SERIAL); partition, union,
 supervision, results and teardown work on the lane count admitted at start.
+
+PO TMP-RESIDUI-CAMPAGNA (2026-11-11): before any lane checkout, a work directory
+on the /tmp user quota is refused when the measured lane budget does not fit;
+SIGTERM and SIGHUP remove the script-created trees and leave the result file.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import io
 import json
+import signal
+import subprocess
 import sys
+import tarfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+CACHE_SPEC = importlib.util.spec_from_file_location('local_lane_image_cache', ROOT / 'scripts/local_lane_image_cache.py')
+assert CACHE_SPEC is not None and CACHE_SPEC.loader is not None
+IMAGE_CACHE = importlib.util.module_from_spec(CACHE_SPEC)
+sys.modules['local_lane_image_cache'] = IMAGE_CACHE
+CACHE_SPEC.loader.exec_module(IMAGE_CACHE)
 SPEC = importlib.util.spec_from_file_location('ocor_local_lanes', ROOT / 'scripts/run_local_lane_campaign.py')
 assert SPEC is not None and SPEC.loader is not None
 LANES = importlib.util.module_from_spec(SPEC)
@@ -545,6 +560,31 @@ def test_tool_mounts_reject_tools_outside_home_and_usr(tmp_path):
     (bindir / 'evil').symlink_to('/opt/elsewhere/evil')
     with pytest.raises(CAMPAIGN.CampaignError, match='outside'):
         LANES.tool_mounts([bindir], home)
+
+
+def test_shared_image_cache_is_mounted_read_only_after_the_writable_output(tmp_path):
+    """A lane sees the campaign output writable and the shared image cache read-only."""
+    item = lane(tmp_path)
+    output = tmp_path / 'out'
+    cache = output / 'image-cache'
+    argv = LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[cache])
+    output_mount = f'{output}:{output}'
+    cache_mount = f'{cache}:{cache}:ro'
+    assert output_mount in argv
+    assert cache_mount in argv
+    assert argv.index(output_mount) < argv.index(cache_mount)
+    assert f'{cache}:{cache}' not in argv
+
+
+def test_readonly_mount_cannot_hide_the_writable_campaign_output(tmp_path):
+    item = lane(tmp_path)
+    output = tmp_path / 'out'
+    with pytest.raises(CAMPAIGN.CampaignError, match='writable campaign output'):
+        LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[output])
+    with pytest.raises(CAMPAIGN.CampaignError, match='writable campaign output'):
+        LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[tmp_path])
+    with pytest.raises(CAMPAIGN.CampaignError, match='absolute path'):
+        LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[Path('image-cache')])
 
 
 def test_sandbox_run_argv_has_the_exact_mount_set_and_the_campaign_label(tmp_path):
@@ -1346,6 +1386,18 @@ def host_world(tmp_path, monkeypatch):
         world['calls'].append(('collect', str(directory), list(selection)))
         return list(world['collected'])
 
+    def prepare_image_cache(lock_path, destination, runner, *, timeout):
+        world['calls'].append(('prepare_image_cache', str(lock_path)))
+        if callable(timeout):
+            timeout()
+        return {'images': [], 'lock_sha256': '0' * 64, 'schema': 'ocor-local-lane-image-cache/v1'}
+
+    def seed_lane_images(item, path, cache_dir, lock_path, runner, *, timeout):
+        world['calls'].append(('image_cache', item.index))
+        if callable(timeout):
+            timeout()
+        return {'loaded': [], 'misses': [], 'status': 'COLD'}
+
     def provision_lane(item, source_path, head, runner, env):
         world['calls'].append(('provision', item.index))
         if world['fail_provision'] == item.index:
@@ -1354,8 +1406,10 @@ def host_world(tmp_path, monkeypatch):
         item.repository.mkdir(parents=True)
         return {'lane': item.index, 'head': head, 'repository': str(item.repository)}
 
-    def start_sandbox(item, mounts, runner, *, output_root, sleep=None):
+    def start_sandbox(item, mounts, runner, *, output_root, readonly_mounts=None, sleep=None):
         world['calls'].append(('sandbox', item.index))
+        world.setdefault('readonly_mounts', []).append(
+            (item.index, [str(path) for path in (readonly_mounts or [])]))
         return {'lane': item.index, 'sandbox': item.name}
 
     def launcher(argv, log):
@@ -1386,6 +1440,8 @@ def host_world(tmp_path, monkeypatch):
     monkeypatch.setattr(CAMPAIGN, 'verify_revision', verify_revision)
     monkeypatch.setattr(CAMPAIGN, 'collect_nodeids', collect_nodeids)
     monkeypatch.setattr(LANES, 'load_weights', weights)
+    monkeypatch.setattr(LANES, 'prepare_image_cache', prepare_image_cache)
+    monkeypatch.setattr(LANES, 'seed_lane_images', seed_lane_images)
     monkeypatch.setattr(LANES, 'provision_lane', provision_lane)
     monkeypatch.setattr(LANES, 'start_sandbox', start_sandbox)
     monkeypatch.setattr(LANES, 'ensure_root_image', lambda runner, links: world['calls'].append(('root_image',)))
@@ -1405,10 +1461,38 @@ def host_world(tmp_path, monkeypatch):
     return world
 
 
+_REAL_SAME_DEVICE = LANES._same_device
+
+
+def _campaign_tool_bin(world):
+    """An empty tool directory and a lock, unless the test planted its own."""
+    tool_bin = world['work'] / 'tool-bin'
+    tool_bin.mkdir(parents=True, exist_ok=True)
+    lock = world['source'] / 'infra/toolchain.lock.json'
+    if not lock.exists():
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.write_text('{"tools": []}\n')
+    return tool_bin
+
+
+def _call_without_host_tmp_budget(function):
+    """Ignore the host /tmp budget unless the test already replaced _same_device."""
+    replaced = LANES._same_device is _REAL_SAME_DEVICE
+    if replaced:
+        LANES._same_device = lambda left, right: False
+    try:
+        return function()
+    finally:
+        if replaced:
+            LANES._same_device = _REAL_SAME_DEVICE
+
+
 def execute(world, selection=('tests/',)):
-    return LANES.execute_campaign(world['work'], HEAD, [Path('/home/luca/.ocor-codex/impl-env/x/bin')], list(selection),
-                                  source=world['source'], runner=FakeRunner(), launcher=world['launcher'],
-                                  meminfo_path=world['meminfo'], power_root=world['power'])
+    tool_bin = _campaign_tool_bin(world)
+    return _call_without_host_tmp_budget(lambda: LANES.execute_campaign(
+        world['work'], HEAD, [tool_bin], list(selection),
+        source=world['source'], runner=FakeRunner(), launcher=world['launcher'],
+        meminfo_path=world['meminfo'], power_root=world['power']))
 
 
 def stored_result(world):
@@ -1674,9 +1758,11 @@ def test_temporal_observation_is_bounded(tmp_path):
 
 
 def lifecycle(world, runner=None, *, lanes=4):
-    return LANES.lifecycle_check(world['work'], HEAD, [Path('/home/luca/.ocor-codex/impl-env/x/bin')], runner or temporal_runner(),
-                                 source=world['source'], launcher=world['bootstrap_launcher'], meminfo_path=world['meminfo'],
-                                 wall=lambda: SERVING_WALL, sleep=lambda seconds: None, lanes=lanes)
+    tool_bin = _campaign_tool_bin(world)
+    return _call_without_host_tmp_budget(lambda: LANES.lifecycle_check(
+        world['work'], HEAD, [tool_bin], runner or temporal_runner(),
+        source=world['source'], launcher=world['bootstrap_launcher'], meminfo_path=world['meminfo'],
+        wall=lambda: SERVING_WALL, sleep=lambda seconds: None, lanes=lanes))
 
 
 @pytest.fixture
@@ -1806,9 +1892,11 @@ def test_lifecycle_check_kills_every_running_bootstrap_when_the_wait_fails(life_
         calls['n'] += 1
         if calls['n'] > 2:
             raise OSError('host clock unavailable')
-    report = LANES.lifecycle_check(life_world['work'], HEAD, [Path('/x/bin')], temporal_runner(serving=False), source=life_world['source'],
-                                   launcher=life_world['bootstrap_launcher'], meminfo_path=life_world['meminfo'],
-                                   wall=lambda: SERVING_WALL, sleep=failing_sleep, lanes=4)
+    tool_bin = _campaign_tool_bin(life_world)
+    report = _call_without_host_tmp_budget(lambda: LANES.lifecycle_check(
+        life_world['work'], HEAD, [tool_bin], temporal_runner(serving=False), source=life_world['source'],
+        launcher=life_world['bootstrap_launcher'], meminfo_path=life_world['meminfo'],
+        wall=lambda: SERVING_WALL, sleep=failing_sleep, lanes=4))
     assert report['status'] == 'FAIL' and 'host clock unavailable' in report['error']
     assert all(process.killed for process in stuck)
     assert [call[0] for call in life_world['calls']].count('teardown') == 4
@@ -2198,8 +2286,1287 @@ def test_power_reading_with_an_undecodable_supply_is_not_executed(tmp_path):
     assert LANES.power_reading(root)['source'] == 'NOT_EXECUTED'
 
 
+# --- local image cache: transfer locked host images, never pull (OCOR-DEV-REM-0061) ---
+# Archives are OCI layouts. The image id is an index.json manifest digest plus
+# its blob, never the classic manifest.json Config. A miss is an absent host
+# image. An empty or inconsistent document fails closed.
+
+DIGEST_A = 'ab' * 32
+DIGEST_B = 'cd' * 32
+PIN_A = f'openpolicyagent/opa@sha256:{DIGEST_A}'
+PIN_B = f'ghcr.io/spiffe/spire-agent@sha256:{DIGEST_B}'
+ID_A = f'sha256:{DIGEST_A}'
+ID_B = f'sha256:{DIGEST_B}'
+FUSEKI_BASE = 'eclipse-temurin@sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0'
+
+
+def canonical(document):
+    return json.dumps(document, indent=2, sort_keys=True) + '\n'
+
+
+def write_lock(path, services):
+    path.write_text(canonical({'schema_version': '1.0', 'services': services}), encoding='utf-8')
+
+
+def oci_tar(image_id, *, index_digest=None, include_index=True, include_blob=True, classic_config=None):
+    """OCI layout whose index manifest digest defaults to image_id. Classic Config is a different blob."""
+    claimed = index_digest or image_id
+    hex_id = claimed.split(':', 1)[1]
+    config_hex = classic_config or ('c' * 64)
+    index = {'manifests': [{'digest': claimed, 'mediaType': 'application/vnd.oci.image.manifest.v1+json', 'size': 2}],
+             'schemaVersion': 2}
+    classic = [{'Config': f'blobs/sha256/{config_hex}', 'Layers': [], 'RepoTags': None}]
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode='w') as archive:
+        def add(name, payload):
+            data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+        add('oci-layout', {'imageLayoutVersion': '1.0.0'})
+        if include_index:
+            add('index.json', index)
+        add('manifest.json', classic)
+        if include_blob:
+            add(f'blobs/sha256/{hex_id}', b'{}')
+        add(f'blobs/sha256/{config_hex}', b'{"architecture":"amd64"}')
+    return buffer.getvalue()
+
+
+class CacheRunner:
+    """Scripts host inspect and save. Save writes an OCI tar; it never pulls."""
+
+    def __init__(self, images, *, tar_for=None, empty_inspect=()):
+        self.calls = []
+        self.images = images
+        self.tar_for = tar_for or {}
+        self.empty_inspect = set(empty_inspect)
+
+    def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+        argv = [str(item) for item in argv]
+        self.calls.append(argv)
+        if argv[:3] == ['docker', 'image', 'inspect'] and len(argv) == 4:
+            reference = argv[3]
+            if reference in self.empty_inspect:
+                return LANES.CommandResult(0, '')
+            spec = self.images.get(reference)
+            if spec is None or spec[0] != 0:
+                if check:
+                    raise CAMPAIGN.CampaignError(f'command failed (1): {argv[:6]}')
+                return LANES.CommandResult(1, '')
+            _code, image_id, digests, extra = spec
+            document = {'Id': image_id, 'RepoDigests': digests, 'Os': 'linux'}
+            document.update(extra)
+            return LANES.CommandResult(0, json.dumps([document]))
+        if argv[:4] == ['docker', 'image', 'save', '-o'] and len(argv) == 6:
+            archive, reference = Path(argv[4]), argv[5]
+            image_id = self.tar_for.get(reference, self.images[reference][1])
+            archive.write_bytes(image_id if isinstance(image_id, bytes) else oci_tar(image_id))
+            return LANES.CommandResult(0, '')
+        raise CAMPAIGN.CampaignError(f'unexpected command: {argv}')
+
+
+def present(reference, digest, *, digests=None, extra=None):
+    return (0, f'sha256:{digest}', list(digests if digests is not None else [reference]), extra or {})
+
+
+def services_for(*pins):
+    return [{'id': service_id, 'image': reference} for service_id, reference in pins]
+
+
+def test_serial_fallback_does_not_prepare_an_image_cache(host_world):
+    host_world['meminfo'].write_text(meminfo(31743008, 1000))
+    result = execute(host_world)
+    assert result['status'] == 'SERIAL_FALLBACK'
+    assert not [call for call in host_world['calls'] if call[0] in ('prepare_image_cache', 'image_cache')]
+
+
+def test_each_lane_receives_the_shared_cache_as_a_read_only_mount(host_world):
+    execute(host_world, selection=nodes())
+    cache = str(host_world['work'] / 'image-cache')
+    assert host_world['readonly_mounts'] == [(1, [cache]), (2, [cache])]
+
+
+def test_lifecycle_mounts_the_shared_cache_read_only_for_every_lane(life_world):
+    report = lifecycle(life_world)
+    assert report['status'] == 'PASS', report.get('error')
+    cache = str(life_world['work'] / 'image-cache')
+    assert life_world['readonly_mounts'] == [(index, [cache]) for index in range(1, 5)]
+
+
+def test_each_lane_is_seeded_after_its_sandbox_and_before_launch(host_world):
+    execute(host_world, selection=nodes())
+    calls = [call[0] for call in host_world['calls']]
+    assert calls.count('prepare_image_cache') == 1
+    assert calls.index('root_image') < calls.index('prepare_image_cache') < calls.index('provision')
+    pending = False
+    seeds = 0
+    for call in calls:
+        if call == 'sandbox':
+            pending = True
+        elif call == 'image_cache':
+            assert pending
+            pending = False
+            seeds += 1
+        elif call == 'launch':
+            assert not pending
+    assert seeds == 2 and calls.count('launch') == 2
+
+
+def test_lifecycle_seeds_every_sandbox_before_bootstrap(life_world):
+    report = lifecycle(life_world)
+    assert report['status'] == 'PASS', report.get('error')
+    calls = [call[0] for call in life_world['calls']]
+    assert calls.count('prepare_image_cache') == 1 and calls.count('image_cache') == 4
+    assert calls.index('prepare_image_cache') < calls.index('sandbox')
+    assert max(i for i, call in enumerate(calls) if call == 'image_cache') < calls.index('bootstrap')
+
+
+def test_bootstrap_pull_and_the_lane_bootstrap_budget_stay_unchanged():
+    source = (ROOT / 'scripts/bootstrap_ci_environment.py').read_text(encoding='utf-8')
+    assert '["docker", "pull", service["image"]]' in source
+    assert '"--pull"' in source
+    assert LANES.LANE_BOOTSTRAP == (
+        ['scripts/bootstrap_ci_environment.py', '--teardown', '--execute'],
+        ['scripts/bootstrap_ci_environment.py', '--execute', '--timeout', '600'])
+    assert LANES.FULL_SUITE_LIMIT_SECONDS == 5400 and LANES.PROVISION_TIMEOUT_SECONDS == 1200
+    cache_source = (ROOT / 'scripts/local_lane_image_cache.py').read_text(encoding='utf-8')
+    lane_source = (ROOT / 'scripts/run_local_lane_campaign.py').read_text(encoding='utf-8')
+    assert '"docker", "pull"' not in cache_source and '"docker", "build"' not in cache_source
+    assert 'FULL_SUITE_LIMIT_SECONDS = campaign.FULL_SUITE_LIMIT_SECONDS' in lane_source
+
+
+def test_image_cache_transfer_does_not_restart_the_campaign_clock(host_world, monkeypatch):
+    ticks = {'n': 0}
+    base = LANES.time.time()
+
+    def now():
+        ticks['n'] += 1
+        return base + ticks['n']
+
+    monkeypatch.setattr(LANES.time, 'time', now)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['campaign_start'] == base + 1 and ticks['n'] > 1
+
+
+def test_image_cache_transfer_stops_at_the_existing_campaign_deadline(host_world, monkeypatch):
+    calls = {'n': 0}
+
+    def now():
+        calls['n'] += 1
+        if calls['n'] == 1:
+            return 5_000.0
+        return 5_000.0 + LANES.FULL_SUITE_LIMIT_SECONDS + 1
+
+    monkeypatch.setattr(LANES.time, 'time', now)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert result['error'] == 'campaign deadline exhausted during image cache transfer'
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' in names
+    assert 'sandbox' not in names and 'launch' not in names
+
+
+@pytest.mark.parametrize('result', [None, True, 1.5, SimpleNamespace(returncode=True, stdout=''),
+                                     SimpleNamespace(returncode=1.5, stdout=''),
+                                     SimpleNamespace(returncode=0, stdout=None),
+                                     SimpleNamespace(returncode=0, stdout=b'ok'),
+                                     SimpleNamespace(returncode=None, stdout='')])
+def test_seed_refuses_a_docker_result_that_is_not_a_code_and_text(tmp_path, monkeypatch, result):
+    cache = tmp_path / 'cache'
+    cache.mkdir()
+    lock = tmp_path / 'services.lock.json'
+    lock.write_text('{}\n', encoding='utf-8')
+    image_id = 'sha256:' + 'ab' * 32
+
+    def verify(cache_dir, lock_path):
+        return {'images': [{
+            'archive': 'opa-pinned_pull.tar', 'image_id': image_id, 'service_id': 'opa', 'status': 'PRESENT',
+        }]}
+
+    monkeypatch.setattr(LANES.image_cache, 'verify_image_cache', verify)
+
+    def runner(argv, **kwargs):
+        return result
+
+    lane = LANES.Lane(index=1, campaign='a' * 12 + '-1', root=tmp_path / 'lane', home=tmp_path / 'home', uid=1, gid=1)
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache load failed: opa: image cache command result is malformed'):
+        LANES.seed_lane_images(lane, '/usr/bin:/bin', cache, lock, runner, timeout=5)
+
+
+def test_execute_fails_closed_when_the_image_cache_load_fails(host_world, monkeypatch):
+    def seed(item, path, cache_dir, lock_path, runner, *, timeout):
+        host_world['calls'].append(('image_cache', item.index))
+        raise CAMPAIGN.CampaignError('image cache load failed: opa: command failed (1)')
+
+    monkeypatch.setattr(LANES, 'seed_lane_images', seed)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'image cache load failed: opa' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'launch' not in names and names.count('teardown') == 2
+
+
+def test_cache_repo_lock_pins_the_fuseki_base_and_every_service_image():
+    document = json.loads((ROOT / 'infra/services.lock.json').read_text(encoding='utf-8'))
+    pins = IMAGE_CACHE.locked_image_pins(document)
+    expected = []
+    for service in document['services']:
+        if 'image' in service:
+            expected.append((service['id'], 'pinned_pull', service['image']))
+        if service['id'] == 'fuseki':
+            expected.append((service['id'], 'fuseki_base', service['build']['base_image']))
+    assert [(item['service_id'], item['role'], item['pinned_reference']) for item in pins] == expected
+    assert len(pins) == 14
+    fuseki = next(item for item in pins if item['service_id'] == 'fuseki')
+    assert fuseki['role'] == 'fuseki_base' and fuseki['pinned_reference'] == FUSEKI_BASE
+    assert all('ocor/jena-fuseki' not in item['pinned_reference'] for item in pins)
+
+
+def test_cache_rejects_a_service_with_neither_image_nor_fuseki_base():
+    with pytest.raises(CAMPAIGN.CampaignError, match='neither a pinned image nor a Fuseki base image'):
+        IMAGE_CACHE.locked_image_pins({'services': [{'id': 'orphan'}]})
+    with pytest.raises(CAMPAIGN.CampaignError, match='Fuseki base image is missing'):
+        IMAGE_CACHE.locked_image_pins({'services': [{'id': 'fuseki', 'build': {}}]})
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed pinned reference'):
+        IMAGE_CACHE.locked_image_pins({'services': [{'id': 'fuseki', 'build': {'base_image': 'ocor/jena-fuseki:6.2.0'}}]})
+
+
+@pytest.mark.parametrize('reference', [
+    '',
+    'openpolicyagent/opa:latest',
+    'openpolicyagent/opa@sha256:' + 'AB' * 32,
+    'openpolicyagent/opa@sha256:' + 'ab' * 31,
+    'openpolicyagent/opa@sha256:' + 'gg' * 32,
+    'pä@sha256:' + 'ab' * 32,
+    'Openpolicyagent/opa@sha256:' + 'ab' * 32,
+    'opa@sha256:' + 'ab' * 32 + ' ',
+])
+def test_cache_rejects_a_malformed_pinned_reference_before_compare(reference):
+    text = json.dumps([{'Id': ID_A, 'RepoDigests': [reference]}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed pinned reference'):
+        IMAGE_CACHE.parse_host_inspect(text, reference)
+
+
+def test_cache_prepares_a_valid_archive_and_verifies_it(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A), ('spire-agent', PIN_B)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A), PIN_B: present(PIN_B, DIGEST_B, extra={'Size': 3})})
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=1200)
+    assert manifest['schema'] == 'ocor-local-lane-image-cache/v1'
+    assert manifest['lock_sha256'] == hashlib.sha256(lock.read_bytes()).hexdigest()
+    assert [item['status'] for item in manifest['images']] == ['PRESENT', 'PRESENT']
+    assert manifest['images'][0]['image_id'] == ID_A
+    assert manifest['images'][0]['archive'] == 'opa-pinned_pull.tar'
+    stored = json.loads((tmp_path / 'image-cache' / 'manifest.json').read_text(encoding='utf-8'))
+    assert stored == manifest
+    assert (tmp_path / 'image-cache' / 'manifest.json').read_text(encoding='utf-8') == canonical(manifest)
+    verified = IMAGE_CACHE.verify_image_cache(tmp_path / 'image-cache', lock)
+    assert verified == manifest
+    assert not any('pull' in argv or 'build' in argv for argv in runner.calls)
+
+
+def test_cache_missing_image_is_a_cold_miss_without_save_or_pull(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({})
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=lambda: 30)
+    assert manifest['images'] == [{
+        'pinned_reference': PIN_A, 'role': 'pinned_pull', 'service_id': 'opa', 'status': 'MISS'}]
+    assert runner.calls == [['docker', 'image', 'inspect', PIN_A]]
+    assert list((tmp_path / 'image-cache').iterdir()) == [tmp_path / 'image-cache' / 'manifest.json']
+
+
+def test_cache_empty_inspect_is_not_a_miss(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)}, empty_inspect={PIN_A})
+    with pytest.raises(CAMPAIGN.CampaignError, match='not valid JSON'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+    assert not (tmp_path / 'image-cache').exists()
+    assert not any(argv[2] == 'save' for argv in runner.calls if len(argv) > 2)
+
+
+def test_cache_rejects_an_image_id_that_differs_from_the_locked_digest(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_B, digests=[PIN_A])})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image id does not match the locked digest'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+    assert not any(len(argv) > 2 and argv[2] == 'save' for argv in runner.calls)
+
+
+def test_cache_rejects_a_pinned_reference_absent_from_repo_digests():
+    text = json.dumps([{'Id': ID_A, 'RepoDigests': [PIN_B], 'RepoTags': ['opa:local']}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='pinned reference is absent from RepoDigests'):
+        IMAGE_CACHE.parse_host_inspect(text, PIN_A)
+
+
+def test_cache_rejects_an_altered_archive(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    cache = tmp_path / 'image-cache'
+    IMAGE_CACHE.prepare_image_cache(lock, cache, runner, timeout=30)
+    archive = cache / 'opa-pinned_pull.tar'
+    archive.write_bytes(archive.read_bytes()[:-1] + bytes([archive.read_bytes()[-1] ^ 0x01]))
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache archive is altered'):
+        IMAGE_CACHE.verify_image_cache(cache, lock)
+
+
+def test_cache_rejects_an_archive_whose_oci_index_digest_differs(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)}, tar_for={PIN_A: oci_tar(ID_A, index_digest=ID_B)})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache archive image id does not match'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+    assert not (tmp_path / 'image-cache').exists()
+
+
+def test_cache_rejects_a_classic_config_blob_as_the_image_id(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    payload = oci_tar(ID_A, index_digest=ID_B, classic_config=DIGEST_A)
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)}, tar_for={PIN_A: payload})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache archive image id does not match'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+
+
+def test_cache_rejects_a_load_error(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    builder = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    cache = tmp_path / 'image-cache'
+    IMAGE_CACHE.prepare_image_cache(lock, cache, builder, timeout=30)
+
+    class LoadRunner:
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+            argv = [str(item) for item in argv]
+            self.calls.append(argv)
+            if 'load' in argv:
+                raise CAMPAIGN.CampaignError(f'command failed (1): {argv[:6]}')
+            if argv[-3:] == ['docker', 'image', 'inspect']:
+                return LANES.CommandResult(0, json.dumps([{'Id': ID_A, 'RepoDigests': []}]))
+            raise CAMPAIGN.CampaignError(f'unexpected command: {argv}')
+
+    runner = LoadRunner()
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache load failed: opa'):
+        LANES.seed_lane_images(lane(tmp_path), '/usr/bin', cache, lock, runner, timeout=1200)
+    assert runner.calls and 'load' in runner.calls[0]
+    assert all('pull' not in argv for argv in runner.calls)
+
+
+def test_cache_seed_skips_load_for_a_miss_and_checks_a_loaded_id(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A), ('spire-agent', PIN_B)))
+    builder = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    cache = tmp_path / 'image-cache'
+    IMAGE_CACHE.prepare_image_cache(lock, cache, builder, timeout=30)
+
+    class SeedRunner:
+        def __init__(self, ident):
+            self.ident = ident
+            self.calls = []
+
+        def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+            argv = [str(item) for item in argv]
+            self.calls.append(argv)
+            if 'load' in argv:
+                return LANES.CommandResult(0, '')
+            return LANES.CommandResult(0, json.dumps([{'Id': self.ident, 'Os': 'linux'}]))
+
+    loaded = SeedRunner(ID_A)
+    seeded = LANES.seed_lane_images(lane(tmp_path), '/usr/bin', cache, lock, loaded, timeout=lambda: 50)
+    assert seeded == {'loaded': ['opa'], 'misses': ['spire-agent']}
+    assert len(loaded.calls) == 2 and 'load' in loaded.calls[0] and loaded.calls[1][-1] == ID_A
+    mismatched = SeedRunner(ID_B)
+    with pytest.raises(CAMPAIGN.CampaignError, match='loaded image id does not match the cache'):
+        LANES.seed_lane_images(lane(tmp_path), '/usr/bin', cache, lock, mismatched, timeout=50)
+
+
+@pytest.mark.parametrize(('document', 'match'), [
+    ('null', 'one-element list'),
+    ('{}', 'one-element list'),
+    ('[]', 'one-element list'),
+    (json.dumps([{'Id': ID_A}, {'Id': ID_A}]), 'one-element list'),
+    ('[null]', 'element is null'),
+    ('[{}]', 'image id is missing'),
+    (json.dumps([{'RepoDigests': [PIN_A]}]), 'image id is missing'),
+    (json.dumps([{'Id': True, 'RepoDigests': [PIN_A]}]), 'image id is not a string'),
+    (json.dumps([{'Id': 1, 'RepoDigests': [PIN_A]}]), 'image id is not a string'),
+    (json.dumps([{'Id': 1.5, 'RepoDigests': [PIN_A]}]), 'image id is not a string'),
+    (json.dumps([{'Id': '', 'RepoDigests': [PIN_A]}]), 'image id is not a digest'),
+    (json.dumps([{'Id': 'sha256:' + 'AB' * 32, 'RepoDigests': [PIN_A]}]), 'image id is not a digest'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': {}}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': None}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': [None]}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': [{}]}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': [PIN_A]}]) + '\n{}', 'not valid JSON'),
+])
+def test_cache_rejects_inspect_documents_with_the_wrong_shape(document, match):
+    with pytest.raises(CAMPAIGN.CampaignError, match=match):
+        IMAGE_CACHE.parse_host_inspect(document, PIN_A)
+
+
+def test_cache_rejects_a_lone_surrogate_before_digest_compare():
+    raw = '[{"Id": "%s", "RepoDigests": ["%s"], "nested": {"labels": ["\\uD800"]}}]' % (ID_A, PIN_B)
+    with pytest.raises(CAMPAIGN.CampaignError, match='lone surrogate'):
+        IMAGE_CACHE.parse_host_inspect(raw, PIN_A)
+    key = '[{"Id": "%s", "RepoDigests": ["%s"], "\\uD800": 1}]' % (ID_A, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='lone surrogate'):
+        IMAGE_CACHE.parse_host_inspect(key, PIN_A)
+
+
+def test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field():
+    raw = '[{"Id": "%s", "RepoDigests": ["%s"], "note": "\\uD800\\uDC00"}]' % (ID_A, PIN_A)
+    assert IMAGE_CACHE.parse_host_inspect(raw, PIN_A) == ID_A
+    loaded = '[{"Id": "%s", "RepoDigests": [], "note": "\\uD800\\uDC00"}]' % ID_A
+    IMAGE_CACHE.parse_loaded_inspect(loaded, ID_A)
+
+
+def test_cache_rejects_duplicate_keys_nan_and_trailing_junk():
+    duplicate = '[{"Id": "%s", "Id": "%s", "RepoDigests": ["%s"]}]' % (ID_A, ID_B, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='duplicate key'):
+        IMAGE_CACHE.parse_host_inspect(duplicate, PIN_A)
+    nan = '[{"Id": "%s", "RepoDigests": ["%s"], "Size": NaN}]' % (ID_A, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='non-finite JSON number'):
+        IMAGE_CACHE.parse_host_inspect(nan, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='not valid JSON'):
+        IMAGE_CACHE.parse_host_inspect('', PIN_A)
+
+
+def test_cache_loaded_inspect_rejects_a_bool_digest_list_and_accepts_no_repo_digests():
+    with pytest.raises(CAMPAIGN.CampaignError, match='RepoDigests is not a list of strings'):
+        IMAGE_CACHE.parse_loaded_inspect(json.dumps([{'Id': ID_A, 'RepoDigests': True}]), ID_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='element is null'):
+        IMAGE_CACHE.parse_loaded_inspect('[null]', ID_A)
+    IMAGE_CACHE.parse_loaded_inspect(json.dumps([{'Id': ID_A, 'RepoDigests': []}]), ID_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='image id is not a digest'):
+        IMAGE_CACHE.parse_loaded_inspect(json.dumps([{'Id': ID_A}]), 'sha256:' + 'AB' * 32)
+
+
+def test_cache_rejects_an_existing_destination_a_bad_lock_and_a_hash_mismatch(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    destination = tmp_path / 'image-cache'
+    destination.mkdir()
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache destination exists'):
+        IMAGE_CACHE.prepare_image_cache(lock, destination, runner, timeout=30)
+    assert destination.exists() and runner.calls == []
+    destination.rmdir()
+    lock.write_bytes(b'\xff{"services": []}')
+    with pytest.raises(CAMPAIGN.CampaignError, match='not UTF-8'):
+        IMAGE_CACHE.prepare_image_cache(lock, destination, runner, timeout=30)
+    write_lock(lock, services_for(('opa', PIN_A)))
+    IMAGE_CACHE.prepare_image_cache(lock, destination, runner, timeout=30)
+    original = lock.read_bytes()
+    lock.write_text(canonical({'schema_version': '1.0', 'services': services_for(('opa', PIN_B))}), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache lock hash does not match'):
+        IMAGE_CACHE.verify_image_cache(destination, lock)
+    lock.write_bytes(original)
+    manifest_path = destination / 'manifest.json'
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    manifest['images'][0]['pinned_reference'] = PIN_B
+    manifest['images'][0]['image_id'] = ID_B
+    manifest_path.write_text(canonical(manifest), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache pin list does not match the lock'):
+        IMAGE_CACHE.verify_image_cache(destination, lock)
+
+
+def test_cache_manifest_rejects_extra_keys_and_a_miss_that_claims_an_archive(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({})
+    cache = tmp_path / 'image-cache'
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, cache, runner, timeout=30)
+    manifest['extra'] = 1
+    (cache / 'manifest.json').write_text(canonical(manifest), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed'):
+        IMAGE_CACHE.verify_image_cache(cache, lock)
+    del manifest['extra']
+    manifest['images'][0]['archive'] = 'opa-pinned_pull.tar'
+    (cache / 'manifest.json').write_text(canonical(manifest), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed'):
+        IMAGE_CACHE.verify_image_cache(cache, lock)
+
+
+def test_cache_stops_before_a_command_when_the_timeout_callback_refuses(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+
+    def refuse():
+        raise CAMPAIGN.CampaignError('campaign deadline exhausted during image cache transfer')
+
+    with pytest.raises(CAMPAIGN.CampaignError, match='campaign deadline exhausted during image cache transfer'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=refuse)
+    assert not (tmp_path / 'image-cache').exists()
+    assert runner.calls == []
+
+
+@pytest.mark.parametrize('result', [None, True, 1.5, SimpleNamespace(returncode=True, stdout=''),
+                                     SimpleNamespace(returncode=1.5, stdout=''),
+                                     SimpleNamespace(returncode=0, stdout=None),
+                                     SimpleNamespace(returncode=0, stdout=b'ok'),
+                                     SimpleNamespace(returncode=None, stdout='')])
+def test_cache_rejects_a_command_result_that_is_not_a_code_and_text(tmp_path, result):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+
+    class BadRunner:
+        def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+            del argv, cwd, env, input, timeout, check
+            return result
+
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache command result is malformed'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', BadRunner(), timeout=5)
+    assert not (tmp_path / 'image-cache').exists()
+
+
+def test_cache_does_not_pull_or_build_while_preparing(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, [{'id': 'fuseki', 'build': {'base_image': FUSEKI_BASE}}])
+    runner = CacheRunner({FUSEKI_BASE: present(FUSEKI_BASE, FUSEKI_BASE.rsplit(':', 1)[1])})
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=15)
+    assert manifest['images'][0]['role'] == 'fuseki_base'
+    assert manifest['images'][0]['archive'] == 'fuseki-fuseki_base.tar'
+    assert all(argv[:3] == ['docker', 'image', 'inspect'] or argv[:4] == ['docker', 'image', 'save', '-o'] for argv in runner.calls)
+    assert not any('pull' in argv or 'build' in argv for argv in runner.calls)
+
+
 @pytest.mark.parametrize('check', [True, False])
 def test_command_output_is_decoded_as_strict_utf8(check):
     assert LANES.run_command([sys.executable, '-c', 'print("SERVING")'], check=check) == LANES.CommandResult(0, 'SERVING\n')
     with pytest.raises(CAMPAIGN.CampaignError, match='UTF-8'):
         LANES.run_command([sys.executable, '-c', 'import sys; sys.stdout.buffer.write(b"SERV\\xffING")'], check=check)
+
+
+# Measured on campaign-46835be (image cache) and the rem-0061 worktree at 2baa4aa
+# (checkout without the venv, and the venv). Tools is the published 181 MiB mount.
+TMP_IMAGE_CACHE_BYTES = 1_790_746_974
+TMP_LANE_CHECKOUT_BYTES = 1_242_693_615
+TMP_LANE_VENV_BYTES = 1_052_242_023
+TMP_LANE_TOOLS_BYTES = 181 * 1024 * 1024
+TMP_LANE_MARGIN_BYTES = 1024 ** 3
+
+
+def tmp_budget(lanes):
+    per_lane = TMP_LANE_CHECKOUT_BYTES + TMP_LANE_VENV_BYTES + TMP_LANE_TOOLS_BYTES
+    return TMP_IMAGE_CACHE_BYTES + lanes * per_lane + TMP_LANE_MARGIN_BYTES
+
+
+def tight_tmp_reading():
+    return {
+        'path': '/tmp', 'filesystem_free_bytes': 30_000_000_000, 'usrquota': True,
+        'quota': {'hard_bytes': 8_000_000_000, 'used_bytes': 7_000_000_000, 'free_bytes': 1_000_000_000},
+        'quota_error': None, 'free_bytes': 1_000_000_000,
+    }
+
+
+def patch_tmp_space(monkeypatch, reading, *, same):
+    monkeypatch.setattr(LANES, 'measure_tmp_space', lambda path=Path('/tmp'): reading, raising=False)
+    monkeypatch.setattr(LANES, '_same_device', lambda left, right: same, raising=False)
+
+
+def test_tmp_lane_budget_uses_the_measured_sizes():
+    assert LANES.TMP_IMAGE_CACHE_BYTES == TMP_IMAGE_CACHE_BYTES
+    assert LANES.TMP_LANE_CHECKOUT_BYTES == TMP_LANE_CHECKOUT_BYTES
+    assert LANES.TMP_LANE_VENV_BYTES == TMP_LANE_VENV_BYTES
+    assert LANES.TMP_LANE_TOOLS_BYTES == TMP_LANE_TOOLS_BYTES
+    assert LANES.TMP_LANE_MARGIN_BYTES == TMP_LANE_MARGIN_BYTES
+    assert LANES.tmp_lane_budget_bytes(2) == tmp_budget(2)
+    assert LANES.tmp_lane_budget_bytes(4) == tmp_budget(4)
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.tmp_lane_budget_bytes(3)
+
+
+def test_usrquota_follows_the_longest_mount_and_the_super_options():
+    table = (
+        '25 1 8:1 / / rw,relatime - ext4 /dev/sda1 rw\n'
+        '36 25 0:32 / /tmp rw,nosuid,nodev shared:16 - tmpfs tmpfs '
+        'rw,nosuid,nodev,size=32099836k,nr_inodes=1048576,inode64,usrquota\n'
+    )
+    assert LANES.usrquota_in_mountinfo(table, Path('/tmp')) is True
+    assert LANES.usrquota_in_mountinfo(table, Path('/tmp/ocor-verify/lane-2')) is True
+    assert LANES.usrquota_in_mountinfo(table, Path('/home/luca')) is False
+    plain = '36 25 0:32 / /tmp rw,nosuid,nodev - tmpfs tmpfs rw,nosuid,nodev,size=32099836k\n'
+    assert LANES.usrquota_in_mountinfo(plain, Path('/tmp')) is False
+    escaped = '40 25 0:33 / /tmp/lane\\040a rw,usrquota - tmpfs tmpfs rw\n'
+    assert LANES.usrquota_in_mountinfo(escaped, Path('/tmp/lane a/repo')) is True
+    assert LANES.usrquota_in_mountinfo('', Path('/tmp')) is False
+    assert LANES.usrquota_in_mountinfo('not a mount line\n', Path('/tmp')) is False
+    assert LANES.usrquota_in_mountinfo('36 25 0:32 / /tmp rw,usrquota\n', Path('/tmp')) is False
+
+
+def test_quota_free_bytes_treats_the_hard_limit_as_kibibytes():
+    assert LANES.quota_free_bytes(25679868, 1_143_410_688, 0x3F) == 25679868 * 1024 - 1_143_410_688
+    assert LANES.quota_free_bytes(0, 10, 0x3F) is None
+    assert LANES.quota_free_bytes(10, 10 * 1024 + 5, 0x3F) == 0
+    with pytest.raises(CAMPAIGN.CampaignError, match='not valid'):
+        LANES.quota_free_bytes(1, 0, 0)
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed'):
+        LANES.quota_free_bytes(True, 0, 0x3F)
+
+
+def _hook_unlimited_tmp_quota(monkeypatch, filesystem_free):
+    """usrquota on, hard limit unset, filesystem free forced. The real measure runs."""
+
+    class Stats:
+        f_bavail = filesystem_free
+        f_frsize = 1
+
+    monkeypatch.setattr(LANES.os, 'statvfs', lambda path: Stats())
+    monkeypatch.setattr(LANES, 'mount_has_usrquota', lambda path: True)
+    monkeypatch.setattr(LANES, '_read_user_quota', lambda path: {
+        'hard_kib': 0, 'hard_bytes': None, 'used_bytes': 0, 'free_bytes': None, 'valid': 0x3F,
+    })
+
+
+def test_read_user_quota_refuses_a_failed_syscall(monkeypatch, tmp_path):
+    def failed(number, descriptor, command, uid, ref):
+        del number, descriptor, command, uid, ref
+        LANES.ctypes.set_errno(1)
+        return -1
+
+    class Lib:
+        syscall = staticmethod(failed)
+
+    monkeypatch.setattr(LANES.ctypes, 'CDLL', lambda name, use_errno=True: Lib())
+    monkeypatch.setattr(LANES.os, 'uname', lambda: type('Uname', (), {'machine': 'x86_64'})())
+    with pytest.raises(CAMPAIGN.CampaignError, match='quotactl_fd failed: errno 1'):
+        LANES._read_user_quota(tmp_path)
+
+
+def test_read_user_quota_reports_an_unset_hard_limit_as_unlimited(monkeypatch, tmp_path):
+    def succeed(number, descriptor, command, uid, ref):
+        del number, descriptor, command, uid
+        block = ref._obj
+        block.dqb_bhardlimit = 0
+        block.dqb_curspace = 0
+        block.dqb_valid = LANES.QIF_BLIMITS | LANES.QIF_SPACE
+        return 0
+
+    class Lib:
+        syscall = staticmethod(succeed)
+
+    monkeypatch.setattr(LANES.ctypes, 'CDLL', lambda name, use_errno=True: Lib())
+    monkeypatch.setattr(LANES.os, 'uname', lambda: type('Uname', (), {'machine': 'x86_64'})())
+    quota = LANES._read_user_quota(tmp_path)
+    assert quota['hard_kib'] == 0 and quota['hard_bytes'] is None and quota['free_bytes'] is None
+
+
+def test_measure_tmp_space_keeps_an_unlimited_quota_distinct_from_filesystem_free(monkeypatch):
+    _hook_unlimited_tmp_quota(monkeypatch, 1)
+    reading = LANES.measure_tmp_space(Path('/tmp'))
+    assert reading['filesystem_free_bytes'] == 1
+    assert reading['usrquota'] is True and reading['quota_error'] is None
+    assert reading['quota']['hard_kib'] == 0 and reading['quota']['free_bytes'] is None
+    assert reading['free_bytes'] is None
+    assert reading['quota_unlimited'] is True
+
+
+def test_lane_launch_refuses_an_unlimited_quota_when_filesystem_free_is_below_the_budget(host_world, monkeypatch):
+    """An unset hard limit removes only the quota check. The filesystem limit stays."""
+    _hook_unlimited_tmp_quota(monkeypatch, 1)
+    monkeypatch.setattr(LANES, '_same_device', lambda left, right: True, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert 'filesystem free 1 bytes' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    assert 'unlimited' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_above_the_budget(host_world, monkeypatch):
+    _hook_unlimited_tmp_quota(monkeypatch, tmp_budget(2) + 1)
+    monkeypatch.setattr(LANES, '_same_device', lambda left, right: True, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['decision'] == 'enough' and result['tmp_space']['quota_unlimited'] is True
+    assert result['tmp_space']['filesystem_free_bytes'] == tmp_budget(2) + 1
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def test_lane_launch_refuses_a_short_filesystem_when_the_hard_limit_is_unset(host_world, monkeypatch):
+    """A caller-supplied free_bytes does not waive a short /tmp filesystem."""
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': True,
+        'quota': {'hard_kib': 0, 'hard_bytes': None, 'used_bytes': 0, 'free_bytes': None},
+        'quota_error': None, 'free_bytes': 1,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert 'filesystem free 1 bytes' in result['error']
+    assert 'unlimited' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_measure_tmp_space_reads_filesystem_free_and_user_quota_when_enabled():
+    reading = LANES.measure_tmp_space(Path('/tmp'))
+    assert reading['path'] == '/tmp'
+    assert type(reading['filesystem_free_bytes']) is int and reading['filesystem_free_bytes'] >= 0
+    assert reading['usrquota'] is LANES.mount_has_usrquota(Path('/tmp'))
+    if reading['usrquota']:
+        assert reading['quota_error'] is None
+        quota = reading['quota']
+        assert quota['valid'] & (LANES.QIF_BLIMITS | LANES.QIF_SPACE) == (LANES.QIF_BLIMITS | LANES.QIF_SPACE)
+        if quota['hard_kib'] == 0:
+            assert quota['free_bytes'] is None and reading['free_bytes'] is None
+            assert reading['quota_unlimited'] is True
+        else:
+            assert quota['hard_bytes'] == quota['hard_kib'] * 1024
+            assert reading['free_bytes'] == max(0, quota['hard_bytes'] - quota['used_bytes'])
+    else:
+        assert reading['quota'] is None and reading['free_bytes'] == reading['filesystem_free_bytes']
+
+
+def test_lane_launch_refuses_when_tmp_quota_cannot_hold_the_lanes(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert f"free 1000000000 bytes, required {tmp_budget(2)} bytes for 2 lanes" in result['error']
+    assert 'filesystem free 30000000000 bytes' in result['error']
+    assert 'quota hard 8000000000 bytes, used 7000000000 bytes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_lane_launch_refuses_when_the_tmp_user_quota_is_unreadable(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 30_000_000_000, 'usrquota': True,
+        'quota': None, 'quota_error': 'quotactl_fd failed: errno 1', 'free_bytes': None,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error'] and 'unreadable' in result['error']
+    assert 'quotactl_fd failed: errno 1' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names
+
+
+def test_lane_launch_proceeds_when_the_tmp_quota_holds_the_lanes(host_world, monkeypatch):
+    reading = tight_tmp_reading()
+    reading['free_bytes'] = 100_000_000_000
+    reading['quota'] = {'hard_bytes': 200_000_000_000, 'used_bytes': 100_000_000_000, 'free_bytes': 100_000_000_000}
+    patch_tmp_space(monkeypatch, reading, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is True and result['tmp_space']['decision'] == 'enough'
+    assert result['tmp_space']['required_bytes'] == tmp_budget(2)
+    assert result == stored_result(host_world)
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def test_lane_launch_refuses_a_short_filesystem_when_usrquota_is_absent(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': False,
+        'quota': None, 'quota_error': None, 'free_bytes': 1,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert 'filesystem free 1 bytes' in result['error']
+    assert 'no user quota' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_lane_launch_refuses_a_short_filesystem_when_the_finite_quota_holds(host_world, monkeypatch):
+    budget = tmp_budget(2)
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': True,
+        'quota': {'hard_kib': 1, 'hard_bytes': budget + 10, 'used_bytes': 0, 'free_bytes': budget + 10},
+        'quota_error': None, 'free_bytes': budget + 10,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'filesystem free 1 bytes' in result['error']
+    assert f'required {budget} bytes for 2 lanes' in result['error']
+    assert 'quota free' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_lane_launch_names_quota_and_filesystem_when_both_are_short(host_world, monkeypatch):
+    reading = tight_tmp_reading()
+    reading['filesystem_free_bytes'] = 1
+    patch_tmp_space(monkeypatch, reading, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'free 1000000000 bytes' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    assert 'filesystem free 1 bytes is below the required' in result['error']
+    assert 'quota hard 8000000000 bytes, used 7000000000 bytes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names
+
+
+def test_lane_launch_admits_when_usrquota_is_absent_and_the_filesystem_holds_the_lanes(host_world, monkeypatch):
+    budget = tmp_budget(2)
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': budget + 1, 'usrquota': False,
+        'quota': None, 'quota_error': None, 'free_bytes': budget + 1,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is True and result['tmp_space']['decision'] == 'enough'
+    assert result['tmp_space']['usrquota'] is False
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def test_lane_launch_ignores_tmp_quota_when_work_is_on_another_device(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is False and result['tmp_space']['decision'] == 'not_applicable'
+
+
+def test_unpatched_lane_launch_does_not_apply_a_short_host_tmp_budget(host_world, monkeypatch):
+    """VF-005: a test that does not replace _same_device must not fail on the host quota."""
+    monkeypatch.setattr(LANES, 'measure_tmp_space', lambda path=Path('/tmp'): {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': True,
+        'quota': {'hard_kib': 1, 'hard_bytes': 1, 'used_bytes': 0, 'free_bytes': 1},
+        'quota_error': None, 'free_bytes': 1,
+    }, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is False
+    assert result['tmp_space']['decision'] == 'not_applicable'
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def _write_tool_lock(directory, tools):
+    path = directory / 'toolchain.lock.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({'tools': tools}, indent=2, sort_keys=True) + '\n')
+    return path
+
+
+def test_locked_tool_declarations_refuse_a_digest_that_is_not_the_lock(tmp_path):
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    payload = b'not-the-lock\n'
+    (tool_bin / 'uv').write_bytes(payload)
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': 'b' * 64}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='digest mismatch'):
+        LANES.locked_tool_declarations([tool_bin], lock)
+
+
+def test_locked_tool_declarations_record_a_matching_symlink_target(tmp_path):
+    payload = b'locked-uv\n'
+    target = tmp_path / 'real-uv'
+    target.write_bytes(payload)
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    (tool_bin / 'uv').symlink_to(target)
+    digest = hashlib.sha256(payload).hexdigest()
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': digest}, {'id': 'java', 'integrity': 'c' * 64}])
+    declared = LANES.locked_tool_declarations([tool_bin], lock)
+    assert declared == [{'command': 'uv', 'path': str(tool_bin / 'uv'), 'sha256': digest}]
+
+
+def test_locked_tool_declarations_accept_an_empty_directory(tmp_path):
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': 'a' * 64}])
+    assert LANES.locked_tool_declarations([tool_bin], lock) == []
+
+
+@pytest.mark.parametrize('integrity', ['', 'b' * 63, 'B' * 64, 'g' * 64, 'b' * 64 + ' ', 'é' + 'b' * 63])
+def test_locked_tool_declarations_refuse_an_integrity_that_is_not_sha256_text(tmp_path, integrity):
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': integrity}])
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    with pytest.raises(CAMPAIGN.CampaignError, match='integrity is not a sha256'):
+        LANES.locked_tool_declarations([tool_bin], lock)
+
+
+def test_locked_tool_declarations_refuse_a_lock_that_is_not_utf8_or_not_a_tool_list(tmp_path):
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    raw = tmp_path / 'toolchain.lock.json'
+    raw.write_bytes(b'\xff{"tools": []}')
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.locked_tool_declarations([tool_bin], raw)
+    for body in (
+        '{"tools": {}}',
+        '{"tools": [5]}',
+        '{"tools": [{"command": "uv", "integrity": NaN}]}',
+    ):
+        raw.write_text(body)
+        with pytest.raises(CAMPAIGN.CampaignError):
+            LANES.locked_tool_declarations([tool_bin], raw)
+
+
+def test_locked_tool_declarations_refuse_a_missing_directory_and_an_unknown_name(tmp_path):
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': 'a' * 64}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='not a directory'):
+        LANES.locked_tool_declarations([tmp_path / 'missing'], lock)
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    (tool_bin / 'not-locked').write_bytes(b'x')
+    with pytest.raises(CAMPAIGN.CampaignError, match='not a locked command'):
+        LANES.locked_tool_declarations([tool_bin], lock)
+
+
+def test_execute_refuses_a_tool_bin_digest_before_provision(host_world):
+    tool_bin = host_world['work'] / 'tool-bin'
+    tool_bin.mkdir(parents=True)
+    (tool_bin / 'uv').write_bytes(b'wrong\n')
+    _write_tool_lock(host_world['source'] / 'infra', [{'command': 'uv', 'integrity': 'b' * 64}])
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'digest mismatch' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+
+
+def test_execute_records_a_locked_tool_whose_digest_matches(host_world):
+    payload = b'locked-uv\n'
+    tool_bin = host_world['work'] / 'tool-bin'
+    tool_bin.mkdir(parents=True)
+    (tool_bin / 'uv').write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+    _write_tool_lock(host_world['source'] / 'infra', [{'command': 'uv', 'integrity': digest}])
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['locked_tools'] == [{'command': 'uv', 'path': str(tool_bin / 'uv'), 'sha256': digest}]
+
+
+def test_serial_fallback_does_not_consult_tmp_quota(host_world, monkeypatch):
+    host_world['meminfo'].write_text(meminfo(31743008, 1000))
+
+    def boom(path=Path('/tmp')):
+        raise AssertionError(f'tmp quota consulted for {path}')
+
+    monkeypatch.setattr(LANES, 'measure_tmp_space', boom, raising=False)
+    result = execute(host_world)
+    assert result['status'] == 'SERIAL_FALLBACK'
+    assert 'tmp_space' not in result
+
+
+def test_lifecycle_refuses_before_provision_when_tmp_quota_cannot_hold_the_lanes(life_world, monkeypatch):
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=True)
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL'
+    assert 'tmp space is not enough' in report['error']
+    assert f'required {tmp_budget(4)} bytes for 4 lanes' in report['error']
+    names = [call[0] for call in life_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'bootstrap' not in names
+
+
+def test_lifecycle_refuses_a_short_filesystem_before_provision_when_usrquota_is_absent(life_world, monkeypatch):
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': False,
+        'quota': None, 'quota_error': None, 'free_bytes': 1,
+    }, same=True)
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL'
+    assert 'filesystem free 1 bytes' in report['error']
+    assert 'no user quota' in report['error']
+    assert f'required {tmp_budget(4)} bytes for 4 lanes' in report['error']
+    names = [call[0] for call in life_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'bootstrap' not in names
+
+
+def test_execute_binds_stop_signals_around_the_lanes(host_world, monkeypatch):
+    seen = {}
+
+    def bind(callback):
+        seen['callback'] = callback
+        return lambda: seen.setdefault('restored', True)
+
+    monkeypatch.setattr(LANES, 'bind_campaign_stop_signals', bind, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert seen.get('restored') is True and callable(seen.get('callback'))
+
+
+def test_stop_signal_handler_releases_then_exits():
+    calls = []
+    restore = LANES.bind_campaign_stop_signals(lambda: calls.append('go'))
+    try:
+        handler = signal.getsignal(signal.SIGTERM)
+        with pytest.raises(SystemExit) as caught:
+            handler(signal.SIGTERM, None)
+        assert caught.value.code == 128 + signal.SIGTERM
+        assert calls == ['go']
+        hangup = signal.getsignal(signal.SIGHUP)
+        with pytest.raises(SystemExit) as caught_hup:
+            hangup(signal.SIGHUP, None)
+        assert caught_hup.value.code == 128 + signal.SIGHUP
+    finally:
+        restore()
+
+
+def _lane_residue(tmp_path):
+    work = tmp_path / 'work'
+    cache = work / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    repo = work / 'lane-1' / 'repo'
+    repo.mkdir(parents=True)
+    (repo / 'f').write_text('checkout')
+    out = work / 'lane-1' / 'out'
+    out.mkdir()
+    (out / 'lane_runner.log').write_text('log\n')
+    (work / 'campaign_result.json').write_text('{}\n')
+    lane = LANES.Lane(1, 'aaaaaaaaaaaa-1', work / 'lane-1', tmp_path / 'home', 1, 1)
+    return work, cache, repo, out, lane
+
+
+def test_discard_removes_a_tmp_quota_cache_and_keeps_the_result(tmp_path):
+    work, cache, repo, out, lane = _lane_residue(tmp_path)
+    LANES.discard_script_work_trees(work, [lane], consumes_tmp_quota=True)
+    LANES.discard_script_work_trees(work, [lane], consumes_tmp_quota=True)
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
+
+
+def test_discard_removes_the_image_cache_when_work_does_not_consume_tmp_quota(tmp_path):
+    work, cache, repo, out, lane = _lane_residue(tmp_path)
+    LANES.discard_script_work_trees(work, [lane], consumes_tmp_quota=False)
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
+
+
+def test_a_delivered_sigterm_removes_tmp_trees_and_keeps_the_result(tmp_path):
+    work, cache, repo, out, _lane = _lane_residue(tmp_path)
+    code = (
+        'import os, signal, sys\n'
+        'from pathlib import Path\n'
+        'sys.path.insert(0, sys.argv[1])\n'
+        'import run_local_lane_campaign as lanes\n'
+        'work = Path(sys.argv[2])\n'
+        'lane = lanes.Lane(1, "aaaaaaaaaaaa-1", work / "lane-1", work / "home", 1, 1)\n'
+        'def release():\n'
+        '    lanes.discard_script_work_trees(work, [lane], consumes_tmp_quota=True)\n'
+        'lanes.bind_campaign_stop_signals(release)\n'
+        'os.kill(os.getpid(), signal.SIGTERM)\n'
+        'print("STILL_ALIVE", flush=True)\n'
+    )
+    proc = subprocess.run([sys.executable, '-c', code, str(ROOT / 'scripts'), str(work)],
+                          cwd=ROOT, capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 128 + signal.SIGTERM, proc.stderr
+    assert 'STILL_ALIVE' not in proc.stdout
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
+
+
+def test_execute_release_removes_only_a_tmp_quota_cache(host_world, monkeypatch):
+    """The release bound to SIGTERM drops the cache only when the pre-check applied."""
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'kept').write_text('archive')
+    seen = {}
+
+    def bind(callback):
+        seen['callback'] = callback
+        return lambda: seen.setdefault('restored', True)
+
+    monkeypatch.setattr(LANES, 'bind_campaign_stop_signals', bind, raising=False)
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 100_000_000_000, 'usrquota': True,
+        'quota': {'hard_bytes': 200_000_000_000, 'used_bytes': 1, 'free_bytes': 100_000_000_000},
+        'quota_error': None, 'free_bytes': 100_000_000_000,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert seen.get('restored') is True and not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+    seen['callback']()
+    assert not cache.exists()
+
+
+def test_execute_release_removes_the_cache_when_tmp_quota_does_not_apply(host_world, monkeypatch):
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'kept').write_text('archive')
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+
+
+def test_a_delivered_sigterm_removes_the_cache_without_usrquota(tmp_path):
+    work, cache, repo, out, _lane = _lane_residue(tmp_path)
+    code = (
+        'import os, signal, sys\n'
+        'from pathlib import Path\n'
+        'sys.path.insert(0, sys.argv[1])\n'
+        'import run_local_lane_campaign as lanes\n'
+        'work = Path(sys.argv[2])\n'
+        'lane = lanes.Lane(1, "aaaaaaaaaaaa-1", work / "lane-1", work / "home", 1, 1)\n'
+        'def release():\n'
+        '    lanes.discard_script_work_trees(work, [lane], consumes_tmp_quota=False)\n'
+        'lanes.bind_campaign_stop_signals(release)\n'
+        'os.kill(os.getpid(), signal.SIGTERM)\n'
+        'print("STILL_ALIVE", flush=True)\n'
+    )
+    proc = subprocess.run([sys.executable, '-c', code, str(ROOT / 'scripts'), str(work)],
+                          cwd=ROOT, capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 128 + signal.SIGTERM, proc.stderr
+    assert 'STILL_ALIVE' not in proc.stdout
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
+
+
+@pytest.mark.parametrize('usrquota', [True, False])
+def test_a_failed_launch_removes_the_image_cache(host_world, monkeypatch, usrquota):
+    budget = tmp_budget(2)
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    reading = {
+        'path': '/tmp', 'filesystem_free_bytes': budget + 1, 'usrquota': usrquota,
+        'quota': None, 'quota_error': None, 'free_bytes': budget + 1,
+    }
+    if usrquota:
+        reading['quota'] = {
+            'hard_kib': 1, 'hard_bytes': budget + 1, 'used_bytes': 0, 'free_bytes': budget + 1,
+        }
+    patch_tmp_space(monkeypatch, reading, same=True)
+    host_world['fail_provision'] = 1
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'provisioning failed' in result['error']
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+
+
+_LANE_SECRET = 'synthetic-lane-password'
+
+
+def _plant_lane_secret(world, *, raw):
+    real = world['launcher']
+
+    def launcher(argv, log):
+        process = real(argv, log)
+        index = int(argv[argv.index('--run-lane') + 1].split('/lane-')[-1].split('/')[0])
+        if index != 1:
+            return process
+        item = next(entry for entry in world['lanes'] if entry.index == index)
+        (item.repository / '.ocor').mkdir(parents=True, exist_ok=True)
+        (item.repository / '.ocor/bootstrap.env').write_text(
+            f'OCOR_LOCAL_POSTGRES_PASSWORD={_LANE_SECRET}\n')
+        log.write_bytes(raw)
+        return process
+
+    world['launcher'] = launcher
+
+
+def _enough_tmp(monkeypatch, *, usrquota):
+    budget = tmp_budget(2)
+    reading = {
+        'path': '/tmp', 'filesystem_free_bytes': budget + 1, 'usrquota': usrquota,
+        'quota': None, 'quota_error': None, 'free_bytes': budget + 1,
+    }
+    if usrquota:
+        reading['quota'] = {
+            'hard_kib': 1, 'hard_bytes': budget + 1, 'used_bytes': 0, 'free_bytes': budget + 1,
+        }
+    patch_tmp_space(monkeypatch, reading, same=True)
+
+
+def test_a_non_utf8_lane_log_is_redacted_and_does_not_skip_teardown(host_world, monkeypatch):
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    _enough_tmp(monkeypatch, usrquota=False)
+    _plant_lane_secret(host_world, raw=b'password ' + _LANE_SECRET.encode() + b' \xff\n')
+    result = execute(host_world, selection=nodes())
+    rendered = json.dumps(result)
+    assert result['status'] == 'FAIL'
+    assert 'UnicodeDecodeError' in result['error']
+    assert _LANE_SECRET not in rendered
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+    assert 'remove_root_image' in [call[0] for call in host_world['calls']]
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+    log = host_world['work'] / 'lane-1' / 'out' / 'lane_runner.log'
+    assert log.is_file()
+    assert _LANE_SECRET.encode() not in log.read_bytes()
+
+
+def test_a_redactor_io_error_does_not_skip_teardown_or_expose_the_secret(host_world, monkeypatch):
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    _enough_tmp(monkeypatch, usrquota=True)
+
+    def boom(repository, path):
+        del repository, path
+        raise OSError('log unreadable ' + _LANE_SECRET)
+
+    monkeypatch.setattr(LANES.bootstrap_ci, 'redact_campaign_log', boom)
+    _plant_lane_secret(host_world, raw=f'password {_LANE_SECRET}\n'.encode())
+    result = execute(host_world, selection=nodes())
+    rendered = json.dumps(result)
+    assert result['status'] == 'FAIL'
+    assert 'OSError' in result['error']
+    assert _LANE_SECRET not in rendered
+    assert 'log unreadable' not in rendered
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+    assert not cache.exists()
+    log = host_world['work'] / 'lane-1' / 'out' / 'lane_runner.log'
+    assert log.is_file()
+    assert _LANE_SECRET.encode() not in log.read_bytes()
+
+
+def test_an_unsearchable_lane_output_does_not_skip_teardown(host_world, monkeypatch):
+    """VF-003: mode 000 on a lane output directory is a redaction error, not a skipped teardown."""
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    _enough_tmp(monkeypatch, usrquota=False)
+    output = {}
+    real = host_world['launcher']
+
+    def launcher(argv, log):
+        process = real(argv, log)
+        index = int(argv[argv.index('--run-lane') + 1].split('/lane-')[-1].split('/')[0])
+        if index != 1:
+            return process
+        item = next(entry for entry in host_world['lanes'] if entry.index == index)
+        (item.repository / '.ocor').mkdir(parents=True, exist_ok=True)
+        (item.repository / '.ocor/bootstrap.env').write_text(
+            f'OCOR_LOCAL_POSTGRES_PASSWORD={_LANE_SECRET}\n')
+        log.write_bytes(b'password ' + _LANE_SECRET.encode() + b'\n')
+        output['dir'] = item.output
+        item.output.chmod(0)
+        return process
+
+    host_world['launcher'] = launcher
+    try:
+        result = execute(host_world, selection=nodes())
+    finally:
+        if output.get('dir') is not None:
+            output['dir'].chmod(0o755)
+    rendered = json.dumps(result)
+    assert result['status'] == 'FAIL'
+    assert 'PermissionError' in result['error']
+    assert _LANE_SECRET not in rendered
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+    assert 'remove_root_image' in [call[0] for call in host_world['calls']]
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()

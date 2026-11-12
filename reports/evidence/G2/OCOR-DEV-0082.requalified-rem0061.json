@@ -1,0 +1,104 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
+    "decision": "REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10) option 1",
+    "id": "OCOR-DEV-REM-0061",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0061-RCCAD/OCOR-DEV-REM-0061.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0061/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+      "cwd": ".",
+      "duration_seconds": 4.87,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "83d9b74648c14a2afb14904a2a83183274ece7c9",
+      "label": "regression-rem0061",
+      "not_executed": 0,
+      "passed": 214,
+      "raw_sha256": "a6aff7e54eb00524818a540c715672429a63d8c0daae51398f43f699e0c29515",
+      "skipped": 0,
+      "started_at": "2026-11-11T07:48:19Z",
+      "status": "PASS",
+      "xfailed": 0
+    }
+  ],
+  "commit": "83d9b74648c14a2afb14904a2a83183274ece7c9",
+  "commit_role": "code and tests at which this regression command ran; input digests are git show of this commit. The record file is a later commit and does not change these inputs.",
+  "created_at": "2026-11-11T07:50:44Z",
+  "drifted_inputs": [
+    "scripts/validate_ocor_development_plan.py"
+  ],
+  "environment": {
+    "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
+    "clean_shell": true,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "Lenovo Legion Pro 5 16IAX10H",
+    "implementer_cli": "Grok Build (grok-4.7)",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "qualification_source_commit": "83d9b74648c14a2afb14904a2a83183274ece7c9",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal at the regression command",
+    "threads": 24
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/tests/qualify_rem0029_teardown.py": "e2c3d205283166528be54e81cc5a90176fc2073e028321660369ee9f917361a0",
+    "reports/tests/test_reset_teardown_residue.py": "8a0a2e491d01acf78acdc135781cd21f47c2dfa74af2a18077557ae434ab2064",
+    "scripts/reset_test_environment.py": "063e66ae0841fec992b62b21315e54da4b8b77ee3418e80646459988909a786c",
+    "scripts/validate_ocor_development_plan.py": "992e6d664e29818fbfd45251632cfe98b83afbcf648df32179211c63c4f2ae3c"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "previous_record": {
+    "record_id": "OCOR-DEV-0082-requalified-rem0059-636975eaacd7",
+    "record_path": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0059.json",
+    "record_sha256": "c5707bede9b4e604c9c822216b5553d0b83ea23423c8ca79aa8a12892fcc0441",
+    "status": "SEALED"
+  },
+  "qualification_limits": "Regression-only requalification at commit 83d9b74648c14a2afb14904a2a83183274ece7c9, the commit on which this command ran. Input digests are the bytes of that commit. This record is a later commit and does not change those inputs. It does not rerun the four-lane suite and it is not evidence of a requirement. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.",
+  "qualifies_requirements": false,
+  "raw_output_format": "pytest -q stdout plus the wrapper line EXIT:0",
+  "raw_output_sha256": "a6aff7e54eb00524818a540c715672429a63d8c0daae51398f43f699e0c29515",
+  "record_id": "OCOR-DEV-0082-requalified-rem0061-83d9b74648c1",
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "residual_risks": [
+    "Regression-only requalification after the plan allowlist change of OCOR-DEV-REM-0061. Not runtime conformance and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only: the task tests of 0005, 0050 and 0082 passed together at the REM-0061 head after the allowlist change; not a re-assessment of conformance",
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0061 regression requalification of this task after the plan allowlist change"
+      }
+    ],
+    "verifier_excluded_providers": [
+      "xAI"
+    ],
+    "verifier_started_by_implementer": false
+  },
+  "schema_version": "1.0",
+  "status": "PASS",
+  "supersedes": "OCOR-DEV-0082-requalified-rem0059-636975eaacd7",
+  "supersession_scope": "Regression-only after the OCOR-DEV-REM-0061 change of scripts/validate_ocor_development_plan.py. The task tests are unchanged. Not a re-assessment of conformance and never evidence of a requirement.",
+  "task_id": "OCOR-DEV-0082",
+  "tests_unchanged_from_base": true
+}

@@ -21,11 +21,19 @@ the CI parts and the verifier procedure keep their behaviour.
   at the same absolute path. The stack keeps its default names and ports
   (ocor-bootstrap, ocor-poc, 127.0.0.1) because daemon and network are private;
   every lane uses a sandbox, so the host daemon's development stack is untouched.
+- Before provisioning, a work directory on the same device as /tmp is refused
+  when filesystem free space is below the lane budget. A finite user quota on
+  that mount is a second limit. An unset hard limit removes only the quota
+  limit. An absent usrquota does not remove the filesystem limit. An unreadable
+  quota still refuses. SIGTERM and SIGHUP run the same teardown and always
+  remove the shared image cache. The result file and the lane logs stay. A
+  redaction or log-read failure is recorded and does not skip teardown.
 """
 from __future__ import annotations
 
 import argparse
 import calendar
+import ctypes
 import datetime
 import hashlib
 import heapq
@@ -50,6 +58,7 @@ from pathlib import Path
 from typing import Any, NamedTuple, Protocol, TypeGuard
 
 import bootstrap_ci_environment as bootstrap_ci
+import local_lane_image_cache as image_cache
 import observe_kind_teardown as kind_observer
 import run_qualifying_campaign as campaign
 from run_qualifying_campaign import CampaignError
@@ -86,6 +95,23 @@ LANE_SYSTEM_PATH = ("/usr/local/bin", "/usr/bin", "/bin")
 EMPTY_ROOT_DIRS = ("dev", "etc", "home", "proc", "root", "run", "sys", "tmp", "usr", "var", "var/lib", "var/lib/docker")
 USR_MERGED_LINKS = ("bin", "sbin", "lib", "lib64", "lib32", "libx32")
 PROVISION_TIMEOUT_SECONDS = 1200
+# TMP-RESIDUI-CAMPAGNA (2026-11-11). Image cache: campaign-46835be, 1_790_746_974
+# bytes. Checkout without its venv and the venv: rem-0061 worktree at 2baa4aa,
+# 1_242_693_615 and 1_052_242_023 bytes. Tools: the published 181 MiB mount.
+# The margin is 1 GiB. Admission compares filesystem free space and, when the
+# hard limit is finite, the /tmp user quota. df does not show the quota.
+TMP_IMAGE_CACHE_BYTES = 1_790_746_974
+TMP_LANE_CHECKOUT_BYTES = 1_242_693_615
+TMP_LANE_VENV_BYTES = 1_052_242_023
+TMP_LANE_TOOLS_BYTES = 181 * 1024 * 1024
+TMP_LANE_MARGIN_BYTES = 1024 * 1024 * 1024
+# Linux dqblk: the hard block limit is in 1 KiB units; dqb_curspace is bytes.
+# x86_64 __NR_quotactl_fd is 443. Q_GETQUOTA is 0x800007 and USRQUOTA is 0.
+QIF_BLIMITS = 1
+QIF_SPACE = 2
+_Q_GETQUOTA = 0x800007
+_USRQUOTA = 0
+_QUOTACTL_FD_SYSCALL = {"x86_64": 443}
 # A docker exec that reaches the sandbox before the delegation lands in its root
 # cgroup and makes the subtree_control write fail; the init moves late
 # processes and retries, bounded, then refuses to start dockerd.
@@ -394,7 +420,25 @@ def sandbox_init(lane: Lane) -> str:
             f"exec /usr/bin/dockerd --host unix:///run/docker.sock --group {lane.gid} --data-root /var/lib/docker")
 
 
-def sandbox_run_argv(lane: Lane, mounts: list[Path], *, output_root: Path) -> list[str]:
+def readonly_mount_arguments(output_root: Path, readonly_mounts: list[Path] | None) -> list[str]:
+    """Bind the shared image cache read-only after the writable campaign output.
+
+    A nested mount is applied after the parent, so the cache stays read-only while
+    lane output under the same work directory stays writable. A mount of the output
+    itself, or of one of its parents, would hide that writable tree and is refused.
+    """
+    arguments: list[str] = []
+    for mount in readonly_mounts or []:
+        if not isinstance(mount, Path) or not mount.is_absolute():
+            raise CampaignError("readonly mount is not an absolute path")
+        if mount == output_root or output_root.is_relative_to(mount):
+            raise CampaignError("readonly mount would hide the writable campaign output")
+        arguments += ["-v", f"{mount}:{mount}:ro"]
+    return arguments
+
+
+def sandbox_run_argv(lane: Lane, mounts: list[Path], *, output_root: Path,
+                     readonly_mounts: list[Path] | None = None) -> list[str]:
     argv = ["docker", "run", "-d", "--name", lane.name, "--label", f"{LANE_LABEL}={lane.campaign}",
             "--privileged", "--cgroupns=private",
             "-v", "/usr:/usr:ro", "-v", "/etc:/etc:ro",
@@ -402,6 +446,7 @@ def sandbox_run_argv(lane: Lane, mounts: list[Path], *, output_root: Path) -> li
     for mount in mounts:
         argv += ["-v", f"{mount}:{mount}:ro"]
     argv += ["-v", f"{lane.root}:{lane.root}", "-v", f"{output_root}:{output_root}",
+             *readonly_mount_arguments(output_root, readonly_mounts),
              "--tmpfs", "/run", "--tmpfs", "/tmp:exec,mode=1777", "--tmpfs", "/root",
              "-e", f"PATH={SANDBOX_PATH}", SANDBOX_ROOT_IMAGE, "/bin/sh", "-c", sandbox_init(lane)]
     return argv
@@ -462,6 +507,56 @@ def verify_lane_tools(repository: Path) -> None:
             raise CampaignError(f"qualification tool {tool['id']} differs from its lock")
 
 
+def locked_tool_declarations(tool_bins: list[Path], lock_path: Path) -> list[dict[str, str]]:
+    """Names in a tool bin must be toolchain-lock commands and must match integrity.
+
+    The digest is the file bytes. ``read_bytes`` follows a symlink to its target.
+    An empty directory declares no tools. A missing directory, an unknown name,
+    or a different digest fails closed. Lock entries without a command, such as
+    container images, are not compared here.
+    """
+    document = load_json_document(lock_path, "toolchain lock")
+    tools = document.get("tools") if isinstance(document, dict) else None
+    if not isinstance(tools, list):
+        raise CampaignError(f"toolchain lock has no tools array: {lock_path}")
+    expected: dict[str, str] = {}
+    for item in tools:
+        if not isinstance(item, dict):
+            raise CampaignError(f"toolchain lock tool is not an object: {lock_path}")
+        command = item.get("command")
+        if not isinstance(command, str) or not command:
+            continue
+        integrity = item.get("integrity")
+        if not isinstance(integrity, str) or SHA256_HEX.fullmatch(integrity) is None:
+            raise CampaignError(f"toolchain lock integrity is not a sha256: {command}")
+        if command in expected and expected[command] != integrity:
+            raise CampaignError(f"toolchain lock repeats {command} with a different integrity")
+        expected[command] = integrity
+    declared: list[dict[str, str]] = []
+    for directory in tool_bins:
+        if not isinstance(directory, Path) or not directory.is_dir():
+            raise CampaignError(f"tool bin is not a directory: {directory}")
+        try:
+            entries = sorted(directory.iterdir(), key=lambda item: item.name)
+        except OSError as exc:
+            raise CampaignError(f"tool bin is not readable: {directory}: {exc}") from exc
+        for entry in entries:
+            command = entry.name
+            if command not in expected:
+                raise CampaignError(f"tool bin entry is not a locked command: {entry}")
+            try:
+                # CONTROL: locked-tool-digest
+                digest = hashlib.sha256(entry.read_bytes()).hexdigest()
+            except OSError as exc:
+                raise CampaignError(f"locked tool is not readable: {entry}: {exc}") from exc
+            if digest != expected[command]:
+                raise CampaignError(
+                    f"locked tool digest mismatch: {command} at {entry}: "
+                    f"sha256 {digest} is not the lock integrity {expected[command]}")
+            declared.append({"command": command, "path": str(entry), "sha256": digest})
+    return declared
+
+
 def provision_steps(lane: Lane, source: Path, head: str) -> list[tuple[list[str], Path | None]]:
     repository, sdk = lane.repository, lane.repository / "ocor-runtime/sdk/typescript"
     return [
@@ -507,11 +602,12 @@ def inner_daemon_contents(lane: Lane, runner: Runner) -> dict[str, list[str]]:
 
 
 def start_sandbox(lane: Lane, mounts: list[Path], runner: Runner, *, output_root: Path,
+                  readonly_mounts: list[Path] | None = None,
                   sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
     """Labelled volumes, the privileged sandbox, then a fail-closed wait for an empty private daemon."""
     for volume in lane.volumes:
         runner(["docker", "volume", "create", "--label", f"{LANE_LABEL}={lane.campaign}", volume])
-    runner(sandbox_run_argv(lane, mounts, output_root=output_root))
+    runner(sandbox_run_argv(lane, mounts, output_root=output_root, readonly_mounts=readonly_mounts))
     waited = 0
     probe = ["docker", "exec", lane.name, "docker", "info", "--format", "{{.ServerVersion}}"]
     while (reply := runner(probe, check=False)).returncode:
@@ -527,6 +623,56 @@ def start_sandbox(lane: Lane, mounts: list[Path], runner: Runner, *, output_root
         raise CampaignError(f"lane {lane.index} sandbox lacks delegated cgroup controllers: {missing}")
     return {"lane": lane.index, "sandbox": lane.name, "daemon_version": reply.stdout.strip(), "ready_after_seconds": waited,
             "delegated_controllers": delegated}
+
+
+def cache_command_timeout(timeout: float | Callable[[], float]) -> float:
+    """Positive finite seconds for one cache command, from a value or a fresh callback."""
+    value = timeout() if callable(timeout) else timeout
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+        raise CampaignError("image cache command timeout is not a positive finite number")
+    return float(value)
+
+
+def prepare_image_cache(lock_path: Path, destination: Path, runner: Runner, *,
+                        timeout: float | Callable[[], float]) -> dict[str, Any]:
+    """Save locked images that are already on the host daemon. Never pulls."""
+    return image_cache.prepare_image_cache(lock_path, destination, runner, timeout=timeout)
+
+
+def seed_lane_images(lane: Lane, path: str, cache_dir: Path, lock_path: Path, runner: Runner, *,
+                     timeout: float | Callable[[], float]) -> dict[str, Any]:
+    """Verify every archive, then load present images into one private daemon."""
+    manifest = image_cache.verify_image_cache(cache_dir, lock_path)
+    images = manifest["images"]
+    if not isinstance(images, list):
+        raise CampaignError("image cache manifest is malformed")
+    loaded: list[str] = []
+    misses: list[str] = []
+    for entry in images:
+        if not isinstance(entry, dict):
+            raise CampaignError("image cache manifest is malformed")
+        status, service_id = entry.get("status"), entry.get("service_id")
+        if not isinstance(service_id, str):
+            raise CampaignError("image cache manifest is malformed")
+        if status == "MISS":
+            misses.append(service_id)
+            continue
+        archive_name, image_id = entry.get("archive"), entry.get("image_id")
+        if status != "PRESENT" or not isinstance(archive_name, str) or not isinstance(image_id, str):
+            raise CampaignError("image cache manifest is malformed")
+        archive = cache_dir / archive_name
+        try:
+            image_cache.command_text(
+                runner, sandbox_exec_argv(lane, path, ["docker", "load", "-i", str(archive)], {}),
+                timeout=cache_command_timeout(timeout))
+            inspected = image_cache.command_text(
+                runner, sandbox_exec_argv(lane, path, ["docker", "image", "inspect", image_id], {}),
+                timeout=cache_command_timeout(timeout))
+        except CampaignError as exc:
+            raise CampaignError(f"image cache load failed: {service_id}: {exc}") from exc
+        image_cache.parse_loaded_inspect(inspected, image_id)
+        loaded.append(service_id)
+    return {"loaded": loaded, "misses": misses}
 
 
 def teardown_lane(lane: Lane, path: str, runner: Runner) -> dict[str, Any]:
@@ -781,6 +927,334 @@ def judge_lane_bootstrap(lane: Lane, outcome: dict[str, Any]) -> tuple[dict[str,
     return record, errors
 
 
+class _Dqblk(ctypes.Structure):
+    _fields_ = (
+        ("dqb_bhardlimit", ctypes.c_uint64),
+        ("dqb_bsoftlimit", ctypes.c_uint64),
+        ("dqb_curspace", ctypes.c_uint64),
+        ("dqb_ihardlimit", ctypes.c_uint64),
+        ("dqb_isoftlimit", ctypes.c_uint64),
+        ("dqb_curinodes", ctypes.c_uint64),
+        ("dqb_btime", ctypes.c_uint64),
+        ("dqb_itime", ctypes.c_uint64),
+        ("dqb_valid", ctypes.c_uint32),
+    )
+
+
+def tmp_lane_budget_bytes(lanes: int) -> int:
+    """Shared cache, plus each lane's checkout, venv and tools, plus 1 GiB."""
+    if type(lanes) is not int or lanes not in ADMITTED_LANE_COUNTS:
+        raise CampaignError(f"the local suite runs in {' or '.join(map(str, ADMITTED_LANE_COUNTS))} lanes, not {lanes!r}")
+    per_lane = TMP_LANE_CHECKOUT_BYTES + TMP_LANE_VENV_BYTES + TMP_LANE_TOOLS_BYTES
+    return TMP_IMAGE_CACHE_BYTES + lanes * per_lane + TMP_LANE_MARGIN_BYTES
+
+
+def _unescape_mount(value: str) -> str:
+    return (value.replace("\\040", " ").replace("\\011", "\t").replace("\\012", "\n").replace("\\134", "\\"))
+
+
+def _mount_covers(mount_point: str, path: str) -> bool:
+    if mount_point == "/":
+        return path.startswith("/")
+    return path == mount_point or path.startswith(mount_point + "/")
+
+
+def usrquota_in_mountinfo(text: str, path: Path) -> bool:
+    """True when the longest mount covering path carries usrquota."""
+    resolved = os.path.abspath(path)
+    best = ""
+    found = False
+    for line in text.splitlines():
+        fields = line.split()
+        if "-" not in fields:
+            continue
+        separator = fields.index("-")
+        if separator < 6 or len(fields) < separator + 4:
+            continue
+        mount_point = _unescape_mount(fields[4])
+        if not _mount_covers(mount_point, resolved) or len(mount_point) < len(best):
+            continue
+        options = fields[5].split(",")
+        super_options = fields[separator + 3].split(",")
+        best = mount_point
+        found = "usrquota" in options or "usrquota" in super_options
+    return found
+
+
+def mount_has_usrquota(path: Path) -> bool:
+    try:
+        text = Path("/proc/self/mountinfo").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise CampaignError(f"mount table unreadable: {exc}") from exc
+    return usrquota_in_mountinfo(text, path)
+
+
+def quota_free_bytes(hard_kib: int, used_bytes: int, valid: int) -> int | None:
+    """Free bytes under the hard limit. None means the hard limit is unset."""
+    if (type(hard_kib) is not int or type(used_bytes) is not int or type(valid) is not int
+            or hard_kib < 0 or used_bytes < 0 or valid < 0):
+        raise CampaignError("user quota fields are malformed")
+    if valid & (QIF_BLIMITS | QIF_SPACE) != (QIF_BLIMITS | QIF_SPACE):
+        raise CampaignError("user quota block limits are not valid")
+    if hard_kib == 0:
+        return None
+    hard_bytes = hard_kib * 1024
+    if used_bytes >= hard_bytes:
+        return 0
+    return hard_bytes - used_bytes
+
+
+def _read_user_quota(path: Path) -> dict[str, Any]:
+    machine = os.uname().machine
+    number = _QUOTACTL_FD_SYSCALL.get(machine)
+    if number is None:
+        raise CampaignError(f"user quota syscall is not known for {machine}")
+    libc = ctypes.CDLL("libc.so.6", use_errno=True)
+    syscall = libc.syscall
+    syscall.restype = ctypes.c_long
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        buffer = _Dqblk()
+        ctypes.set_errno(0)
+        rc = syscall(number, descriptor, (_Q_GETQUOTA << 8) | _USRQUOTA, os.getuid(), ctypes.byref(buffer))
+        error = ctypes.get_errno()
+    finally:
+        os.close(descriptor)
+    if rc != 0:
+        raise CampaignError(f"quotactl_fd failed: errno {error}")
+    hard = int(buffer.dqb_bhardlimit)
+    used = int(buffer.dqb_curspace)
+    valid = int(buffer.dqb_valid)
+    free = quota_free_bytes(hard, used, valid)
+    return {"hard_kib": hard, "hard_bytes": None if hard == 0 else hard * 1024,
+            "used_bytes": used, "free_bytes": free, "valid": valid}
+
+
+def measure_tmp_space(path: Path = Path("/tmp")) -> dict[str, Any]:
+    """Filesystem free space plus the user quota when the mount enables it."""
+    path = Path(path)
+    try:
+        stats = os.statvfs(path)
+        filesystem_free = int(stats.f_bavail) * int(stats.f_frsize)
+        usrquota = mount_has_usrquota(path)
+    except (OSError, CampaignError) as exc:
+        raise CampaignError(f"tmp space is not measurable: {exc}") from exc
+    reading: dict[str, Any] = {
+        "path": str(path), "filesystem_free_bytes": filesystem_free, "usrquota": usrquota,
+        "quota": None, "quota_error": None, "free_bytes": filesystem_free}
+    if not usrquota:
+        return reading
+    try:
+        quota = _read_user_quota(path)
+    except (CampaignError, OSError) as exc:
+        reading["quota_error"] = str(exc)
+        reading["free_bytes"] = None
+        return reading
+    reading["quota"] = quota
+    # hard_kib 0 is an unset limit (quota_free_bytes returns None). Do not
+    # substitute filesystem free: that figure is not the user quota.
+    unlimited = quota["hard_kib"] == 0 and quota["free_bytes"] is None
+    reading["quota_unlimited"] = unlimited
+    reading["free_bytes"] = None if unlimited else quota["free_bytes"]
+    return reading
+
+
+def _same_device(left: Path, right: Path) -> bool:
+    return os.stat(left).st_dev == os.stat(right).st_dev
+
+
+def require_tmp_space_for_lanes(work: Path, lanes: int) -> dict[str, Any]:
+    """Refuse before checkout when /tmp cannot hold this work directory.
+
+    The filesystem limit always applies when work is on the /tmp device. A finite
+    user quota is a second limit. An unlimited quota removes only the quota limit.
+    """
+    budget = tmp_lane_budget_bytes(lanes)
+    reading = measure_tmp_space(Path("/tmp"))
+    try:
+        work.mkdir(parents=True, exist_ok=True)
+        same = _same_device(work, Path("/tmp"))
+    except OSError as exc:
+        raise CampaignError(f"tmp space is not enough: work directory is not usable: {exc}") from exc
+    filesystem_free = reading.get("filesystem_free_bytes")
+    record: dict[str, Any] = {
+        "path": "/tmp", "filesystem_free_bytes": filesystem_free,
+        "usrquota": bool(reading.get("usrquota")), "quota": reading.get("quota"),
+        "quota_error": reading.get("quota_error"), "free_bytes": reading.get("free_bytes"),
+        "lanes": lanes, "required_bytes": budget, "work": str(work),
+        "applies": False, "decision": "not_applicable"}
+    if not same:
+        return record
+    record["applies"] = True
+    if type(filesystem_free) is not int:
+        raise CampaignError(
+            "tmp space is not enough: filesystem free on /tmp is not a finite byte count; "
+            f"required {budget} bytes for {lanes} lanes")
+    quota = record["quota"] if isinstance(record["quota"], dict) else {}
+    quota_short = False
+    free = record["free_bytes"]
+    if record["usrquota"]:
+        if record["quota_error"] is not None:
+            raise CampaignError(
+                "tmp space is not enough: user quota on /tmp is unreadable "
+                f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
+                f"filesystem free {filesystem_free} bytes")
+        if quota.get("hard_kib") == 0 and quota.get("free_bytes") is None:
+            record["quota_unlimited"] = True
+        elif free is None:
+            raise CampaignError(
+                "tmp space is not enough: user quota on /tmp is unreadable "
+                f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
+                f"filesystem free {filesystem_free} bytes")
+        elif type(free) is not int or free < budget:
+            quota_short = True
+    filesystem_short = filesystem_free < budget
+    if quota_short:
+        message = (
+            "tmp space is not enough: "
+            f"free {free} bytes, required {budget} bytes for {lanes} lanes; "
+            f"filesystem free {filesystem_free} bytes; "
+            f"quota hard {quota.get('hard_bytes')} bytes, used {quota.get('used_bytes')} bytes")
+        if filesystem_short:
+            message += f"; filesystem free {filesystem_free} bytes is below the required {budget} bytes"
+        raise CampaignError(message)
+    if filesystem_short:
+        if record.get("quota_unlimited"):
+            detail = "user quota on /tmp is unlimited and does not replace the filesystem limit"
+        elif not record["usrquota"]:
+            detail = "/tmp has no user quota"
+        else:
+            detail = f"quota free {free} bytes remains above the budget"
+        raise CampaignError(
+            "tmp space is not enough: "
+            f"filesystem free {filesystem_free} bytes, required {budget} bytes for {lanes} lanes; "
+            f"{detail}")
+    record["decision"] = "enough"
+    return record
+
+
+_PEM_BLOCK = re.compile(
+    br"-----BEGIN (?:RSA |EC )?PRIVATE KEY-----.*?-----END (?:RSA |EC )?PRIVATE KEY-----",
+    re.DOTALL,
+)
+
+
+def _redact_lane_log_bytes(repository: Path, log: Path) -> None:
+    env_bytes = (repository / ".ocor/bootstrap.env").read_bytes()
+    redacted = log.read_bytes()
+    for line in env_bytes.splitlines():
+        if b"=" not in line:
+            continue
+        key, value = line.split(b"=", 1)
+        if key.endswith((b"TOKEN", b"PASSWORD")) and value:
+            redacted = redacted.replace(value, b"[REDACTED]")
+    log.write_bytes(_PEM_BLOCK.sub(b"[REDACTED PRIVATE KEY]", redacted))
+
+
+def _blank_lane_log(log: Path) -> None:
+    try:
+        log.write_bytes(b"[REDACTION FAILED]\n")
+    except OSError:
+        return
+
+
+def redact_lane_log(repository: Path, log: Path) -> None:
+    """Redact one lane log. Decode and I/O failures still remove secret bytes."""
+    try:
+        bootstrap_ci.redact_campaign_log(repository, log)
+    except UnicodeDecodeError:
+        try:
+            _redact_lane_log_bytes(repository, log)
+        except OSError:
+            _blank_lane_log(log)
+            raise
+        raise
+    except OSError:
+        _blank_lane_log(log)
+        raise
+
+
+def discard_script_work_trees(work: Path, lanes: list[Lane], *, consumes_tmp_quota: bool) -> None:
+    """Remove checkouts and the run image cache. The quota flag does not keep the cache."""
+    if type(consumes_tmp_quota) is not bool:
+        raise CampaignError("consumes_tmp_quota is not a boolean")
+    errors: list[str] = []
+    for lane in lanes:
+        try:
+            if lane.repository.exists():
+                shutil.rmtree(lane.repository)
+        except OSError as exc:
+            errors.append(f"lane {lane.index} checkout removal failed: {exc}")
+    cache = work / "image-cache"
+    try:
+        if cache.is_dir():
+            shutil.rmtree(cache)
+        elif cache.exists():
+            cache.unlink()
+    except OSError as exc:
+        errors.append(f"image cache removal failed: {exc}")
+    if errors:
+        raise CampaignError("script work removal incomplete: " + "; ".join(errors))
+
+
+def finish_lane_host(work: Path, lanes: list[Lane], paths: dict[int, str], runner: Runner, record: dict[str, Any],
+                     campaign_name: str, *, consumes_tmp_quota: bool, redact: bool) -> None:
+    """One teardown pass. Redaction failures are recorded and do not skip release."""
+    redaction_errors: list[str] = []
+    for lane in lanes:
+        if redact:
+            # CONTROL: redaction-existence-inside-try
+            # is_file raises when the output directory is not searchable. That
+            # is a redaction failure: record it and still tear the lane down.
+            try:
+                log = lane.output / "lane_runner.log"
+                if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
+                    redact_lane_log(lane.repository, log)
+            except (OSError, UnicodeError, ValueError) as exc:
+                redaction_errors.append(f"lane {lane.index} log redaction failed: {type(exc).__name__}")
+                record["status"] = "FAIL"
+        try:
+            record["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
+        except CampaignError as exc:
+            record["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
+            record["status"] = "FAIL"
+    try:
+        remove_root_image(runner)
+        record["host_residue"] = check_host_residue(campaign_name, runner)
+    except CampaignError as exc:
+        record["host_residue"] = {"error": str(exc)}
+        record["status"] = "FAIL"
+    try:
+        discard_script_work_trees(work, lanes, consumes_tmp_quota=consumes_tmp_quota)
+    except CampaignError as exc:
+        record["work_removal"] = {"status": "FAIL", "error": str(exc)}
+        record["status"] = "FAIL"
+    if redaction_errors:
+        record["redaction"] = {"status": "FAIL", "errors": redaction_errors}
+        note = "; ".join(redaction_errors)
+        previous = record.get("error")
+        record["error"] = f"{previous}; {note}" if isinstance(previous, str) and previous else note
+
+
+def bind_campaign_stop_signals(callback: Callable[[], None]) -> Callable[[], None]:
+    """Run callback on SIGTERM and SIGHUP, then exit. Returns the restorer. SIGINT stays as KeyboardInterrupt."""
+    previous: dict[int, Any] = {}
+
+    def handler(signum: int, frame: Any) -> None:
+        del frame
+        callback()
+        raise SystemExit(128 + int(signum))
+
+    for signum in (signal.SIGTERM, signal.SIGHUP):
+        previous[int(signum)] = signal.signal(signum, handler)
+
+    def restore() -> None:
+        for signum, old in previous.items():
+            signal.signal(signum, old)
+
+    return restore
+
+
 def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner = run_command, *, source: Path | None = None,
                     launcher: Callable[[list[str], Path], LaneProcess] | None = None, meminfo_path: Path = Path("/proc/meminfo"),
                     lanes: int = LANE_COUNT, wall: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
@@ -802,15 +1276,39 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
     report["campaign"] = name
     lane_set = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, lanes + 1)]
     paths = {lane.index: lane_path(lane, tool_bins) for lane in lane_set}
+    consumes_tmp_quota = False
+    released = False
+
+    def release_host() -> None:
+        nonlocal released
+        if released:
+            return
+        released = True
+        finish_lane_host(work, lane_set, paths, runner, report, name,
+                         consumes_tmp_quota=consumes_tmp_quota, redact=False)
+
+    restore_signals = bind_campaign_stop_signals(release_host)
     try:
+        report["locked_tools"] = locked_tool_declarations(tool_bins, source / "infra/toolchain.lock.json")
+        space = require_tmp_space_for_lanes(work, lanes)
+        report["tmp_space"] = space
+        consumes_tmp_quota = bool(space["applies"])
         campaign.verify_revision(source, head)
         ensure_root_image(runner, host_usr_links())
+        lock_path = source / "infra/services.lock.json"
+        cache_dir = work / "image-cache"
+        report["image_cache"] = prepare_image_cache(
+            lock_path, cache_dir, runner, timeout=lambda: float(PROVISION_TIMEOUT_SECONDS))
         for lane in lane_set:
             entry: dict[str, Any] = {"lane": lane.index, "provision": provision_lane(
                 lane, source, head, runner, {"HOME": str(lane.home), "PATH": paths[lane.index]})}
             mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
             entry["mounts"] = [str(mount) for mount in mounts]
-            entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
+            entry["sandbox"] = start_sandbox(
+                lane, mounts, runner, output_root=work, readonly_mounts=[cache_dir])
+            entry["image_cache_mount"] = {"path": str(cache_dir), "mode": "read-only"}
+            entry["image_cache"] = seed_lane_images(
+                lane, paths[lane.index], cache_dir, lock_path, runner, timeout=lambda: float(PROVISION_TIMEOUT_SECONDS))
             probes = {"head": ["git", "rev-parse", "HEAD"], "python": ["python", "-c", "import sys; print(sys.version.split()[0])"],
                       "docker": ["docker", "info", "--format", "{{.ServerVersion}} {{.CgroupVersion}}"], "kind": ["kind", "version"],
                       "node": ["node", "--version"], "uid": ["id", "-u"]}
@@ -830,18 +1328,8 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
     except (CampaignError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
         report["error"] = str(exc)
     finally:
-        for lane in lane_set:
-            try:
-                report["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
-            except CampaignError as exc:
-                report["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
-                report["status"] = "FAIL"
-        try:
-            remove_root_image(runner)
-            report["host_residue"] = check_host_residue(name, runner)
-        except CampaignError as exc:
-            report["host_residue"] = {"error": str(exc)}
-            report["status"] = "FAIL"
+        restore_signals()
+        release_host()
     return report
 
 
@@ -1204,7 +1692,23 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
     result["campaign"] = name
     lanes = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, count + 1)]
     paths = {lane.index: lane_path(lane, tool_bins) for lane in lanes}
+    consumes_tmp_quota = False
+    released = False
+
+    def release_host() -> None:
+        nonlocal released
+        if released:
+            return
+        released = True
+        finish_lane_host(work, lanes, paths, runner, result, name,
+                         consumes_tmp_quota=consumes_tmp_quota, redact=True)
+
+    restore_signals = bind_campaign_stop_signals(release_host)
     try:
+        result["locked_tools"] = locked_tool_declarations(tool_bins, source / "infra/toolchain.lock.json")
+        space = require_tmp_space_for_lanes(work, count)
+        result["tmp_space"] = space
+        consumes_tmp_quota = bool(space["applies"])
         campaign.verify_revision(source, head)
         collected = campaign.collect_nodeids(suite, selection)
         weights = load_weights()
@@ -1214,6 +1718,16 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
                                 "lane_estimated_seconds": lane_loads(parts, weights),
                                 "lower_bound_seconds": max(case_weight(node, weights) for node in collected)}
         ensure_root_image(runner, host_usr_links())
+        lock_path = source / "infra/services.lock.json"
+        cache_dir = work / "image-cache"
+
+        def campaign_cache_timeout() -> float:
+            remaining = FULL_SUITE_LIMIT_SECONDS - (time.time() - started)
+            if remaining <= 0:
+                raise CampaignError("campaign deadline exhausted during image cache transfer")
+            return remaining
+
+        result["image_cache"] = prepare_image_cache(lock_path, cache_dir, runner, timeout=campaign_cache_timeout)
         specs = {}
         for lane, part in zip(lanes, parts, strict=True):
             provision_start = time.monotonic()
@@ -1221,7 +1735,11 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
                 lane, source, head, runner, {"HOME": str(lane.home), "PATH": paths[lane.index]})}
             mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
             entry["mounts"] = [str(mount) for mount in mounts]
-            entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
+            entry["sandbox"] = start_sandbox(
+                lane, mounts, runner, output_root=work, readonly_mounts=[cache_dir])
+            entry["image_cache_mount"] = {"path": str(cache_dir), "mode": "read-only"}
+            entry["image_cache"] = seed_lane_images(
+                lane, paths[lane.index], cache_dir, lock_path, runner, timeout=campaign_cache_timeout)
             entry["provisioning_seconds"] = round(time.monotonic() - provision_start, 3)
             specs[lane.index] = write_lane_spec(lane, head, part, started)
             result["lanes"].append(entry)
@@ -1253,21 +1771,8 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
     except (CampaignError, OSError, ValueError, KeyError, TypeError, ET.ParseError, subprocess.SubprocessError) as exc:
         result["error"] = str(exc)
     finally:
-        for lane in lanes:
-            log = lane.output / "lane_runner.log"
-            if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
-                bootstrap_ci.redact_campaign_log(lane.repository, log)
-            try:
-                result["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
-            except CampaignError as exc:
-                result["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
-                result["status"] = "FAIL"
-        try:
-            remove_root_image(runner)
-            result["host_residue"] = check_host_residue(name, runner)
-        except CampaignError as exc:
-            result["host_residue"] = {"error": str(exc)}
-            result["status"] = "FAIL"
+        restore_signals()
+        release_host()
         result["power_end"] = power_reading(power_root)
         result["total_duration_seconds"] = round(time.monotonic() - monotonic_start, 3)
         result.setdefault("po_decision_required", result["total_duration_seconds"] > PO_DECISION_THRESHOLD_SECONDS)
