@@ -10,6 +10,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
@@ -184,6 +186,78 @@ class PostPocPlanTests(unittest.TestCase):
         task["objective"] = task["objective"].replace(" Production readiness: GO.", "")
         task["rationale"] += " See /home/luca/notes."
         self.assertIn("LOCAL_PATH", self._codes(documents))
+
+    def test_fr048_a2a_only_restriction_is_rejected(self) -> None:
+        requirements = self.mod.load_register(ROOT)
+        trace = self.mod.load_traceability(ROOT)
+        workstreams = self.mod.load_workstreams(ROOT)
+        documents = self.mod.build_documents(ROOT, requirements, trace, workstreams)
+        task = self._task(documents, "OCOR-POST-G11-WS09-REALISE")
+        task["acceptance_criteria"] = [
+            "FR-048 is realised only as an A2A boundary adapter behind C8, "
+            "after the Product Owner decision on G7, and it stays optional."
+        ]
+        findings = self.mod.validate_documents(
+            documents, requirements, trace, workstreams
+        )
+        self.assertIn("FR048_SCOPE", {item.split(":", 1)[0] for item in findings})
+
+    def test_generated_fr048_keeps_sdk_and_a2a_parts(self) -> None:
+        requirements = self.mod.load_register(ROOT)
+        trace = self.mod.load_traceability(ROOT)
+        workstreams = self.mod.load_workstreams(ROOT)
+        documents = self.mod.build_documents(ROOT, requirements, trace, workstreams)
+        task = self._task(documents, "OCOR-POST-G11-WS09-REALISE")
+        text = "\n".join(task["acceptance_criteria"])
+        self.assertIn(self.mod.G2_POSITIVE, text)
+        self.assertIn(self.mod.FR048_SDK_POSITIVE, text)
+        self.assertNotIn("FR-048 is realised only as an A2A", text)
+        self.assertIn("Rust", text)
+        for command in task["validation_commands"]:
+            self.assertTrue(
+                command.startswith("python3 "),
+                command,
+            )
+
+    def test_state_and_conformance_edits_still_pass(self) -> None:
+        state = ROOT / self.mod.STATE_REL
+        conformance = ROOT / self.mod.CONFORMANCE_REL
+        saved = {path: path.read_bytes() for path in (state, conformance)}
+        try:
+            for path in saved:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                self.assertIsInstance(payload, dict)
+                payload["rem0062_repair_probe"] = True
+                path.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertEqual(self.mod.main(["--root", str(ROOT)]), 0)
+        finally:
+            for path, blob in saved.items():
+                path.write_bytes(blob)
+
+    def test_register_byte_change_fails_closed(self) -> None:
+        path = ROOT / self.mod.REGISTER_REL
+        saved = path.read_bytes()
+        try:
+            path.write_bytes(saved + b"\n")
+            self.assertEqual(self.mod.main(["--root", str(ROOT)]), 1)
+        finally:
+            path.write_bytes(saved)
+
+    def test_load_json_rejects_malformed_bytes_and_non_objects(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "plan.json"
+            path.write_bytes(b"{")
+            with self.assertRaises(json.JSONDecodeError):
+                self.mod._load_json(path)
+            path.write_bytes(b"\xff")
+            with self.assertRaises(UnicodeDecodeError):
+                self.mod._load_json(path)
+            path.write_text("null", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                self.mod._load_json(path)
+            path.write_text("[]", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                self.mod._load_json(path)
 
     def test_decision_request_has_no_timing_recommendation(self) -> None:
         text = (

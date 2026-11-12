@@ -22,10 +22,13 @@ The approved backlog, the traceability plan, ADD v1.3, LLD v1.1, contracts,
 schemas and `inputs/` are unchanged. Claims stay E1=0, E2=0, Verified=0,
 runtime NOT_ESTABLISHED, PoC NO-GO and Production NO-GO.
 
-The planning anchor is `2278be4180de5d91d1fec9d7608027b0f287b545`. The
-generator does not follow a later HEAD. The 2026-11-11 audit file is not on
-this baseline; adopted items are taken from the normative decision
-`FABLE52-POST-POC-PROGRAMME (2026-11-11)`.
+The planning anchor is `2278be4180de5d91d1fec9d7608027b0f287b545`. Hashes of
+the execution state and the conformance register are the blobs of that commit.
+A later edit of those two files does not change the generated plan. The
+generator reads the Requirement Register, the traceability plan and the
+approved backlog from the working tree, and a change there fails the check.
+The 2026-11-11 audit file is not on this baseline; adopted items are taken
+from the normative decision `FABLE52-POST-POC-PROGRAMME (2026-11-11)`.
 
 ## Classification
 
@@ -52,7 +55,7 @@ verify task of the previous gate.
 | G-9 functional | G9, WS-03 | Functional product surface. |
 | G-5 | G10, WS-10 | Public memory benchmark on real stores. The threshold and the benchmark identity are an external decision, preregistered before execution. |
 | G-9 operational | G10, WS-12 | Operational product surface. It waits for every G9 verify task, including the functional surface. |
-| G-2 | G11, on the task that contains FR-048 | Optional A2A boundary adapter behind C8, and only after the Product Owner decision on G7. Not a second task. |
+| G-2 | G11, on the task that contains FR-048 | The A2A contracts are an optional boundary adapter behind C8, and only after the Product Owner decision on G7. Additional SDKs, including Rust, keep a capability contract and a conformance profile for each language and protocol before implementation. Not a second task. |
 | G-6 | G11, WS-08 | Optional. Causal discovery emits only tainted hypotheses and does not edit a registered model. |
 | G-4 | Observation only | No planned task. The W3C boundary stays RDF 1.1. |
 | G-7 | Separate unit | Before OCOR-DEV-0062. Not a G8-G11 task. |

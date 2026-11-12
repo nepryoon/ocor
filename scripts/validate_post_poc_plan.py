@@ -73,13 +73,31 @@ G6_NEGATIVE = (
     "or into canonical state without the governed path."
 )
 G2_POSITIVE = (
-    "FR-048 is realised only as an A2A boundary adapter behind C8, "
-    "after the Product Owner decision on G7, and it stays optional."
+    "The A2A contracts of FR-048 are realised only as a boundary adapter "
+    "behind C8, after the Product Owner decision on G7, and stay optional."
 )
 G2_NEGATIVE = (
     "An external agent reaches the Agent Kernel without the C8 boundary, "
     "or A2A is enabled before the Product Owner decision on G7."
 )
+FR048_SDK_POSITIVE = (
+    "Additional SDKs of FR-048, including Rust, keep a capability contract "
+    "and a conformance profile for each language and protocol before "
+    "implementation."
+)
+FR048_A2A_ONLY_RESTRICTION = "FR-048 is realised only as an A2A"
+# Blobs of BASELINE_COMMIT, from `git show BASELINE_COMMIT:<path> | sha256sum`.
+# Regeneration does not read these files. A later state sync must not turn
+# this validator red. The Register, the traceability plan and the approved
+# backlog stay live inputs.
+BASELINE_SOURCE_SHA256 = {
+    CONFORMANCE_REL: (
+        "c06247d39f7cdeb7068ff08bee694e0f7878a84776fa123866d767b6558a2dae"
+    ),
+    STATE_REL: (
+        "3ad7d014785323c61930f518339630dc46494cae4bd17a2f24735df0b82e4256"
+    ),
+}
 REQUIRED_DECISIONS = (
     "G5-BENCHMARK-PREREGISTRATION",
     "G7-PO-DECISION",
@@ -297,15 +315,16 @@ def _requirement_key(identifier: str) -> tuple[int, int, str]:
 
 
 def _source_hashes(root: Path) -> dict[str, str]:
-    hashes: dict[str, str] = {}
-    for relative in (
-        APPROVED_BACKLOG_REL,
-        CONFORMANCE_REL,
-        REGISTER_REL,
-        STATE_REL,
-        TRACE_REL,
-    ):
-        hashes[relative] = _sha256(root / relative)
+    """Hash live normative inputs and pin state files to the baseline commit."""
+    hashes = {
+        relative: _sha256(root / relative)
+        for relative in (
+            APPROVED_BACKLOG_REL,
+            REGISTER_REL,
+            TRACE_REL,
+        )
+    }
+    hashes.update(BASELINE_SOURCE_SHA256)
     return hashes
 
 
@@ -337,6 +356,11 @@ def _common_task(
         "assumptions": [
             "The task is not executable while its status is PLANNED_NOT_ACTIVE.",
             "Mocks may support unit tests but never qualifying runtime evidence.",
+            (
+                "expected_file_areas, affected_components and coverage are "
+                "placeholders fixed when POST-POC-BACKLOG-ACTIVATION admits "
+                "the task. They do not authorise a file area."
+            ),
         ],
         "bounded_agent_context_pack": [
             "docs/development_plan/post_poc/OCOR_POST_POC_BACKLOG.json",
@@ -428,10 +452,6 @@ def _common_task(
         "uncertainty": "HIGH",
         "validation_commands": [
             "python3 scripts/validate_post_poc_plan.py",
-            (
-                "This task stays PLANNED_NOT_ACTIVE until the Product Owner "
-                "decision on G7 and POST-POC-BACKLOG-ACTIVATION both exist."
-            ),
         ],
         "workstream": workstream,
     }
@@ -585,8 +605,15 @@ def _requirement_tasks(
         ]
         if adopted == "G-2":
             realise_acceptance.append(G2_POSITIVE)
+            realise_acceptance.append(FR048_SDK_POSITIVE)
             verify_acceptance.append(G2_POSITIVE)
+            verify_acceptance.append(FR048_SDK_POSITIVE)
             negative.append(G2_NEGATIVE)
+            negative.append(
+                "Additional SDKs of FR-048, including Rust, are implemented "
+                "before a capability contract and a conformance profile exist "
+                "for that language and protocol."
+            )
         tasks.append(
             _common_task(
                 task_id=f"{stem}-REALISE",
@@ -755,6 +782,30 @@ def _external_documents() -> dict[str, Any]:
                 ),
                 "task_id": None,
             },
+            {
+                "disposition": "NOT_REGISTER_ROWS",
+                "entry_ids": [
+                    "NCR-C1-007",
+                    "NCR-C3-005",
+                    "NCR-C8-006",
+                    "NCR-GOVERNANCE-002",
+                    "NCR-LEGACY-001",
+                    "NCR-TESTS-002",
+                    "NCR-TESTS-003",
+                    "NCR-TESTS-004",
+                    "NCR-TESTS-005",
+                ],
+                "id": "NCR-OPEN-DEFERRED",
+                "reason": (
+                    "At the baseline these conformance entries are OPEN or "
+                    "DEFERRED_BY_PO. They are not Requirement Register rows, "
+                    "so this plan does not allocate them to G8. Gate G8 stays "
+                    "the Register rows whose release is beyond the PoC and "
+                    "whose type is BR. Their disposition stays in the "
+                    "conformance register."
+                ),
+                "task_id": None,
+            },
         ],
         "plan_id": PLAN_ID,
         "schema_version": SCHEMA_VERSION,
@@ -878,6 +929,13 @@ def build_documents(
             "plan_id": PLAN_ID,
             "requirement_count": len(allocation_rows),
             "schema_version": SCHEMA_VERSION,
+            "source_hash_policy": (
+                "Hashes of reports/development/EXECUTION_STATE.json and "
+                "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json are "
+                "the blobs of the baseline commit. The Requirement Register, "
+                "the traceability plan and the approved backlog are read from "
+                "the working tree, and a change there fails this check."
+            ),
             "source_hashes": _source_hashes(root),
             "task_count": len(tasks),
             "tasks": tasks,
@@ -989,8 +1047,13 @@ def validate_documents(
         if "FR-048" in (requirement_ids or []):
             if adopted != "G-2":
                 findings.append(f"FIELD: {task_id} FR-048 binding")
-            if G2_POSITIVE not in _joined(task, "acceptance_criteria"):
+            acceptance = _joined(task, "acceptance_criteria")
+            if G2_POSITIVE not in acceptance:
                 findings.append(f"FIELD: {task_id} G-2 positive criterion")
+            if FR048_SDK_POSITIVE not in acceptance:
+                findings.append(f"FR048_SCOPE: {task_id} sdk criterion")
+            if FR048_A2A_ONLY_RESTRICTION in acceptance:
+                findings.append(f"FR048_SCOPE: {task_id} a2a-only restriction")
             if G2_NEGATIVE not in _joined(task, "negative_acceptance_criteria"):
                 findings.append(f"FIELD: {task_id} G-2 negative criterion")
         if adopted == "G-6":
@@ -1078,6 +1141,7 @@ def validate_documents(
         "AUDIT-G-8": "NOT_GATE_G8",
         "G-4": "OBSERVE_ONLY",
         "G-7": "SEPARATE_UNIT_BEFORE_OCOR_DEV_0062",
+        "NCR-OPEN-DEFERRED": "NOT_REGISTER_ROWS",
     }
     seen_observations: dict[str, list[dict[str, Any]]] = {}
     if isinstance(observations, list):
