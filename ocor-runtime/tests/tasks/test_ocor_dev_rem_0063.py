@@ -654,3 +654,200 @@ def test_correspondence_table_covers_the_changelog_that_was_read() -> None:
         assert f"| {row} |" in text
     assert "NON_CONFORMANT" not in text
     assert "docs/development_plan/post_poc/README.md" in text
+
+
+def _with_ref(ref: str, definitions: Mapping[str, Any], *, field: str = "inputSchema") -> dict[str, Any]:
+    """Point a tool schema at ``ref``. Definitions live on the descriptor."""
+    document = _bare_descriptor()
+    document["$defs"] = dict(definitions)
+    schema = document["tools"][0][field]
+    if not isinstance(schema, dict):
+        raise AssertionError("tool schema is not an object")
+    schema["properties"] = {"name": {"$ref": ref}}
+    return document
+
+
+# VF-001 class: percent-decode the fragment (UTF-8), then apply JSON Pointer escapes.
+# The three verdict positives are space, pi and the encoded dollar. The other rows are
+# the same class: hex case, an encoded separator, tilde before and after encoding,
+# raw characters, plus, and a single percent-decode.
+_ENCODED_POINTERS = (
+    ("space", "#/$defs/a%20b", {"a b": {"type": "string"}}),
+    ("pi", "#/$defs/%CF%80", {"π": {"type": "string"}}),
+    ("pi-lower", "#/$defs/%cf%80", {"π": {"type": "string"}}),
+    ("dollar", "#/%24defs/foo", {"foo": {"type": "integer"}}),
+    ("encoded-slash", "#%2F$defs/a%20b", {"a b": {"type": "string"}}),
+    ("tilde-slash", "#/$defs/a~1b", {"a/b": {"type": "string"}}),
+    ("tilde-slash-encoded", "#/$defs/a%7E1b", {"a/b": {"type": "string"}}),
+    ("tilde-literal", "#/$defs/a~0b", {"a~b": {"type": "string"}}),
+    ("tilde-literal-encoded", "#/$defs/a%7E0b", {"a~b": {"type": "string"}}),
+    ("tilde-order", "#/$defs/~01", {"~1": {"type": "string"}}),
+    ("raw-space", "#/$defs/a b", {"a b": {"type": "string"}}),
+    ("raw-pi", "#/$defs/π", {"π": {"type": "string"}}),
+    ("plus-is-not-space", "#/$defs/a+b", {"a+b": {"type": "string"}}),
+    ("single-decode", "#/$defs/a%2520b", {"a%20b": {"type": "string"}}),
+    ("boolean-true", "#/$defs/flag", {"flag": True}),
+    ("boolean-false", "#/$defs/flag", {"flag": False}),
+    ("empty-object", "#/$defs/open", {"open": {}}),
+    ("integer-schema", "#/$defs/count", {"count": {"type": "integer"}}),
+    ("all-of", "#/$defs/bundle", {"bundle": {"allOf": [{"type": "string"}]}}),
+)
+
+
+@pytest.mark.parametrize(
+    ("ref", "definitions"),
+    [(case[1], case[2]) for case in _ENCODED_POINTERS],
+    ids=[case[0] for case in _ENCODED_POINTERS],
+)
+def test_percent_encoded_fragments_resolve_before_the_pointer(ref: str, definitions: Mapping[str, Any]) -> None:
+    """VF-001 and the schema-shaped targets of VF-002. Decode, then resolve."""
+    _validate(_with_ref(ref, definitions))
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_verdict_fragments_resolve_on_input_and_output_schemas(field: str) -> None:
+    """The three verdict positives are the same check on both tool schemas."""
+    _validate(_with_ref("#/$defs/a%20b", {"a b": {"type": "string"}}, field=field))
+    _validate(_with_ref("#/$defs/%CF%80", {"π": {"type": "string"}}, field=field))
+    _validate(_with_ref("#/%24defs/foo", {"foo": {"type": "integer"}}, field=field))
+
+
+def test_an_encoded_fragment_does_not_select_the_literal_percent_key() -> None:
+    """``a%20b`` decodes to a space. The literal key is a different pointer."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref("#/$defs/a%20b", {"a%20b": {"type": "string"}})
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+def test_an_encoded_array_index_resolves_and_a_leading_zero_stays_closed() -> None:
+    """``%31`` is index 1. ``%30%31`` is ``01`` and is not an index."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    accepted = _choices_descriptor()
+    accepted["tools"][0]["inputSchema"]["properties"]["name"] = {"$ref": "#/$defs/choices/anyOf/%31"}
+    _validate(accepted)
+    rejected = _choices_descriptor()
+    rejected["tools"][0]["inputSchema"]["properties"]["name"] = {"$ref": "#/$defs/choices/anyOf/%30%31"}
+    with pytest.raises(profile.McpProfileError):
+        _validate(rejected)
+
+
+# Truncated escapes, non-hex escapes, and byte sequences that are not UTF-8.
+_MALFORMED_FRAGMENTS = (
+    "#/$defs/%",
+    "#/$defs/%2",
+    "#/$defs/%ZZ",
+    "#/$defs/%2G",
+    "#/$defs/a%",
+    "#/$defs/%C3",
+    "#/$defs/%C3%28",
+    "#/$defs/%C0%80",
+    "#/$defs/%ED%A0%80",
+    "#/$defs/%80",
+    "#not-a-pointer",
+    "#%2e%2e",
+)
+
+
+@pytest.mark.parametrize("ref", _MALFORMED_FRAGMENTS)
+def test_malformed_uri_fragments_fail_closed(ref: str) -> None:
+    """VF-001: a malformed fragment is a typed refusal, not a literal key."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref(ref, {"a b": {"type": "string"}, "present": {"type": "string"}})
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+def test_an_external_percent_encoded_ref_stays_rejected() -> None:
+    """Percent-encoding does not make an external reference same-document."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref("https://example.invalid/%24defs/foo", {"foo": {"type": "string"}})
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+# VF-002 class: the resolved target must be a JSON Schema 2020-12 schema.
+# Booleans, {}, an integer schema and allOf are accepted above. These are not.
+_NON_SCHEMA_TARGETS = (
+    ("number", 7),
+    ("float", 1.5),
+    ("string", "not-a-schema"),
+    ("empty-string", ""),
+    ("null", None),
+    ("empty-array", []),
+    ("array", [{"type": "string"}]),
+    ("bad-type", {"type": "not-a-json-schema-type"}),
+    ("type-number", {"type": 1}),
+    ("type-boolean", {"type": True}),
+    ("minimum-string", {"minimum": "nope"}),
+)
+
+
+@pytest.mark.parametrize(
+    "target",
+    [case[1] for case in _NON_SCHEMA_TARGETS],
+    ids=[case[0] for case in _NON_SCHEMA_TARGETS],
+)
+def test_a_resolved_target_that_is_not_a_schema_fails_closed(target: object) -> None:
+    """VF-002: number, string, null, array and a non-schema object are refused."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref("#/$defs/bad", {"bad": target})
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"allOf": [{"$ref": "#/$defs/bad"}]},
+        {"anyOf": [{"$ref": "#/$defs/bad"}]},
+        {"oneOf": [{"$ref": "#/$defs/bad"}]},
+        {"prefixItems": [{"$ref": "#/$defs/bad"}]},
+        {"not": {"$ref": "#/$defs/bad"}},
+        {"if": {"$ref": "#/$defs/bad"}},
+        {"then": {"$ref": "#/$defs/bad"}},
+        {"else": {"$ref": "#/$defs/bad"}},
+        {"contains": {"$ref": "#/$defs/bad"}},
+        {"items": {"$ref": "#/$defs/bad"}},
+        {"additionalProperties": {"$ref": "#/$defs/bad"}},
+        {"propertyNames": {"$ref": "#/$defs/bad"}},
+        {"unevaluatedProperties": {"$ref": "#/$defs/bad"}},
+        {"unevaluatedItems": {"$ref": "#/$defs/bad"}},
+        {"contentSchema": {"$ref": "#/$defs/bad"}},
+        {"additionalItems": {"$ref": "#/$defs/bad"}},
+        {"dependentSchemas": {"name": {"$ref": "#/$defs/bad"}}},
+        {"patternProperties": {".*": {"$ref": "#/$defs/bad"}}},
+        {"$defs": {"inner": {"$ref": "#/$defs/bad"}}},
+    ],
+)
+def test_every_schema_keyword_validates_its_resolved_target(schema: Mapping[str, Any]) -> None:
+    """A non-schema target is refused wherever a schema keyword carries the $ref."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["$defs"] = {"bad": 7}
+    body = document["tools"][0]["inputSchema"]
+    if not isinstance(body, dict):
+        raise AssertionError("input schema is not an object")
+    body.update(schema)
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+def test_instance_data_does_not_validate_a_non_schema_target() -> None:
+    """const, enum and default are instance data, not schema keywords."""
+    document = _bare_descriptor()
+    document["$defs"] = {"bad": 7, "a b": {"type": "string"}}
+    body = document["tools"][0]["inputSchema"]
+    if not isinstance(body, dict):
+        raise AssertionError("input schema is not an object")
+    body["const"] = {"$ref": "#/$defs/bad"}
+    body["default"] = {"$ref": "#/$defs/a%20b"}
+    body["enum"] = [{"$ref": "https://example.invalid/%20"}, {"$ref": "#/$defs/%"}]
+    _validate(document)
+
+
+def test_an_unreferenced_non_schema_definition_is_not_a_resolved_target() -> None:
+    """Only a target a $ref lands on is checked. An unused definition stays data."""
+    document = _bare_descriptor()
+    document["$defs"] = {"unused": 7}
+    _validate(document)
