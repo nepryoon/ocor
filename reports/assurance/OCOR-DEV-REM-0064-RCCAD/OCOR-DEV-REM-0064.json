@@ -1,4 +1,23 @@
 {
+  "cell_scan": {
+    "cells": 48,
+    "cited_tests": 6,
+    "collect_exit": 0,
+    "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0064/scan_self_check.py",
+    "counts": {
+      "FIXED": 7,
+      "N/A": 21,
+      "PASS": 20
+    },
+    "decision": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+    "errors_corrected": 0,
+    "errors_found": 0,
+    "note": "Scanned while git HEAD was c4cb2d558693b20afab3aba725b1d89ff68e34f5 and this record was the worktree draft committed immediately afterwards. The draft table is the committed table.",
+    "rows": 8,
+    "scanned_head": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
+    "status": "PASS",
+    "stdout_sha256": "d600ae59504e2ea4a6206b8cbaf043fcc8f3b026fe159069fa60822e4afea935"
+  },
   "claims": {
     "E1": 0,
     "E2": 0,
@@ -7,19 +26,19 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit_role": "execution_commit is the commit at which the probe, the register integrity test and the regression pytest ran. This record is a later commit and does not change those inputs.",
+  "commit_role": "execution_commit is c4cb2d558693b20afab3aba725b1d89ff68e34f5, the commit of the probe, the advisory tests and the regenerated probe log. The register integrity log and the regression log were produced earlier and their bytes are unchanged. The three requalification records still declare 00bd2b8671c13c93f932b7e12380ddd94c7c9522. This record is a later commit and does not change those inputs.",
   "created_at": "2026-11-13T13:39:16Z",
   "decision": "FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13) point 4",
-  "execution_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+  "execution_commit": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
   "execution_commit_digest_check": {
-    "checked_inputs": 30,
-    "checked_records": 4,
-    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
-    "execution_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+    "checked_inputs": 8,
+    "checked_records": 1,
+    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit c4cb2d558693b20afab3aba725b1d89ff68e34f5 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
+    "execution_commit": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
     "exit_code": 0,
-    "note": "stdout_sha256 is the stdout of the command above while HEAD was the execution commit. The checker does not read this field, so writing it does not change that stdout. A later HEAD changes only the head field of a fresh print.",
+    "note": "stdout_sha256 is filled from the run while HEAD was the execution commit and this record was the worktree draft. The checker does not read this field. A later HEAD changes only the head field of a fresh print. The three requalification records are checked by a separate command against 00bd2b8671c13c93f932b7e12380ddd94c7c9522.",
     "result": "PASS",
-    "stdout_sha256": "721b33097b2119a2b05ddcadf128a71402c3b64159e6c444f37e3cb136cb14dd"
+    "stdout_sha256": "9e06da65c95f3c1c16690cd2ae6b135cdfbcac6f0cab9ff629b30086d2bd58a7"
   },
   "execution_state_registration": "Deferred to the post-verify state sync. This unit does not edit EXECUTION_STATE.json, MODEL_HANDOFF.json or ITERATION_LOG.md.",
   "implementers": [
@@ -30,18 +49,59 @@
       "scope": "OCOR-DEV-REM-0064 register entries, decision file and regression-only requalifications"
     }
   ],
+  "input_robustness": {
+    "cases": [
+      {
+        "applies": true,
+        "field": "git HEAD, 40 lowercase hexadecimal digits",
+        "functions": [
+          "accept_head",
+          "observed_head",
+          "main"
+        ],
+        "note": "Empty, non-ASCII, uppercase, short, non-hex and a trailing newline are rejected as HEAD_OBSERVED_INVALID before the head is printed.",
+        "point": 1,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_accept_head_rejects_empty_non_ascii_and_bad_form",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head"
+        ]
+      },
+      {
+        "applies": false,
+        "point": 2,
+        "reason": "The probe and the new tests do not decode JSON. UTF-8 rejection is TEXT_DECODE_REJECTED in read_repository_text. An isolated JSON surrogate is not a case on this path."
+      },
+      {
+        "applies": true,
+        "field": "line index and git process status",
+        "functions": [
+          "line_text",
+          "observed_head"
+        ],
+        "note": "A bool, a float, and an out-of-range index are rejected as LINE_INDEX_REJECTED before indexing. A directory that is not a git repository is rejected as HEAD_OBSERVED_UNAVAILABLE before accept_head. No HTTP, database, or container port is used.",
+        "point": 3,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_line_text_rejects_bool_and_out_of_range_before_use",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_observed_head_rejects_a_directory_without_git"
+        ]
+      }
+    ],
+    "decision": "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)",
+    "twins": "Every repository file read in the probe goes through read_repository_text. _py_text is that helper and has its own row. Every indexed line goes through line_text. The head goes through accept_head. The validator diff adds no reader."
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "reports/assurance/OCOR-DEV-REM-0064-RCCAD/README.md": "5eb09a9e5919a814869cfd417e0ed27e6c71f62d2802850c41ee0468b8a1b11a",
     "reports/assurance/OCOR-DEV-REM-0064-RCCAD/integrity.log": "7a04c659b2339b849005b3bd8df1866d51494e698588f206086f75df0db35431",
-    "reports/assurance/OCOR-DEV-REM-0064-RCCAD/probe.log": "77719e275573b7dd53df76f550a155f1d8e48cdaf3eb6f227bb2213ab02f4847",
+    "reports/assurance/OCOR-DEV-REM-0064-RCCAD/probe.log": "c7caa234dd2c5c0128ecfc9aa8e82f630491a8dec54a8c9edb4ffe17f50a7e39",
     "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json": "e8efa5c8cb914b4053c0d579e31038eeca4856464513c7a47678f5876b8b0b2f",
     "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md": "bcf636db0f6f1c062ce57045932fe91d6a3754f5bd5be081a8603b665e4bf076",
     "reports/planning/OCOR_PLAN_RUN_STATE.json": "86adf2664435ef67a78e421c07e9b4b8fc85bbdf836ef6f4dfa1709a6e424f7d",
-    "scripts/probe_ncr_claim_identity_mission.py": "6d1a0f1d7d78464c07c5dbfbd6b3f0720d9bcb699d40f70eada92223152ce606",
+    "scripts/probe_ncr_claim_identity_mission.py": "7f9658fd0d8710bb869f9f5460ea2e7cc8971ad39991307d027208c215d389d1",
     "scripts/validate_ocor_development_plan.py": "6375b220ad5f50fdd332defb0a5574a6f5b627e0acef4e21b502964149a3658b"
   },
   "integrity": {
+    "advisory_tests_note": "This log is the 15-test register integrity run. ProbeNcrClaimIdentityMissionTest is not in the log. Those six tests are recorded under local_gates.",
     "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_normative_conformance_register",
     "exit_code": 0,
     "log": "reports/assurance/OCOR-DEV-REM-0064-RCCAD/integrity.log",
@@ -52,7 +112,7 @@
     "not_executed": [
       {
         "command": "scripts/run_qualifying_campaign.py and scripts/bootstrap_ci_environment.py --execute",
-        "reason": "PRE-CAMPAIGN-REVIEW requires the preventive review before the full suite. The Fuseki lock identity is not updated in this unit."
+        "reason": "Preventive review OCOR-DEV-REM-0064-9b2845f0e0a3-pre is NO_BLOCKING_FINDINGS. The full suite still waits on FUSEKI-LOCAL-IDENTITY-REBUILD-20261113. The Fuseki lock identity is not updated in this unit."
       },
       {
         "command": "npm run build in ocor-runtime/sdk/typescript",
@@ -184,19 +244,108 @@
         "result": "98 passed, 2 skipped, 64 subtests passed"
       },
       {
-        "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
+        "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit c4cb2d558693b20afab3aba725b1d89ff68e34f5 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
         "exit_code": 0,
-        "result": "PASS stdout_sha256 721b33097b2119a2b05ddcadf128a71402c3b64159e6c444f37e3cb136cb14dd"
+        "result": "PASS checked_inputs 8 checked_records 1 stdout_sha256 9e06da65c95f3c1c16690cd2ae6b135cdfbcac6f0cab9ff629b30086d2bd58a7"
+      },
+      {
+        "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
+        "exit_code": 0,
+        "result": "PASS checked_inputs 22 checked_records 3 stdout_sha256 c29b7980f312e536c368e6afc962f6843cd73caf317ccaffa99ad6683cf9384d"
+      },
+      {
+        "command": "python -m pytest -p no:cacheprovider -q reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest",
+        "exit_code": 0,
+        "result": "6 passed, 12 subtests passed. ruff check passed. mypy --strict on the probe passed."
       }
     ]
   },
   "nature": "Register write and regression-only requalification. Not evidence of a requirement. AdmitClaim and identity resolution are not implemented in this unit.",
+  "path_inventory": {
+    "base": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+    "calls": {
+      "_has": 10,
+      "_py_text": 1,
+      "accept_head": 1,
+      "line_text": 11,
+      "observed_head": 1,
+      "read_repository_text": 6
+    },
+    "change_set_files": 20,
+    "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0064/path_inventory.py",
+    "consumption_points_examined": 30,
+    "decision": "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
+    "file_notes": {
+      "scripts/validate_ocor_development_plan.py": "The diff adds fifteen path strings to the extension allowlist inside main and adds no function. This unit does not add a reader of an external response in that file."
+    },
+    "functions_examined": 14,
+    "probe_functions": [
+      "accept_head",
+      "read_repository_text",
+      "line_text",
+      "observed_head",
+      "_has",
+      "_py_text",
+      "main"
+    ],
+    "rows_by_file": {
+      "reports/tests/test_normative_conformance_register.py": 1,
+      "scripts/probe_ncr_claim_identity_mission.py": 7
+    },
+    "searches": [
+      "ast walk of scripts/probe_ncr_claim_identity_mission.py for functions and helper calls",
+      "ast walk of reports/tests/test_normative_conformance_register.py for _load_probe and ProbeNcrClaimIdentityMissionTest",
+      "git diff --name-only 41abc9cc28f1cba91b51401bcbb1bee9acdcd93b including the worktree"
+    ],
+    "status": "PASS",
+    "stdout_sha256": "5e55c98d9d82ca926ff445cf8a2a77e97abff6105b30c4835c885aafd9b19ce9",
+    "test_functions": [
+      "_load_probe",
+      "ProbeNcrClaimIdentityMissionTest.test_main_prints_the_git_head",
+      "ProbeNcrClaimIdentityMissionTest.test_source_does_not_hardcode_the_reviewed_base_head",
+      "ProbeNcrClaimIdentityMissionTest.test_accept_head_rejects_empty_non_ascii_and_bad_form",
+      "ProbeNcrClaimIdentityMissionTest.test_read_repository_text_rejects_non_utf8",
+      "ProbeNcrClaimIdentityMissionTest.test_line_text_rejects_bool_and_out_of_range_before_use",
+      "ProbeNcrClaimIdentityMissionTest.test_observed_head_rejects_a_directory_without_git"
+    ],
+    "validator_functions_added": 0
+  },
+  "pre_campaign_gate": {
+    "head": null,
+    "reason": "The full suite has not started. scripts/bootstrap_development_environment.py --execute still fails on the Fuseki image identity, and FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 is open. infra/services.lock.json was not updated. same_fact_as_review is false because this gate was not executed on the reviewed head.",
+    "same_fact_as_review": false,
+    "status": "NOT_EXECUTED"
+  },
+  "preventive_review": {
+    "advisory_ids": [
+      "P1",
+      "P2"
+    ],
+    "base": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+    "disposition": "Advisory P1 and P2 are addressed in the commit before the suite. Finding text is not copied. No second preventive review. The full suite has not started.",
+    "finding_text_copied": false,
+    "outcome_sha256": "07a8cba3b75c0cfe703bd71309e27018415e922ba1a296b95f35dcc6f805280c",
+    "request_id": "OCOR-DEV-REM-0064-9b2845f0e0a3-pre",
+    "result": "NO_BLOCKING_FINDINGS",
+    "reviewed_head": "9b2845f0e0a35d18fd7d95b12945b7265f579c0a",
+    "reviewer": {
+      "agent": "Cursor CLI",
+      "independence_limits": "Revisore di riserva: stesso fornitore (xAI) di un implementatore del task, con un modello Grok di generazione diversa (revisore cursor-grok-4.6-xhigh; implementatori grok (xAI), modello Grok Build grok-4.7). LOOP-GROK-PRIMARY (2026-11-10), PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) e GROK-50X (2026-11-10).",
+      "independence_limits_citation": "Quoted from ~/.ocor-codex/prereviews/OCOR-DEV-REM-0064-9b2845f0e0a3-pre.json reviewer.independence_limits. The surrounding record text is English.",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "reserve": true
+    },
+    "second_review": false
+  },
   "probe": {
+    "capture_note": "The log was captured on the dirty tree at parent 9b2845f0e0a35d18fd7d95b12945b7265f579c0a immediately before commit c4cb2d558693b20afab3aba725b1d89ff68e34f5. The first line names that parent. A later run prints the live git HEAD. The file facts are unchanged and the log ends with CONFIRMED, exit 0.",
+    "captured_at_parent": "9b2845f0e0a35d18fd7d95b12945b7265f579c0a",
     "command": "python3 scripts/probe_ncr_claim_identity_mission.py",
     "exit_code": 0,
     "log": "reports/assurance/OCOR-DEV-REM-0064-RCCAD/probe.log",
-    "log_sha256": "77719e275573b7dd53df76f550a155f1d8e48cdaf3eb6f227bb2213ab02f4847",
-    "observed_head": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+    "log_sha256": "c7caa234dd2c5c0128ecfc9aa8e82f630491a8dec54a8c9edb4ffe17f50a7e39",
+    "observed_head_in_log": "9b2845f0e0a35d18fd7d95b12945b7265f579c0a",
     "result": "CONFIRMED"
   },
   "regression": {
@@ -209,6 +358,17 @@
     "raw_output_sha256": "0be424d92b97ab273f7c74656a2834704f4261d5fb6dce4a4de720cdb9603b80",
     "started_at": "2026-11-13T13:39:11Z"
   },
+  "requalification_digest_check": {
+    "captured_head": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
+    "checked_inputs": 22,
+    "checked_records": 3,
+    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
+    "execution_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+    "exit_code": 0,
+    "note": "Those three records do not list the probe or the advisory test as inputs. Their declared commit stays 00bd2b8671c13c93f932b7e12380ddd94c7c9522.",
+    "result": "PASS",
+    "stdout_sha256": "c29b7980f312e536c368e6afc962f6843cd73caf317ccaffa99ad6683cf9384d"
+  },
   "requalification_records": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json",
     "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json",
@@ -216,9 +376,246 @@
   ],
   "residual_risks": [
     "The three requalification records do not qualify requirements.",
-    "The full campaign after preventive review still needs a new Fuseki-identity decision. infra/services.lock.json services[id=fuseki].build.output_sha256 remains 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. The lock was not updated. This regression did not use the stack."
+    "The full campaign after preventive review still needs a new Fuseki-identity decision. infra/services.lock.json services[id=fuseki].build.output_sha256 remains 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. The lock was not updated. This regression did not use the stack.",
+    "probe.log names parent 9b2845f0e0a35d18fd7d95b12945b7265f579c0a because it was captured before the advisory commit existed. It is not a re-run at the execution commit. The full suite remains blocked on FUSEKI-LOCAL-IDENTITY-REBUILD-20261113."
   ],
+  "role_coherence": {
+    "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0064/scan_roles.py",
+    "decision": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+    "errors_corrected": 0,
+    "errors_found": 0,
+    "fields_compared": 31,
+    "scanned_head": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
+    "status": "PASS",
+    "stdout_sha256": "7236b69ae5fe37b040d0147201703e83fad5e3a48ce916ac81738647d3ed1223"
+  },
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0064 register entries, decision file and regression-only requalifications"
+      }
+    ],
+    "preventive_reviewer": {
+      "agent": "Cursor CLI",
+      "independence_limits": "Revisore di riserva: stesso fornitore (xAI) di un implementatore del task, con un modello Grok di generazione diversa (revisore cursor-grok-4.6-xhigh; implementatori grok (xAI), modello Grok Build grok-4.7). LOOP-GROK-PRIMARY (2026-11-10), PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) e GROK-50X (2026-11-10).",
+      "independence_limits_citation": "Quoted from ~/.ocor-codex/prereviews/OCOR-DEV-REM-0064-9b2845f0e0a3-pre.json reviewer.independence_limits. The surrounding record text is English.",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "request_id": "OCOR-DEV-REM-0064-9b2845f0e0a3-pre",
+      "reserve": true,
+      "result": "NO_BLOCKING_FINDINGS"
+    },
+    "verifier_excluded_providers": [
+      "xAI"
+    ],
+    "verifier_status": "NOT_REQUESTED"
+  },
   "schema_version": "1.0",
+  "self_check": {
+    "decisions": [
+      "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
+      "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)"
+    ],
+    "first_application": "Advisory commit before the suite, in the iteration whose instructions are 20261113T171516-implementer-task-grok.md, after preventive review OCOR-DEV-REM-0064-9b2845f0e0a3-pre.",
+    "green": {
+      "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest",
+      "duration_seconds": 0.09,
+      "exit_code": 0,
+      "passed": 6,
+      "stdout_sha256": "965a733245241cee0bdf41575acc32b55547c55666a654b35d8caee943eb5d62",
+      "subtests_passed": 12
+    },
+    "red": {
+      "command": "The same pytest node before the probe rewrite, when accept_head, read_repository_text and line_text did not exist.",
+      "exit_code": 1,
+      "failed": 5,
+      "note": "The log is /tmp/rem0064-red.txt and is not committed. test_observed_head_rejects_a_directory_without_git and the float index 1.0 were added on the already fixed probe and were not part of this RED.",
+      "stdout_sha256": "0601fc6483bdebadbee3e5012ea63a5e45c96b5f772b787b8ee372b0abd3e879"
+    },
+    "table": [
+      {
+        "checks": {
+          "boundary_digests": "N/A: accept_head does not compute or compare a digest. The probe does not hash repository files.",
+          "complete_normative_records": "N/A: accept_head checks only the git head form. It does not accept or reject a normative record.",
+          "finite_numbers": "PASS: the only bound is the fixed length 40, checked before the head is printed (test_accept_head_rejects_empty_non_ascii_and_bad_form).",
+          "processes_and_resources": "N/A: accept_head starts no process, container, or service. observed_head is the only git caller.",
+          "strict_decoding": "FIXED: empty, non-ASCII, uppercase, short, non-hex and newline heads are rejected before use (HEAD_OBSERVED_INVALID)",
+          "types_before_conversions": "PASS: the head is a str and is rejected unless every character is lowercase hex (test_accept_head_rejects_empty_non_ascii_and_bad_form)."
+        },
+        "file": "scripts/probe_ncr_claim_identity_mission.py",
+        "function": "accept_head",
+        "paths": [
+          "git rev-parse HEAD stdout"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_accept_head_rejects_empty_non_ascii_and_bad_form",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_source_does_not_hardcode_the_reviewed_base_head"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: read_repository_text does not compute or compare a digest. Callers receive decoded text only.",
+          "complete_normative_records": "N/A: the reader returns decoded text and does not accept or reject a normative record.",
+          "finite_numbers": "PASS: this reader does not convert numbers. Line bounds are checked later by line_text (test_line_text_rejects_bool_and_out_of_range_before_use).",
+          "processes_and_resources": "N/A: read_repository_text reads one local file and starts no process, container, or service.",
+          "strict_decoding": "FIXED: non-UTF-8 bytes are rejected before the text is returned (TEXT_DECODE_REJECTED)",
+          "types_before_conversions": "PASS: a Path is read as str or the function stops. No value is converted before that decode (test_read_repository_text_rejects_non_utf8)."
+        },
+        "file": "scripts/probe_ncr_claim_identity_mission.py",
+        "function": "read_repository_text",
+        "paths": [
+          "docs/OCOR_LLD_v1.1.md",
+          "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md",
+          "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md",
+          "ocor-runtime/src/ocor_runtime/c4/shacl.py",
+          "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+          "ocor-runtime/src/**/*.py"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_read_repository_text_rejects_non_utf8",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: line_text does not compute or compare a digest. It returns one already decoded line.",
+          "complete_normative_records": "N/A: line_text does not accept or reject a normative record. It only bounds a line index.",
+          "finite_numbers": "FIXED: a bool, a float, and an out-of-range index are rejected before the list is indexed (LINE_INDEX_REJECTED)",
+          "processes_and_resources": "N/A: line_text starts no process, container, or service. It indexes an in-memory list.",
+          "strict_decoding": "PASS: bytes are decoded by read_repository_text before line_text runs. This function checks the index type and range (test_read_repository_text_rejects_non_utf8).",
+          "types_before_conversions": "FIXED: a bool is rejected before it can be used as an index, and a float is rejected the same way (LINE_INDEX_REJECTED)"
+        },
+        "file": "scripts/probe_ncr_claim_identity_mission.py",
+        "function": "line_text",
+        "paths": [
+          "decoded line lists from read_repository_text"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_line_text_rejects_bool_and_out_of_range_before_use",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: observed_head does not compare digests. It returns the head text after accept_head.",
+          "complete_normative_records": "N/A: observed_head does not accept or reject a normative record. It reads one git process.",
+          "finite_numbers": "PASS: the process return code is checked before the stdout is used, and the head length is fixed at 40 (test_observed_head_rejects_a_directory_without_git).",
+          "processes_and_resources": "PASS: one git rev-parse, check False, and no container. A missing repository stops as HEAD_OBSERVED_UNAVAILABLE (test_observed_head_rejects_a_directory_without_git).",
+          "strict_decoding": "FIXED: stdout is accepted only as 40 lowercase hex digits before it is printed (HEAD_OBSERVED_INVALID)",
+          "types_before_conversions": "PASS: git stdout is str from text mode and is passed to accept_head before any other use (test_accept_head_rejects_empty_non_ascii_and_bad_form)."
+        },
+        "file": "scripts/probe_ncr_claim_identity_mission.py",
+        "function": "observed_head",
+        "paths": [
+          "git rev-parse HEAD"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_observed_head_rejects_a_directory_without_git",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_accept_head_rejects_empty_non_ascii_and_bad_form",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: _py_text does not compute or compare a digest. It returns read_repository_text.",
+          "complete_normative_records": "N/A: _py_text does not accept or reject a normative record. It returns decoded source text.",
+          "finite_numbers": "PASS: _py_text does not convert numbers. The only bound on this text is the decode in read_repository_text (test_read_repository_text_rejects_non_utf8).",
+          "processes_and_resources": "N/A: _py_text reads one local file through read_repository_text and starts no process, container, or service.",
+          "strict_decoding": "FIXED: _py_text returns read_repository_text, which rejects non-UTF-8 bytes before use (TEXT_DECODE_REJECTED)",
+          "types_before_conversions": "PASS: the path stays a Path until read_text returns str. A bad decode stops the function (test_read_repository_text_rejects_non_utf8)."
+        },
+        "file": "scripts/probe_ncr_claim_identity_mission.py",
+        "function": "_py_text",
+        "paths": [
+          "ocor-runtime/src/**/*.py"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_read_repository_text_rejects_non_utf8",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: _has does not compute or compare a digest. It searches one already decoded string.",
+          "complete_normative_records": "N/A: _has does not accept or reject a normative record. It reports whether a literal needle occurs.",
+          "finite_numbers": "PASS: _has does not convert numbers. Both arguments stay strings (test_main_prints_the_git_head).",
+          "processes_and_resources": "N/A: _has starts no process, container, or service. It searches an in-memory string.",
+          "strict_decoding": "PASS: _has searches a str already returned by read_repository_text. It does not decode bytes (test_main_prints_the_git_head).",
+          "types_before_conversions": "PASS: both arguments stay str. There is no conversion before the search (test_main_prints_the_git_head)."
+        },
+        "file": "scripts/probe_ncr_claim_identity_mission.py",
+        "function": "_has",
+        "paths": [
+          "decoded repository text"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: main does not compute or compare a digest. CONFIRMED is the probe result, not a seal.",
+          "complete_normative_records": "N/A: main prints file facts and does not accept or reject a normative record.",
+          "finite_numbers": "PASS: every line index goes through line_text, which rejects an out-of-range index before use (test_line_text_rejects_bool_and_out_of_range_before_use).",
+          "processes_and_resources": "PASS: main starts one git rev-parse through observed_head and no container (test_main_prints_the_git_head).",
+          "strict_decoding": "FIXED: main prints a head only after accept_head and reads files only through read_repository_text (HEAD_OBSERVED_INVALID)",
+          "types_before_conversions": "PASS: line indexes are ints checked by line_text, and the head is a str checked by accept_head (test_line_text_rejects_bool_and_out_of_range_before_use)."
+        },
+        "file": "scripts/probe_ncr_claim_identity_mission.py",
+        "function": "main",
+        "paths": [
+          "git rev-parse HEAD",
+          "docs/OCOR_LLD_v1.1.md",
+          "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md",
+          "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md",
+          "ocor-runtime/src/ocor_runtime/c4/shacl.py",
+          "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+          "ocor-runtime/src/**/*.py"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_accept_head_rejects_empty_non_ascii_and_bad_form",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_read_repository_text_rejects_non_utf8",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_line_text_rejects_bool_and_out_of_range_before_use",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_observed_head_rejects_a_directory_without_git",
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_source_does_not_hardcode_the_reviewed_base_head"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this test does not compute or compare a digest. It compares two text lines.",
+          "complete_normative_records": "N/A: this test does not accept or reject a normative record. It checks the probe stdout.",
+          "finite_numbers": "PASS: the test does not convert numbers. It compares the decoded head text to git stdout (test_main_prints_the_git_head).",
+          "processes_and_resources": "PASS: the test runs one git rev-parse and one Python probe process, and no container (test_main_prints_the_git_head).",
+          "strict_decoding": "PASS: subprocess text mode decodes stdout as UTF-8 and the first line must equal the git head (test_main_prints_the_git_head).",
+          "types_before_conversions": "PASS: both stdout values stay str and are compared before any other use (test_main_prints_the_git_head)."
+        },
+        "file": "reports/tests/test_normative_conformance_register.py",
+        "function": "test_main_prints_the_git_head",
+        "paths": [
+          "git rev-parse HEAD",
+          "scripts/probe_ncr_claim_identity_mission.py stdout"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_normative_conformance_register.py::ProbeNcrClaimIdentityMissionTest::test_main_prints_the_git_head"
+        ]
+      }
+    ]
+  },
   "status": "PASS_AWAITING_INDEPENDENT_VERIFICATION",
   "task_id": "OCOR-DEV-REM-0064",
   "unit_id": "OCOR-DEV-REM-0064"
