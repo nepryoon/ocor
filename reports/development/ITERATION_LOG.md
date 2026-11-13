@@ -9307,3 +9307,12 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - La suite completa non parte in questa iterazione: segue la revisione preventiva. Alimentazione della suite completa: non applicabile, suite non eseguita. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO. Nessun nuovo DEC. Nessun GO del verifier per OCOR-DEV-REM-0063.
 - REM-0061 resta bloccato, nessun ciclo 5, la PR 595 non si integra. OCOR-DEV-REM-0060 e l'adozione della PR 599 non partono. La scrittura delle tre voci di FABLE52-EXTENSION-ASSESSMENT attende FABLE52-EXTENSION-NCP-U15-ID-COLLISION.
 - Prossima azione: riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva. Il request_id contiene i primi 12 caratteri dell'head di questo commit ed e scritto solo in `loop_status`, fuori dal repository.
+
+## 2026-11-13T01:31:18Z — OCOR-DEV-REM-0063 in pausa per il ciclo 5 di OCOR-DEV-REM-0061
+
+- Decisione `REM-0061-CYCLE5-PRIORITY (2026-11-13)`: il ciclo 5 di OCOR-DEV-REM-0061 precede OCOR-DEV-REM-0063. Il worktree era pulito, tre commit avanti a `origin/main`, branch non pubblicato.
+- Fatto e non rifatto: RED 21 failed, GREEN 21 passed, esecuzione `d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7`, evidenza `e02cc1eed501a603d25679558b72e72fdd8cae6e`, PRE-CAMPAIGN-GATE 51 PASS su `e02cc1eed501a603d25679558b72e72fdd8cae6e`.
+- Revisione preventiva `OCOR-DEV-REM-0063-d3382f6bebb1-pre`, HEAD `d3382f6bebb12e0ee459a76b7e9505eacd8828c0`, esito `BLOCKING_FINDINGS`, sha256 `ea1eae60ebceb8368bc48e0631a1d0fc1e952d539f7635bafc2d69976958cc52`, revisore Cursor CLI `cursor-grok-4.6-xhigh`, fornitore xAI, di riserva. Conteggi: 3 blocking, 2 advisory. Disposition: P1 `NOT_CORRECTED_PAUSED`, P2 `NOT_CORRECTED_PAUSED`, P3 `NOT_CORRECTED_PAUSED`. Il testo dei finding non e copiato.
+- Resta, al momento della ripresa: correggere i tre bloccanti con RED/GREEN senza una seconda revisione preventiva, valutare i due consultivi, poi `PRE-CAMPAIGN-GATE` sull'head finale, suite completa e verifica.
+- Ripresa: punta di `governed/ocor-dev-rem-0063-mcp-profile` dopo questo commit, figlio di `d3382f6bebb12e0ee459a76b7e9505eacd8828c0`. Con `GO_FOR_EVIDENCE_SEAL` del ciclo 5, dopo `OCOR-DEV-REM-0060` e l'adozione della PR #599. Con `NO_GO`, subito dopo la decision request di riprogettazione di `OCOR-DEV-REM-0061`. Nessun merge di questo branch.
+- Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO. Nessun nuovo DEC.
