@@ -1,16 +1,16 @@
 {
   "assumptions": [
-    "REM-0061-CYCLE5-REDESIGN (2026-11-13) opzione 1 e stata adottata. L'attuazione si e fermata al controllo sull'HEAD b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48.",
-    "Il gate attuale resta PASS. La proprieta stretta non resta PASS: 22 task con piu di una testa corrente e 5 gruppi con lo stesso predecessore. Il controllo non e stato allentato.",
-    "La richiesta REM-0061-STRICT-SELECTION-REPO-HEADS e aperta. PR 614 bozza, non da integrare: i percorsi non sono nell'allowlist.",
-    "Il verdetto OCOR-DEV-REM-0063-b7d2af2658bf-0 e NO_GO. La riparazione non parte prima della decisione sulla richiesta nuova. Il commit 7ecbee1e non e l'HEAD da riprendere.",
-    "OCOR-DEV-REM-0060, la PR 599 e la scrittura del registro di conformita non partono. Claim invariati.",
-    "Correzione 2026-11-13: il ciclo 1 di OCOR-DEV-REM-0063 e stato eseguito ed e NO_GO (OCOR-DEV-REM-0063-0384449029ef-1). Non c'e un ciclo 2 finche REM-0063-REPAIR1-NO-GO e aperta.",
-    "Correzione 2026-11-13: OCOR-DEV-REM-0064 e sul branch governed/ocor-dev-rem-0064-conformance-register-entries all'HEAD 77340bce8de8d1e6f2c1ac94dc6a287fca850f25, non integrato. Il commit del probe e c4cb2d558693b20afab3aba725b1d89ff68e34f5. La suite locale attende FUSEKI-LOCAL-IDENTITY-REBUILD-20261113. Il lock non e stato aggiornato."
+    "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 (2026-11-13) opzione 1 e stata adottata su delega completa, modello claude-fable-5-2, effort high.",
+    "Il candidato governed/fuseki-local-identity-rebuild-20261113 e f0c46536c97093d8883bb8fc68a622a1fa0e78e2, pubblicato e non integrato. Nessuna PR del candidato.",
+    "services[id=fuseki].build.output_sha256 e f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875. Il controllo di identita dello script di bootstrap e invariato.",
+    "La base citata 41abc9cc28f1cba91b51401bcbb1bee9acdcd93b e origin/main 44296a2629e3cfa7dfe0e0941cec012e62396c11 hanno gli stessi byte di lock, Dockerfile e companion precedente. Il branch parte da 44296a2. Non e una nuova decision request.",
+    "REM-0063-REPAIR1-NO-GO (2026-11-13) opzione 1 e stata adottata. Il ciclo 2 non e iniziato. Parte da 0384449029efa6e3ddb65de02d5d821990e6e7b6 senza rebase e senza toccare governed/ocor-dev-rem-0061-lane-image-cache.",
+    "La suite di OCOR-DEV-REM-0064 parte solo dopo il merge del change set Fuseki. Le note P1 e P2 sono gia nel commit c4cb2d558693b20afab3aba725b1d89ff68e34f5. Non si ripete la revisione preventiva.",
+    "Non partono OCOR-DEV-REM-0060, l'adozione della PR 599 e l'unita del punto 5. La PR 595 non si integra. Claim invariati."
   ],
   "base_sha": "4b277f76b743466f6f96245b5666d536d14a6a94",
   "baseline_commit": "8bfb22f44b255973a3ce028dff70a0417ca438ca",
-  "branch": "governed/state-sync-rem0064-advisory-20261113",
+  "branch": "governed/state-sync-fuseki-identity-20261113",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0062-post-poc-plan",
     "branch_deleted_after_merge": true,
@@ -71,9 +71,9 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0064 advisory traces are committed at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25. The full suite still waits on FUSEKI-LOCAL-IDENTITY-REBUILD-20261113. REM-0063 repair cycle 1 remains NO_GO. No cycle 2. No Fuseki lock edit.",
+  "current_task": "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 candidate f0c46536c97093d8883bb8fc68a622a1fa0e78e2 awaits verification FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0. REM-0063 cycle 2 is the next implementation unit and has not started.",
   "evidence_paths": [],
-  "exact_next_action": "Attendere la decisione su FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 (branch governed/decision-request-fuseki-local-identity-20261113, commit 3094a2fdd3ceb0f29bed83e3b60938323fbc9855, sha256 0877a9a60f19c599e84216729e687a0359b2b7560469e68ac7584c2b56ed1f40, PR 619 bozza e non da integrare). Non aggiornare infra/services.lock.json: services[id=fuseki].build.output_sha256 resta 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. Non avviare la suite completa locale di OCOR-DEV-REM-0064 finche scripts/bootstrap_development_environment.py --execute fallisce sull'identita Fuseki. Le note P1 e P2 della revisione preventiva OCOR-DEV-REM-0064-9b2845f0e0a3-pre sono nel commit c4cb2d558693b20afab3aba725b1d89ff68e34f5 e nel record 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 sul branch governed/ocor-dev-rem-0064-conformance-register-entries, senza una seconda revisione preventiva e senza suite. Resta aperta REM-0063-REPAIR1-NO-GO (commit 2a9266a3de1e8a4c0d11c8b59dfa61645850e23c, sha256 e702d96430ae423ae2881b4e0917342dff7e3cf6218ef03ad249f151b1efe726, PR 617 bozza). Il verdetto OCOR-DEV-REM-0063-0384449029ef-1 e NO_GO. Non avviare il ciclo 2. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599 e non aprire l'unita del punto 5. Claim invariati.",
+  "exact_next_action": "Il loop verifica la richiesta FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0 sull'HEAD esatto f0c46536c97093d8883bb8fc68a622a1fa0e78e2 del branch governed/fuseki-local-identity-rebuild-20261113. Non riscrivere la richiesta. Con GO_FOR_EVIDENCE_SEAL sigillare e integrare quello HEAD. Con NO_GO un solo ciclo di riparazione. Non integrare prima del GO. La prossima unita di implementazione, che non dipende da questo verdetto, e il ciclo 2 di OCOR-DEV-REM-0063 secondo REM-0063-REPAIR1-NO-GO opzione 1, dall'HEAD 0384449029efa6e3ddb65de02d5d821990e6e7b6, senza rebase, senza toccare il branch Fuseki ne la PR 595. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5. La suite di OCOR-DEV-REM-0064 parte solo dopo il merge di questo change set. Claim invariati.",
   "full_campaign": {
     "head": "241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5",
     "mode": "FOUR_LANE",
@@ -81,8 +81,8 @@
     "reason": "PRE-CAMPAIGN-REVIEW is requested before the full suite. The earlier campaign on 524837d841dbf88a6a2cfaebee527bfc95bb324e does not qualify this head.",
     "status": "NOT_EXECUTED"
   },
-  "head_sha": "0384449029efa6e3ddb65de02d5d821990e6e7b6",
-  "head_sha_role": "repair cycle 1 head, verdict NO_GO, not merged",
+  "head_sha": "f0c46536c97093d8883bb8fc68a622a1fa0e78e2",
+  "head_sha_role": "Fuseki local identity candidate, pending independent verification, not merged",
   "historical_seal_hashes": {
     "requalified": {
       "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json": {
@@ -216,7 +216,7 @@
     "pre_campaign_gate": "PASS 54/54",
     "task_suite": "454 passed, 14 subtests passed, reports/tests/test_evidence_input_drift.py and reports/tests/test_local_lane_campaign.py"
   },
-  "next_task": "Attendere la decisione su FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 (branch governed/decision-request-fuseki-local-identity-20261113, commit 3094a2fdd3ceb0f29bed83e3b60938323fbc9855, sha256 0877a9a60f19c599e84216729e687a0359b2b7560469e68ac7584c2b56ed1f40, PR 619 bozza e non da integrare). Non aggiornare infra/services.lock.json: services[id=fuseki].build.output_sha256 resta 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. Non avviare la suite completa locale di OCOR-DEV-REM-0064 finche scripts/bootstrap_development_environment.py --execute fallisce sull'identita Fuseki. Le note P1 e P2 della revisione preventiva OCOR-DEV-REM-0064-9b2845f0e0a3-pre sono nel commit c4cb2d558693b20afab3aba725b1d89ff68e34f5 e nel record 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 sul branch governed/ocor-dev-rem-0064-conformance-register-entries, senza una seconda revisione preventiva e senza suite. Resta aperta REM-0063-REPAIR1-NO-GO (commit 2a9266a3de1e8a4c0d11c8b59dfa61645850e23c, sha256 e702d96430ae423ae2881b4e0917342dff7e3cf6218ef03ad249f151b1efe726, PR 617 bozza). Il verdetto OCOR-DEV-REM-0063-0384449029ef-1 e NO_GO. Non avviare il ciclo 2. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599 e non aprire l'unita del punto 5. Claim invariati.",
+  "next_task": "Il loop verifica la richiesta FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0 sull'HEAD esatto f0c46536c97093d8883bb8fc68a622a1fa0e78e2 del branch governed/fuseki-local-identity-rebuild-20261113. Non riscrivere la richiesta. Con GO_FOR_EVIDENCE_SEAL sigillare e integrare quello HEAD. Con NO_GO un solo ciclo di riparazione. Non integrare prima del GO. La prossima unita di implementazione, che non dipende da questo verdetto, e il ciclo 2 di OCOR-DEV-REM-0063 secondo REM-0063-REPAIR1-NO-GO opzione 1, dall'HEAD 0384449029efa6e3ddb65de02d5d821990e6e7b6, senza rebase, senza toccare il branch Fuseki ne la PR 595. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5. La suite di OCOR-DEV-REM-0064 parte solo dopo il merge di questo change set. Claim invariati.",
   "phase": "ADVISORY_COMMITTED_SUITE_BLOCKED",
   "po_decisions_pending": [
     "REM-0063-REPAIR1-NO-GO",
@@ -495,6 +495,7 @@
     "requalifications": "4 regression-only .requalified-rem0056 records (non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS): OCOR-DEV-0005 supersedes OCOR-DEV-0005-requalified-rem0055-351bb27eeeb0, OCOR-DEV-0050 supersedes OCOR-DEV-0050-requalified-rem0055-351bb27eeeb0, OCOR-DEV-0082 supersedes OCOR-DEV-0082-requalified-rem0055-351bb27eeeb0, OCOR-DEV-REM-0037 supersedes OCOR-DEV-REM-0037-61654ea20771; surgical MANIFEST insertions; drift validator 0 at the candidate head; sealed records byte-identical; lane weights unchanged"
   },
   "raw_evidence_location": "~/.ocor-codex/rem-0060/iter8/attempts/full-1 e full-2; kit iter9; copia diagnostica redatta nel WIP b869cc9",
+  "rem0063_cycle2_start_head": "0384449029efa6e3ddb65de02d5d821990e6e7b6",
   "repair_cycle_2_campaign": {
     "diagnostic_run": {
       "diagnostic_head": "73e5c4ad18e4ce3747548bafa7acea53e824551d",
@@ -564,10 +565,10 @@
       "agent": "Grok Build",
       "model": "grok-4.7",
       "provider": "xAI",
-      "scope": "Advisory P1 and P2 of OCOR-DEV-REM-0064 before the suite, and this state sync. No Fuseki lock edit. No REM-0063 cycle 2. No full suite."
+      "scope": "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 option 1 and the two dispositions. No REM-0063 cycle 2. No REM-0064 suite. No PR 595 merge."
     },
-    "verifier": "Codex / OpenAI for OCOR-DEV-REM-0063-0384449029ef-1. Codex did not write code or records. No further verification until REM-0063-REPAIR1-NO-GO is decided.",
-    "verifier_status": "NO_GO"
+    "verifier": "Pending for FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0. Provider other than xAI. Codex / OpenAI remains an allowed verifier of OCOR-DEV-REM-0063 because it verified cycles 0 and 1 and wrote no code or records.",
+    "verifier_status": "PENDING"
   },
   "rollback_result": "Nessun codice di runtime cambiato in NCP-U12; preservare la storia e, se richiesto, annullare le modifiche di test con un nuovo commit. Nessuna migrazione di dati.",
   "schema_version": "1.0",
@@ -585,7 +586,7 @@
     "Every lane's private dockerd starts empty and pulls each pinned image from its registry: a four-lane campaign costs about four times the Docker Hub pulls of a serial one, and the unauthenticated limit of this host's address is 100 pulls per hour; a four-lane run right after another pulling run can fail at setup with 429 (the diagnostic attempt of this unit). Counter-measure applied: one pulling campaign per hour; a pull-through cache or seeding the lanes from the host image store (digest-pinned) would remove the risk and is a separate decision."
   ],
   "state_sync_ci": {
-    "branch": "governed/state-sync-rem0064-advisory-20261113",
+    "branch": "governed/state-sync-fuseki-identity-20261113",
     "head_at_open": null,
     "note": "PR non ancora aperta in questo commit. Il numero si registra in loop_status, senza un secondo commit.",
     "pr": null,
@@ -599,10 +600,9 @@
     "task_suite": "98 passed in 0.71s at 241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5, log sha256 253ee0ec6878396661dc0ed1ad4fe048712f75d703436edebd3ed6cda9abdf27"
   },
   "unresolved_blockers": [
-    "OCOR-DEV-REM-0061",
     "OCOR-DEV-REM-0060",
-    "OCOR-DEV-REM-0063"
+    "OCOR-DEV-REM-0061"
   ],
-  "updated_at": "2026-11-13T16:39:00Z",
-  "worktree": ".ocor/worktrees/ss-fuseki-identity-20261113"
+  "updated_at": "2026-11-13T17:58:18Z",
+  "worktree": ".ocor/worktrees/state-sync-fuseki-identity-20261113"
 }
