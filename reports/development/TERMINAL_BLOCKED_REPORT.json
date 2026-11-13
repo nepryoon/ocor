@@ -3,7 +3,7 @@
   "baseline_commit": "8bfb22f44b255973a3ce028dff70a0417ca438ca",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "5f43d1fb7dca73f920d8c8f6deae19aaea547a50a20c6a2341d0d10b9032b1bc"
+    "sha256": "57fac5e8a9f95a9aca8db8ff6a7263f007d8d0113fb38a5fd2860238503c9222"
   },
   "blocking_tasks": [
     "OCOR-DEV-REM-0060",
@@ -20,22 +20,26 @@
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "blocked_scope": "Scrittura del registro di conformita, non un task del backlog.",
-      "blocked_tasks": [],
-      "decision_level": "NORMATIVE",
+      "blocked_scope": "Nessun ciclo 6. La PR 595 non si integra. REM-0060 resta in coda fino al merge.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0060",
+        "OCOR-DEV-REM-0061"
+      ],
+      "decision_level": "OPERATIVE",
       "evidence": {
-        "branch": "governed/decision-request-fable52-extension-assessment",
-        "commit": "142514fa302f23a49ee5695a2e25da6bb3f4054a",
-        "path": "reports/development/decision_requests/FABLE52-EXTENSION-NCP-U15-ID-COLLISION.md",
-        "sha256": "ead04b383877358e820aa0e9bf8298aebf9578772f46dc11748f74516d868ca7"
+        "branch": "governed/decision-request-rem0061-cycle5-redesign",
+        "commit": "df02d810a16888d3d65bec916a576177c0b7ea9f",
+        "path": "reports/development/decision_requests/REM-0061-CYCLE5-REDESIGN.md",
+        "pr": 612,
+        "sha256": "136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7"
       },
-      "finding": "NCP-U15 e gia l'unita dei reason code sul WIP di REM-0060.",
-      "id": "FABLE52-EXTENSION-NCP-U15-ID-COLLISION",
+      "finding": "Ciclo 5 NO_GO. La classe del successore elencato non e chiusa.",
+      "id": "REM-0061-CYCLE5-REDESIGN",
       "recommendation": "Opzione 1.",
       "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "direct_ready_disposition": "G6 sospesi. REM-0061 bloccato senza ciclo 5. REM-0060 in coda fino a una decisione successiva. OCOR-DEV-REM-0062 integrato. Prossima unita: profilo MCP, OCOR-DEV-REM-0063.",
+  "direct_ready_disposition": "G6 sospesi. REM-0061 bloccato senza ciclo 6, in attesa di REM-0061-CYCLE5-REDESIGN. REM-0060 in coda fino al merge di REM-0061. Prossima unita: profilo MCP, OCOR-DEV-REM-0063.",
   "direct_ready_tasks": [
     "OCOR-DEV-0060",
     "OCOR-DEV-0062",
@@ -43,34 +47,27 @@
     "OCOR-DEV-0064"
   ],
   "in_progress_unit": {
-    "branch": "governed/ocor-dev-rem-0062-post-poc-plan",
-    "branch_deleted_after_merge": true,
-    "head_sha": "8c018940a80fb0ccab53c6ce6120919e8fd7f18a",
-    "integration": "MERGED",
-    "merge_commit": "8bfb22f44b255973a3ce028dff70a0417ca438ca",
-    "pr": 609,
-    "qualified_head": "63ca98ef6805fd562c9d849924e361915e2ef5b4",
-    "status": "RESOLVED_VERIFIED_SEALED_MERGED",
-    "task_id": "OCOR-DEV-REM-0062",
-    "verdict_request_id": "OCOR-DEV-REM-0062-63ca98ef6805-1",
-    "verdict_result": "GO_FOR_EVIDENCE_SEAL"
+    "branch": "governed/ocor-dev-rem-0063-mcp-profile",
+    "head_sha": "7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01",
+    "status": "PAUSED_CLEAN_RESUME_NEXT",
+    "task_id": "OCOR-DEV-REM-0063"
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "local_controls": {
     "checksum": "PASS 8/8 sha256 0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
     "drift": "PASS sha256 5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
-    "full_suite": "NOT_EXECUTED in this state sync; code is unchanged from the sealed head",
+    "full_suite": "NOT_EXECUTED in this state sync; code is unchanged",
     "harness": "PASS verify.py sha256 61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413; language ca6cb78d, mypy 629b11f7, plan c0753802, rccad 0043e5c7, ruff 82b3e6a6, change scope 008238e1, runtime 0005/0049/0050/0082 PASS",
     "stack": "NOT_RUNNING, 0 container"
   },
-  "minimal_unblock_action": "Per REM-0061 serve una decisione successiva. Non e condizione del profilo MCP.",
-  "next_executable_action": "OCOR-DEV-REM-0062 e integrato. GO_FOR_EVIDENCE_SEAL OCOR-DEV-REM-0062-63ca98ef6805-1, verifier Claude Code claude-opus-5-5 Anthropic, head qualificato 63ca98ef6805fd562c9d849924e361915e2ef5b4, sigillo 8c018940a80fb0ccab53c6ce6120919e8fd7f18a, PR 609 merge 8bfb22f44b255973a3ce028dff70a0417ca438ca, 13/13 check obbligatori verdi, 0 rerun. VF-001 non bloccante registrato nel sigillo (RED contro git archive 394fa1259d2b, exit 1, log sha256 5af7442dec6d66f169b3ecb981cfd4d2337853bbc33c5f87adcd4f8994840e60). VF-002 e VF-003 non bloccanti restano non corretti. REM-0061 resta bloccato, nessun ciclo 5, la PR 595 non si integra. OCOR-DEV-REM-0060 e l'adozione della PR 599 non partono. La scrittura delle tre voci di FABLE52-EXTENSION-ASSESSMENT (2026-11-12) attende FABLE52-EXTENSION-NCP-U15-ID-COLLISION. Prossima unita: profilo MCP di FABLE52-POST-POC-PROGRAMME (2026-11-11) punto 1, primo identificativo libero verificato OCOR-DEV-REM-0063. Claim invariati.",
+  "minimal_unblock_action": "Per OCOR-DEV-REM-0061 serve la decisione su REM-0061-CYCLE5-REDESIGN. Non e condizione di OCOR-DEV-REM-0063, che riprende da 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01.",
+  "next_executable_action": "Il ciclo 5 di OCOR-DEV-REM-0061 e NO_GO (verdetto OCOR-DEV-REM-0061-b9aec3e1a183-5, head b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48, sha256 2cbd38bc26e304419c8feeaaeb07435c1e8a22fc888b5e12f0d86f9b63174932, verifier Claude Code claude-opus-5-5 Anthropic). REM-0061-CYCLE5-INDEPENDENT (2026-11-13) punto 5 non autorizza un ciclo 6. Richiesta REM-0061-CYCLE5-REDESIGN aperta, commit df02d810a16888d3d65bec916a576177c0b7ea9f, sha256 136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7, PR 612 bozza e non da integrare (percorsi fuori dall'allowlist). FABLE52-EXTENSION-NCP-U15-ID-COLLISION decisa, opzione 1, disposition 1bc5e516fa197a1e3b74434058b655b159e03b81. Prossima unita: riprendere OCOR-DEV-REM-0063 dal commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01 sul branch governed/ocor-dev-rem-0063-mcp-profile. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne l'adozione della PR 599. La scrittura del registro di conformita autorizzata dall'opzione 1 non precede il profilo MCP. Claim invariati.",
   "preamble_recheck": {
-    "decision_id": "REM-0061-CYCLE3-MERIT-NO-GO",
-    "observed_at": "2026-11-12T17:05:00+00:00",
-    "openhands_preamble_sha256": "7dabd59af5d1ec30748c00707ea67860bffc9717fbab8d441f2cdafc745e4dcd",
-    "result": "MATCHED_OPTION_1",
-    "task_file_sha256": "7ffe69e40fc99f36c4fc2f90dff3d0ee47e194a99a23bdaa30ebba72ed3e5933"
+    "decision_id": "REM-0061-CYCLE5-INDEPENDENT",
+    "observed_at": "2026-11-13T03:27:58+00:00",
+    "openhands_preamble_sha256": "2928399fc33015614ba45157e6e3434d9dda75b00f0d27bba4ffb99ec6df19f2",
+    "result": "MATCHED_CYCLE5_EXECUTED_NO_GO_NO_CYCLE_6",
+    "task_file_sha256": "92538cf6fef4a1a557e308163a02955b00585157b131490e24244a357fa1e599"
   },
   "previous_report": {
     "commit": "8bfb22f44b255973a3ce028dff70a0417ca438ca",
@@ -78,12 +75,12 @@
     "sha256": "274519a645fdd2aa58308450492f677196c93a24f3c2812c4e5f1b820149be92"
   },
   "previous_status": "TERMINAL_BLOCKED",
-  "reason": "OCOR-DEV-REM-0062 e integrato (PR 609, merge 8bfb22f). Il punto 3 del programma post-PoC e chiuso. La prossima unita e il profilo MCP, primo identificativo libero OCOR-DEV-REM-0063. REM-0061 resta bloccato senza ciclo 5. La scrittura del registro per FABLE52-EXTENSION-ASSESSMENT attende FABLE52-EXTENSION-NCP-U15-ID-COLLISION.",
-  "recorded_at": "2026-11-12T23:21:20+00:00",
+  "reason": "OCOR-DEV-REM-0061 ciclo 5 e NO_GO. Non c'e un ciclo 6. La richiesta REM-0061-CYCLE5-REDESIGN e aperta e non blocca OCOR-DEV-REM-0063. FABLE52-EXTENSION-NCP-U15-ID-COLLISION e decisa con l'opzione 1.",
+  "recorded_at": "2026-11-13T03:27:58+00:00",
   "remaining_backlog_tasks": 9,
-  "resolution": "OCOR-DEV-REM-0062 e integrato. La PR 595 non si integra. Prossima unita: profilo MCP, OCOR-DEV-REM-0063. La scrittura del registro di FABLE52-EXTENSION-ASSESSMENT attende FABLE52-EXTENSION-NCP-U15-ID-COLLISION.",
+  "resolution": "Il ciclo 5 di OCOR-DEV-REM-0061 e NO_GO (verdetto OCOR-DEV-REM-0061-b9aec3e1a183-5, head b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48, sha256 2cbd38bc26e304419c8feeaaeb07435c1e8a22fc888b5e12f0d86f9b63174932, verifier Claude Code claude-opus-5-5 Anthropic). REM-0061-CYCLE5-INDEPENDENT (2026-11-13) punto 5 non autorizza un ciclo 6. Richiesta REM-0061-CYCLE5-REDESIGN aperta, commit df02d810a16888d3d65bec916a576177c0b7ea9f, sha256 136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7, PR 612 bozza e non da integrare (percorsi fuori dall'allowlist). FABLE52-EXTENSION-NCP-U15-ID-COLLISION decisa, opzione 1, disposition 1bc5e516fa197a1e3b74434058b655b159e03b81. Prossima unita: riprendere OCOR-DEV-REM-0063 dal commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01 sul branch governed/ocor-dev-rem-0063-mcp-profile. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne l'adozione della PR 599. La scrittura del registro di conformita autorizzata dall'opzione 1 non precede il profilo MCP. Claim invariati.",
   "schema_version": "1.0",
-  "session_resources_created": "Nessun container. Worktree .ocor/worktrees/state-sync-rem0062-integrated. Dopo il merge della PR 609 cancellati, perche gia antenati di origin/main e non citati da voci aperte: governed/ocor-dev-rem-0062-post-poc-plan head 8c018940a80fb0ccab53c6ce6120919e8fd7f18a e governed/state-sync-rem0061-cycle4-nogo-20261112 head e43154e8fa9b3a48c4a0025318a7a888c83f4b05, con le worktree locali omonime.",
+  "session_resources_created": "Nessun container. Worktree .ocor/worktrees/dr-rem0061-cycle5-redesign, .ocor/worktrees/state-sync-rem0061-cycle5-nogo e aggiornamento di .ocor/worktrees/dr-fable52-extension. Stack ocor-bootstrap non in esecuzione.",
   "status": "LIFTED_OTHER_WORK_EXECUTABLE",
   "suspended_by_programme": [
     "OCOR-DEV-0060",
@@ -95,5 +92,5 @@
     "OCOR-DEV-REM-0043"
   ],
   "terminal_state": "CONTINUE",
-  "updated_at": "2026-11-12T23:21:20+00:00"
+  "updated_at": "2026-11-13T03:27:58+00:00"
 }
