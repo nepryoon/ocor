@@ -1,6 +1,41 @@
 # REM-0061-CYCLE5-REDESIGN
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
+Opzione adottata: **1**, come raccomandato, dalla decisione
+`REM-0061-CYCLE5-REDESIGN (2026-11-13)`. Il testo della richiesta,
+sotto questa disposition, resta quello aperto al commit
+`df02d810a16888d3d65bec916a576177c0b7ea9f`, sha256
+`136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7`.
+
+## Disposition
+
+Il PO adotta l'opzione 1 come scritta nel file aperto. L'attuazione si è
+fermata al controllo sull'HEAD
+`b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48` del branch
+`governed/ocor-dev-rem-0061-lane-image-cache`. Il gate
+`scripts/validate_evidence_input_drift.py` su quell'albero resta PASS
+(`checked_inputs` 241, `checked_tasks` 75, `findings` vuoto). La proprietà
+dell'opzione 1, applicata agli stessi record senza modificarli, non resta
+PASS: 22 task completati hanno più di una testa corrente e 5 gruppi hanno
+due o più record elencati che nominano lo stesso predecessore. Il controllo
+non è stato allentato. Non è stato modificato
+`scripts/validate_evidence_input_drift.py`. Non sono stati modificati record
+sigillati né manifest. Non sono stati allineati README e record. Non è stato
+eseguito il merge di `main` né la riqualifica di `OCOR-DEV-0005`,
+`OCOR-DEV-0050` e `OCOR-DEV-0082`. Non è stata avviata una campagna né una
+verifica. La PR #595 resta bozza e non si integra.
+
+I casi misurati sono nella richiesta
+`REM-0061-STRICT-SELECTION-REPO-HEADS`, commit
+`74e84ddc99564384eda981ad84e8957a90596dcf`, sha256
+`fc7c8d7e73a92322639e869a581731ec347f486108c11ee9642d7561c1a60544`,
+PR #614 bozza e non da integrare. Finché quella richiesta non è decisa, non
+parte la riparazione di `OCOR-DEV-REM-0063`: il punto 6 di questa decisione
+la pone dopo un verdetto che questo ciclo, fermato prima della verifica, non
+emette.
+
+Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,
+PoC e Production `NO-GO`. Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`.
 
 ## Contesto
 
