@@ -1,0 +1,225 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commit_role": "execution_commit is the commit at which the probe, the register integrity test and the regression pytest ran. This record is a later commit and does not change those inputs.",
+  "created_at": "2026-11-13T13:39:16Z",
+  "decision": "FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13) point 4",
+  "execution_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+  "execution_commit_digest_check": {
+    "checked_inputs": 30,
+    "checked_records": 4,
+    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
+    "execution_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+    "exit_code": 0,
+    "note": "stdout_sha256 is the stdout of the command above while HEAD was the execution commit. The checker does not read this field, so writing it does not change that stdout. A later HEAD changes only the head field of a fresh print.",
+    "result": "PASS",
+    "stdout_sha256": "721b33097b2119a2b05ddcadf128a71402c3b64159e6c444f37e3cb136cb14dd"
+  },
+  "execution_state_registration": "Deferred to the post-verify state sync. This unit does not edit EXECUTION_STATE.json, MODEL_HANDOFF.json or ITERATION_LOG.md.",
+  "implementers": [
+    {
+      "agent": "Grok Build",
+      "model": "grok-4.7",
+      "provider": "xAI",
+      "scope": "OCOR-DEV-REM-0064 register entries, decision file and regression-only requalifications"
+    }
+  ],
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/assurance/OCOR-DEV-REM-0064-RCCAD/README.md": "5eb09a9e5919a814869cfd417e0ed27e6c71f62d2802850c41ee0468b8a1b11a",
+    "reports/assurance/OCOR-DEV-REM-0064-RCCAD/integrity.log": "7a04c659b2339b849005b3bd8df1866d51494e698588f206086f75df0db35431",
+    "reports/assurance/OCOR-DEV-REM-0064-RCCAD/probe.log": "77719e275573b7dd53df76f550a155f1d8e48cdaf3eb6f227bb2213ab02f4847",
+    "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json": "e8efa5c8cb914b4053c0d579e31038eeca4856464513c7a47678f5876b8b0b2f",
+    "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md": "bcf636db0f6f1c062ce57045932fe91d6a3754f5bd5be081a8603b665e4bf076",
+    "reports/planning/OCOR_PLAN_RUN_STATE.json": "86adf2664435ef67a78e421c07e9b4b8fc85bbdf836ef6f4dfa1709a6e424f7d",
+    "scripts/probe_ncr_claim_identity_mission.py": "6d1a0f1d7d78464c07c5dbfbd6b3f0720d9bcb699d40f70eada92223152ce606",
+    "scripts/validate_ocor_development_plan.py": "6375b220ad5f50fdd332defb0a5574a6f5b627e0acef4e21b502964149a3658b"
+  },
+  "integrity": {
+    "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_normative_conformance_register",
+    "exit_code": 0,
+    "log": "reports/assurance/OCOR-DEV-REM-0064-RCCAD/integrity.log",
+    "log_sha256": "7a04c659b2339b849005b3bd8df1866d51494e698588f206086f75df0db35431",
+    "result": "15 tests OK; resolved_register_entries (76)"
+  },
+  "local_gates": {
+    "not_executed": [
+      {
+        "command": "scripts/run_qualifying_campaign.py and scripts/bootstrap_ci_environment.py --execute",
+        "reason": "PRE-CAMPAIGN-REVIEW requires the preventive review before the full suite. The Fuseki lock identity is not updated in this unit."
+      },
+      {
+        "command": "npm run build in ocor-runtime/sdk/typescript",
+        "reason": "node_modules is absent in this worktree and this unit changes no TypeScript file. npm install was not run."
+      },
+      {
+        "command": "scripts/verify.py --json",
+        "reason": "The command rewrites reports/verify_report.json. It was not run in this worktree."
+      },
+      {
+        "command": "npx markdownlint-cli2 and the Mermaid render",
+        "reason": "scripts/validate_ocor_development_plan.py reports these two optional checks as NOT_EXECUTED."
+      }
+    ],
+    "steps": [
+      {
+        "command": "python -m unittest reports.tests.test_normative_conformance_register",
+        "exit_code": 0,
+        "result": "OK; resolved_register_entries (76)"
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py --root .",
+        "exit_code": 0,
+        "result": "PASS checked_tasks 75 checked_inputs 241 drifted_inputs 0"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --manifest reports/evidence/G0/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0064-conformance-register-entries",
+        "exit_code": 0,
+        "result": "PASS 19 changed paths"
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "result": "PASS_LOCAL_PRECHECK findings 0"
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "result": "PASS counts PASS 37 NOT_EXECUTED 2"
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "sha256sum -c reports/OCOR_ADD_v1.2_SHA256SUMS",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "git diff --exit-code origin/main -- inputs/",
+        "exit_code": 0,
+        "result": "no inputs/ diff"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "result": "All checks passed"
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "result": "Success: no issues found in 153 source files"
+      },
+      {
+        "command": "docker compose -f deploy/bootstrap/compose.yaml config --quiet",
+        "exit_code": 0,
+        "result": "PASS rendered; no containers started"
+      },
+      {
+        "command": "Draft202012Validator on infra/toolchain.lock.json and infra/services.lock.json",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "python scripts/ocor_autonomous_delivery.py --validate",
+        "exit_code": 0,
+        "result": "PASS 84-task plan"
+      },
+      {
+        "command": "python3 scripts/preflight_environment.py --contract-only",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 scripts/bootstrap_development_environment.py --check",
+        "exit_code": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 scripts/verify_external_services.py --manifest-only",
+        "exit_code": 0,
+        "result": "PASS service_count 14"
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py",
+        "exit_code": 0,
+        "result": "PASS DRY_RUN; compose down was not executed"
+      },
+      {
+        "command": "in-repository supply-chain scanner 1.1.0",
+        "exit_code": 0,
+        "result": "PASS blocking_findings 0; 3 suspended findings already covered by REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER"
+      },
+      {
+        "command": "python -m pytest -q reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_evidence_input_drift.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_validate_language_policy.py",
+        "exit_code": 0,
+        "result": "98 passed, 2 skipped, 64 subtests passed"
+      },
+      {
+        "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
+        "exit_code": 0,
+        "result": "PASS stdout_sha256 721b33097b2119a2b05ddcadf128a71402c3b64159e6c444f37e3cb136cb14dd"
+      }
+    ]
+  },
+  "nature": "Register write and regression-only requalification. Not evidence of a requirement. AdmitClaim and identity resolution are not implemented in this unit.",
+  "probe": {
+    "command": "python3 scripts/probe_ncr_claim_identity_mission.py",
+    "exit_code": 0,
+    "log": "reports/assurance/OCOR-DEV-REM-0064-RCCAD/probe.log",
+    "log_sha256": "77719e275573b7dd53df76f550a155f1d8e48cdaf3eb6f227bb2213ab02f4847",
+    "observed_head": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+    "result": "CONFIRMED"
+  },
+  "regression": {
+    "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+    "duration_seconds": 4.95,
+    "ended_at": "2026-11-13T13:39:16Z",
+    "exit_code": 0,
+    "log": "reports/assurance/OCOR-DEV-REM-0064-RCCAD/regression.log",
+    "passed": 214,
+    "raw_output_sha256": "0be424d92b97ab273f7c74656a2834704f4261d5fb6dce4a4de720cdb9603b80",
+    "started_at": "2026-11-13T13:39:11Z"
+  },
+  "requalification_records": [
+    "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json",
+    "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json",
+    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json"
+  ],
+  "residual_risks": [
+    "The three requalification records do not qualify requirements.",
+    "The full campaign after preventive review still needs a new Fuseki-identity decision. infra/services.lock.json services[id=fuseki].build.output_sha256 remains 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. The lock was not updated. This regression did not use the stack."
+  ],
+  "schema_version": "1.0",
+  "status": "PASS_AWAITING_INDEPENDENT_VERIFICATION",
+  "task_id": "OCOR-DEV-REM-0064",
+  "unit_id": "OCOR-DEV-REM-0064"
+}

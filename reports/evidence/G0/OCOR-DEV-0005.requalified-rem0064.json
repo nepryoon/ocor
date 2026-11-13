@@ -1,0 +1,110 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0064-conformance-register-entries",
+    "decision": "FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13) point 4",
+    "id": "OCOR-DEV-REM-0064",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+      "cwd": ".",
+      "duration_seconds": 4.95,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+      "label": "regression-rem0064",
+      "not_executed": 0,
+      "passed": 214,
+      "raw_sha256": "0be424d92b97ab273f7c74656a2834704f4261d5fb6dce4a4de720cdb9603b80",
+      "skipped": 0,
+      "started_at": "2026-11-13T13:39:11Z",
+      "status": "PASS",
+      "xfailed": 0
+    }
+  ],
+  "commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+  "commit_role": "code and tests at which this regression command ran; the record itself is a later commit and does not change these inputs",
+  "created_at": "2026-11-13T13:39:16Z",
+  "drifted_inputs": [
+    "scripts/validate_ocor_development_plan.py"
+  ],
+  "environment": {
+    "branch": "governed/ocor-dev-rem-0064-conformance-register-entries",
+    "clean_shell": true,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "nep-LEGION",
+    "implementer_cli": "Grok Build (grok-4.7)",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "qualification_source_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal 64199668 kB read on nep-LEGION in the regression session",
+    "threads": 24
+  },
+  "independent_verification": {
+    "note": "not yet performed",
+    "status": "PENDING"
+  },
+  "inputs": {
+    ".github/workflows/ocor-supply-chain.yml": "aab635eafb71a3ad705329b8a44d3eba8c06da5688206bd83bb75d2bef34d30d",
+    ".github/workflows/ocor-validation-closure.yml": "eb60126c95614d02c8b67a3b9a3ddf64086dfd5869fd4f4235dc399e06ea1109",
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0005.py": "b544b1854cf65cf40ab9510beccbe5a195d5cb1cba590d97d0677aab422d1b35",
+    "ocor-runtime/uv.lock": "85fa84ee6b9a370e7f8ecf4290837432955d42443760acaaea531e5105fbadfb",
+    "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json": "b4ee221d3d9da03929e6bea4f8b61cf29de68c2d3c0a62930c11208a8ea58356",
+    "reports/tests/qualify_rem0029_teardown.py": "e2c3d205283166528be54e81cc5a90176fc2073e028321660369ee9f917361a0",
+    "reports/tests/test_kind_teardown_observation.py": "a66158bb1d1f42c13abf4aed1a58a1a99191156edde328b090a15f923d6607b4",
+    "reports/tests/test_rem0034_secret_registry.py": "9446c84e3b4ee0067c2d314d75682307405a8757783fb5d4fbe4f5d8e18b7557",
+    "reports/tests/test_reset_teardown_residue.py": "8a0a2e491d01acf78acdc135781cd21f47c2dfa74af2a18077557ae434ab2064",
+    "scripts/validate_ocor_development_plan.py": "6375b220ad5f50fdd332defb0a5574a6f5b627e0acef4e21b502964149a3658b"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "previous_record": {
+    "record_id": "OCOR-DEV-0005-requalified-rem0062-7e9c16b4ebb3",
+    "record_path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0062.json",
+    "record_sha256": "6cdf957b82a9552017949fdf4dc066da1197a2b034141ea8b188e222e01a5dba",
+    "status": "SEALED"
+  },
+  "qualification_limits": "Regression-only requalification after OCOR-DEV-REM-0064 changed the allowlist of scripts/validate_ocor_development_plan.py. The same command reran the unchanged task tests of 0005, 0050, and 0082 at 00bd2b8671c13c93f932b7e12380ddd94c7c9522. It is not evidence of a requirement. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.",
+  "qualifies_requirements": false,
+  "raw_output_format": "pytest -q stdout plus the wrapper line EXIT:0",
+  "raw_output_sha256": "0be424d92b97ab273f7c74656a2834704f4261d5fb6dce4a4de720cdb9603b80",
+  "record_id": "OCOR-DEV-0005-requalified-rem0064-00bd2b8671c1",
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "residual_risks": [
+    "Regression-only requalification after the plan allowlist change of OCOR-DEV-REM-0064. Not runtime conformance and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only: the task tests of 0005, 0050 and 0082 passed together at the REM-0064 execution head after the allowlist change; not a re-assessment of conformance",
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0064 regression requalification of OCOR-DEV-0005 after the plan allowlist change"
+      }
+    ]
+  },
+  "schema_version": "1.0",
+  "status": "PASS_AWAITING_INDEPENDENT_VERIFICATION",
+  "supersedes": "OCOR-DEV-0005-requalified-rem0062-7e9c16b4ebb3",
+  "supersession_scope": "Regression-only after the OCOR-DEV-REM-0064 change of scripts/validate_ocor_development_plan.py. The task tests are unchanged. Not a re-assessment of conformance and never evidence of a requirement.",
+  "task_id": "OCOR-DEV-0005",
+  "tests_unchanged_from_base": true
+}
