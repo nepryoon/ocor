@@ -4,7 +4,10 @@ FABLE52-POST-POC-PROGRAMME (2026-11-11) point 1 and ADD v1.3 line 382. There is 
 protocol session and no ``initialize`` handshake. Every call supplies
 ``governed_context_ref``. A call that omits it, or an argument object that tries to
 carry the same field, is refused with ``CAPABILITY_DENIED``. The referenced record
-is immutable. This module is not an MCP server and does not speak MCP ``_meta``.
+is immutable. This module is not an MCP server, does not speak MCP ``_meta``, and
+is not the production capability broker in ``tool_runtime.py``. A successful
+return checks the transport ref required by point 1(c). It does not admit a tool
+for execution.
 """
 
 from __future__ import annotations

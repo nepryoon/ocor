@@ -16,8 +16,13 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from jsonschema import Draft202012Validator
-from jsonschema.exceptions import SchemaError
+from jsonschema.exceptions import SchemaError, UnknownType
 from referencing import Registry, Resource
+from referencing.exceptions import CannotDetermineSpecification
+
+# Library failures on a tampered fixture or schema are profile errors. The caller
+# never sees TypeError, UnknownType or CannotDetermineSpecification.
+_SCHEMA_LIBRARY_ERRORS = (SchemaError, UnknownType, CannotDetermineSpecification, TypeError, ValueError)
 
 OFFICIAL_SCHEMA_URI = "https://modelcontextprotocol.io/schema/2026-07-28/schema.json"
 CONTEXT_FIELD = "governed_context_ref"
@@ -75,8 +80,10 @@ def validate_mcp_descriptor(
     """Fail closed when ``document`` is not a descriptor of ``expected_revision``.
 
     ``schema`` is the official schema document of that revision. Each tool is checked
-    against its ``Tool`` definition. ``inputSchema`` and ``outputSchema`` stay JSON
-    Schema 2020-12, and every ``$ref`` resolves inside ``document``.
+    against its ``Tool`` definition. ``inputSchema`` and ``outputSchema`` are JSON
+    Schema 2020-12 schemas (``Draft202012Validator.check_schema``), and every ``$ref``
+    resolves inside ``document``. A fixture that is not an object, or whose ``$defs``
+    or ``Tool`` entry is not an object, is rejected before the library is called.
     """
 
     if not isinstance(document, Mapping):
@@ -115,22 +122,53 @@ def _reject_context_overwrite(schema: object) -> None:
 
 
 def _validate_tools(tools: list[Any], schema: Mapping[str, Any]) -> None:
-    if not isinstance(schema, Mapping) or "Tool" not in schema.get("$defs", {}):
+    if not isinstance(schema, Mapping):
+        raise McpProfileError("official MCP schema fixture has no Tool definition")
+    definitions = schema.get("$defs")
+    tool_definition = definitions.get("Tool") if isinstance(definitions, Mapping) else None
+    if not isinstance(tool_definition, Mapping):
         raise McpProfileError("official MCP schema fixture has no Tool definition")
     try:
         validator = Draft202012Validator(
             {"$ref": OFFICIAL_SCHEMA_URI + "#/$defs/Tool"},
             registry=Registry().with_resource(OFFICIAL_SCHEMA_URI, Resource.from_contents(dict(schema))),
         )
-    except SchemaError as exc:
+    except _SCHEMA_LIBRARY_ERRORS as exc:
         raise McpProfileError("official MCP schema fixture is not a JSON Schema") from exc
     for index, tool in enumerate(tools):
-        errors = sorted(validator.iter_errors(tool), key=lambda item: tuple(str(part) for part in item.absolute_path))
+        if not isinstance(tool, Mapping):
+            raise McpProfileError("MCP tool must be an object")
+        try:
+            errors = sorted(
+                validator.iter_errors(tool),
+                key=lambda item: tuple(str(part) for part in item.absolute_path),
+            )
+        except _SCHEMA_LIBRARY_ERRORS as exc:
+            raise McpProfileError("official MCP schema fixture is not a JSON Schema") from exc
         if errors:
             detail = errors[0].message.replace("\n", " ")
             if len(detail) > 240:
                 detail = detail[:240]
             raise McpProfileError(f"MCP tool {index} is not a Tool of the pinned revision: {detail}")
+        _require_draft_2020_12(tool.get("inputSchema"), index, "inputSchema")
+        if "outputSchema" in tool:
+            _require_draft_2020_12(tool["outputSchema"], index, "outputSchema")
+
+
+def _require_draft_2020_12(schema: object, index: int, field: str) -> None:
+    """Reject a tool schema that is not a JSON Schema 2020-12 object.
+
+    FABLE52-POST-POC-PROGRAMME (2026-11-11) point 1(a) requires each ``inputSchema``
+    and ``outputSchema`` to be a 2020-12 schema. Matching the ``Tool`` definition is
+    not enough: that definition allows any extra keyword value.
+    """
+
+    if not isinstance(schema, Mapping):
+        raise McpProfileError(f"MCP tool {index} {field} must be a JSON Schema 2020-12 object")
+    try:
+        Draft202012Validator.check_schema(schema)
+    except _SCHEMA_LIBRARY_ERRORS as exc:
+        raise McpProfileError(f"MCP tool {index} {field} is not a JSON Schema 2020-12 schema") from exc
 
 
 def _walk(node: object, document: Mapping[str, Any], *, depth: int, nodes: list[int]) -> None:
