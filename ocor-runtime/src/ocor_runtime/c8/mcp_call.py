@@ -20,6 +20,9 @@ from typing import Any
 
 _CONTEXT_REF = re.compile(r"urn:sha256:[0-9a-f]{64}\Z")
 _CONTEXT_FIELD = "governed_context_ref"
+# Deep payloads are walked on an explicit stack. Past this depth the call is
+# refused; the interpreter recursion limit is not the bound.
+_MAX_ARGUMENT_DEPTH = 4096
 
 
 class McpCallError(ValueError):
@@ -105,37 +108,102 @@ def _require_ref(value: object) -> str:
 
 
 def _contains_context_field(value: object) -> bool:
-    if isinstance(value, Mapping):
-        if _CONTEXT_FIELD in value:
-            return True
-        return any(_contains_context_field(item) for item in value.values())
-    if isinstance(value, Sequence) and not isinstance(value, str):
-        return any(_contains_context_field(item) for item in value)
+    stack: list[tuple[object, int, tuple[int, ...]]] = [(value, 0, ())]
+    while stack:
+        current, depth, path = stack.pop()
+        if depth > _MAX_ARGUMENT_DEPTH:
+            raise _deny("decoded arguments exceed the depth bound")
+        if isinstance(current, str) or current is None or isinstance(current, (bool, int, float)):
+            continue
+        if isinstance(current, (bytes, bytearray, memoryview)):
+            continue
+        identity = id(current)
+        if identity in path:
+            raise _deny("decoded arguments contain a cycle")
+        if isinstance(current, Mapping):
+            if _CONTEXT_FIELD in current:
+                return True
+            child_path = path + (identity,)
+            for item in current.values():
+                stack.append((item, depth + 1, child_path))
+            continue
+        if isinstance(current, Sequence):
+            child_path = path + (identity,)
+            for item in current:
+                stack.append((item, depth + 1, child_path))
     return False
 
 
-def _freeze(value: object) -> Any:
-    if isinstance(value, str):
-        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
-            raise _deny("a governed context record contains a lone surrogate")
-        return value
-    if isinstance(value, bool) or value is None or isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise _deny("a governed context record contains a non-finite number")
-        return value
-    if isinstance(value, (bytes, bytearray, memoryview)):
+def _reject_surrogate(value: str) -> None:
+    if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+        raise _deny("a governed context record contains a lone surrogate")
+
+
+def _freeze(root: object) -> Any:
+    stack: list[dict[str, Any]] = [{"node": root, "depth": 0, "path": (), "phase": "enter"}]
+    results: list[Any] = []
+    while stack:
+        frame = stack[-1]
+        node = frame["node"]
+        depth = frame["depth"]
+        if depth > _MAX_ARGUMENT_DEPTH:
+            raise _deny("decoded arguments exceed the depth bound")
+        if frame["phase"] != "enter":
+            if frame["phase"] == "exit-map":
+                frozen_keys = frame["keys"]
+                count = len(frozen_keys)
+                values = results[-count:] if count else []
+                if count:
+                    del results[-count:]
+                results.append(MappingProxyType(dict(zip(frozen_keys, values, strict=True))))
+            else:
+                count = frame["count"]
+                values = results[-count:] if count else []
+                if count:
+                    del results[-count:]
+                results.append(tuple(values))
+            stack.pop()
+            continue
+        if isinstance(node, str):
+            _reject_surrogate(node)
+            results.append(node)
+            stack.pop()
+            continue
+        if isinstance(node, bool) or node is None or isinstance(node, int):
+            results.append(node)
+            stack.pop()
+            continue
+        if isinstance(node, float):
+            if not math.isfinite(node):
+                raise _deny("a governed context record contains a non-finite number")
+            results.append(node)
+            stack.pop()
+            continue
+        if isinstance(node, (bytes, bytearray, memoryview)):
+            raise _deny("a governed context record must be JSON")
+        identity = id(node)
+        if identity in frame["path"]:
+            raise _deny("decoded arguments contain a cycle")
+        child_path = frame["path"] + (identity,)
+        if isinstance(node, Mapping):
+            keys: list[str] = []
+            for key in node:
+                if not isinstance(key, str):
+                    raise _deny("a governed context record must be JSON")
+                _reject_surrogate(key)
+                keys.append(key)
+            frame["phase"] = "exit-map"
+            frame["keys"] = keys
+            for key in reversed(keys):
+                stack.append({"node": node[key], "depth": depth + 1, "path": child_path, "phase": "enter"})
+            continue
+        if isinstance(node, Sequence):
+            frame["phase"] = "exit-seq"
+            frame["count"] = len(node)
+            for item in reversed(tuple(node)):
+                stack.append({"node": item, "depth": depth + 1, "path": child_path, "phase": "enter"})
+            continue
         raise _deny("a governed context record must be JSON")
-    if isinstance(value, Mapping):
-        frozen: dict[str, Any] = {}
-        for key, item in value.items():
-            if not isinstance(key, str):
-                raise _deny("a governed context record must be JSON")
-            if any(0xD800 <= ord(character) <= 0xDFFF for character in key):
-                raise _deny("a governed context record contains a lone surrogate")
-            frozen[key] = _freeze(item)
-        return MappingProxyType(frozen)
-    if isinstance(value, Sequence) and not isinstance(value, str):
-        return tuple(_freeze(item) for item in value)
-    raise _deny("a governed context record must be JSON")
+    if len(results) != 1:
+        raise _deny("a governed context record must be JSON")
+    return results[0]

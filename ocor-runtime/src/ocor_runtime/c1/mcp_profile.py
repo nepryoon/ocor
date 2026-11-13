@@ -30,6 +30,27 @@ DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 ACCEPTED_DIALECTS = frozenset({DRAFT_2020_12, DRAFT_2020_12 + "#"})
 MAX_SCHEMA_DEPTH = 32
 MAX_SCHEMA_NODES = 4096
+# Applicator keywords whose values are schemas. Map keys are names, not keywords.
+_SCHEMA_MAP_KEYWORDS = frozenset(
+    {"$defs", "definitions", "dependentSchemas", "patternProperties", "properties"}
+)
+_SCHEMA_OBJECT_KEYWORDS = frozenset(
+    {
+        "additionalItems",
+        "additionalProperties",
+        "contains",
+        "contentSchema",
+        "else",
+        "if",
+        "items",
+        "not",
+        "propertyNames",
+        "then",
+        "unevaluatedItems",
+        "unevaluatedProperties",
+    }
+)
+_SCHEMA_ARRAY_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
 
 
 class McpProfileError(ValueError):
@@ -102,7 +123,15 @@ def validate_mcp_descriptor(
         names.append(str(tool["name"]))
     if names != sorted(names) or len(names) != len(set(names)):
         raise McpProfileError("MCP tools are not in deterministic name order")
-    _walk(document, document, depth=1, nodes=[0])
+    _walk_json(document, depth=1, nodes=[0])
+    # Keyword checks start at schema objects. Property names, const, default and enum
+    # are instance data and are not read as keywords.
+    _check_schema_keywords(document, document, depth=1)
+    for tool in tools:
+        if isinstance(tool, Mapping):
+            for field in ("inputSchema", "outputSchema"):
+                if field in tool:
+                    _check_schema_keywords(tool[field], document, depth=1)
     for tool in tools:
         if not isinstance(tool, Mapping):
             raise McpProfileError("MCP tool must be an object")
@@ -171,7 +200,8 @@ def _require_draft_2020_12(schema: object, index: int, field: str) -> None:
         raise McpProfileError(f"MCP tool {index} {field} is not a JSON Schema 2020-12 schema") from exc
 
 
-def _walk(node: object, document: Mapping[str, Any], *, depth: int, nodes: list[int]) -> None:
+def _walk_json(node: object, *, depth: int, nodes: list[int]) -> None:
+    """Reject values that are not bounded JSON. This walk does not read keywords."""
     nodes[0] += 1
     if nodes[0] > MAX_SCHEMA_NODES or depth > MAX_SCHEMA_DEPTH:
         raise McpProfileError("MCP schema exceeds the revision bounds")
@@ -188,7 +218,7 @@ def _walk(node: object, document: Mapping[str, Any], *, depth: int, nodes: list[
         raise McpProfileError("MCP descriptor contains a value that is not JSON")
     if isinstance(node, Sequence) and not isinstance(node, str):
         for item in node:
-            _walk(item, document, depth=depth + 1, nodes=nodes)
+            _walk_json(item, depth=depth + 1, nodes=nodes)
         return
     if not isinstance(node, Mapping):
         raise McpProfileError("MCP descriptor contains a value that is not JSON")
@@ -197,18 +227,42 @@ def _walk(node: object, document: Mapping[str, Any], *, depth: int, nodes: list[
             _reject_surrogate(key)
         else:
             raise McpProfileError("MCP descriptor contains a value that is not JSON")
+    for value in node.values():
+        _walk_json(value, depth=depth + 1, nodes=nodes)
+
+
+def _check_schema_keywords(node: object, document: Mapping[str, Any], *, depth: int) -> None:
+    """Apply dialect and ``$ref`` rules only to schema objects, not to instance data."""
+    if depth > MAX_SCHEMA_DEPTH:
+        raise McpProfileError("MCP schema exceeds the revision bounds")
+    if not isinstance(node, Mapping):
+        return
     if "$dynamicRef" in node or "$recursiveRef" in node:
         raise McpProfileError("MCP $ref resolution does not follow dynamic references")
-    dialect = node.get("$schema")
-    if dialect is not None and dialect not in ACCEPTED_DIALECTS:
-        raise McpProfileError("MCP schema dialect must be JSON Schema 2020-12")
-    reference = node.get("$ref")
-    if reference is not None:
+    if "$schema" in node:
+        dialect = node["$schema"]
+        if not isinstance(dialect, str) or dialect not in ACCEPTED_DIALECTS:
+            raise McpProfileError("MCP schema dialect must be JSON Schema 2020-12")
+    if "$ref" in node:
+        reference = node["$ref"]
         if not isinstance(reference, str) or not reference.startswith("#"):
             raise McpProfileError("MCP $ref must be a same-document fragment")
         _resolve_pointer(document, reference)
-    for value in node.values():
-        _walk(value, document, depth=depth + 1, nodes=nodes)
+    for key, value in node.items():
+        if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
+            for child in value.values():
+                _check_schema_keywords(child, document, depth=depth + 1)
+            continue
+        if key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+            for child in value:
+                _check_schema_keywords(child, document, depth=depth + 1)
+            continue
+        if key in _SCHEMA_OBJECT_KEYWORDS:
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+                for child in value:
+                    _check_schema_keywords(child, document, depth=depth + 1)
+            else:
+                _check_schema_keywords(value, document, depth=depth + 1)
 
 
 def _resolve_pointer(document: Mapping[str, Any], pointer: str) -> None:
@@ -237,6 +291,13 @@ def _reject_surrogate(value: str) -> None:
 
 
 def _array_index(token: str) -> int | None:
-    if token == "0" or (len(token) > 1 and token[0] != "0" and token.isascii() and token.isdigit()):
-        return int(token)
-    return None
+    """Return a canonical JSON Pointer array index.
+
+    One ASCII digit is an index. A longer index cannot have a leading zero.
+    A non-ASCII digit is not an index.
+    """
+    if not token.isascii() or not token.isdigit():
+        return None
+    if len(token) > 1 and token[0] == "0":
+        return None
+    return int(token)
