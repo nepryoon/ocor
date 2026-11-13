@@ -1796,6 +1796,21 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0062.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0062.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0062.log",
+        # OCOR-DEV-REM-0064 (FABLE52-EXTENSION-NCP-U15-ID-COLLISION point 4):
+        # conformance-register entries, decision file and regression-only requalifications.
+        "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md",
+        "reports/assurance/OCOR-DEV-REM-0064-RCCAD/README.md",
+        "scripts/probe_ncr_claim_identity_mission.py",
+        "reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
+        "reports/assurance/OCOR-DEV-REM-0064-RCCAD/integrity.log",
+        "reports/assurance/OCOR-DEV-REM-0064-RCCAD/regression.log",
+        "reports/assurance/OCOR-DEV-REM-0064-RCCAD/probe.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
