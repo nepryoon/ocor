@@ -205,6 +205,32 @@ def test_input_schema_cannot_overwrite_governed_context_ref() -> None:
         _validate(planted)
 
 
+@pytest.mark.parametrize("properties", ["nope", ["name"], True])
+def test_projection_rejects_properties_that_are_not_an_object(properties: object) -> None:
+    """The generator projection checks the properties type before it removes the transport field."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {"type": "object", "properties": properties}
+    with pytest.raises(profile.McpProfileError):
+        profile.without_context_overwrite(schema)
+
+
+@pytest.mark.parametrize("required", ["name", True, b"name"])
+def test_projection_rejects_required_that_is_not_a_list(required: object) -> None:
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {"type": "object", "properties": {"name": {"type": "string"}}, "required": required}
+    with pytest.raises(profile.McpProfileError):
+        profile.without_context_overwrite(schema)
+
+
+def test_a_reference_array_index_with_a_leading_zero_fails_closed() -> None:
+    """A JSON pointer segment is not an array index when it has a leading zero."""
+    document, _ = _descriptor()
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document["tools"][0]["inputSchema"]["properties"]["name"] = {"$ref": "#/tools/01"}
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
 def test_non_object_input_schema_fails_closed() -> None:
     documents = _with_contracts(_contract("urn:ocor:contract:bare-name", input_schema={"type": "string"}))
     with pytest.raises(C1Error) as excinfo:
