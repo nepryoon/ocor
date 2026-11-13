@@ -499,6 +499,147 @@ def test_a_malformed_call_is_capability_denied(kwargs: Mapping[str, Any]) -> Non
         assert _reason(excinfo) == "CAPABILITY_DENIED"
 
 
+def _choices_descriptor() -> dict[str, Any]:
+    """A descriptor whose anyOf list has indexes 0 through 10."""
+    document = _bare_descriptor()
+    document["$defs"] = {
+        "choices": {"anyOf": [{"type": "string", "const": str(index)} for index in range(11)]}
+    }
+    return document
+
+
+@pytest.mark.parametrize("index", ["0", "1", "2", "9", "10"])
+def test_json_pointer_resolves_a_single_digit_array_index(index: str) -> None:
+    """VF-001: ASCII indexes 0-9 and a two-digit index resolve when the target exists."""
+    document = _choices_descriptor()
+    document["tools"][0]["inputSchema"]["properties"]["name"] = {
+        "$ref": f"#/$defs/choices/anyOf/{index}"
+    }
+    _validate(document)
+
+
+@pytest.mark.parametrize("index", ["00", "01", "-1", "11", "\u0661"])
+def test_json_pointer_rejects_a_non_canonical_array_index(index: str) -> None:
+    """VF-001: leading zeros, a missing index, a sign and a non-ASCII digit stay closed."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _choices_descriptor()
+    document["tools"][0]["inputSchema"]["properties"]["name"] = {
+        "$ref": f"#/$defs/choices/anyOf/{index}"
+    }
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+def test_property_names_and_instance_data_are_not_schema_keywords() -> None:
+    """VF-002: names and instance data may contain keyword spellings without being keywords."""
+    document = _bare_descriptor()
+    document["tools"][0]["inputSchema"] = {
+        "type": "object",
+        "properties": {
+            "$ref": {"type": "string"},
+            "$schema": {"type": "string"},
+            "$dynamicRef": {"type": "string"},
+            "$recursiveRef": {"type": "string"},
+        },
+        "default": {
+            "$ref": "https://example.invalid/not-a-keyword",
+            "$schema": {"type": "string"},
+            "$dynamicRef": "#ignored",
+        },
+        "const": {"$recursiveRef": "#ignored", "$schema": {}},
+        "enum": [{"$ref": "https://example.invalid/also-data"}, {"$schema": []}],
+    }
+    _validate(document)
+
+
+@pytest.mark.parametrize("dialect", [[], {}, 1, True, None])
+def test_a_malformed_schema_dialect_is_a_profile_error(dialect: object) -> None:
+    """VF-002: a dialect that is not the 2020-12 string is a typed refusal, never TypeError."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["tools"][0]["inputSchema"]["$schema"] = dialect
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+@pytest.mark.parametrize("keyword", ["$dynamicRef", "$recursiveRef"])
+def test_a_dynamic_reference_keyword_is_rejected(keyword: str) -> None:
+    """VF-002: a real dynamic-reference keyword is still a profile error."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["tools"][0]["inputSchema"]["properties"]["name"] = {keyword: "#/$defs/missing"}
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+def _nested(depth: int, leaf: object) -> object:
+    node = leaf
+    for _ in range(depth):
+        node = {"x": node}
+    return node
+
+
+def test_deep_decoded_arguments_return_or_refuse_with_capability_denied() -> None:
+    """VF-003: depth 1 and 300 return; depth 600 returns or refuses; no generic exception."""
+    mcp_call, registry = _registry()
+    boundary = importlib.import_module("ocor_runtime.c2.mcp_boundary")
+    for depth in (1, 300):
+        arguments = _nested(depth, 0)
+        for entry in (mcp_call.call_tool, boundary.admit_mcp_tool_call):
+            result = entry(
+                tool_name="get-vessel",
+                arguments=arguments,
+                governed_context_ref=CONTEXT_REF,
+                registry=registry,
+            )
+            assert result["tool_name"] == "get-vessel"
+            assert result["governed_context_ref"] == CONTEXT_REF
+    deep = json.loads('{"x":' * 600 + "0" + "}" * 600)
+    for entry in (mcp_call.call_tool, boundary.admit_mcp_tool_call):
+        try:
+            result = entry(
+                tool_name="get-vessel",
+                arguments=deep,
+                governed_context_ref=CONTEXT_REF,
+                registry=registry,
+            )
+        except mcp_call.McpCallError as exc:
+            assert exc.reason_code == "CAPABILITY_DENIED"
+        else:
+            assert result["tool_name"] == "get-vessel"
+    buried = _nested(300, {"governed_context_ref": "x"})
+    for entry in (mcp_call.call_tool, boundary.admit_mcp_tool_call):
+        with pytest.raises(mcp_call.McpCallError) as excinfo:
+            entry(
+                tool_name="get-vessel",
+                arguments=buried,
+                governed_context_ref=CONTEXT_REF,
+                registry=registry,
+            )
+        assert _reason(excinfo) == "CAPABILITY_DENIED"
+    over = _nested(4097, 0)
+    for entry in (mcp_call.call_tool, boundary.admit_mcp_tool_call):
+        with pytest.raises(mcp_call.McpCallError) as excinfo:
+            entry(
+                tool_name="get-vessel",
+                arguments=over,
+                governed_context_ref=CONTEXT_REF,
+                registry=registry,
+            )
+        assert _reason(excinfo) == "CAPABILITY_DENIED"
+    cyclic: dict[str, Any] = {}
+    cyclic["self"] = cyclic
+    for entry in (mcp_call.call_tool, boundary.admit_mcp_tool_call):
+        with pytest.raises(mcp_call.McpCallError) as excinfo:
+            entry(
+                tool_name="get-vessel",
+                arguments=cyclic,
+                governed_context_ref=CONTEXT_REF,
+                registry=registry,
+            )
+        assert _reason(excinfo) == "CAPABILITY_DENIED"
+
+
 def test_correspondence_table_covers_the_changelog_that_was_read() -> None:
     """One row per changelog entry. The record cites the same URL, date and sha256."""
     text = PROFILE.read_text(encoding="utf-8")
