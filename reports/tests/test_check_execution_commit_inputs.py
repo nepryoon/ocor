@@ -195,3 +195,98 @@ class ExecutionCommitInputTests(unittest.TestCase):
             self.assertEqual("PASS", payload["status"])
             self.assertEqual(0, payload["checked_inputs"])
             self.assertEqual(1, payload["checked_records"])
+
+    def test_artifact_digest_must_match_the_evidence_file(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            commit = _init_repo(repo)
+            log = repo / "reports" / "unit.log"
+            log.parent.mkdir()
+            log.write_bytes(b"98 passed\n")
+            digest = _sha256(b"98 passed\n")
+            record = repo / "record.json"
+            record.write_text(
+                json.dumps(
+                    {
+                        "artifact_digests": {"reports/unit.log": _sha256(b"summary\n")},
+                        "commands": [{"raw_sha256": digest}],
+                        "commit": commit,
+                        "inputs": {"module.py": _sha256(b"alpha\n")},
+                        "raw_output_sha256": digest,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            result = _run(repo, commit, record)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            reasons = {item["reason"] for item in payload["findings"]}
+            self.assertIn("artifact hash mismatch", reasons)
+            self.assertIn("raw_output_sha256 matches no artifact", reasons)
+            self.assertIn("command raw_sha256 matches no artifact", reasons)
+
+    def test_matching_artifact_digest_passes(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            commit = _init_repo(repo)
+            body = b"98 passed\n"
+            log = repo / "reports" / "unit.log"
+            log.parent.mkdir()
+            log.write_bytes(body)
+            digest = _sha256(body)
+            record = repo / "record.json"
+            record.write_text(
+                json.dumps(
+                    {
+                        "artifact_digests": {"reports/unit.log": digest},
+                        "commands": [{"raw_sha256": digest}],
+                        "commit": commit,
+                        "inputs": {"module.py": _sha256(b"alpha\n")},
+                        "raw_output_sha256": digest,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            result = _run(repo, commit, record)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("PASS", payload["status"])
+            self.assertEqual([], payload["findings"])
+            self.assertEqual(1, payload["checked_artifacts"])
+
+    def test_artifact_path_escape_fails(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            commit = _init_repo(repo)
+            record = repo / "record.json"
+            record.write_text(
+                json.dumps(
+                    {
+                        "artifact_digests": {"../outside.log": _sha256(b"x")},
+                        "commit": commit,
+                        "inputs": {"module.py": _sha256(b"alpha\n")},
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            result = _run(repo, commit, record)
+            self.assertNotEqual(0, result.returncode)
+            payload = json.loads(result.stdout)
+            self.assertTrue(
+                any(item["reason"] == "artifact path escapes the root" for item in payload["findings"])
+            )
