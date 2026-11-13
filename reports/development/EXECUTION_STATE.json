@@ -1,51 +1,53 @@
 {
   "active_iteration": {
-    "baseline_commit": "2fe00322fabdad194d767b0331c0d623f8ea627c",
-    "branch": "governed/state-sync-rem0061-strict-selection-stop-20261113",
+    "baseline_commit": "3afcec4693b315d4fdf215e15807054e22d74ec1",
+    "branch": "governed/state-sync-rem0063-repair-pre-20261113",
     "campaign_background_processes_remaining": false,
-    "change_set": "OCOR-DEV-REM-0061",
+    "change_set": "OCOR-DEV-REM-0063",
     "dr_status_closure_sync": {
       "corrected": 0,
       "decision_request_files_on_this_head": 40,
-      "note": "This state sync does not modify reports/development/decision_requests. Header mismatches already present were not rewritten. REM-0061-STRICT-SELECTION-REPO-HEADS and the REM-0061-CYCLE5-REDESIGN disposition are on other branches.",
+      "note": "This state sync does not modify reports/development/decision_requests. REM-0061-STRICT-SELECTION-REPO-HEADS stays on branch governed/decision-request-rem0061-strict-selection-repo-heads at commit 74e84ddc99564384eda981ad84e8957a90596dcf. PR 614 stays draft and is not merged. Header mismatches already present were not rewritten.",
       "section": "DR-STATUS-CLOSURE-SYNC (2026-11-09)"
     },
-    "execution_commit": "7e9c16b4ebb36c79c26d39bd3dd05ab91ef940e5",
+    "execution_commit": "241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5",
     "executor": "Grok Build grok-4.7 / xAI",
     "host_memory_at_sync": {
-      "MemAvailable": 57899032,
+      "MemAvailable": 57612432,
       "MemTotal": 64199668
     },
-    "independent_verification": "NO_GO",
-    "independent_verification_ref": "OCOR-DEV-REM-0061-b9aec3e1a183-5",
-    "next_action": "Attendere la decisione su REM-0061-STRICT-SELECTION-REPO-HEADS (commit 74e84ddc99564384eda981ad84e8957a90596dcf, sha256 fc7c8d7e73a92322639e869a581731ec347f486108c11ee9642d7561c1a60544, PR 614 bozza e non da integrare). Il ciclo di riprogettazione di OCOR-DEV-REM-0061 autorizzato da REM-0061-CYCLE5-REDESIGN (2026-11-13) opzione 1 si e fermato al controllo sull'HEAD b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48: il gate validate_evidence_input_drift.py resta PASS (241 input, 75 task, zero finding) e la proprieta stretta non resta PASS (22 task completati con piu di una testa corrente, 5 gruppi in cui due o piu record elencati nominano lo stesso predecessore). Il controllo non e stato allentato. Nessun record sigillato e nessun manifest e stato modificato. Nessuna campagna e nessuna verifica. La PR 595 non si integra. Disposition della richiesta di riprogettazione: commit fc13c3869f9f7c809731ca3041ce0db2d48cfbb2, sha256 c7b465a90babbf193696371da98f75bd8167e9ae5fd86548d10e4abb0990e584; il pin aperto resta df02d810a16888d3d65bec916a576177c0b7ea9f, sha256 136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7. Il verdetto OCOR-DEV-REM-0063-b7d2af2658bf-0 e NO_GO (head b7d2af2658bf4b61b81816bbe7ca88543d93770c, sha256 e84aadada45b6c7c6d9a3b8bbef8b18925e24344880f11843f2460859c4f6ec3, verifier Codex, fornitore OpenAI, modello non esposto dal runtime, sei finding VF-001..VF-006). La riparazione di OCOR-DEV-REM-0063 non parte prima della decisione. Non riprendere dal commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non scrivere il registro di conformita. Claim invariati.",
+    "independent_verification": "NOT_REQUESTED",
+    "independent_verification_ref": "prior NO_GO OCOR-DEV-REM-0063-b7d2af2658bf-0",
+    "next_action": "riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva OCOR-DEV-REM-0063-241a2af5792d-pre. Non avviare la suite completa prima di quell'esito. VF-001, VF-002 e VF-003 sono chiusi nel codice all'HEAD 241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5 (RED 1c5855a, GREEN 241a2af). VF-004, VF-005 e VF-006 restano aperti fino alla campagna FOUR_LANE sullo stesso HEAD. Non integrare la PR 595. Non modificare il selettore, i record sigillati o i manifest. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non scrivere il registro di conformita e non aprire l'unita del punto 5 prima del GO_FOR_EVIDENCE_SEAL di OCOR-DEV-REM-0063. Il verifier della riparazione e della unita del punto 5 deve essere di un fornitore diverso da xAI e da OpenAI. Claim invariati.",
     "non_blocking_findings": {
-      "VF-001": "REGISTERED_IN_SEAL red log sha256 5af7442dec6d66f169b3ecb981cfd4d2337853bbc33c5f87adcd4f8994840e60",
-      "VF-002": "NOT_CORRECTED",
-      "VF-003": "NOT_CORRECTED"
+      "VF-003": "CLOSED_IN_CODE at 241a2af; call depth returns through 4096 and refuses past that bound and on cycles with CAPABILITY_DENIED",
+      "VF-006": "OPEN until the post-review campaign records the complete evidence-path list"
     },
-    "phase": "REDESIGN_STOPPED_AT_REPO_HEAD",
-    "preventive_review_request_id": "OCOR-DEV-REM-0062-239203753889-pre",
-    "preventive_review_result": "NO_BLOCKING_FINDINGS",
-    "programme": "FABLE52-POST-POC-PROGRAMME (2026-11-11) point 3",
-    "redesign_stop": {
-      "fork_groups": 5,
-      "gate": "PASS",
-      "gate_checked_inputs": 241,
-      "gate_checked_tasks": 75,
-      "head": "b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48",
-      "multi_current_completed_tasks": 22,
-      "self_supersedes": 0,
-      "successor_request": "REM-0061-STRICT-SELECTION-REPO-HEADS"
+    "phase": "PREVENTIVE_REVIEW_REQUESTED",
+    "preventive_review_request_id": "OCOR-DEV-REM-0063-241a2af5792d-pre",
+    "preventive_review_result": "REQUESTED",
+    "programme": "FABLE52-POST-POC-PROGRAMME (2026-11-11) point 1",
+    "repair": {
+      "base_sha": "4b277f76b743466f6f96245b5666d536d14a6a94",
+      "branch": "governed/ocor-dev-rem-0063-mcp-profile",
+      "green": "241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5",
+      "pre_campaign_gate": "51 steps, 0 failures",
+      "pre_campaign_log_sha256": "cba9c6e28559f76f616ef77818be1abff67af65cfbaf81f0cd240bb8c6d252de",
+      "prior_verdict": "OCOR-DEV-REM-0063-b7d2af2658bf-0",
+      "red": "1c5855a",
+      "started_from": "b7d2af2658bf4b61b81816bbe7ca88543d93770c",
+      "task_suite": "98 passed",
+      "task_suite_log_sha256": "253ee0ec6878396661dc0ed1ad4fe048712f75d703436edebd3ed6cda9abdf27",
+      "worktree": ".ocor/worktrees/rem-0063"
     },
     "stack": "NOT_RUNNING, 0 container",
     "stack_at_sync": "NOT_RUNNING, 0 container ocor-bootstrap/ocor-poc",
-    "started_at": "2026-11-13T06:25:31+00:00",
+    "started_at": "2026-11-13T10:35:45Z",
     "state_sync_pr": null,
-    "unit": "OCOR-DEV-REM-0061",
-    "unit_head": "b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48",
-    "updated_at": "2026-11-13T06:25:31+00:00",
-    "verifier": "not started; cycle 5 was Claude Code / claude-opus-5-5 / Anthropic, NO_GO"
+    "unit": "OCOR-DEV-REM-0063",
+    "unit_head": "241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5",
+    "updated_at": "2026-11-13T10:35:45Z",
+    "verifier": "not requested; a later verdict must come from a provider other than xAI and OpenAI"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -8582,13 +8584,13 @@
       "updated_at": "2026-11-13T06:25:31+00:00"
     },
     {
-      "blocked_scope": "Finche la richiesta e aperta non si modifica il selettore, non si integrano la PR 595 e non parte la riparazione di OCOR-DEV-REM-0063. OCOR-DEV-REM-0060 e la PR 599 restano in coda. La scrittura del registro di conformita non parte.",
+      "blocked_scope": "Opzione 1 adottata. Il selettore non si modifica. I record sigillati e i manifest non si modificano. La PR 595 resta bozza e non si integra. OCOR-DEV-REM-0061 resta bloccato fino all'unita del punto 5. OCOR-DEV-REM-0060, la PR 599 e i task G6 restano in coda fino alla chiusura di quel punto. La riparazione di OCOR-DEV-REM-0063 e in corso e attende la revisione preventiva.",
       "blocked_tasks": [
         "OCOR-DEV-REM-0060",
-        "OCOR-DEV-REM-0061",
-        "OCOR-DEV-REM-0063"
+        "OCOR-DEV-REM-0061"
       ],
       "created_at": "2026-11-13T06:25:31+00:00",
+      "decided_option": "1",
       "decision_level": "OPERATIVE",
       "evidence": {
         "branch": "governed/decision-request-rem0061-strict-selection-repo-heads",
@@ -8606,23 +8608,29 @@
       },
       "finding": "La proprieta stretta della selezione del record corrente non resta PASS sull'HEAD b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48 senza modificare record sigillati ne manifest. 22 task completati hanno piu di una testa corrente. 5 gruppi hanno due o piu record elencati che nominano lo stesso predecessore. Il gate attuale resta PASS per l'ordinamento su created_at.",
       "id": "REM-0061-STRICT-SELECTION-REPO-HEADS",
+      "po_decision": "REM-0061-STRICT-SELECTION-REPO-HEADS (2026-11-13), opzione 1",
       "preamble_recheck": {
-        "observed_at": "2026-11-13T06:25:31+00:00",
-        "openhands_preamble_sha256": "a8723c80986d59da6129b127807d86400a5b4a9da8123c8781be1d0baa977a36",
-        "result": "REDESIGN_OPTION_1_STOP_NEW_REQUEST",
-        "task_file": "/home/luca/.ocor-codex/logs/20261113T070240-implementer-task-grok.md",
-        "task_file_mtime": "2026-11-13T06:02:40Z",
-        "task_file_sha256": "21f989afbb556509a4a354a1018503edaeffa13695db4928dae81309a3f3a19d"
+        "observed_at": "2026-11-13T10:35:45Z",
+        "openhands_preamble_sha256": "e7e85f4b6690ae6ddca2c928483c5af3b4cd127a7839f174a32767d59217daaa",
+        "result": "MATCHED_OPTION_1",
+        "task_file": "/home/luca/.ocor-codex/logs/20261113T111120-implementer-task-grok.md",
+        "task_file_mtime": "2026-11-13T10:11:20Z",
+        "task_file_sha256": "b5f418aa3d1493791d2dee4193baae98b5c303313ae58ad627f800b833afe5a7"
       },
       "recommendation": "Option 1: fermare la selezione stretta, non allentare il controllo, non modificare record sigillati ne manifest, non integrare la PR 595, e riprendere la riparazione di OCOR-DEV-REM-0063 dall'HEAD b7d2af2658bf4b61b81816bbe7ca88543d93770c solo dopo questa decisione.",
-      "status": "OPEN_PO_DECISION_REQUIRED",
+      "resolution": "Opzione 1 adottata, come raccomandato. scripts/validate_evidence_input_drift.py non e stato modificato. Nessun record sigillato e nessun MANIFEST.json e stato modificato. La PR 595 non e stata integrata. Nessun altro ciclo di selezione su OCOR-DEV-REM-0061. La riparazione di OCOR-DEV-REM-0063 parte da b7d2af2658bf4b61b81816bbe7ca88543d93770c sul branch governed/ocor-dev-rem-0063-mcp-profile. RED 1c5855a. GREEN 241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5. Il codice chiude VF-001, VF-002 e VF-003. VF-004, VF-005 e VF-006 restano aperti fino alla campagna FOUR_LANE, che non e avviata: la revisione preventiva OCOR-DEV-REM-0063-241a2af5792d-pre viene prima. Il commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01 non e stato ripreso. Il branch governed/ocor-dev-rem-0061-lane-image-cache non e stato toccato.",
+      "status": "DECIDED_BY_PO",
       "status_history": [
         {
           "status": "OPEN_PO_DECISION_REQUIRED",
           "updated_at": "2026-11-13T06:25:31+00:00"
+        },
+        {
+          "status": "DECIDED_BY_PO",
+          "updated_at": "2026-11-13T10:35:45Z"
         }
       ],
-      "updated_at": "2026-11-13T06:25:31+00:00"
+      "updated_at": "2026-11-13T10:35:45Z"
     }
   ],
   "checkpoint_consolidation": {
@@ -10783,7 +10791,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Attendere la decisione su REM-0061-STRICT-SELECTION-REPO-HEADS (commit 74e84ddc99564384eda981ad84e8957a90596dcf, sha256 fc7c8d7e73a92322639e869a581731ec347f486108c11ee9642d7561c1a60544, PR 614 bozza e non da integrare). Il ciclo di riprogettazione di OCOR-DEV-REM-0061 autorizzato da REM-0061-CYCLE5-REDESIGN (2026-11-13) opzione 1 si e fermato al controllo sull'HEAD b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48: il gate validate_evidence_input_drift.py resta PASS (241 input, 75 task, zero finding) e la proprieta stretta non resta PASS (22 task completati con piu di una testa corrente, 5 gruppi in cui due o piu record elencati nominano lo stesso predecessore). Il controllo non e stato allentato. Nessun record sigillato e nessun manifest e stato modificato. Nessuna campagna e nessuna verifica. La PR 595 non si integra. Disposition della richiesta di riprogettazione: commit fc13c3869f9f7c809731ca3041ce0db2d48cfbb2, sha256 c7b465a90babbf193696371da98f75bd8167e9ae5fd86548d10e4abb0990e584; il pin aperto resta df02d810a16888d3d65bec916a576177c0b7ea9f, sha256 136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7. Il verdetto OCOR-DEV-REM-0063-b7d2af2658bf-0 e NO_GO (head b7d2af2658bf4b61b81816bbe7ca88543d93770c, sha256 e84aadada45b6c7c6d9a3b8bbef8b18925e24344880f11843f2460859c4f6ec3, verifier Codex, fornitore OpenAI, modello non esposto dal runtime, sei finding VF-001..VF-006). La riparazione di OCOR-DEV-REM-0063 non parte prima della decisione. Non riprendere dal commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non scrivere il registro di conformita. Claim invariati.",
+  "next_executable_action": "riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva OCOR-DEV-REM-0063-241a2af5792d-pre. Non avviare la suite completa prima di quell'esito. VF-001, VF-002 e VF-003 sono chiusi nel codice all'HEAD 241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5 (RED 1c5855a, GREEN 241a2af). VF-004, VF-005 e VF-006 restano aperti fino alla campagna FOUR_LANE sullo stesso HEAD. Non integrare la PR 595. Non modificare il selettore, i record sigillati o i manifest. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non scrivere il registro di conformita e non aprire l'unita del punto 5 prima del GO_FOR_EVIDENCE_SEAL di OCOR-DEV-REM-0063. Il verifier della riparazione e della unita del punto 5 deve essere di un fornitore diverso da xAI e da OpenAI. Claim invariati.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -11260,42 +11268,52 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "8bfb22f44b255973a3ce028dff70a0417ca438ca",
-    "branch": "governed/state-sync-rem0061-cycle5-nogo-20261113",
+    "baseline_commit": "2fe00322fabdad194d767b0331c0d623f8ea627c",
+    "branch": "governed/state-sync-rem0061-strict-selection-stop-20261113",
     "campaign_background_processes_remaining": false,
     "change_set": "OCOR-DEV-REM-0061",
     "dr_status_closure_sync": {
       "corrected": 0,
       "decision_request_files_on_this_head": 40,
-      "note": "This state sync does not modify reports/development/decision_requests. Header mismatches on this HEAD are preexisting and were not rewritten. REM-0061-CYCLE5-REDESIGN and the collision disposition are on other branches.",
+      "note": "This state sync does not modify reports/development/decision_requests. Header mismatches already present were not rewritten. REM-0061-STRICT-SELECTION-REPO-HEADS and the REM-0061-CYCLE5-REDESIGN disposition are on other branches.",
       "section": "DR-STATUS-CLOSURE-SYNC (2026-11-09)"
     },
     "execution_commit": "7e9c16b4ebb36c79c26d39bd3dd05ab91ef940e5",
     "executor": "Grok Build grok-4.7 / xAI",
     "host_memory_at_sync": {
-      "MemAvailable": 57990892,
+      "MemAvailable": 57899032,
       "MemTotal": 64199668
     },
     "independent_verification": "NO_GO",
     "independent_verification_ref": "OCOR-DEV-REM-0061-b9aec3e1a183-5",
-    "next_action": "Il ciclo 5 di OCOR-DEV-REM-0061 e NO_GO (verdetto OCOR-DEV-REM-0061-b9aec3e1a183-5, head b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48, sha256 2cbd38bc26e304419c8feeaaeb07435c1e8a22fc888b5e12f0d86f9b63174932, verifier Claude Code claude-opus-5-5 Anthropic). REM-0061-CYCLE5-INDEPENDENT (2026-11-13) punto 5 non autorizza un ciclo 6. Richiesta REM-0061-CYCLE5-REDESIGN aperta, commit df02d810a16888d3d65bec916a576177c0b7ea9f, sha256 136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7, PR 612 bozza e non da integrare (percorsi fuori dall'allowlist). FABLE52-EXTENSION-NCP-U15-ID-COLLISION decisa, opzione 1, disposition 1bc5e516fa197a1e3b74434058b655b159e03b81. Prossima unita: riprendere OCOR-DEV-REM-0063 dal commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01 sul branch governed/ocor-dev-rem-0063-mcp-profile. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne l'adozione della PR 599. La scrittura del registro di conformita autorizzata dall'opzione 1 non precede il profilo MCP. Claim invariati.",
+    "next_action": "Attendere la decisione su REM-0061-STRICT-SELECTION-REPO-HEADS (commit 74e84ddc99564384eda981ad84e8957a90596dcf, sha256 fc7c8d7e73a92322639e869a581731ec347f486108c11ee9642d7561c1a60544, PR 614 bozza e non da integrare). Il ciclo di riprogettazione di OCOR-DEV-REM-0061 autorizzato da REM-0061-CYCLE5-REDESIGN (2026-11-13) opzione 1 si e fermato al controllo sull'HEAD b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48: il gate validate_evidence_input_drift.py resta PASS (241 input, 75 task, zero finding) e la proprieta stretta non resta PASS (22 task completati con piu di una testa corrente, 5 gruppi in cui due o piu record elencati nominano lo stesso predecessore). Il controllo non e stato allentato. Nessun record sigillato e nessun manifest e stato modificato. Nessuna campagna e nessuna verifica. La PR 595 non si integra. Disposition della richiesta di riprogettazione: commit fc13c3869f9f7c809731ca3041ce0db2d48cfbb2, sha256 c7b465a90babbf193696371da98f75bd8167e9ae5fd86548d10e4abb0990e584; il pin aperto resta df02d810a16888d3d65bec916a576177c0b7ea9f, sha256 136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7. Il verdetto OCOR-DEV-REM-0063-b7d2af2658bf-0 e NO_GO (head b7d2af2658bf4b61b81816bbe7ca88543d93770c, sha256 e84aadada45b6c7c6d9a3b8bbef8b18925e24344880f11843f2460859c4f6ec3, verifier Codex, fornitore OpenAI, modello non esposto dal runtime, sei finding VF-001..VF-006). La riparazione di OCOR-DEV-REM-0063 non parte prima della decisione. Non riprendere dal commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non scrivere il registro di conformita. Claim invariati.",
     "non_blocking_findings": {
       "VF-001": "REGISTERED_IN_SEAL red log sha256 5af7442dec6d66f169b3ecb981cfd4d2337853bbc33c5f87adcd4f8994840e60",
       "VF-002": "NOT_CORRECTED",
       "VF-003": "NOT_CORRECTED"
     },
-    "phase": "REM_0062_INTEGRATED",
+    "phase": "REDESIGN_STOPPED_AT_REPO_HEAD",
     "preventive_review_request_id": "OCOR-DEV-REM-0062-239203753889-pre",
     "preventive_review_result": "NO_BLOCKING_FINDINGS",
     "programme": "FABLE52-POST-POC-PROGRAMME (2026-11-11) point 3",
+    "redesign_stop": {
+      "fork_groups": 5,
+      "gate": "PASS",
+      "gate_checked_inputs": 241,
+      "gate_checked_tasks": 75,
+      "head": "b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48",
+      "multi_current_completed_tasks": 22,
+      "self_supersedes": 0,
+      "successor_request": "REM-0061-STRICT-SELECTION-REPO-HEADS"
+    },
     "stack": "NOT_RUNNING, 0 container",
     "stack_at_sync": "NOT_RUNNING, 0 container ocor-bootstrap/ocor-poc",
-    "started_at": "2026-11-12T23:21:20+00:00",
+    "started_at": "2026-11-13T06:25:31+00:00",
     "state_sync_pr": null,
-    "unit": "OCOR-DEV-REM-0062",
-    "unit_head": "8c018940a80fb0ccab53c6ce6120919e8fd7f18a",
-    "updated_at": "2026-11-13T03:27:58+00:00",
-    "verifier": "Claude Code / claude-opus-5-5 / Anthropic, GO_FOR_EVIDENCE_SEAL"
+    "unit": "OCOR-DEV-REM-0061",
+    "unit_head": "b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48",
+    "updated_at": "2026-11-13T06:25:31+00:00",
+    "verifier": "not started; cycle 5 was Claude Code / claude-opus-5-5 / Anthropic, NO_GO"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -11385,12 +11403,11 @@
     ],
     "blocked_by_po_decision": [
       "OCOR-DEV-REM-0060",
-      "OCOR-DEV-REM-0061",
-      "OCOR-DEV-REM-0063"
+      "OCOR-DEV-REM-0061"
     ],
     "completed_evidence_tasks_count": 75,
     "executable_now": [],
-    "executable_now_note": "Attendere la decisione su REM-0061-STRICT-SELECTION-REPO-HEADS (commit 74e84ddc99564384eda981ad84e8957a90596dcf, sha256 fc7c8d7e73a92322639e869a581731ec347f486108c11ee9642d7561c1a60544, PR 614 bozza e non da integrare). Il ciclo di riprogettazione di OCOR-DEV-REM-0061 autorizzato da REM-0061-CYCLE5-REDESIGN (2026-11-13) opzione 1 si e fermato al controllo sull'HEAD b9aec3e1a183f3337ddc31ffa2bac8bf530c2e48: il gate validate_evidence_input_drift.py resta PASS (241 input, 75 task, zero finding) e la proprieta stretta non resta PASS (22 task completati con piu di una testa corrente, 5 gruppi in cui due o piu record elencati nominano lo stesso predecessore). Il controllo non e stato allentato. Nessun record sigillato e nessun manifest e stato modificato. Nessuna campagna e nessuna verifica. La PR 595 non si integra. Disposition della richiesta di riprogettazione: commit fc13c3869f9f7c809731ca3041ce0db2d48cfbb2, sha256 c7b465a90babbf193696371da98f75bd8167e9ae5fd86548d10e4abb0990e584; il pin aperto resta df02d810a16888d3d65bec916a576177c0b7ea9f, sha256 136f795399092c354562a28c4a0d232d9a9140cb8b8b6cf171bcc96138eac9c7. Il verdetto OCOR-DEV-REM-0063-b7d2af2658bf-0 e NO_GO (head b7d2af2658bf4b61b81816bbe7ca88543d93770c, sha256 e84aadada45b6c7c6d9a3b8bbef8b18925e24344880f11843f2460859c4f6ec3, verifier Codex, fornitore OpenAI, modello non esposto dal runtime, sei finding VF-001..VF-006). La riparazione di OCOR-DEV-REM-0063 non parte prima della decisione. Non riprendere dal commit 7ecbee1ea267ff64d7ffa5f57fdb0fbdf07a7e01. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non scrivere il registro di conformita. Claim invariati.",
+    "executable_now_note": "riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva OCOR-DEV-REM-0063-241a2af5792d-pre. Non avviare la suite completa prima di quell'esito. VF-001, VF-002 e VF-003 sono chiusi nel codice all'HEAD 241a2af5792d6a67cf8f0ef202b6f6603ac8d1c5 (RED 1c5855a, GREEN 241a2af). VF-004, VF-005 e VF-006 restano aperti fino alla campagna FOUR_LANE sullo stesso HEAD. Non integrare la PR 595. Non modificare il selettore, i record sigillati o i manifest. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non scrivere il registro di conformita e non aprire l'unita del punto 5 prima del GO_FOR_EVIDENCE_SEAL di OCOR-DEV-REM-0063. Il verifier della riparazione e della unita del punto 5 deve essere di un fornitore diverso da xAI e da OpenAI. Claim invariati.",
     "in_progress": [],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
@@ -41701,7 +41718,7 @@
     },
     {
       "command": [
-        "ruff",
+        "/home/luca/.local/bin/ruff",
         "check",
         "."
       ],
@@ -41717,11 +41734,11 @@
         "--base",
         "origin/main",
         "--branch",
-        "governed/state-sync-rem0061-cycle5-nogo-20261113"
+        "governed/state-sync-rem0063-repair-pre-20261113"
       ],
       "exit_code": 0,
       "label": "change-scope",
-      "raw_sha256": "008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32",
+      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
       "status": "PASS"
     },
     {
@@ -41854,7 +41871,7 @@
       },
       {
         "command": [
-          "ruff",
+          "/home/luca/.local/bin/ruff",
           "check",
           "."
         ],
@@ -41868,10 +41885,10 @@
           "--base",
           "origin/main",
           "--branch",
-          "governed/state-sync-rem0062-integrated-20261112"
+          "governed/state-sync-rem0063-repair-pre-20261113"
         ],
         "exit_code": 0,
-        "raw_sha256": "008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32"
+        "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
       },
       {
         "command": [
@@ -41930,7 +41947,7 @@
     "planning_optional_checks": "2 NOT_EXECUTED; not counted as PASS",
     "status": "PASS"
   },
-  "status": "REM_0061_CYCLE5_NO_GO_REDESIGN_OPEN_NEXT_REM_0063",
+  "status": "REM_0063_REPAIR_AWAITING_PREVENTIVE_REVIEW",
   "terminal_loop_disposition": {
     "decision": "REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12), opzione 1",
     "lifted_at": "2026-11-12T17:05:00+00:00",
@@ -41941,7 +41958,7 @@
     "reason": "OCOR-DEV-REM-0062 e integrato (PR 609, merge 8bfb22f). Il punto 3 del programma post-PoC e chiuso. La prossima unita e il profilo MCP, primo identificativo libero OCOR-DEV-REM-0063. REM-0061 resta bloccato senza ciclo 5. La scrittura del registro per FABLE52-EXTENSION-ASSESSMENT attende FABLE52-EXTENSION-NCP-U15-ID-COLLISION.",
     "recorded_at": "2026-11-12T23:21:20+00:00"
   },
-  "updated_at": "2026-11-13T03:27:58+00:00",
+  "updated_at": "2026-11-13T10:35:45Z",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
