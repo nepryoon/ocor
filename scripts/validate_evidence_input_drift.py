@@ -203,16 +203,17 @@ def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], li
             if _canonical_log_name(relative):
                 continue
             # CONTROL: manifest-artifact-canonical-path
-            # Every string path is a bare record name or a bare log name.
-            # Anything else is a finding, including a name that does not end in .json.
-            if isinstance(relative, str) and not _canonical_record_name(relative):
+            # A path that is not a bare record name or a bare log name is a
+            # finding. A non-string is in that class: dropping it leaves the
+            # predecessor as a silent PASS when the successor file is absent.
+            if not _canonical_record_name(relative):
                 findings.append({
-                    "path": relative,
+                    "path": relative if isinstance(relative, str) else manifest.name,
                     "reason": "manifest artifact path is not canonical",
-                    "task_id": task_id if isinstance(task_id, str) and task_id else "",
+                    "task_id": task_id if isinstance(task_id, str) else "",
                 })
                 continue
-            if not isinstance(task_id, str) or not task_id or not _canonical_record_name(relative):
+            if not isinstance(task_id, str) or not task_id:
                 continue
             index.setdefault((manifest.parent / str(relative)).resolve(), set()).add(task_id)
     return index, findings
@@ -249,7 +250,11 @@ def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[di
         usable = isinstance(record_task, str) and bool(record_task)
         if listed_tasks:
             # CONTROL: record-task-id-matches-manifest
-            # A listed record is indexed only under a manifest task it actually names.
+            # A mismatch is a finding on the manifest task. When the record
+            # names a different task, the finding is also on that task and the
+            # record stays in its index, so a bad per-file digest cannot pass
+            # on the predecessor.
+            mismatched = False
             for task_id in sorted(listed_tasks):
                 if not usable:
                     findings.append({
@@ -258,12 +263,19 @@ def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[di
                         "task_id": task_id,
                     })
                 elif task_id != record_task:
+                    mismatched = True
                     findings.append({
                         "path": path.name,
                         "reason": "record task_id does not match the manifest task_id",
                         "task_id": task_id,
                     })
-            if usable and record_task in listed_tasks:
+            if mismatched and usable and record_task not in listed_tasks:
+                findings.append({
+                    "path": path.name,
+                    "reason": "record task_id does not match the manifest task_id",
+                    "task_id": str(record_task),
+                })
+            if usable and (record_task in listed_tasks or mismatched):
                 records.setdefault(str(record_task), []).append(path)
             continue
         if usable:
