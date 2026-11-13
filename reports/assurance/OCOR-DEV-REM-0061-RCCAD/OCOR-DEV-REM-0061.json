@@ -118,7 +118,7 @@
     "cell_scan": {
       "cells": 120,
       "citation": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "cited_tests_collected": 71,
+      "cited_tests_collected": 73,
       "command": "python3 /home/luca/.ocor-codex/rem-0061/scan_self_check.py",
       "counts": {
         "FIXED": 15,
@@ -126,9 +126,9 @@
         "PASS": 67
       },
       "errors_found_and_corrected": [],
-      "head": "d7b6d2ee5ad3e60849897490ba0258ecd031f5a6",
-      "note": "Repair cycle 4 path-form fix. The head is d7b6d2ee5ad3e60849897490ba0258ecd031f5a6, the commit that contains the locked-tool row and the path-form tests. This later commit records that head and the scan digest and does not change the table.",
-      "output_sha256": "d68479761f75873e819d8a6518cf77b0027e0775c998cdadbb96daf4fedc127b",
+      "head": "122536af84a5efa4a0b0d45b1b9c736ff191d60c",
+      "note": "Repair cycle 5. The head is 122536af84a5efa4a0b0d45b1b9c736ff191d60c, the commit that closes non-string manifest paths and a manifest task id outside the completed set. This later commit records that head and the scan digest. The discover_records row names the two new tests. The scan found zero errors, 120 cells and 73 cited tests.",
+      "output_sha256": "cc0a44f6dc66270f5fde10aeec60ca6370fedb024c3bb7441360f4b1e392a9c4",
       "rows": 20
     },
     "columns": {
@@ -208,9 +208,9 @@
       "command": "python3 /home/luca/.ocor-codex/rem-0061/scan_self_check.py",
       "errors_found_and_corrected": [],
       "fields_compared": 31,
-      "head": "d7b6d2ee5ad3e60849897490ba0258ecd031f5a6",
-      "note": "Repair cycle 4 path-form fix. The head is d7b6d2ee5ad3e60849897490ba0258ecd031f5a6, the commit that contains the locked-tool row and the path-form tests. This later commit records that head and the scan digest and does not change the table. The command compared 31 role fields and found no error.",
-      "output_sha256": "d68479761f75873e819d8a6518cf77b0027e0775c998cdadbb96daf4fedc127b"
+      "head": "122536af84a5efa4a0b0d45b1b9c736ff191d60c",
+      "note": "Repair cycle 5. The same command compared 31 role fields and found no error. The head is 122536af84a5efa4a0b0d45b1b9c736ff191d60c.",
+      "output_sha256": "cc0a44f6dc66270f5fde10aeec60ca6370fedb024c3bb7441360f4b1e392a9c4"
     },
     "table": [
       {
@@ -612,7 +612,7 @@
           "finite_numbers": "FIXED: a non-finite successor is unreadable and stays a finding (test_a_non_finite_successor_is_not_replaced_by_its_predecessor); it is not replaced by the predecessor.",
           "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
           "strict_decoding": "FIXED: a non-UTF-8 body and a lone surrogate are findings for the listed task (test_a_non_utf8_successor_is_not_replaced_by_its_predecessor; test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor).",
-          "types_before_conversions": "FIXED: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, and empty or missing inputs are findings (test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; test_an_empty_object_successor_is_not_replaced_by_its_predecessor; test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; test_an_empty_or_missing_inputs_successor_does_not_pass). A sole record without inputs stays accepted (test_a_sole_record_without_inputs_stays_accepted). A string path that is not a bare *.json name and not a bare *.log name is a finding (test_a_string_path_that_is_not_a_bare_json_or_log_name_does_not_pass_on_the_predecessor). A bare log name is not a record (test_a_bare_log_path_stays_outside_the_record_index)."
+          "types_before_conversions": "FIXED: a missing file, an empty object, a null or non-string task_id, a manifest whose artifacts are not a list, and empty or missing inputs are findings (test_a_missing_listed_successor_is_not_replaced_by_its_predecessor; test_an_empty_object_successor_is_not_replaced_by_its_predecessor; test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor; test_a_manifest_whose_artifacts_are_not_a_list_fails_closed; test_an_empty_or_missing_inputs_successor_does_not_pass). A sole record without inputs stays accepted (test_a_sole_record_without_inputs_stays_accepted). A string path that is not a bare *.json name and not a bare *.log name is a finding (test_a_string_path_that_is_not_a_bare_json_or_log_name_does_not_pass_on_the_predecessor). A non-string path (null, number, list or bool), including an empty or null manifest task id, is the same finding (test_a_non_string_manifest_path_does_not_pass_on_the_predecessor). A manifest task id outside the completed set does not remove the record from the task it names (test_a_manifest_task_outside_completed_does_not_hide_a_bad_successor). A bare log name is not a record (test_a_bare_log_path_stays_outside_the_record_index)."
         },
         "file": "scripts/validate_evidence_input_drift.py",
         "function": "discover_records, _manifest_record_tasks",
@@ -629,6 +629,8 @@
           "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_non_finite_successor_is_not_replaced_by_its_predecessor",
           "reports/tests/test_evidence_input_drift.py::CanonicalSupersessionDecodeTests::test_a_lone_surrogate_successor_is_not_replaced_by_its_predecessor",
           "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_string_path_that_is_not_a_bare_json_or_log_name_does_not_pass_on_the_predecessor",
+          "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_non_string_manifest_path_does_not_pass_on_the_predecessor",
+          "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_manifest_task_outside_completed_does_not_hide_a_bad_successor",
           "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_each_listed_successor_perturbation_and_each_pair_refuses_the_predecessor",
           "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_bare_log_path_stays_outside_the_record_index",
           "reports/tests/test_evidence_input_drift.py::ListedSuccessorClassTests::test_a_matching_listed_successor_still_passes"
@@ -1078,7 +1080,7 @@
     "note": "No separate red commit. Before the controls in this commit, ListedSuccessorClassTests returned predecessor PASS, an unsearchable lane output raised PermissionError outside teardown, a one-byte host /tmp reading failed the unpatched launch, and a tool-bin digest was not refused. The mutation probes record each removed control.",
     "separate_commit": false
   },
-  "repair_cycle": 4,
+  "repair_cycle": 5,
   "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json (record_id OCOR-DEV-REM-0037-requalified-rem0061-eae4bb6fc382) and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json (record_id OCOR-DEV-REM-0056-requalified-rem0061-eae4bb6fc382). Both cite commit eae4bb6fc382db7a1f975d9d686bf3bdd527d7a8, the commit on which the repeated regression command ran (642 passed, 105 subtests, raw sha256 82837ea78387bfe6c31b42f2cf8cbe249172d2e2387b51a273962b9267f369cd), because reports/tests/test_local_lane_campaign.py changed after 1d36603b5119092d65ec1db79cddcf9ffe402819. They replace the unsealed records on the same paths that cited b22debf2e08e805db56643030b17efafdd5e4da5 and the intermediate unsealed text that cited 1d36603b5119092d65ec1db79cddcf9ffe402819. supersedes still names the sealed predecessors OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3; those files are unchanged. completed_evidence_tasks does not list these two tasks, so the head drift scan does not select them.",
   "requalifications_written": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
@@ -1093,7 +1095,7 @@
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer. Repair cycle 4 is this entry."
+        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer. Repair cycles 4 and 5 are this entry."
       },
       {
         "agent": "Codex",
@@ -1202,6 +1204,17 @@
     "fix_commit": "d7b6d2ee5ad3e60849897490ba0258ecd031f5a6",
     "log": "/home/luca/.ocor-codex/rem-0061/red-cycle4-p1-path-form.log",
     "note": "Separate red commit f7a3436d6124253543bae1547e36d16e0e5a5ae0 before the path-form control. Seven subtests failed with status PASS and empty findings. The leading-space subtest was already fail-closed because that name still ended in .json. The historical fingerprints are not reused.",
+    "separate_commit": true
+  },
+  "red_repair_cycle_5": {
+    "commit": "f919c5b603ededb2b2d1c2a8e15947efde48fba7",
+    "failed": 8,
+    "fingerprint_sha256": "230e303fb62e9983f09b69ee444e8dfaf77a89c8b8ab4bd9efff8f337206cd6f",
+    "fix_commit": "122536af84a5efa4a0b0d45b1b9c736ff191d60c",
+    "green_fingerprint_sha256": "817a70de6efddcc0a2c230b0814816cf1d6fb2dfd7f450b082f6b5a7ddb6e745",
+    "green_tests": 39,
+    "log": "/home/luca/.ocor-codex/rem-0061/red-cycle5.log",
+    "note": "Separate red commit before the cycle-5 controls. Eight subtests failed with status PASS and empty findings, or with the successor absent from the completed task index. The historical fingerprints are not reused. Decision REM-0061-CYCLE5-INDEPENDENT (2026-11-13).",
     "separate_commit": true
   },
   "mutation_probes_cycle_4_path_form": {
