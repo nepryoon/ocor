@@ -868,6 +868,117 @@ class ListedSuccessorClassTests(unittest.TestCase):
             with self.subTest(case=case):
                 self._assert_not_predecessor_pass(case)
 
+    def test_a_non_string_manifest_path_does_not_pass_on_the_predecessor(self) -> None:
+        """A non-string manifest path is a finding, including when the task id is empty."""
+        digest = hashlib.sha256(b"current input\n").hexdigest()
+        previous = {
+            "created_at": "2026-01-01T00:00:00Z",
+            "inputs": {"module.py": digest},
+            "record_id": "previous",
+            "task_id": "OCOR-DEV-0005",
+        }
+        cases = (
+            ("null", None, "OCOR-DEV-0005"),
+            ("number", 1, "OCOR-DEV-0005"),
+            ("list", ["latest.json"], "OCOR-DEV-0005"),
+            ("true", True, "OCOR-DEV-0005"),
+            ("true-empty-task", True, ""),
+            ("true-null-task", True, None),
+        )
+        for label, relative, task_id in cases:
+            with self.subTest(label=label):
+                with tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    evidence = base / "reports" / "evidence" / "G0"
+                    evidence.mkdir(parents=True)
+                    (base / "reports" / "development").mkdir(parents=True)
+                    (base / "reports" / "development" / "EXECUTION_STATE.json").write_text(
+                        json.dumps({"completed_evidence_tasks": ["OCOR-DEV-0005"]}) + "\n",
+                        encoding="utf-8",
+                    )
+                    (base / "module.py").write_bytes(b"current input\n")
+                    previous_bytes = json.dumps(previous).encode()
+                    (evidence / "previous.json").write_bytes(previous_bytes)
+                    manifest = {
+                        "artifacts": [
+                            {
+                                "path": relative,
+                                "sha256": "0" * 64,
+                                "task_id": task_id,
+                            },
+                            {
+                                "path": "previous.json",
+                                "sha256": hashlib.sha256(previous_bytes).hexdigest(),
+                                "task_id": "OCOR-DEV-0005",
+                            },
+                        ],
+                        "gate": "G0",
+                    }
+                    (evidence / "MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+                    result = _run_validator(base)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual("FAIL", payload["status"], payload)
+                expected_task = task_id if isinstance(task_id, str) else ""
+                self.assertTrue(
+                    any(
+                        item.get("reason") == "manifest artifact path is not canonical"
+                        and item.get("task_id") == expected_task
+                        for item in payload["findings"]
+                    ),
+                    payload,
+                )
+
+    def test_a_manifest_task_outside_completed_does_not_hide_a_bad_successor(self) -> None:
+        """A manifest task id outside the completed set cannot hide the record's task."""
+        digest = hashlib.sha256(b"current input\n").hexdigest()
+        for label, manifest_task in (
+            ("trailing-space", "OCOR-DEV-0005 "),
+            ("tab", "OCOR-DEV-0005\t"),
+        ):
+            with self.subTest(label=label):
+                successor = _supersession_successor(
+                    {
+                        "created_at": "2026-01-01T00:00:00Z",
+                        "inputs": {"module.py": digest},
+                        "record_id": "previous",
+                        "task_id": "OCOR-DEV-0005",
+                    },
+                    {"module.py": "0" * 64},
+                )
+                with tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    body = json.dumps(successor).encode()
+                    _write_supersession_chain(base, body)
+                    evidence = base / "reports" / "evidence" / "G0"
+                    manifest_path = evidence / "MANIFEST.json"
+                    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                    manifest["artifacts"] = [
+                        {
+                            "path": "latest.json",
+                            "sha256": hashlib.sha256(body).hexdigest(),
+                            "task_id": manifest_task,
+                        }
+                    ]
+                    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                    records, _findings = _validator_module().discover_records(evidence.parent)
+                    indexed = [item.name for item in records.get("OCOR-DEV-0005", [])]
+                    self.assertIn("latest.json", indexed, records)
+                    result = _run_validator(base)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual("FAIL", payload["status"], payload)
+                self.assertTrue(
+                    any(
+                        item.get("task_id") == "OCOR-DEV-0005"
+                        and item.get("reason") == "record task_id does not match the manifest task_id"
+                        for item in payload["findings"]
+                    ),
+                    payload,
+                )
+
     def test_task_id_space_case_and_a_matching_hash_do_not_pass_on_the_predecessor(self) -> None:
         digest = hashlib.sha256(b"current input\n").hexdigest()
         for label, task_id, good_hash in (
