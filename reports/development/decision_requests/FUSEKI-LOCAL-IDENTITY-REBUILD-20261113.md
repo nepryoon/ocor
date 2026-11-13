@@ -1,6 +1,6 @@
 # FUSEKI-LOCAL-IDENTITY-REBUILD-20261113
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -38,3 +38,30 @@ Opzione 1. Dockerfile, digest dell'immagine base effettivamente usata e SHA-512 
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta non si aggiorna `infra/services.lock.json`, non si modifica `scripts/bootstrap_development_environment.py` e non parte una suite completa locale che dipende dal bootstrap con `--execute`. La suite di `OCOR-DEV-REM-0064` attende. Il ciclo 2 di `OCOR-DEV-REM-0063`, `OCOR-DEV-REM-0061`, `OCOR-DEV-REM-0060`, l'adozione della PR #599, l'unità del punto 5 di `REM-0061-STRICT-SELECTION-REPO-HEADS (2026-11-13)` e la PR #595 restano fermi sulla richiesta `REM-0063-REPAIR1-NO-GO`, non su questa. La CI non si ferma per questa identità. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Nessun test, gate, timer, tetto, partizione o criterio è indebolito: questa richiesta non cambia codice.
+
+## Disposition del Product Owner — 2026-11-13
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-fable-5-2`, effort `high`: `FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 (2026-11-13)`, **opzione 1**. Nota di registro: «decisa su delega completa del PO, modello claude-fable-5-2, effort high». Vale come decisione del PO a ogni effetto, di livello operativo. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+La richiesta decisa è questo file al commit `3094a2fdd3ceb0f29bed83e3b60938323fbc9855`, sha256 `0877a9a60f19c599e84216729e687a0359b2b7560469e68ac7584c2b56ed1f40`. Il testo delle opzioni non è stato modificato. L'intestazione riporta `DECIDED_BY_PO`, lo stesso stato del registro `blockers`.
+
+Attuazione, un solo change set `governed/fuseki-local-identity-rebuild-20261113`, non integrato e senza PR del candidato:
+
+- `b42b99d0f809a6dadb5a4d744073f50cfa658d5c`: in `infra/services.lock.json` cambia solo `services[id=fuseki].build.output_sha256`, da `6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b` a `f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875`. `infra/fuseki/local_identity.lock.json` registra host `nep-LEGION`, data `2026-11-13T14:03:18+01:00`, digest base `sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0`, SHA-512 `ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132`, sha256 del Dockerfile `8704d0e891f232c5f85a2b2cd59ccf3ee14905aeb4862452c92088f816051026`, valore precedente `6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b` e il motivo: l'identificativo del motore locale differisce dopo la ricostruzione su questo host, mentre Dockerfile, digest base e SHA-512 coincidono.
+- `ca73b1a91ed313f14235bd3e1c6d467929b5632c`: allowlist dei percorsi di evidenza nuovi. È il commit di esecuzione dei record.
+- `f0c46536c97093d8883bb8fc68a622a1fa0e78e2`: quindici record di sola regressione, i log e l'inserimento in testa nei manifest `G0`, `G2` e `G5`. I byte dei record sigillati, le voci di manifest esistenti, `scripts/validate_evidence_input_drift.py` e `inputs/` non sono stati modificati. `scripts/bootstrap_development_environment.py` righe 111-135 è invariato. Prima della scrittura, `docker image inspect ocor/jena-fuseki:6.2.0 --format {{.Id}}` era `sha256:f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875`.
+
+Interpretazione registrata nell'iteration log, non è una nuova decision request. L'opzione cita la base `origin/main` `41abc9cc28f1cba91b51401bcbb1bee9acdcd93b`. Il branch parte da `origin/main` `44296a2629e3cfa7dfe0e0941cec012e62396c11`, discendente di quel commit. I byte di `infra/services.lock.json`, di `infra/fuseki/Dockerfile` e del companion precedente coincidono fra i due commit: `main` è avanzato solo per state sync. Il campo `main_head` del companion è `44296a2629e3cfa7dfe0e0941cec012e62396c11`.
+
+La verifica richiesta è `FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0` sull'HEAD esatto `f0c46536c97093d8883bb8fc68a622a1fa0e78e2`. Non si integra prima di `GO_FOR_EVIDENCE_SEAL`. Con `NO_GO` è autorizzato un solo ciclo di riparazione. La PR #619 non si integra: i percorsi non sono nell'allowlist. Si chiude come risolta citando il commit dello state sync, secondo `REPO-HYGIENE (2026-11-02)`. Il branch della richiesta resta.
+
+Il merge di `origin/main` in `governed/ocor-dev-rem-0064-conformance-register-entries` avviene dopo il merge di questo change set, non in questa unità. Non si ripete la revisione preventiva `OCOR-DEV-REM-0064-9b2845f0e0a3-pre`. Questa decisione non apre il ciclo 2 di `OCOR-DEV-REM-0063` e non integra la PR #595.
+
+### FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 (2026-11-13) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-fable-5-2` ed effort `high` (scelta di `grok-4.7` con effort `high`, delicatezza CRITICA; modello ed effort alzati dalla delega al minimo previsto). Il PO risolve la decision request `FUSEKI-LOCAL-IDENTITY-REBUILD-20261113` (branch `governed/decision-request-fuseki-local-identity-20261113`, commit `3094a2fdd3ceb0f29bed83e3b60938323fbc9855`, file `reports/development/decision_requests/FUSEKI-LOCAL-IDENTITY-REBUILD-20261113.md`, sha256 `0877a9a60f19c599e84216729e687a0359b2b7560469e68ac7584c2b56ed1f40`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-fable-5-2, effort high») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
