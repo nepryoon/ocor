@@ -102,7 +102,387 @@
     "reason": "Real-stack bootstrap, typed verification and the task pytest modules were rerun. No qualifying campaign and no OCOR-DEV-REM-0064 full suite."
   },
   "independent_verification": {
-    "status": "PENDING",
+    "campaign": {
+      "admission_level": "FOUR_LANE",
+      "counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 5826
+      },
+      "head": "f0c46536c97093d8883bb8fc68a622a1fa0e78e2",
+      "mode": "FOUR_LANE",
+      "status": "PASS",
+      "total_duration_seconds": 1782.234
+    },
+    "candidate_json_sha256": "d4090905c3078527932d38d54293c6030d838291b607bf2531ca64bd967a32d5",
+    "commands": [
+      {
+        "command": "./.venv/bin/python3 scripts/verify.py --json",
+        "exit_code": 127,
+        "source": "verdict.commands",
+        "summary": "Interprete .venv alla radice assente; controllo coperto dal successivo python dello standard fornito, harness PASS14 con zero NOT_EXECUTED."
+      },
+      {
+        "command": "python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py --base-ref 44296a2629e3cfa7dfe0e0941cec012e62396c11",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "ruff check --no-cache .",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "mypy --cache-dir <verifier-workspace>/mypy-cache",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base 44296a2629e3cfa7dfe0e0941cec012e62396c11 --branch governed/fuseki-local-identity-rebuild-20261113",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --base-ref 44296a2629e3cfa7dfe0e0941cec012e62396c11 --authorized-extension",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --non-skipped",
+        "exit_code": 2,
+        "source": "verdict.commands",
+        "summary": "Invocazione iniziale incompleta: richiede task e manifest. Corretta con le 15 invocazioni specifiche, tutte PASS."
+      },
+      {
+        "command": "python3 scripts/check_execution_commit_inputs.py --execution-commit ca73b1a91ed313f14235bd3e1c6d467929b5632c --record reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261113.json --record reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261113.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261113.json --record reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261113.json",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Tentativo iniziale con credenziali assenti nel worktree fornito. Risolto da reset_owned_stack e teardown_final."
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Primo provisioning rifiutato per stack preesistente; problema risolto dal reset versionato e dall unico retry CI, PASS."
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --manifest reports/evidence/G0/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line reports/tests/test_fuseki_local_identity.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0079.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/reset_test_environment.py --execute",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Reset predefinito non riesce senza il file delle credenziali. Risolto usando --env-file del progetto proprietario ricavato dalle etichette Docker, senza caricarlo nella shell."
+      },
+      {
+        "command": "python -m pytest -p no:cacheprovider -q -rfEs --tb=short --basetemp <verifier-workspace>/pytest-schemas reports/tests/test_schema_conformance.py",
+        "exit_code": 3,
+        "source": "verdict.commands",
+        "summary": "Diagnostico: invocazione pytest impropria di uno script standalone storico che termina con SystemExit; esito distinto dai test runtime."
+      },
+      {
+        "command": "python -m pytest -p no:cacheprovider -q -rfEs --tb=short --basetemp <verifier-workspace>/pytest-guard reports/tests/test_kind_teardown_observation.py reports/tests/test_qualifying_campaign_guard.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/reset_test_environment.py --execute --env-file <candidate-worktree>/.ocor/bootstrap.env",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --manifest reports/evidence/G0/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0070 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0073 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0074 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0075 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0076 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0077 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0078 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0079 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-REM-0018 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-REM-0022 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-REM-0023 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-REM-0038 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python <verifier-workspace>/audit.py",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Diagnostico del verifier: assunzione eccessiva di inserimenti solo in coda nei manifest. Corretto dal confronto diretto preservando ordine/contenuto/molteplicita."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python <verifier-workspace>/audit.py",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Diagnostico del verifier: unicita globale troppo restrittiva sui 7 duplicati G2 gia esistenti alla base. Nessun duplicato aggiunto; 233 confronti risolti PASS in independent-audit-resolved.json."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0022.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/run_local_lane_campaign.py --plan",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python reports/tests/test_authoritative_contract_conformance.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python reports/tests/test_schema_conformance.py",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "97/98 casi storici ADD v1.1: riprodotto CANONICAL_COMMIT R1 senza Human Gate. Difetto gia riconciliato da V12-AM-03 nell ADD approvato; sorgente immutabile fuori da questo change set. Nessuna regressione introdotta."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0038.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/run_local_lane_campaign.py --execute <verifier-workspace>/full-lanes --expected-head f0c46536c97093d8883bb8fc68a622a1fa0e78e2 --tool-bin <home>/.ocor-codex/verify-env/FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0/bin --tool-bin <home>/.ocor-codex/verify-env/FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0/wt/.ocor/tools/bin",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python <verifier-workspace>/check_union.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base 44296a2629e3cfa7dfe0e0941cec012e62396c11 --branch governed/fuseki-local-identity-rebuild-20261113",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS"
+      }
+    ],
+    "findings": [],
+    "findings_disposition": "GO_FOR_EVIDENCE_SEAL with no findings. Command rows are copied from the verdict. A non-zero exit_code is a diagnostic step recorded by the verifier and is not declared PASS. not_executed stays NOT_EXECUTED. Local paths in command strings are redacted. Raw logs of these requalification records are unchanged. The execution commit stays ca73b1a91ed313f14235bd3e1c6d467929b5632c. The qualified head is f0c46536c97093d8883bb8fc68a622a1fa0e78e2.",
+    "head_sha": "f0c46536c97093d8883bb8fc68a622a1fa0e78e2",
+    "not_executed": [
+      "Opzionale/non applicabile al gate di questo candidato: G15 del PRE-VERIFY-GATE non eseguito dal loop; validatore degli invarianti e baseline assenti a questo HEAD. Non dichiarato PASS.",
+      "Opzionali del validatore del piano: markdownlint e renderer Mermaid mmdc non disponibili; fallback deterministici eseguiti."
+    ],
+    "observations": [
+      "L autorizzazione opzione1 e stata letta dal commit3094a2fdd3ceb0f29bed83e3b60938323fbc9855 con sha2560877a9a60f19c599e84216729e687a0359b2b7560469e68ac7584c2b56ed1f40. La base44296a2 discende dal main41abc9c citato; gli input governati sono identici.",
+      "Il bootstrap locale della validation_commands originale non e stato eseguito: la prescrizione successiva VERIFIER-ENV-STANDARD-BOOTSTRAP impone soltanto bootstrap_ci_environment.py. Il controllo e stato sostituito dalla procedura CI richiesta, conservando i test di identita e il confronto indipendente del lock.",
+      "Prima della ricostruzione CI prescritta, docker image inspect ocor/jena-fuseki:6.2.0 ha restituito esattamente sha256:f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875, Created2026-11-13T14:03:18.95354108+01:00 e otto layer con i cinque layer base come prefisso. La CI del verifier ha poi ricostruito il tag e prodotto sha256:b29f6a2c84c6cc84c1f8056c47f81bd8f7983a1306fc0585fbacefb331e8daf6: e l identita CI da ricetta pinned, senza modifica del lock. L indice locale precedente non e piu risolvibile dopo la ricostruzione; il suo confronto e stato fatto prima.",
+      "La prima difficolta dello stack e stata risolta con lo stesso reset versionato e --env-file del worktree proprietario identificato dalle etichette Docker. Nessuna credenziale ereditata, stampata o caricata in blocco nella shell.",
+      "Il validatore del piano produce due report tracciati: le sue uscite sono state conservate in TMP e i due file ripristinati ai byte esatti dell HEAD, verificati dal controllo finale. Nessun commit, push, PR o modifica normativa.",
+      "Controlli non qualificanti e diagnostici falliti non sono dichiarati PASS e non sono attribuiti al codice del candidato. I relativi raw log restano conservati con sha256.",
+      "La sessione non interattiva prosegue fino alla scrittura e rilettura di questo file. Nessun record del candidato e sigillato dal verifier."
+    ],
+    "request_id": "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113-f0c46536c970-0",
+    "severity": "low",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_sha256": "1e935b041b6b4cbf18b06c6885cb1066a3e61d21824a2b0cfb193019d95abd79",
+    "verifier": {
+      "agent": "Codex",
+      "effort": "xhigh",
+      "independence_limits": "Verifier OpenAI. Unico implementatore del change set: Grok Build (grok-4.7, xAI), coerente fra richiesta, record e fonti del loop .impl_actual:grok e loop.log:grok. xAI escluso dai verifier ammessi. Delega decisionale claude-fable-5-2 (Anthropic), distinta dall implementazione. Il precedente companion storico del 2026-10-08 cita Codex/OpenAI, senza contributi a questa unit\u00e0 dal GO precedente. Nessun accesso a prereviews o prereview-env; nessuna revisione preventiva usata come prova.",
+      "model": "NOT_EXPOSED_BY_RUNTIME",
+      "process": "Codex (OpenAI), processo e contesto separati; effort xhigh secondo il mandato; nessun sub-agent",
+      "provider": "OpenAI"
+    },
     "verifier_started_by_implementer": false
   },
   "inputs": {
@@ -139,6 +519,14 @@
   "result": "PASS",
   "review_scope": "regression-only rerun for OCOR-DEV-0075 after the Fuseki local identity reacquisition; not a re-assessment of conformance",
   "roles": {
+    "effective_verifier": {
+      "agent": "Codex",
+      "effort": "xhigh",
+      "independence_limits": "Verifier OpenAI. Unico implementatore del change set: Grok Build (grok-4.7, xAI), coerente fra richiesta, record e fonti del loop .impl_actual:grok e loop.log:grok. xAI escluso dai verifier ammessi. Delega decisionale claude-fable-5-2 (Anthropic), distinta dall implementazione. Il precedente companion storico del 2026-10-08 cita Codex/OpenAI, senza contributi a questa unit\u00e0 dal GO precedente. Nessun accesso a prereviews o prereview-env; nessuna revisione preventiva usata come prova.",
+      "model": "NOT_EXPOSED_BY_RUNTIME",
+      "process": "Codex (OpenAI), processo e contesto separati; effort xhigh secondo il mandato; nessun sub-agent",
+      "provider": "OpenAI"
+    },
     "implementers": [
       {
         "agent": "Grok Build",
@@ -147,14 +535,20 @@
         "scope": "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 regression requalification of OCOR-DEV-0075"
       }
     ],
+    "integration_agent": {
+      "agent": "Grok Build",
+      "model": "grok-4.7",
+      "provider": "xAI",
+      "scope": "metadata-only evidence sealing after GO_FOR_EVIDENCE_SEAL; implementation, tests and raw logs unchanged"
+    },
     "verifier_excluded_providers": [
       "xAI"
     ],
     "verifier_started_by_implementer": false,
-    "verifier_status": "PENDING_INDEPENDENT_VERIFICATION"
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "schema_version": "1.0",
-  "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-0075-requalified-rem0055-351bb27eeeb0",
   "supersession_scope": "Regression-only after the local Fuseki output_sha256 reacquisition and, where the plan allowlist changed, after that allowlist extension. Task tests are unchanged. Not a re-assessment of conformance and never evidence of a requirement.",
   "task_id": "OCOR-DEV-0075",
