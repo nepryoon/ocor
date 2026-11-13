@@ -1,0 +1,66 @@
+name: OCOR alignment guard (base-anchored)
+
+# The validator of the BASE revision judges the pull request head, which is read
+# as data through git objects: nothing from the head is checked out or executed.
+# A change set therefore cannot weaken the rules that judge it. D01-D03 block;
+# the other checks follow reports/development/ALIGNMENT_BASELINE.json of the base.
+
+on:
+  pull_request_target:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alignment-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  alignment-guard:
+    name: alignment-guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Checkout the base revision only
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12.11"
+
+      - name: Fetch the head revision as git objects, without a checkout
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]
+          git fetch --no-tags --quiet origin "refs/pull/${PR_NUMBER}/head"
+          test "$(git rev-parse FETCH_HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+
+      - name: Run the base revision of the validator on the head revision
+        run: |
+          set -euo pipefail
+          python3 -I scripts/validate_alignment_invariants.py \
+            --repo . --base-ref "$BASE_SHA" --head-ref "$HEAD_SHA" --baseline-ref "$BASE_SHA" \
+            | tee "$RUNNER_TEMP/alignment-guard.json"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ocor-alignment-guard-${{ github.event.pull_request.head.sha }}
+          if-no-files-found: ignore
+          retention-days: 90
+          path: ${{ runner.temp }}/alignment-guard.json
