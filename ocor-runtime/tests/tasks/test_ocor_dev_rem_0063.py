@@ -751,11 +751,85 @@ _MALFORMED_FRAGMENTS = (
 
 @pytest.mark.parametrize("ref", _MALFORMED_FRAGMENTS)
 def test_malformed_uri_fragments_fail_closed(ref: str) -> None:
-    """VF-001: a malformed fragment is a typed refusal, not a literal key."""
+    """VF-001: a malformed fragment is a typed refusal, not a literal key.
+
+    These rows do not plant the undecoded token. A resolver that skips
+    percent-decoding still refuses them, because the key is absent. The
+    planted-key rows below are the members that fail only when the decoder
+    is removed.
+    """
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _with_ref(ref, {"a b": {"type": "string"}, "present": {"type": "string"}})
     with pytest.raises(profile.McpProfileError):
         _validate(document)
+
+
+# Class: the undecoded token is a real key whose value is a 2020-12 schema.
+# The resolver before ``_decode_uri_fragment`` accepts that key. The decoder
+# must refuse first, for percent-encoding or UTF-8, not for a missing key.
+# Members: truncated escape, non-hex, incomplete UTF-8, bad continuation,
+# overlong, surrogate, lone continuation, the same bytes after other text,
+# a bad escape after a well-formed encoding, and a bad escape that is not
+# the last pointer segment.
+_PLANTED_MALFORMED_FRAGMENTS = (
+    ("truncated-percent", "#/$defs/%", {"%": {"type": "string"}}, "percent-encoding"),
+    ("truncated-digit", "#/$defs/%2", {"%2": {"type": "string"}}, "percent-encoding"),
+    ("non-hex", "#/$defs/%ZZ", {"%ZZ": {"type": "string"}}, "percent-encoding"),
+    ("non-hex-digit", "#/$defs/%2G", {"%2G": {"type": "string"}}, "percent-encoding"),
+    ("trailing-percent", "#/$defs/a%", {"a%": {"type": "string"}}, "percent-encoding"),
+    ("embedded-non-hex", "#/$defs/a%ZZb", {"a%ZZb": {"type": "string"}}, "percent-encoding"),
+    ("incomplete-utf8", "#/$defs/%C3", {"%C3": {"type": "string"}}, "UTF-8"),
+    ("incomplete-utf8-lower", "#/$defs/%c3", {"%c3": {"type": "string"}}, "UTF-8"),
+    ("bad-continuation", "#/$defs/%C3%28", {"%C3%28": {"type": "string"}}, "UTF-8"),
+    ("overlong", "#/$defs/%C0%80", {"%C0%80": {"type": "string"}}, "UTF-8"),
+    ("surrogate", "#/$defs/%ED%A0%80", {"%ED%A0%80": {"type": "string"}}, "UTF-8"),
+    ("surrogate-lower", "#/$defs/%ed%a0%80", {"%ed%a0%80": {"type": "string"}}, "UTF-8"),
+    ("lone-continuation", "#/$defs/%80", {"%80": {"type": "string"}}, "UTF-8"),
+    ("embedded-continuation", "#/$defs/a%80b", {"a%80b": {"type": "string"}}, "UTF-8"),
+    (
+        "after-valid-encoding",
+        "#/$defs/a%20b/%",
+        {"a%20b": {"%": {"type": "string"}}},
+        "percent-encoding",
+    ),
+    (
+        "non-final-segment",
+        "#/$defs/%ZZ/properties/name",
+        {"%ZZ": {"type": "object", "properties": {"name": {"type": "string"}}}},
+        "percent-encoding",
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("ref", "definitions", "reason"),
+    [case[1:] for case in _PLANTED_MALFORMED_FRAGMENTS],
+    ids=[case[0] for case in _PLANTED_MALFORMED_FRAGMENTS],
+)
+def test_a_planted_literal_key_does_not_admit_a_malformed_fragment(
+    ref: str,
+    definitions: Mapping[str, Any],
+    reason: str,
+) -> None:
+    """The refusal is the encoding check. The literal key would otherwise resolve."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref(ref, definitions)
+    with pytest.raises(profile.McpProfileError, match=reason):
+        _validate(document)
+
+
+def test_a_planted_root_key_does_not_admit_a_malformed_fragment() -> None:
+    """A malformed token at the document root is the same encoding refusal."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref("#/%ZZ", {"unused": {"type": "string"}})
+    document["%ZZ"] = {"type": "string"}
+    with pytest.raises(profile.McpProfileError, match="percent-encoding"):
+        _validate(document)
+
+
+def test_a_well_formed_encoding_reaches_the_literal_percent_key() -> None:
+    """``%25ZZ`` is the key ``%ZZ``. The malformed twin ``%ZZ`` stays refused."""
+    _validate(_with_ref("#/$defs/%25ZZ", {"%ZZ": {"type": "string"}}))
 
 
 def test_an_external_percent_encoded_ref_stays_rejected() -> None:
