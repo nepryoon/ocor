@@ -1,6 +1,6 @@
 # REM-0063-REPAIR1-NO-GO
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -29,3 +29,22 @@ Opzione 1. VF-001 e VF-002 sono difetti riproducibili rispetto al punto 1(a) di 
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta non parte il ciclo 2 di `OCOR-DEV-REM-0063`. Restano bloccati `OCOR-DEV-REM-0063`, `OCOR-DEV-REM-0061` e `OCOR-DEV-REM-0060`. Non partono l'adozione della PR #599, la scrittura del registro di conformità, l'unità del punto 5 e i task G6. La PR #595 non si integra. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Nessun test, gate, timer, tetto, partizione o criterio è indebolito da questa richiesta: non cambia codice.
+
+## Disposition del Product Owner — 2026-11-13
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-fable-5-2`, effort `high`: `REM-0063-REPAIR1-NO-GO (2026-11-13)`, **opzione 1**. Nota di registro: «decisa su delega completa del PO, modello claude-fable-5-2, effort high». Vale come decisione del PO a ogni effetto, di livello operativo. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+La richiesta decisa è questo file al commit `2a9266a3de1e8a4c0d11c8b59dfa61645850e23c`, sha256 `e702d96430ae423ae2881b4e0917342dff7e3cf6218ef03ad249f151b1efe726`. Il testo delle opzioni non è stato modificato. L'intestazione riporta `DECIDED_BY_PO`, lo stesso stato del registro `blockers`.
+
+L'opzione 1 autorizza un solo ciclo 2 di `OCOR-DEV-REM-0063` sul branch `governed/ocor-dev-rem-0063-mcp-profile`, a partire dall'HEAD `0384449029efa6e3ddb65de02d5d821990e6e7b6`, senza rebase, reset o force-push e senza toccare `governed/ocor-dev-rem-0061-lane-image-cache`. Perimetro: VF-001, VF-002 e VF-003 del verdetto `OCOR-DEV-REM-0063-0384449029ef-1`, sha256 `261deb84a555092215c17d3f5c71630e7bc422b777d811209a8e8e3a793a498c`. Questo ciclo non è stato avviato in questa iterazione: l'unità corrente è `FUSEKI-LOCAL-IDENTITY-REBUILD-20261113`. Il ciclo 2 è la prossima unità di implementazione e non dipende dal verdetto Fuseki.
+
+La PR #617 non si integra: i percorsi non sono nell'allowlist. Si chiude come risolta citando il commit dello state sync, secondo `REPO-HYGIENE (2026-11-02)`. Il branch della richiesta resta. La PR #595 non si integra. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599, la scrittura del registro di conformità e l'unità del punto 5 di `REM-0061-STRICT-SELECTION-REPO-HEADS (2026-11-13)`. Se il verdetto del ciclo 2 è ancora `NO_GO`, non c'è un ciclo 3: una sola richiesta nuova. Il verifier del ciclo 2 è di un fornitore diverso da xAI. Codex, OpenAI, ha verificato i cicli 0 e 1 e non ha scritto codice né record: resta un verifier ammesso.
+
+### REM-0063-REPAIR1-NO-GO (2026-11-13) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-fable-5-2` ed effort `high` (scelta di `grok-4.7` con effort `high`, delicatezza CRITICA; modello ed effort alzati dalla delega al minimo previsto). Il PO risolve la decision request `REM-0063-REPAIR1-NO-GO` (branch `governed/decision-request-rem0063-repair1-nogo`, commit `2a9266a3de1e8a4c0d11c8b59dfa61645850e23c`, file `reports/development/decision_requests/REM-0063-REPAIR1-NO-GO.md`, sha256 `e702d96430ae423ae2881b4e0917342dff7e3cf6218ef03ad249f151b1efe726`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-fable-5-2, effort high») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
