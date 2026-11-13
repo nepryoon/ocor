@@ -766,6 +766,28 @@ def test_an_external_percent_encoded_ref_stays_rejected() -> None:
         _validate(document)
 
 
+@pytest.mark.parametrize("ref", ["", "#/"])
+def test_an_empty_ref_or_an_empty_pointer_token_fails_closed(ref: str) -> None:
+    """An empty ref is not a fragment. An empty pointer token does not resolve."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref(ref, {"present": {"type": "string"}})
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+def test_a_whole_document_fragment_is_checked_as_a_schema() -> None:
+    """``#`` is the document. A schema-shaped document is accepted."""
+    _validate(_with_ref("#", {"present": {"type": "string"}}))
+
+
+def test_a_whole_document_fragment_rejects_a_non_schema_document() -> None:
+    """``#`` lands on the document, so a non-schema ``$defs`` entry is in the target."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _with_ref("#", {"unused": 7})
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
 # VF-002 class: the resolved target must be a JSON Schema 2020-12 schema.
 # Booleans, {}, an integer schema and allOf are accepted above. These are not.
 _NON_SCHEMA_TARGETS = (
