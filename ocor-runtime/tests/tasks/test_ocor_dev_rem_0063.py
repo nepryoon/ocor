@@ -353,6 +353,123 @@ def test_registry_rejects_a_second_registration_and_non_json_records() -> None:
         assert _reason(excinfo) == "CAPABILITY_DENIED"
 
 
+def _bare_descriptor() -> dict[str, Any]:
+    return {
+        "x-ocor-mcp-protocol-revision": REVISION,
+        "tools": [
+            {
+                "name": "get-vessel",
+                "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}}},
+                "outputSchema": {"type": "object"},
+            }
+        ],
+    }
+
+
+def test_a_bare_descriptor_matches_the_official_tool_definition() -> None:
+    """The negative schema cases below start from a descriptor the Tool definition accepts."""
+    _validate(_bare_descriptor())
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        None,
+        [],
+        "Tool",
+        True,
+        {"$defs": 1},
+        {"$defs": None},
+        {"$defs": "Tool"},
+        {"$defs": {"Tool": 1}},
+        {"$defs": {"Tool": None}},
+        {"$defs": {"Tool": "object"}},
+        {"$defs": {"Tool": {"type": "not-a-type"}}},
+    ],
+)
+def test_a_tampered_official_schema_fails_closed(schema: object) -> None:
+    """A damaged official fixture is a typed profile error, never a library exception."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError):
+        profile.validate_mcp_descriptor(_bare_descriptor(), schema, expected_revision=REVISION)
+
+
+@pytest.mark.parametrize("properties", ["nope", ["name"], True, None])
+def test_input_schema_properties_of_the_wrong_type_fail_closed(properties: object) -> None:
+    """Point 1(a): inputSchema is a JSON Schema 2020-12 schema, not only a Tool-shaped object."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["tools"][0]["inputSchema"] = {"type": "object", "properties": properties}
+    with pytest.raises(profile.McpProfileError):
+        profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=REVISION)
+
+
+@pytest.mark.parametrize("properties", ["nope", ["name"], True, None])
+def test_output_schema_properties_of_the_wrong_type_fail_closed(properties: object) -> None:
+    """Point 1(a) applies to outputSchema as well as inputSchema."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["tools"][0]["outputSchema"] = {"type": "object", "properties": properties}
+    with pytest.raises(profile.McpProfileError):
+        profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=REVISION)
+
+
+@pytest.mark.parametrize("document", [None, [], "descriptor", True, 1])
+def test_a_descriptor_of_the_wrong_type_fails_closed(document: object) -> None:
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError):
+        profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=REVISION)
+
+
+@pytest.mark.parametrize("tools", [None, {}, "tools", True, 1])
+def test_tools_of_the_wrong_type_fail_closed(tools: object) -> None:
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["tools"] = tools
+    with pytest.raises(profile.McpProfileError):
+        profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=REVISION)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"arguments": None},
+        {"arguments": []},
+        {"arguments": True},
+        {"arguments": "x"},
+        {"arguments": b"x"},
+        {"arguments": {1: "a"}},
+        {"arguments": {"n": float("nan")}},
+        {"arguments": {"n": float("inf")}},
+        {"arguments": {"n": float("-inf")}},
+        {"arguments": {"nested": [{"n": float("nan")}]}},
+        {"arguments": {"note": "\ud800"}},
+        {"tool_name": None},
+        {"tool_name": ""},
+        {"tool_name": 1},
+        {"tool_name": True},
+        {"registry": None},
+        {"registry": {}},
+        {"registry": object()},
+    ],
+)
+def test_a_malformed_call_is_capability_denied(kwargs: Mapping[str, Any]) -> None:
+    """Wrong types, non-finite numbers and a missing registry stay on the typed refusal."""
+    mcp_call, registry = _registry()
+    boundary = importlib.import_module("ocor_runtime.c2.mcp_boundary")
+    payload: dict[str, Any] = {
+        "tool_name": "get-vessel",
+        "arguments": {"name": "Aurora"},
+        "governed_context_ref": CONTEXT_REF,
+        "registry": registry,
+    }
+    payload.update(kwargs)
+    for entry in (mcp_call.call_tool, boundary.admit_mcp_tool_call):
+        with pytest.raises(mcp_call.McpCallError) as excinfo:
+            entry(**payload)
+        assert _reason(excinfo) == "CAPABILITY_DENIED"
+
+
 def test_correspondence_table_covers_the_changelog_that_was_read() -> None:
     """One row per changelog entry. The record cites the same URL, date and sha256."""
     text = PROFILE.read_text(encoding="utf-8")
