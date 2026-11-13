@@ -19,9 +19,13 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from .ir import ARTIFACT_MEDIA_TYPES, malformed_core_rejected, parse_core, require_core_shape
+from .mcp_profile import McpProfileError, without_context_overwrite
 from .ports import ArtifactManifestEntry, C1Diagnostic, C1Error, CanonicalIrRelease, DiagnosticCode
 
 DECIMAL_PATTERN = r"^-?(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$"
+# FABLE52-POST-POC-PROGRAMME (2026-11-11) point 1: the only declaration of the
+# MCP revision the generated descriptor reports.
+MCP_PROTOCOL_REVISION = "2026-07-28"
 
 
 def _drift(path: str, message: str) -> C1Diagnostic:
@@ -229,16 +233,31 @@ def _mcp(model: _Model) -> bytes:
         return f"#/$defs/{component_name(type_id)}"
 
     tools = []
-    for contract in sorted(model.requests(), key=lambda c: str(c["contract_id"])):
+    seen: set[str] = set()
+    ordered = sorted(model.requests(), key=lambda c: (local_name(str(c["contract_id"])), str(c["contract_id"])))
+    for contract in ordered:
+        name = local_name(str(contract["contract_id"]))
+        if name in seen:
+            raise C1Error((C1Diagnostic(DiagnosticCode.TYPE_ERROR, "mcp-descriptor", f"duplicate MCP tool name {name}"),))
+        seen.add(name)
+        try:
+            input_schema = without_context_overwrite(model.contract_schema(contract["input_schema"], ref))
+        except McpProfileError as exc:
+            raise C1Error((C1Diagnostic(DiagnosticCode.TYPE_ERROR, f"mcp-descriptor/{name}", str(exc)),)) from exc
         tools.append({
-            "name": local_name(contract["contract_id"]),
+            "name": name,
             "description": f"{contract['kind']} {contract['contract_id']}@{contract['version']}",
-            "inputSchema": model.contract_schema(contract["input_schema"], ref),
+            "inputSchema": input_schema,
             "outputSchema": model.contract_schema(contract["output_schema"], ref),
             "annotations": {"readOnlyHint": contract["effect_class"] == "READ_ONLY",
                             "riskClass": contract["risk_class"]},
         })
-    return _json({"x-ocor-release": model.ids, "$defs": model.type_schemas(ref), "tools": tools})
+    return _json({
+        "x-ocor-mcp-protocol-revision": MCP_PROTOCOL_REVISION,
+        "x-ocor-release": model.ids,
+        "$defs": model.type_schemas(ref),
+        "tools": tools,
+    })
 
 
 class _Proto:
