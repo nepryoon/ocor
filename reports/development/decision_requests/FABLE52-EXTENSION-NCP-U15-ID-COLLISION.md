@@ -1,6 +1,29 @@
 # FABLE52-EXTENSION-NCP-U15-ID-COLLISION
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: normativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: normativo. Nessun nuovo `DEC-*`.
+Opzione adottata: **1**, come raccomandato, dalla decisione
+`FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13)`. Il testo della richiesta,
+sotto questa disposition, resta quello aperto al commit
+`142514fa302f23a49ee5695a2e25da6bb3f4054a`.
+
+## Disposition
+
+`NCP-U15` resta l'unità dei reason code sul WIP
+`governed/ocor-dev-rem-0060-ncp-u12-tests`, commit
+`b869cc9c0e92b6d23b386cf5162c07d3ebc12aec`. Il WIP non si rinomina.
+Le due voci nuove, ammissione dei claim e risoluzione delle identità, usano il
+primo identificativo di plan unit libero dopo quelle già presenti sul WIP,
+verificato in sola lettura al momento della scrittura. Hanno gli stessi campi
+che `FABLE52-EXTENSION-ASSESSMENT (2026-11-12)` assegnava a `NCP-U15`: stima 8,
+dipendenza da `NCP-U12`, le due sole voci, backend reale già usato da C3, C4 e
+C6. La voce della vista del mission thread resta `DECISION_REQUIRED`, senza
+`plan_unit`. La scrittura sul registro di conformità è un'unità governata
+successiva, con revisione preventiva e verifica indipendente. Non tocca il
+backlog approvato né `OCOR-DEV-REM-0061`. Non precede `OCOR-DEV-REM-0063`:
+`REM-0061-CYCLE5-PRIORITY (2026-11-13)` fa riprendere quel profilo subito dopo
+la richiesta di riprogettazione del ciclo 5. Claim invariati: `E1=0`, `E2=0`,
+`Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo
+`DEC-*`. Nessuna modifica a `inputs/`.
 
 ## Contesto
 
