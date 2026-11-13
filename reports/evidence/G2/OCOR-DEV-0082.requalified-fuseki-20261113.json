@@ -1,0 +1,131 @@
+{
+  "change_set": {
+    "branch": "governed/fuseki-local-identity-rebuild-20261113",
+    "decision": "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 (2026-11-13) option 1; decisa su delega completa del PO, modello claude-fable-5-2, effort high",
+    "execution_commit": "ca73b1a91ed313f14235bd3e1c6d467929b5632c",
+    "id": "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113",
+    "lock_commit": "b42b99d0f809a6dadb5a4d744073f50cfa658d5c"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+      "cwd": ".",
+      "duration_seconds": 4.86,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "ca73b1a91ed313f14235bd3e1c6d467929b5632c",
+      "label": "pytest-0005-0050-0082",
+      "not_executed": 0,
+      "passed": 214,
+      "raw_sha256": "43833fc3c14fe18bbfa2aa7310ffef96c8df38316a0c16e40c426943da3aab52",
+      "skipped": 0,
+      "started_at": "2026-11-13T17:42:32Z",
+      "status": "PASS",
+      "xfailed": 0
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+      "cwd": ".",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "ca73b1a91ed313f14235bd3e1c6d467929b5632c",
+      "label": "verify-manifest-only",
+      "not_executed": 0,
+      "raw_sha256": "ec90d276923552ab7f4c4147373c1ba158e6eb518dd1c6d30319794217f61dd1",
+      "skipped": 0,
+      "started_at": "2026-11-13T17:42:28Z",
+      "status": "PASS",
+      "xfailed": 0
+    }
+  ],
+  "commit": "ca73b1a91ed313f14235bd3e1c6d467929b5632c",
+  "commit_role": "lock and allowlist head at which these regression commands ran; the record itself is a later commit and does not change these inputs",
+  "created_at": "2026-11-13T17:45:26Z",
+  "drifted_inputs": [
+    "scripts/validate_ocor_development_plan.py"
+  ],
+  "environment": {
+    "branch": "governed/fuseki-local-identity-rebuild-20261113",
+    "clean_shell": false,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "nep-LEGION",
+    "implementer_cli": "Grok Build (grok-4.7)",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "qualification_source_commit": "ca73b1a91ed313f14235bd3e1c6d467929b5632c",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal 64199668 kB read on nep-LEGION in the regression session",
+    "threads": 24,
+    "uv": "0.12.5"
+  },
+  "full_campaign": {
+    "executed": false,
+    "reason": "Real-stack bootstrap, typed verification and the task pytest modules were rerun. No qualifying campaign and no OCOR-DEV-REM-0064 full suite."
+  },
+  "independent_verification": {
+    "status": "PENDING",
+    "verifier_started_by_implementer": false
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/tests/qualify_rem0029_teardown.py": "e2c3d205283166528be54e81cc5a90176fc2073e028321660369ee9f917361a0",
+    "reports/tests/test_reset_teardown_residue.py": "8a0a2e491d01acf78acdc135781cd21f47c2dfa74af2a18077557ae434ab2064",
+    "scripts/reset_test_environment.py": "063e66ae0841fec992b62b21315e54da4b8b77ee3418e80646459988909a786c",
+    "scripts/validate_ocor_development_plan.py": "f06eb01483c0bcaeb3356aa77329ef27292e893d3a6076a535552b3b517779d9"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "previous_record": {
+    "record_id": "OCOR-DEV-0082-requalified-rem0062-7e9c16b4ebb3",
+    "record_path": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0062.json",
+    "record_sha256": "69b0ed6cf7acfe5aa62e015080d5242ddab8afea8289432be9546dbc13f86f67",
+    "status": "SEALED"
+  },
+  "qualification_limits": "Regression-only requalification after FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 option 1 updated services[id=fuseki].build.output_sha256 to the inspected local image id. The commands reran on the real ocor-bootstrap stack at ca73b1a91ed313f14235bd3e1c6d467929b5632c. This record binds no requirement. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. It is not the OCOR-DEV-REM-0064 full suite.",
+  "qualifies_requirements": false,
+  "raw_output_format": "concatenated stdout of the commands in order, each section ending with EXIT:0",
+  "raw_output_sha256": "9665f79f72572dfe3dbbe391b434efdd07138130b88e629fd43f325ea7782716",
+  "record_id": "OCOR-DEV-0082-requalified-fuseki-20261113-ca73b1a91ed3",
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only; REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "requirement_results": [],
+  "residual_risks": [
+    "Regression-only requalification of the local Fuseki engine id. Not runtime conformance and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only rerun for OCOR-DEV-0082 after the Fuseki local identity reacquisition; not a re-assessment of conformance",
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 regression requalification of OCOR-DEV-0082"
+      }
+    ],
+    "verifier_excluded_providers": [
+      "xAI"
+    ],
+    "verifier_started_by_implementer": false,
+    "verifier_status": "PENDING_INDEPENDENT_VERIFICATION"
+  },
+  "schema_version": "1.0",
+  "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+  "supersedes": "OCOR-DEV-0082-requalified-rem0062-7e9c16b4ebb3",
+  "supersession_scope": "Regression-only after the local Fuseki output_sha256 reacquisition and, where the plan allowlist changed, after that allowlist extension. Task tests are unchanged. Not a re-assessment of conformance and never evidence of a requirement.",
+  "task_id": "OCOR-DEV-0082",
+  "tests_unchanged_from_base": true
+}
