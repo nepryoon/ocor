@@ -102,9 +102,11 @@ def validate_mcp_descriptor(
 
     ``schema`` is the official schema document of that revision. Each tool is checked
     against its ``Tool`` definition. ``inputSchema`` and ``outputSchema`` are JSON
-    Schema 2020-12 schemas (``Draft202012Validator.check_schema``), and every ``$ref``
-    resolves inside ``document``. A fixture that is not an object, or whose ``$defs``
-    or ``Tool`` entry is not an object, is rejected before the library is called.
+    Schema 2020-12 schemas (``Draft202012Validator.check_schema``). Every ``$ref`` is
+    a same-document fragment: the fragment is percent-decoded as UTF-8 before JSON
+    Pointer resolution, and the value it lands on must itself be a 2020-12 schema.
+    A fixture that is not an object, or whose ``$defs`` or ``Tool`` entry is not an
+    object, is rejected before the library is called.
     """
 
     if not isinstance(document, Mapping):
@@ -265,13 +267,78 @@ def _check_schema_keywords(node: object, document: Mapping[str, Any], *, depth: 
                 _check_schema_keywords(value, document, depth=depth + 1)
 
 
+_HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
+
+
+def _decode_uri_fragment(fragment: str) -> str:
+    """Percent-decode a URI fragment as strict UTF-8.
+
+    RFC 6901 section 6 percent-encodes the JSON Pointer. Decoding happens before
+    ``/`` splits the pointer and before ``~`` escapes. A truncated escape, a
+    non-hex pair, or bytes that are not UTF-8 is a typed profile error. ``+``
+    is not a space.
+    """
+
+    pending = bytearray()
+    parts: list[str] = []
+
+    def flush() -> None:
+        if not pending:
+            return
+        try:
+            parts.append(pending.decode("utf-8"))
+        except UnicodeDecodeError as exc:
+            raise McpProfileError("MCP $ref fragment is not valid UTF-8") from exc
+        pending.clear()
+
+    index = 0
+    length = len(fragment)
+    while index < length:
+        character = fragment[index]
+        if character == "%":
+            if index + 2 >= length:
+                raise McpProfileError("MCP $ref fragment is not valid percent-encoding")
+            first = fragment[index + 1]
+            second = fragment[index + 2]
+            if first not in _HEX_DIGITS or second not in _HEX_DIGITS:
+                raise McpProfileError("MCP $ref fragment is not valid percent-encoding")
+            pending.append(int(fragment[index + 1 : index + 3], 16))
+            index += 3
+            continue
+        flush()
+        if 0xD800 <= ord(character) <= 0xDFFF:
+            raise McpProfileError("MCP $ref fragment is not valid UTF-8")
+        parts.append(character)
+        index += 1
+    flush()
+    return "".join(parts)
+
+
+def _require_schema(target: object) -> None:
+    """The value a ``$ref`` lands on must be a JSON Schema 2020-12 schema.
+
+    Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
+    metaschema rejects are not. Callers pass only a resolved target, never
+    instance data such as ``const``, ``enum`` or ``default``.
+    """
+
+    try:
+        Draft202012Validator.check_schema(target)
+    except _SCHEMA_LIBRARY_ERRORS as exc:
+        raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema") from exc
+
+
 def _resolve_pointer(document: Mapping[str, Any], pointer: str) -> None:
+    if not isinstance(pointer, str) or not pointer.startswith("#"):
+        raise McpProfileError("MCP $ref must be a same-document fragment")
     if pointer == "#":
+        _require_schema(document)
         return
-    if not pointer.startswith("#/"):
+    decoded = _decode_uri_fragment(pointer[1:])
+    if not decoded.startswith("/"):
         raise McpProfileError("MCP $ref must be a same-document fragment")
     current: object = document
-    for raw in pointer[2:].split("/"):
+    for raw in decoded[1:].split("/"):
         token = raw.replace("~1", "/").replace("~0", "~")
         if isinstance(current, Mapping) and token in current:
             current = current[token]
@@ -283,6 +350,7 @@ def _resolve_pointer(document: Mapping[str, Any], pointer: str) -> None:
                 current = current[index]
                 continue
         raise McpProfileError("MCP $ref does not resolve in the descriptor")
+    _require_schema(current)
 
 
 def _reject_surrogate(value: str) -> None:
