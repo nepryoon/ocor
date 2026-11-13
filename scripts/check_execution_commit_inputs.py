@@ -8,6 +8,12 @@ paths must be unchanged between that commit and HEAD, and the working tree
 bytes must still match the execution commit. A record without file inputs is
 checked through ``commit`` or ``execution_commit`` only.
 
+When a record declares ``artifact_digests``, each path is a file in the
+working tree and the SHA-256 of its bytes must equal the declared digest.
+``raw_output_sha256`` and every ``commands[].raw_sha256`` must equal one of
+those file digests. A declared digest that matches no evidence file is a
+finding. Records that omit ``artifact_digests`` are unchanged.
+
 The checker never rewrites a record and never turns a mismatch into PASS.
 """
 
@@ -54,6 +60,73 @@ def _finding(record: Path, reason: str, **extra: Any) -> dict[str, Any]:
     return item
 
 
+def _sha256_text(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
+
+
+def _check_artifacts(
+    root: Path,
+    record: dict[str, Any],
+    record_path: Path,
+    findings: list[dict[str, Any]],
+) -> int:
+    """Hash declared evidence files. Absent ``artifact_digests`` checks nothing."""
+    if "artifact_digests" not in record:
+        return 0
+    artifacts = record["artifact_digests"]
+    if not isinstance(artifacts, dict):
+        findings.append(_finding(record_path, "artifact_digests is not an object"))
+        return 0
+    checked = 0
+    file_digests: set[str] = set()
+    for path in sorted(artifacts):
+        recorded = artifacts[path]
+        if not isinstance(path, str) or not _sha256_text(recorded):
+            findings.append(
+                _finding(record_path, "artifact digest is not a sha256", artifact_path=str(path))
+            )
+            continue
+        parts = Path(path).parts
+        if path.startswith("/") or ".." in parts:
+            findings.append(_finding(record_path, "artifact path escapes the root", artifact_path=path))
+            continue
+        file_path = root / path
+        if not file_path.is_file():
+            findings.append(_finding(record_path, "artifact missing", artifact_path=path))
+            continue
+        digest = _sha256(file_path.read_bytes())
+        checked += 1
+        if digest != recorded:
+            findings.append(
+                _finding(
+                    record_path,
+                    "artifact hash mismatch",
+                    artifact_path=path,
+                    file_sha256=digest,
+                    recorded_sha256=recorded,
+                )
+            )
+        else:
+            file_digests.add(digest)
+    raw = record.get("raw_output_sha256")
+    if raw is not None and raw not in file_digests:
+        findings.append(_finding(record_path, "raw_output_sha256 matches no artifact"))
+    commands = record.get("commands")
+    if isinstance(commands, list):
+        for index, command in enumerate(commands):
+            if not isinstance(command, dict) or "raw_sha256" not in command:
+                continue
+            if command.get("raw_sha256") not in file_digests:
+                findings.append(
+                    _finding(
+                        record_path,
+                        "command raw_sha256 matches no artifact",
+                        command_index=index,
+                    )
+                )
+    return checked
+
+
 def check_records(
     root: Path,
     execution_commit: str,
@@ -65,6 +138,7 @@ def check_records(
     findings: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
     checked_inputs = 0
+    checked_artifacts = 0
     if resolved is None or head is None:
         findings.append(
             {
@@ -74,7 +148,7 @@ def check_records(
                 "head": head,
             }
         )
-        return _payload(execution_commit, head, findings, records, checked_inputs)
+        return _payload(execution_commit, head, findings, records, checked_inputs, checked_artifacts)
 
     for record_path in record_paths:
         try:
@@ -85,6 +159,7 @@ def check_records(
         if not isinstance(record, dict):
             findings.append(_finding(record_path, "record is not a JSON object"))
             continue
+        checked_artifacts += _check_artifacts(root, record, record_path, findings)
         declared = record.get("commit") or record.get("execution_commit")
         if declared != resolved:
             findings.append(
@@ -188,7 +263,7 @@ def check_records(
                 "path": str(record_path),
             }
         )
-    return _payload(resolved, head, findings, records, checked_inputs)
+    return _payload(resolved, head, findings, records, checked_inputs, checked_artifacts)
 
 
 def _payload(
@@ -197,8 +272,10 @@ def _payload(
     findings: list[dict[str, Any]],
     records: list[dict[str, Any]],
     checked_inputs: int,
+    checked_artifacts: int,
 ) -> dict[str, Any]:
     return {
+        "checked_artifacts": checked_artifacts,
         "checked_inputs": checked_inputs,
         "checked_records": len(records),
         "execution_commit": execution_commit,
