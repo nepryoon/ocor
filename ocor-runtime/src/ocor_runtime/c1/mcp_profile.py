@@ -319,9 +319,15 @@ def _require_schema(target: object) -> None:
 
     Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
     metaschema rejects are not. Callers pass only a resolved target, never
-    instance data such as ``const``, ``enum`` or ``default``.
+    instance data such as ``const``, ``enum`` or ``default``. ``bool`` is a
+    subclass of ``int``, so the boolean check comes before any numeric test.
     """
 
+    if isinstance(target, bool):
+        Draft202012Validator.check_schema(target)
+        return
+    if not isinstance(target, Mapping):
+        raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema")
     try:
         Draft202012Validator.check_schema(target)
     except _SCHEMA_LIBRARY_ERRORS as exc:
