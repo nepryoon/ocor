@@ -9,9 +9,11 @@ The cycle-2 decoder commit is `3dd37e29222ae2c85f400f4fc7573def127f6a53`.
 The class-coverage execution commit is `a284c11238063760c471d80cd9e0f7b6c957e42b`.
 This record supersedes `OCOR-DEV-REM-0063-d215c7d2c1dc`.
 The four-lane campaign at `c28cd9c411c466f38e9671d2774939bb9a910a30` does not qualify the cycle-2 head.
+The qualifying four-lane campaign is `fbe0200c24c0-1794612781` on `fbe0200c24c07340b67430a3b0a24a3cac65ba82`: 6014 tests, 0 failures, 0 errors, 0 skipped, 1719.366 s, MAINS.
 The class-coverage pre-campaign gate ran on `a284c11238063760c471d80cd9e0f7b6c957e42b`: 51 PASS, 6 NOT_EXECUTED, 97.897 s.
-The same gate ran on the evidence commit `a756fb9faf6860d218096d39fb10678dc9135b08`: 51 PASS, 6 NOT_EXECUTED, 99.195 s. That log is the current pre-campaign.log.
+The same gate ran on the evidence commit `a756fb9faf6860d218096d39fb10678dc9135b08`: 51 PASS, 6 NOT_EXECUTED, 99.195 s.
+The gate on the campaign head `fbe0200c24c07340b67430a3b0a24a3cac65ba82` is 51 PASS, 6 NOT_EXECUTED, 98.198 s. That log is the current pre-campaign.log.
 The evidence commits do not change the execution-commit inputs.
 The plan validator is unchanged, so the regression requalifications stay on their declared commit.
 
-Preventive review OCOR-DEV-REM-0063-9dc963f40644-pre found that the malformed-fragment rows do not plant the undecoded token, so they pass on the resolver before the decoder. The class-coverage tests at a284c11238063760c471d80cd9e0f7b6c957e42b plant that key. red.log keeps the previous RED as a byte prefix (sha256 67868a1e29c59e4e42c5197874e15d89c2e3f0094c97b35c8d1dcbabbb511bec) and appends the planted-key RED and the identity-decode mutation. GREEN is 188 passed. The four-lane campaign at c28cd9c411c466f38e9671d2774939bb9a910a30 still does not qualify this head.
+Preventive review OCOR-DEV-REM-0063-9dc963f40644-pre found that the malformed-fragment rows do not plant the undecoded token, so they pass on the resolver before the decoder. The class-coverage tests at a284c11238063760c471d80cd9e0f7b6c957e42b plant that key. red.log keeps the previous RED as a byte prefix (sha256 67868a1e29c59e4e42c5197874e15d89c2e3f0094c97b35c8d1dcbabbb511bec) and appends the planted-key RED and the identity-decode mutation. GREEN is 188 passed. The four-lane campaign at c28cd9c411c466f38e9671d2774939bb9a910a30 still does not qualify this head. The qualifying campaign is fbe0200c24c0-1794612781.
