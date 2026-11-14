@@ -1434,3 +1434,296 @@ def test_cycle4_an_anchor_hop_does_not_lift_the_depth_bound() -> None:
     _validate(chain(4))
     with pytest.raises(profile.McpProfileError, match="bounds"):
         _validate(chain(40))
+
+
+# Same class, after the cycle-4 review. An embedded tool schema is its own
+# JSON Schema and is also part of the descriptor. A ref inside it sees anchors
+# and pointers in that schema and in the document resource. Two different
+# objects are ambiguous. A nested non-empty ``$id`` is a separate resource.
+# ``additionalItems`` is not a JSON Schema 2020-12 anchor applicator.
+
+
+def _cycle4_embedded_tool(
+    schema: Mapping[str, Any],
+    *,
+    field: str = "inputSchema",
+    definitions: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Put ``schema`` on one tool. Definitions, when given, stay on the descriptor."""
+    document = _bare_descriptor()
+    document["$defs"] = {} if definitions is None else dict(definitions)
+    document["tools"][0][field] = dict(schema)
+    return document
+
+
+def _assert_standalone_integer(schema: Mapping[str, Any]) -> None:
+    """The pinned metaschema accepts an integer and rejects a string."""
+    from jsonschema import Draft202012Validator
+
+    validator = Draft202012Validator(schema)
+    assert list(validator.iter_errors({"x": 7})) == []
+    assert list(validator.iter_errors({"x": "no"}))
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_an_anchor_local_to_the_tool_schema_resolves(field: str) -> None:
+    """``#part`` inside the tool schema is the same integer schema as its pointer."""
+    schema = {
+        "type": "object",
+        "$defs": {"part": {"$anchor": "part", "type": "integer"}},
+        "properties": {"x": {"$ref": "#part"}},
+    }
+    document = _cycle4_embedded_tool(schema, field=field)
+    standalone = document["tools"][0][field]
+    if not isinstance(standalone, Mapping):
+        raise AssertionError("tool schema is not an object")
+    _assert_standalone_integer(standalone)
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_an_anchor_under_tool_schema_properties_resolves(field: str) -> None:
+    """A plain name on a property schema is in the tool schema's resource."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"$anchor": "part", "type": "integer"},
+            "x": {"$ref": "#part"},
+        },
+    }
+    document = _cycle4_embedded_tool(schema, field=field)
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_an_anchor_on_the_tool_schema_itself_resolves(field: str) -> None:
+    """The tool schema object can carry the plain name the ref uses."""
+    schema = {"$anchor": "part", "type": "object", "properties": {"x": {"$ref": "#part"}}}
+    _validate(_cycle4_embedded_tool(schema, field=field))
+
+
+@pytest.mark.parametrize("keyword", ["$anchor", "$dynamicAnchor"])
+def test_cycle4_a_percent_encoded_tool_schema_anchor_is_decoded(keyword: str) -> None:
+    """``#p%61rt`` is ``part`` inside the tool schema, after decoding."""
+    schema = {
+        "type": "object",
+        "$defs": {"part": {keyword: "part", "type": "integer"}},
+        "properties": {"x": {"$ref": "#p%61rt"}},
+    }
+    _validate(_cycle4_embedded_tool(schema))
+
+
+def test_cycle4_an_absent_tool_schema_anchor_does_not_resolve() -> None:
+    """A plain name that the tool schema does not declare is not a pointer."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {
+        "type": "object",
+        "$defs": {"part": {"$anchor": "part", "type": "integer"}},
+        "properties": {"x": {"$ref": "#missing"}},
+    }
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(_cycle4_embedded_tool(schema))
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous(field: str) -> None:
+    """The document resource and the tool schema do not share one silent winner."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {
+        "type": "object",
+        "$defs": {"two": {"$anchor": "part", "type": "string"}},
+        "properties": {"x": {"$ref": "#part"}},
+    }
+    document = _cycle4_embedded_tool(
+        schema,
+        field=field,
+        definitions={"one": {"$anchor": "part", "type": "integer"}},
+    )
+    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+        _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_two_anchors_inside_one_tool_schema_are_ambiguous(field: str) -> None:
+    """Two objects in the tool schema with one plain name do not pick a winner."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {
+        "type": "object",
+        "$defs": {
+            "one": {"$anchor": "part", "type": "integer"},
+            "two": {"$dynamicAnchor": "part", "type": "string"},
+        },
+        "properties": {"x": {"$ref": "#part"}},
+    }
+    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+        _validate(_cycle4_embedded_tool(schema, field=field))
+
+
+def test_cycle4_a_document_ref_does_not_use_a_tool_only_anchor() -> None:
+    """The document resource does not crawl ``tools`` for plain names."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_embedded_tool(
+        {
+            "type": "object",
+            "$defs": {"part": {"$anchor": "part", "type": "integer"}},
+            "properties": {"x": {"type": "string"}},
+        }
+    )
+    document["$defs"] = {"holder": {"$ref": "#part"}}
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_a_local_pointer_in_the_tool_schema_resolves(field: str) -> None:
+    """``#/$defs/part`` inside the tool schema is that schema's own definition."""
+    schema = {
+        "type": "object",
+        "$defs": {"part": {"type": "integer"}},
+        "properties": {"x": {"$ref": "#/$defs/part"}},
+    }
+    document = _cycle4_embedded_tool(schema, field=field)
+    standalone = document["tools"][0][field]
+    if not isinstance(standalone, Mapping):
+        raise AssertionError("tool schema is not an object")
+    _assert_standalone_integer(standalone)
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition(field: str) -> None:
+    """C1 pointers to the descriptor ``$defs`` stay valid when the local name differs."""
+    schema = {
+        "type": "object",
+        "$defs": {"other": {"type": "string"}},
+        "properties": {"x": {"$ref": "#/$defs/part"}},
+    }
+    document = _cycle4_embedded_tool(
+        schema,
+        field=field,
+        definitions={"part": {"type": "integer"}},
+    )
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+def test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous(field: str) -> None:
+    """Two objects at the same pointer are not one target."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {
+        "type": "object",
+        "$defs": {"part": {"type": "string"}},
+        "properties": {"x": {"$ref": "#/$defs/part"}},
+    }
+    document = _cycle4_embedded_tool(
+        schema,
+        field=field,
+        definitions={"part": {"type": "integer"}},
+    )
+    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+        _validate(document)
+
+
+def test_cycle4_a_local_pointer_to_a_non_schema_is_rejected() -> None:
+    """Landing inside the tool schema still runs the 2020-12 schema check."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {
+        "type": "object",
+        "$defs": {"part": 7},
+        "properties": {"x": {"$ref": "#/$defs/part"}},
+    }
+    with pytest.raises(profile.McpProfileError, match="not a JSON Schema"):
+        _validate(_cycle4_embedded_tool(schema))
+
+
+def test_cycle4_a_local_anchor_target_that_is_not_a_schema_is_rejected() -> None:
+    """A plain name inside the tool schema is not exempt from the schema check."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {
+        "type": "object",
+        "$defs": {"part": {"$anchor": "part", "type": "not-a-json-schema-type"}},
+        "properties": {"x": {"$ref": "#part"}},
+    }
+    with pytest.raises(profile.McpProfileError, match="not a JSON Schema"):
+        _validate(_cycle4_embedded_tool(schema))
+
+
+def test_cycle4_a_self_anchor_inside_the_tool_schema_stays_visited() -> None:
+    """An anchor that points at itself inside the tool schema is one visited schema."""
+    schema = {
+        "type": "object",
+        "$defs": {"part": {"$anchor": "part", "$ref": "#part"}},
+        "properties": {"x": {"$ref": "#part"}},
+    }
+    _validate(_cycle4_embedded_tool(schema))
+
+
+def test_cycle4_an_anchor_behind_an_id_is_not_a_parent_anchor() -> None:
+    """A nested ``$id`` keeps its plain name out of the parent resource."""
+    from referencing import Registry, Resource
+    from referencing.exceptions import NoSuchAnchor
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_embedded_tool(
+        {"type": "object", "properties": {"x": {"$ref": "#part"}}},
+        definitions={
+            "sub": {
+                "$id": "https://example.invalid/sub.json",
+                "$anchor": "part",
+                "type": "integer",
+            }
+        },
+    )
+    resource = Resource.from_contents({"$schema": DRAFT_2020, **document}, DRAFT202012)
+    registry = Registry().with_resource("urn:ocor-rem0063", resource)
+    with pytest.raises(NoSuchAnchor):
+        registry.resolver("urn:ocor-rem0063").lookup("#part")
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+def test_cycle4_an_anchor_inside_an_id_resource_resolves_there() -> None:
+    """Inside the nested resource, ``#part`` is that resource's own anchor."""
+    document = _bare_descriptor()
+    document["$defs"] = {
+        "sub": {
+            "$id": "https://example.invalid/sub.json",
+            "$anchor": "part",
+            "type": "object",
+            "properties": {"x": {"$ref": "#part"}},
+        }
+    }
+    _validate(document)
+
+
+@pytest.mark.parametrize("keyword", ["$anchor", "$dynamicAnchor"])
+def test_cycle4_an_anchor_under_additional_items_is_not_indexed(keyword: str) -> None:
+    """``additionalItems`` is not an applicator in draft 2020-12."""
+    from referencing import Registry, Resource
+    from referencing.exceptions import NoSuchAnchor
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document(
+        "#part",
+        {"holder": {"additionalItems": {keyword: "part", "type": "integer"}}},
+    )
+    resource = Resource.from_contents({"$schema": DRAFT_2020, **document}, DRAFT202012)
+    registry = Registry().with_resource("urn:ocor-rem0063", resource)
+    with pytest.raises(NoSuchAnchor):
+        registry.resolver("urn:ocor-rem0063").lookup("#part")
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+def test_cycle4_an_anchor_under_additional_items_in_the_tool_schema_is_not_indexed() -> None:
+    """The tool schema uses the same 2020-12 applicator set."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {
+        "type": "object",
+        "additionalItems": {"$anchor": "part", "type": "integer"},
+        "properties": {"x": {"$ref": "#part"}},
+    }
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(_cycle4_embedded_tool(schema))
