@@ -26,7 +26,7 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit_role": "execution_commit is c4cb2d558693b20afab3aba725b1d89ff68e34f5, the commit of the probe, the advisory tests and the regenerated probe log. The register integrity log and the regression log were produced earlier and their bytes are unchanged. The three requalification records still declare 00bd2b8671c13c93f932b7e12380ddd94c7c9522. This record is a later commit and does not change those inputs.",
+  "commit_role": "execution_commit is c4cb2d558693b20afab3aba725b1d89ff68e34f5, the commit of the probe, the advisory tests and the regenerated probe log. The register integrity log and the regression log were produced earlier and their bytes are unchanged. The three requalification records still declare 00bd2b8671c13c93f932b7e12380ddd94c7c9522. The qualifying campaign ran at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25, whose only file change from the execution commit is this record. This later evidence commit records the gate and the campaign. It does not change the declared inputs.",
   "created_at": "2026-11-13T13:39:16Z",
   "decision": "FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13) point 4",
   "execution_commit": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
@@ -36,11 +36,154 @@
     "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit c4cb2d558693b20afab3aba725b1d89ff68e34f5 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
     "execution_commit": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
     "exit_code": 0,
-    "note": "stdout_sha256 is filled from the run while HEAD was the execution commit and this record was the worktree draft. The checker does not read this field. A later HEAD changes only the head field of a fresh print. The three requalification records are checked by a separate command against 00bd2b8671c13c93f932b7e12380ddd94c7c9522.",
+    "note": "stdout_sha256 is the canonical checker payload with head set to the execution commit. The checker does not read this field. A repeat after the campaign update, while HEAD was 77340bce8de8d1e6f2c1ac94dc6a287fca850f25, returned PASS with 8 inputs and 1 record. Rewriting that payload's head back to the execution commit reproduces stdout_sha256. The three requalification records are checked by a separate command against 00bd2b8671c13c93f932b7e12380ddd94c7c9522.",
     "result": "PASS",
     "stdout_sha256": "9e06da65c95f3c1c16690cd2ae6b135cdfbcac6f0cab9ff629b30086d2bd58a7"
   },
   "execution_state_registration": "Deferred to the post-verify state sync. This unit does not edit EXECUTION_STATE.json, MODEL_HANDOFF.json or ITERATION_LOG.md.",
+  "full_campaign": {
+    "admission_level": "FOUR_LANE",
+    "campaign_id": "77340bce8de8-1794622470",
+    "collection": {
+      "collected": 5826,
+      "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
+      "lane_cases": [
+        1,
+        1854,
+        2436,
+        1535
+      ],
+      "lane_estimated_seconds": [
+        1329.129,
+        1079.112,
+        1079.136,
+        1079.103
+      ],
+      "lower_bound_seconds": 1329.129,
+      "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225"
+    },
+    "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8 --expected-head 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 --tool-bin /home/luca/.ocor-codex/impl-env/rem-0064/bin",
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5826
+    },
+    "duration_seconds": 1801.109,
+    "fuseki": {
+      "built_image_ids": {
+        "1": "sha256:b7fdfbd432a579b6c069ffc1e1897cc5d9b4f4a08b826129cb9239ef94fb8f53",
+        "2": "sha256:ff6d2c0441f9c11ee8bc799d4263a1a75795acfc73f39727b0dfa1c301d74fe8",
+        "3": "sha256:b6c4b0b0096e80b3ac5d80cddb41f7814df5fb147bb1439c403b1df82ace4215",
+        "4": "sha256:71acd208f84681072d13f955a259f9f8546e944af0ca2c9b57a1e6db0f9776c3"
+      },
+      "lock_image_id": "6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+      "note": "Each lane log lane-N/out/bootstrap.log records fuseki_built_image_id and fuseki_lock_image_id. The four built ids differ from each other and from the lock. scripts/bootstrap_ci_environment.py does not fail the suite on that mismatch. infra/services.lock.json was not updated. Host scripts/bootstrap_development_environment.py --execute was not run."
+    },
+    "head": "77340bce8de8d1e6f2c1ac94dc6a287fca850f25",
+    "host_residue": {
+      "containers": [],
+      "networks": [],
+      "root_image": false,
+      "volumes": []
+    },
+    "junit_path": "/home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8/runtime_junit_post_approval.xml",
+    "junit_sha256": "dc175352c48c1cd98251c7b7e5aa433ba65e527b0bbd71e830a0db98c8f9163c",
+    "lane_durations_seconds": [
+      1176.741,
+      1371.763,
+      1558.749,
+      1188.794
+    ],
+    "lanes_admitted": 4,
+    "lanes_run": 4,
+    "limit_seconds": 5400,
+    "log_path": "/home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8.log",
+    "log_sha256": "fb43eebf1f000e39e6c9f1778fb985c0b59d1e1ee4d4d9a406f084caa75faca8",
+    "memory": {
+      "guard_mib": 3000,
+      "mem_available_kib": 57653424,
+      "mem_total_kib": 64199668,
+      "mode": "FOUR_LANE",
+      "threshold_mib": 25681.2
+    },
+    "mode": "FOUR_LANE",
+    "nonqualifying_attempt": {
+      "campaign_id": "77340bce8de8-1794622417",
+      "collected": 5826,
+      "duration_seconds": 7.405,
+      "error": "[Errno 2] No such file or directory: '/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0064-conformance-register/.ocor/tools'",
+      "host_residue": {
+        "containers": [],
+        "networks": [],
+        "root_image": false,
+        "volumes": []
+      },
+      "lanes_run": 0,
+      "result_path": "/home/luca/.ocor-codex/rem-0064/attempts/setup-missing-tools/campaign_result.json",
+      "result_sha256": "6096eeeb7ff1c65ab1aea5a7d119a75d6ecefa79bdae8bc4b2dcf690e40baf74",
+      "status": "FAIL"
+    },
+    "po_decision_required": false,
+    "power_end": {
+      "adp0_online": "1",
+      "read_at": "2026-11-14T02:44:31Z",
+      "source": "MAINS",
+      "usb_c_online": "0"
+    },
+    "power_start": {
+      "adp0_online": "1",
+      "read_at": "2026-11-14T02:14:30Z",
+      "source": "MAINS",
+      "usb_c_online": "0"
+    },
+    "result_path": "/home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8/campaign_result.json",
+    "result_sha256": "1e36ac7a9631fde3198a89f0b146bc11eb7cfdcc47380d609cdad9aaad337bcf",
+    "started_at": "2026-11-14T02:14:30Z",
+    "status": "PASS",
+    "supervision_returncodes": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0
+    },
+    "teardown": [
+      {
+        "lane": 1,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 2,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 3,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 4,
+        "sandbox_found": true,
+        "status": "PASS"
+      }
+    ],
+    "threshold_seconds": 3600,
+    "union": {
+      "collected": 5826,
+      "duplicated": [],
+      "executed": 5826,
+      "lanes": [
+        1,
+        1854,
+        2436,
+        1535
+      ],
+      "missing": [],
+      "unexpected": []
+    }
+  },
   "implementers": [
     {
       "agent": "Grok Build",
@@ -111,8 +254,8 @@
   "local_gates": {
     "not_executed": [
       {
-        "command": "scripts/run_qualifying_campaign.py and scripts/bootstrap_ci_environment.py --execute",
-        "reason": "Preventive review OCOR-DEV-REM-0064-9b2845f0e0a3-pre is NO_BLOCKING_FINDINGS. The full suite still waits on FUSEKI-LOCAL-IDENTITY-REBUILD-20261113. The Fuseki lock identity is not updated in this unit."
+        "command": "scripts/bootstrap_development_environment.py --execute on the host",
+        "reason": "Not run. The qualifying campaign is full_campaign, via scripts/run_local_lane_campaign.py. Each lane ran scripts/bootstrap_ci_environment.py, which records both Fuseki image ids and does not fail when they differ. infra/services.lock.json was not updated."
       },
       {
         "command": "npm run build in ocor-runtime/sdk/typescript",
@@ -311,10 +454,26 @@
     "validator_functions_added": 0
   },
   "pre_campaign_gate": {
-    "head": null,
-    "reason": "The full suite has not started. scripts/bootstrap_development_environment.py --execute still fails on the Fuseki image identity, and FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 is open. infra/services.lock.json was not updated. same_fact_as_review is false because this gate was not executed on the reviewed head.",
+    "artifact": "/home/luca/.ocor-codex/rem-0064/gate/gates-77340bce8de8/gates.json",
+    "artifact_sha256": "aa53de648e562b615885734161c6a1a481ee36a0ac1ee311c94ee4311e47a0c6",
+    "base": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+    "failed": 0,
+    "head": "77340bce8de8d1e6f2c1ac94dc6a287fca850f25",
+    "log": "/home/luca/.ocor-codex/rem-0064/pregate-77340bce8de8.log",
+    "log_sha256": "88c664a90086ff61253f9b9d7c5c248e151f5d4f3866de85a485e474745de475",
+    "not_executed": [
+      "mandatory-gates",
+      "integration-postgresql",
+      "qualifying-campaign-shards",
+      "fuseki-actions-cache",
+      "conditional-0049-aggregator",
+      "auto-merge"
+    ],
+    "reason": "Local replay of the non-suite workflow steps on the campaign head. Fifty steps passed and none failed. Six steps stay NOT_EXECUTED because they need GitHub Actions job results, the live PostgreSQL service that belongs to the campaign, the full suite itself, the Actions cache, or auto-merge. same_fact_as_review is false because the reviewed head is 9b2845f0e0a35d18fd7d95b12945b7265f579c0a. FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 is decided and is not a gate blocker. infra/services.lock.json was not updated by this unit.",
     "same_fact_as_review": false,
-    "status": "NOT_EXECUTED"
+    "status": "PASS",
+    "steps": 50,
+    "steps_passed": 50
   },
   "preventive_review": {
     "advisory_ids": [
@@ -322,7 +481,7 @@
       "P2"
     ],
     "base": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
-    "disposition": "Advisory P1 and P2 are addressed in the commit before the suite. Finding text is not copied. No second preventive review. The full suite has not started.",
+    "disposition": "Advisory P1 and P2 are addressed in the commit before the suite. Finding text is not copied. No second preventive review. The full suite has now run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25.",
     "finding_text_copied": false,
     "outcome_sha256": "07a8cba3b75c0cfe703bd71309e27018415e922ba1a296b95f35dcc6f805280c",
     "request_id": "OCOR-DEV-REM-0064-9b2845f0e0a3-pre",
@@ -365,7 +524,7 @@
     "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
     "execution_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
     "exit_code": 0,
-    "note": "Those three records do not list the probe or the advisory test as inputs. Their declared commit stays 00bd2b8671c13c93f932b7e12380ddd94c7c9522.",
+    "note": "Those three records do not list the probe or the advisory test as inputs. Their declared commit stays 00bd2b8671c13c93f932b7e12380ddd94c7c9522. A repeat while HEAD was 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 returned PASS with 22 inputs and 3 records. Rewriting that payload's head back to c4cb2d558693b20afab3aba725b1d89ff68e34f5 reproduces stdout_sha256.",
     "result": "PASS",
     "stdout_sha256": "c29b7980f312e536c368e6afc962f6843cd73caf317ccaffa99ad6683cf9384d"
   },
@@ -376,8 +535,8 @@
   ],
   "residual_risks": [
     "The three requalification records do not qualify requirements.",
-    "The full campaign after preventive review still needs a new Fuseki-identity decision. infra/services.lock.json services[id=fuseki].build.output_sha256 remains 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. The lock was not updated. This regression did not use the stack.",
-    "probe.log names parent 9b2845f0e0a35d18fd7d95b12945b7265f579c0a because it was captured before the advisory commit existed. It is not a re-run at the execution commit. The full suite remains blocked on FUSEKI-LOCAL-IDENTITY-REBUILD-20261113."
+    "The four lane bootstraps recorded fuseki_lock_image_id 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b and four different fuseki_built_image_id values. The CI bootstrap does not fail on that mismatch. infra/services.lock.json was not updated. Image ids were not reproducible across lanes. FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 is already decided and does not block this suite.",
+    "probe.log names parent 9b2845f0e0a35d18fd7d95b12945b7265f579c0a because it was captured before the advisory commit existed. It is not a re-run at the execution commit. A first campaign start at the same head failed before any lane because the worktree had no .ocor/tools copy. That attempt is full_campaign.nonqualifying_attempt and is not the qualifying result."
   ],
   "role_coherence": {
     "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0064/scan_roles.py",
@@ -385,7 +544,8 @@
     "errors_corrected": 0,
     "errors_found": 0,
     "fields_compared": 31,
-    "scanned_head": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
+    "note": "Repeated on campaign head 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 after the campaign fields were added and before the evidence commit. The scan report is unchanged: 31 fields, 0 errors, and the same stdout_sha256.",
+    "scanned_head": "77340bce8de8d1e6f2c1ac94dc6a287fca850f25",
     "status": "PASS",
     "stdout_sha256": "7236b69ae5fe37b040d0147201703e83fad5e3a48ce916ac81738647d3ed1223"
   },
@@ -411,7 +571,7 @@
     "verifier_excluded_providers": [
       "xAI"
     ],
-    "verifier_status": "NOT_REQUESTED"
+    "verifier_status": "REQUESTED"
   },
   "schema_version": "1.0",
   "self_check": {
@@ -618,5 +778,11 @@
   },
   "status": "PASS_AWAITING_INDEPENDENT_VERIFICATION",
   "task_id": "OCOR-DEV-REM-0064",
-  "unit_id": "OCOR-DEV-REM-0064"
+  "unit_id": "OCOR-DEV-REM-0064",
+  "verification_request": {
+    "note": "The request file is ~/.ocor-codex/verify_request.json, written after this evidence commit is pushed. request_id is OCOR-DEV-REM-0064, the first 12 characters of that commit, and repair cycle 0. The verifier provider must not be xAI. This record does not embed its own commit sha.",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "REQUESTED_AFTER_THIS_COMMIT"
+  }
 }
