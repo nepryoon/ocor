@@ -26,24 +26,26 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit_role": "execution_commit is 8314663c44c2c6020313d76127af30d51f5b6f33, the merge of origin/main that carries the Fuseki identity. The probe and the advisory tests remain the bytes committed at c4cb2d558693b20afab3aba725b1d89ff68e34f5; those paths are unchanged by the merge. The plan validator and the plan run state changed because the allowlists were united. The qualifying campaign head is 5dbd827b29cf8b865befae6fe0ee1326b1a18a70. The run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 is not qualifying.",
+  "commit_role": "execution_commit is 8314663c44c2c6020313d76127af30d51f5b6f33, the merge of origin/main that carries the Fuseki identity. The probe and the advisory tests remain the bytes committed at c4cb2d558693b20afab3aba725b1d89ff68e34f5; those paths are unchanged by the merge. The plan validator and the plan run state changed because the allowlists were united. Repair cycle 1 keeps that execution commit: the inputs listed below are unchanged. The qualifying campaign head is 38ba0f7295cc9f79820905d06aca672376121cbd. The run at 5dbd827b29cf8b865befae6fe0ee1326b1a18a70 is full_campaign.withdrawn_run and is not qualifying. The run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 is not qualifying.",
   "created_at": "2026-11-13T13:39:16Z",
   "decision": "FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13) point 4",
   "execution_commit": "8314663c44c2c6020313d76127af30d51f5b6f33",
   "execution_commit_digest_check": {
-    "checked_inputs": 8,
-    "checked_records": 1,
-    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 8314663c44c2c6020313d76127af30d51f5b6f33 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
+    "captured_head": "38ba0f7295cc9f79820905d06aca672376121cbd",
+    "checked_inputs": 30,
+    "checked_records": 4,
+    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 8314663c44c2c6020313d76127af30d51f5b6f33 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
     "execution_commit": "8314663c44c2c6020313d76127af30d51f5b6f33",
     "exit_code": 0,
-    "note": "Captured while HEAD was the execution commit and this record was still a worktree draft. The combined four-record command is requalification_digest_check. A later commit that changes only records does not change these inputs.",
+    "note": "This field is the combined four-record check, the same command as requalification_digest_check. The previous text claimed a one-record command while storing the combined stdout from captured head 8314663c44c2c6020313d76127af30d51f5b6f33. That attribution is withdrawn. This stdout was executed again at captured_head before the evidence commit. The payload includes head, so a re-run at a later HEAD does not reproduce this hash. Inputs are unchanged. Raw stdout: /home/luca/.ocor-codex/rem-0064/digest-combined-38ba0f7.json.",
     "result": "PASS",
-    "stdout_sha256": "050870c05aecc648c3ad9caa3e476351b404cc1f4e6b32373c45353512166c95"
+    "stdout_path": "/home/luca/.ocor-codex/rem-0064/digest-combined-38ba0f7.json",
+    "stdout_sha256": "1e50b79fa860e68541da212758c1c5ac806b03eab70f1c1e7b06fc2357ad0f98"
   },
   "execution_state_registration": "Deferred to the post-verify state sync. This unit does not edit EXECUTION_STATE.json, MODEL_HANDOFF.json or ITERATION_LOG.md.",
   "full_campaign": {
     "admission_level": "FOUR_LANE",
-    "campaign_id": "5dbd827b29cf-1794628938",
+    "campaign_id": "38ba0f7295cc-1794637996",
     "collection": {
       "collected": 5826,
       "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
@@ -62,7 +64,7 @@
       "lower_bound_seconds": 1329.129,
       "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225"
     },
-    "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf --expected-head 5dbd827b29cf8b865befae6fe0ee1326b1a18a70 --tool-bin /home/luca/.ocor-codex/impl-env/rem-0064/bin",
+    "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/rem-0064/campaign-38ba0f72-rerun1 --expected-head 38ba0f7295cc9f79820905d06aca672376121cbd --tool-bin /home/luca/.ocor-codex/impl-env/rem-0064/bin",
     "counts": {
       "errors": 0,
       "failures": 0,
@@ -71,74 +73,112 @@
     },
     "diagnostic_attempt": {
       "campaign_dir": "/home/luca/.ocor-codex/rem-0064/attempts/fuseki-recipe-5dbd827b29cf-1",
+      "cause": "UNPROVEN_RECIPE_BUILD_EXIT",
       "duration_seconds": 205.076,
-      "error": "Fuseki recipe build exited 1 inside the lane sandboxes before any test assertion. The build log was removed with the lane repository. A host reproduction of the same recipe exited 0.",
-      "host_residue": {
-        "containers": [],
-        "networks": [],
-        "root_image": false,
-        "volumes": []
-      },
-      "lanes_run": 4,
       "log_sha256": "d75d993881a6f27cc2573b41a5cfc35f3df35af4054bb122071966c396be6939",
+      "note": "The full object remains full_campaign.withdrawn_run.diagnostic_attempt. The recipe log was deleted with the lane checkout. This repair does not reclassify the cause as proven infrastructure.",
       "qualifying": false,
       "result_sha256": "7b7f783f003a0822988749c3d623a01bf6ec54827052735ee6c64939edfc2469",
       "started_at": "2026-11-14T03:55:35Z",
       "status": "FAIL"
     },
-    "duration_seconds": 1804.232,
+    "duration_seconds": 1834.924,
+    "environment_note": "The orchestrator process had HOME, USER, LOGNAME, LANG and PATH. PATH started with /home/luca/.ocor-codex/impl-env/rem-0064/bin, then /usr/bin and /bin.",
     "fuseki": {
+      "archive_cache": "HIT",
       "built_image_ids": {
-        "1": "sha256:0ce143cef4070673d68c82cfa70cb4366d47a1ea494515661dcc83bc78e6e2fc",
-        "2": "sha256:72dc1ce3488431d041ecc10f3b40be1292c82017425467ef879c8201d74ee69c",
-        "3": "sha256:68eacc21357074aceaf770361ca1a2fc381c510308600a9dbe715d6437e53626",
-        "4": "sha256:9de1d27623185835c00875fd43ba49db3dcce41b4efe58852426e7f6d18bb0f7"
+        "1": "sha256:c998b91c1fcc7e1371e0af482b8a35d7768e18ed5f71bdefb23f0ba41bfda95f",
+        "2": "sha256:eaed9ec0477ec3c8a392a5fba56fc334c3a702469df55ea8e42b80ba943137dc",
+        "3": "sha256:4e3e7d700603cb84429295afe60049249194a86126e0083fb5318768f24ba28c",
+        "4": "sha256:2387a3817cf854d85fba582d95a636def2cb59640102084efc8cba27bff2c36a"
       },
       "lock_image_id": "f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875",
-      "note": "Each lane log lane-N/out/bootstrap.log records fuseki_built_image_id and fuseki_lock_image_id. The lock id is the output_sha256 merged from origin/main. The four built ids differ from each other and from the lock. scripts/bootstrap_ci_environment.py does not fail the suite on that mismatch. Host scripts/bootstrap_development_environment.py --execute was not run."
+      "note": "Each lane bootstrap.log records fuseki_built_image_id, fuseki_lock_image_id and retained_log for the recipe build, which exited 0. The lock id is output_sha256 from origin/main. The four built ids differ from each other and from the lock. scripts/bootstrap_ci_environment.py does not fail the suite on that mismatch. Host scripts/bootstrap_development_environment.py --execute was not run. The archive SHA-512 is ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132.",
+      "verified_sha512": "ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132"
     },
-    "head": "5dbd827b29cf8b865befae6fe0ee1326b1a18a70",
+    "head": "38ba0f7295cc9f79820905d06aca672376121cbd",
     "host_residue": {
       "containers": [],
       "networks": [],
       "root_image": false,
       "volumes": []
     },
-    "junit_path": "/home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf/runtime_junit_post_approval.xml",
-    "junit_sha256": "73d8c7f6b256e6dff588f7f7c9d9e7e47dd5a19ab65bc7ef9ae6460df63a9a3e",
+    "interrupted_before_gate": {
+      "campaign_dir": "/home/luca/.ocor-codex/rem-0064/campaign-38ba0f72",
+      "duration_seconds": 117.223,
+      "note": "Stopped with SIGINT during lane supervision so PRE-CAMPAIGN-GATE could finish on this head before the suite. No assertion ran. Teardown passed and host residue was empty.",
+      "qualifying": false,
+      "result_sha256": "e0a8e18b10490cff5e0c9b3d734313614ff7c7f55c87366db4a1908145c9cb4b",
+      "status": "INTERRUPTED"
+    },
+    "junit_path": "/home/luca/.ocor-codex/rem-0064/campaign-38ba0f72-rerun1/runtime_junit_post_approval.xml",
+    "junit_sha256": "4d79889a2bfe15298f7f807c0bd48a536828b733978b803d3d7971fe00469f34",
     "lane_durations_seconds": [
-      929.293,
-      1361.179,
-      1563.895,
-      1178.725
+      870.202,
+      1357.335,
+      1554.824,
+      1183.915
     ],
     "lanes_admitted": 4,
     "lanes_run": 4,
+    "lifecycle_check": {
+      "campaign_id": "38ba0f7295cc-1794633120",
+      "duration_note": "Non-qualifying. Four lanes, every service READY, Temporal SERVING, teardown PASS, host residue empty. Started 2026-11-14T05:12:00Z.",
+      "log": "/home/luca/.ocor-codex/rem-0064/lifecycle-38ba0f7.stdout",
+      "log_sha256": "ccca2f45b7720f94c9b2392efd2a84b4f40baf398b0ce4a8f59a38f975cf9e8a",
+      "qualifying": false,
+      "status": "PASS"
+    },
     "limit_seconds": 5400,
-    "log_path": "/home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf.log",
-    "log_sha256": "dece020604dd4aa46a6f86128323f83ff8a0783bca1bea90fcba300f305a450f",
+    "log_path": "/home/luca/.ocor-codex/rem-0064/campaign-38ba0f72-rerun1.log",
+    "log_sha256": "35bccd49b92262b627d157d64ba480132f8c4a1bfecb9cd864a45aac185efe24",
     "memory": {
       "guard_mib": 3000,
-      "mem_available_kib": 57466044,
+      "lanes": 4,
+      "mem_available_kib": 57478868,
       "mem_total_kib": 64199668,
       "mode": "FOUR_LANE",
-      "threshold_mib": 25681.2
+      "reason": "MemAvailable at or above the measured threshold",
+      "threshold_mib": 25681.2,
+      "thresholds_mib": {
+        "FOUR_LANE": 25681.2,
+        "TWO_LANE": 14340.6
+      }
     },
     "mode": "FOUR_LANE",
     "po_decision_required": false,
     "power_end": {
       "adp0_online": "1",
-      "read_at": "2026-11-14T04:32:22Z",
+      "read_at": "2026-11-14T07:03:51Z",
       "source": "MAINS",
       "usb_c_online": "0"
     },
     "power_start": {
       "adp0_online": "1",
-      "read_at": "2026-11-14T04:02:18Z",
+      "read_at": "2026-11-14T06:33:16Z",
       "source": "MAINS",
       "usb_c_online": "0"
     },
     "qualification": "QUALIFYING",
+    "rate_limit_attempt": {
+      "campaign_dir": "/home/luca/.ocor-codex/rem-0064/campaign-38ba0f72-qual",
+      "campaign_id": "38ba0f7295cc-1794633771",
+      "cause": "DOCKER_HUB_UNAUTHENTICATED_RATELIMIT",
+      "diagnosis": "/home/luca/.ocor-codex/rem-0064/attempts/pull-typedb-38ba0f72/diagnosis.json",
+      "diagnosis_sha256": "df309e2af77b0975b427adcbfafaf6935f18601edaac221c9d06f2603a82e7fa",
+      "duration_seconds": 195.484,
+      "http_status": 429,
+      "lane_errors": {
+        "1": "pinned pull failed: typedb",
+        "2": "pinned pull failed: temporal",
+        "3": "pinned pull failed: typedb",
+        "4": "pinned pull failed: typedb"
+      },
+      "note": "Proven by the lane bootstrap logs and by a following docker pull of typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f, which returned 429 Too Many Requests. Registry headers at 2026-11-14T05:27:11Z: ratelimit-limit 100;w=3600, ratelimit-remaining 0;w=3600, source 82.91.25.157. No test assertion ran. Counts are excluded. One rerun after the window reset is the qualifying campaign. This 429 does not reclassify the earlier unproven recipe-build attempt.",
+      "qualifying": false,
+      "result_sha256": "c45320ba8f225fab7b45fd3204db94dcb1a2623d595904828a7ceeae59949911",
+      "status": "FAIL"
+    },
     "rejected_run": {
       "admission_level": "FOUR_LANE",
       "campaign_id": "77340bce8de8-1794622470",
@@ -284,51 +324,309 @@
       "qualification": "REJECTED",
       "rejection": "OCOR-DEV-REM-0064-223f17854654-0 VF-001. The run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 omitted the merge of origin/main required by FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 option 1. Its counts stay in this object and do not qualify. The lock image id it observed, 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b, is the pre-merge value."
     },
-    "result_path": "/home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf/campaign_result.json",
-    "result_sha256": "d6d693c30b0c7fc83b38bf07c34bf71f79efbcb06b7ed2b5779a95df17f44b39",
-    "started_at": "2026-11-14T04:02:18Z",
-    "status": "PASS",
-    "supervision_returncodes": {
-      "1": 0,
-      "2": 0,
-      "3": 0,
-      "4": 0
-    },
-    "teardown": [
-      {
-        "lane": 1,
-        "sandbox_found": true,
-        "status": "PASS"
-      },
-      {
-        "lane": 2,
-        "sandbox_found": true,
-        "status": "PASS"
-      },
-      {
-        "lane": 3,
-        "sandbox_found": true,
-        "status": "PASS"
-      },
-      {
-        "lane": 4,
-        "sandbox_found": true,
-        "status": "PASS"
-      }
-    ],
-    "threshold_seconds": 3600,
+    "result_path": "/home/luca/.ocor-codex/rem-0064/campaign-38ba0f72-rerun1/campaign_result.json",
+    "result_sha256": "f08e4d12c229f964d02ed7aa08114a21c06c2840372b75e5732022d69da05bcf",
     "union": {
       "collected": 5826,
-      "duplicated": [],
+      "duplicated": 0,
       "executed": 5826,
-      "lanes": [
-        1,
-        1854,
-        2436,
-        1535
+      "missing": 0,
+      "unexpected": 0
+    },
+    "withdrawn_run": {
+      "admission_level": "FOUR_LANE",
+      "campaign_id": "5dbd827b29cf-1794628938",
+      "collection": {
+        "collected": 5826,
+        "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
+        "lane_cases": [
+          1,
+          1854,
+          2436,
+          1535
+        ],
+        "lane_estimated_seconds": [
+          1329.129,
+          1079.112,
+          1079.136,
+          1079.103
+        ],
+        "lower_bound_seconds": 1329.129,
+        "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225"
+      },
+      "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf --expected-head 5dbd827b29cf8b865befae6fe0ee1326b1a18a70 --tool-bin /home/luca/.ocor-codex/impl-env/rem-0064/bin",
+      "counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 5826
+      },
+      "diagnostic_attempt": {
+        "campaign_dir": "/home/luca/.ocor-codex/rem-0064/attempts/fuseki-recipe-5dbd827b29cf-1",
+        "duration_seconds": 205.076,
+        "error": "Fuseki recipe build exited 1 inside the lane sandboxes before any test assertion. The build log was removed with the lane repository. A host reproduction of the same recipe exited 0.",
+        "host_residue": {
+          "containers": [],
+          "networks": [],
+          "root_image": false,
+          "volumes": []
+        },
+        "lanes_run": 4,
+        "log_sha256": "d75d993881a6f27cc2573b41a5cfc35f3df35af4054bb122071966c396be6939",
+        "qualifying": false,
+        "result_sha256": "7b7f783f003a0822988749c3d623a01bf6ec54827052735ee6c64939edfc2469",
+        "started_at": "2026-11-14T03:55:35Z",
+        "status": "FAIL"
+      },
+      "duration_seconds": 1804.232,
+      "fuseki": {
+        "built_image_ids": {
+          "1": "sha256:0ce143cef4070673d68c82cfa70cb4366d47a1ea494515661dcc83bc78e6e2fc",
+          "2": "sha256:72dc1ce3488431d041ecc10f3b40be1292c82017425467ef879c8201d74ee69c",
+          "3": "sha256:68eacc21357074aceaf770361ca1a2fc381c510308600a9dbe715d6437e53626",
+          "4": "sha256:9de1d27623185835c00875fd43ba49db3dcce41b4efe58852426e7f6d18bb0f7"
+        },
+        "lock_image_id": "f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875",
+        "note": "Each lane log lane-N/out/bootstrap.log records fuseki_built_image_id and fuseki_lock_image_id. The lock id is the output_sha256 merged from origin/main. The four built ids differ from each other and from the lock. scripts/bootstrap_ci_environment.py does not fail the suite on that mismatch. Host scripts/bootstrap_development_environment.py --execute was not run."
+      },
+      "head": "5dbd827b29cf8b865befae6fe0ee1326b1a18a70",
+      "host_residue": {
+        "containers": [],
+        "networks": [],
+        "root_image": false,
+        "volumes": []
+      },
+      "junit_path": "/home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf/runtime_junit_post_approval.xml",
+      "junit_sha256": "73d8c7f6b256e6dff588f7f7c9d9e7e47dd5a19ab65bc7ef9ae6460df63a9a3e",
+      "lane_durations_seconds": [
+        929.293,
+        1361.179,
+        1563.895,
+        1178.725
       ],
-      "missing": [],
-      "unexpected": []
+      "lanes_admitted": 4,
+      "lanes_run": 4,
+      "limit_seconds": 5400,
+      "log_path": "/home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf.log",
+      "log_sha256": "dece020604dd4aa46a6f86128323f83ff8a0783bca1bea90fcba300f305a450f",
+      "memory": {
+        "guard_mib": 3000,
+        "mem_available_kib": 57466044,
+        "mem_total_kib": 64199668,
+        "mode": "FOUR_LANE",
+        "threshold_mib": 25681.2
+      },
+      "mode": "FOUR_LANE",
+      "po_decision_required": false,
+      "power_end": {
+        "adp0_online": "1",
+        "read_at": "2026-11-14T04:32:22Z",
+        "source": "MAINS",
+        "usb_c_online": "0"
+      },
+      "power_start": {
+        "adp0_online": "1",
+        "read_at": "2026-11-14T04:02:18Z",
+        "source": "MAINS",
+        "usb_c_online": "0"
+      },
+      "qualification": "NOT_QUALIFYING",
+      "rejected_run": {
+        "admission_level": "FOUR_LANE",
+        "campaign_id": "77340bce8de8-1794622470",
+        "collection": {
+          "collected": 5826,
+          "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
+          "lane_cases": [
+            1,
+            1854,
+            2436,
+            1535
+          ],
+          "lane_estimated_seconds": [
+            1329.129,
+            1079.112,
+            1079.136,
+            1079.103
+          ],
+          "lower_bound_seconds": 1329.129,
+          "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225"
+        },
+        "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8 --expected-head 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 --tool-bin /home/luca/.ocor-codex/impl-env/rem-0064/bin",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 5826
+        },
+        "duration_seconds": 1801.109,
+        "fuseki": {
+          "built_image_ids": {
+            "1": "sha256:b7fdfbd432a579b6c069ffc1e1897cc5d9b4f4a08b826129cb9239ef94fb8f53",
+            "2": "sha256:ff6d2c0441f9c11ee8bc799d4263a1a75795acfc73f39727b0dfa1c301d74fe8",
+            "3": "sha256:b6c4b0b0096e80b3ac5d80cddb41f7814df5fb147bb1439c403b1df82ace4215",
+            "4": "sha256:71acd208f84681072d13f955a259f9f8546e944af0ca2c9b57a1e6db0f9776c3"
+          },
+          "lock_image_id": "6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+          "note": "Each lane log lane-N/out/bootstrap.log records fuseki_built_image_id and fuseki_lock_image_id. The four built ids differ from each other and from the lock. scripts/bootstrap_ci_environment.py does not fail the suite on that mismatch. infra/services.lock.json was not updated. Host scripts/bootstrap_development_environment.py --execute was not run."
+        },
+        "head": "77340bce8de8d1e6f2c1ac94dc6a287fca850f25",
+        "host_residue": {
+          "containers": [],
+          "networks": [],
+          "root_image": false,
+          "volumes": []
+        },
+        "junit_path": "/home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8/runtime_junit_post_approval.xml",
+        "junit_sha256": "dc175352c48c1cd98251c7b7e5aa433ba65e527b0bbd71e830a0db98c8f9163c",
+        "lane_durations_seconds": [
+          1176.741,
+          1371.763,
+          1558.749,
+          1188.794
+        ],
+        "lanes_admitted": 4,
+        "lanes_run": 4,
+        "limit_seconds": 5400,
+        "log_path": "/home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8.log",
+        "log_sha256": "fb43eebf1f000e39e6c9f1778fb985c0b59d1e1ee4d4d9a406f084caa75faca8",
+        "memory": {
+          "guard_mib": 3000,
+          "mem_available_kib": 57653424,
+          "mem_total_kib": 64199668,
+          "mode": "FOUR_LANE",
+          "threshold_mib": 25681.2
+        },
+        "mode": "FOUR_LANE",
+        "nonqualifying_attempt": {
+          "campaign_id": "77340bce8de8-1794622417",
+          "collected": 5826,
+          "duration_seconds": 7.405,
+          "error": "[Errno 2] No such file or directory: '/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0064-conformance-register/.ocor/tools'",
+          "host_residue": {
+            "containers": [],
+            "networks": [],
+            "root_image": false,
+            "volumes": []
+          },
+          "lanes_run": 0,
+          "result_path": "/home/luca/.ocor-codex/rem-0064/attempts/setup-missing-tools/campaign_result.json",
+          "result_sha256": "6096eeeb7ff1c65ab1aea5a7d119a75d6ecefa79bdae8bc4b2dcf690e40baf74",
+          "status": "FAIL"
+        },
+        "po_decision_required": false,
+        "power_end": {
+          "adp0_online": "1",
+          "read_at": "2026-11-14T02:44:31Z",
+          "source": "MAINS",
+          "usb_c_online": "0"
+        },
+        "power_start": {
+          "adp0_online": "1",
+          "read_at": "2026-11-14T02:14:30Z",
+          "source": "MAINS",
+          "usb_c_online": "0"
+        },
+        "result_path": "/home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8/campaign_result.json",
+        "result_sha256": "1e36ac7a9631fde3198a89f0b146bc11eb7cfdcc47380d609cdad9aaad337bcf",
+        "started_at": "2026-11-14T02:14:30Z",
+        "status": "NOT_QUALIFYING",
+        "supervision_returncodes": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0
+        },
+        "teardown": [
+          {
+            "lane": 1,
+            "sandbox_found": true,
+            "status": "PASS"
+          },
+          {
+            "lane": 2,
+            "sandbox_found": true,
+            "status": "PASS"
+          },
+          {
+            "lane": 3,
+            "sandbox_found": true,
+            "status": "PASS"
+          },
+          {
+            "lane": 4,
+            "sandbox_found": true,
+            "status": "PASS"
+          }
+        ],
+        "threshold_seconds": 3600,
+        "union": {
+          "collected": 5826,
+          "duplicated": [],
+          "executed": 5826,
+          "lanes": [
+            1,
+            1854,
+            2436,
+            1535
+          ],
+          "missing": [],
+          "unexpected": []
+        },
+        "qualification": "REJECTED",
+        "rejection": "OCOR-DEV-REM-0064-223f17854654-0 VF-001. The run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 omitted the merge of origin/main required by FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 option 1. Its counts stay in this object and do not qualify. The lock image id it observed, 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b, is the pre-merge value."
+      },
+      "result_path": "/home/luca/.ocor-codex/rem-0064/campaign-5dbd827b29cf/campaign_result.json",
+      "result_sha256": "d6d693c30b0c7fc83b38bf07c34bf71f79efbcb06b7ed2b5779a95df17f44b39",
+      "started_at": "2026-11-14T04:02:18Z",
+      "status": "PASS",
+      "supervision_returncodes": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "teardown": [
+        {
+          "lane": 1,
+          "sandbox_found": true,
+          "status": "PASS"
+        },
+        {
+          "lane": 2,
+          "sandbox_found": true,
+          "status": "PASS"
+        },
+        {
+          "lane": 3,
+          "sandbox_found": true,
+          "status": "PASS"
+        },
+        {
+          "lane": 4,
+          "sandbox_found": true,
+          "status": "PASS"
+        }
+      ],
+      "threshold_seconds": 3600,
+      "union": {
+        "collected": 5826,
+        "duplicated": [],
+        "executed": 5826,
+        "lanes": [
+          1,
+          1854,
+          2436,
+          1535
+        ],
+        "missing": [],
+        "unexpected": []
+      },
+      "withdrawal": {
+        "decision": "QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12) condition 2",
+        "reason": "The rerun was marked QUALIFYING without a log-proven infrastructure cause for the discarded attempt. diagnosis.json cause remains UNPROVEN_RECIPE_BUILD_EXIT. This repair does not reclassify that attempt.",
+        "verdict": "OCOR-DEV-REM-0064-d41c20be9740-0 VF-001"
+      }
     }
   },
   "implementers": [
@@ -601,13 +899,13 @@
     "validator_functions_added": 0
   },
   "pre_campaign_gate": {
-    "artifact": "/home/luca/.ocor-codex/rem-0064/gate/gates-5dbd827b29cf/gates.json",
-    "artifact_sha256": "cf4a528a2ef66498bbe48309d9f68524608621e7c31527d14cf0c0772df28e26",
+    "artifact": "/home/luca/.ocor-codex/rem-0064/gate/gates-38ba0f7295cc/gates.json",
+    "artifact_sha256": "9b7efb57c35cfeebda8d06f3aa6bdb41365f7f04c0089c5db07a0317d5151a24",
     "base": "66552f988385458de1e1fd35cd8fe0069167741b",
     "failed": 0,
-    "head": "5dbd827b29cf8b865befae6fe0ee1326b1a18a70",
-    "log": "/home/luca/.ocor-codex/rem-0064/pregate-5dbd827b29cf.log",
-    "log_sha256": "391cfbda4825a7bb31b3398abec97af797f7fe930dd930dd2e13c312229d2d91",
+    "head": "38ba0f7295cc9f79820905d06aca672376121cbd",
+    "log": "/home/luca/.ocor-codex/rem-0064/pregate-38ba0f72.log",
+    "log_sha256": "6bec57e42e0b549694ed516a1e7d7a4fabdf30d3c2c25221f7c51c7635ea7020",
     "not_executed": [
       "mandatory-gates",
       "integration-postgresql",
@@ -617,13 +915,13 @@
       "auto-merge"
     ],
     "previous_gate": {
-      "artifact": "/home/luca/.ocor-codex/rem-0064/gate/gates-77340bce8de8/gates.json",
-      "artifact_sha256": "aa53de648e562b615885734161c6a1a481ee36a0ac1ee311c94ee4311e47a0c6",
-      "base": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+      "artifact": "/home/luca/.ocor-codex/rem-0064/gate/gates-5dbd827b29cf/gates.json",
+      "artifact_sha256": "cf4a528a2ef66498bbe48309d9f68524608621e7c31527d14cf0c0772df28e26",
+      "base": "66552f988385458de1e1fd35cd8fe0069167741b",
       "failed": 0,
-      "head": "77340bce8de8d1e6f2c1ac94dc6a287fca850f25",
-      "log": "/home/luca/.ocor-codex/rem-0064/pregate-77340bce8de8.log",
-      "log_sha256": "88c664a90086ff61253f9b9d7c5c248e151f5d4f3866de85a485e474745de475",
+      "head": "5dbd827b29cf8b865befae6fe0ee1326b1a18a70",
+      "log": "/home/luca/.ocor-codex/rem-0064/pregate-5dbd827b29cf.log",
+      "log_sha256": "391cfbda4825a7bb31b3398abec97af797f7fe930dd930dd2e13c312229d2d91",
       "not_executed": [
         "mandatory-gates",
         "integration-postgresql",
@@ -632,13 +930,35 @@
         "conditional-0049-aggregator",
         "auto-merge"
       ],
-      "reason": "Local replay of the non-suite workflow steps on the campaign head. Fifty steps passed and none failed. Six steps stay NOT_EXECUTED because they need GitHub Actions job results, the live PostgreSQL service that belongs to the campaign, the full suite itself, the Actions cache, or auto-merge. same_fact_as_review is false because the reviewed head is 9b2845f0e0a35d18fd7d95b12945b7265f579c0a. FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 is decided and is not a gate blocker. infra/services.lock.json was not updated by this unit.",
+      "previous_gate": {
+        "artifact": "/home/luca/.ocor-codex/rem-0064/gate/gates-77340bce8de8/gates.json",
+        "artifact_sha256": "aa53de648e562b615885734161c6a1a481ee36a0ac1ee311c94ee4311e47a0c6",
+        "base": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+        "failed": 0,
+        "head": "77340bce8de8d1e6f2c1ac94dc6a287fca850f25",
+        "log": "/home/luca/.ocor-codex/rem-0064/pregate-77340bce8de8.log",
+        "log_sha256": "88c664a90086ff61253f9b9d7c5c248e151f5d4f3866de85a485e474745de475",
+        "not_executed": [
+          "mandatory-gates",
+          "integration-postgresql",
+          "qualifying-campaign-shards",
+          "fuseki-actions-cache",
+          "conditional-0049-aggregator",
+          "auto-merge"
+        ],
+        "reason": "Local replay of the non-suite workflow steps on the campaign head. Fifty steps passed and none failed. Six steps stay NOT_EXECUTED because they need GitHub Actions job results, the live PostgreSQL service that belongs to the campaign, the full suite itself, the Actions cache, or auto-merge. same_fact_as_review is false because the reviewed head is 9b2845f0e0a35d18fd7d95b12945b7265f579c0a. FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 is decided and is not a gate blocker. infra/services.lock.json was not updated by this unit.",
+        "same_fact_as_review": false,
+        "status": "PASS",
+        "steps": 50,
+        "steps_passed": 50
+      },
+      "reason": "Local replay of the non-suite workflow steps on the campaign head 5dbd827b29cf8b865befae6fe0ee1326b1a18a70, after the merge of origin/main. Fifty steps passed and none failed. Six steps stay NOT_EXECUTED because they need GitHub Actions job results, the live PostgreSQL service that belongs to the campaign, the full suite itself, the Actions cache, or auto-merge. same_fact_as_review is false because the reviewed head is 9b2845f0e0a35d18fd7d95b12945b7265f579c0a. The gate at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 is previous_gate and does not qualify this head.",
       "same_fact_as_review": false,
       "status": "PASS",
       "steps": 50,
       "steps_passed": 50
     },
-    "reason": "Local replay of the non-suite workflow steps on the campaign head 5dbd827b29cf8b865befae6fe0ee1326b1a18a70, after the merge of origin/main. Fifty steps passed and none failed. Six steps stay NOT_EXECUTED because they need GitHub Actions job results, the live PostgreSQL service that belongs to the campaign, the full suite itself, the Actions cache, or auto-merge. same_fact_as_review is false because the reviewed head is 9b2845f0e0a35d18fd7d95b12945b7265f579c0a. The gate at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 is previous_gate and does not qualify this head.",
+    "reason": "Local replay of the non-suite workflow steps on the repair head 38ba0f7295cc9f79820905d06aca672376121cbd, before the qualifying suite. Fifty steps passed and none failed. Six steps stay NOT_EXECUTED because they need GitHub Actions job results, the live PostgreSQL service that belongs to the campaign, the full suite itself, the Actions cache, or auto-merge. same_fact_as_review is false because the reviewed head is 9b2845f0e0a35d18fd7d95b12945b7265f579c0a. No second preventive review.",
     "same_fact_as_review": false,
     "status": "PASS",
     "steps": 50,
@@ -650,7 +970,7 @@
       "P2"
     ],
     "base": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
-    "disposition": "Advisory P1 and P2 are addressed in the commit before the suite. Finding text is not copied. No second preventive review. The run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 does not qualify. The qualifying suite is the four-lane campaign at 5dbd827b29cf8b865befae6fe0ee1326b1a18a70.",
+    "disposition": "Advisory P1 and P2 are addressed in the commit before the first suite. Finding text is not copied. No second preventive review. The run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 does not qualify. The run at 5dbd827b29cf8b865befae6fe0ee1326b1a18a70 is withdrawn and does not qualify. The qualifying suite of repair cycle 1 is the four-lane campaign 38ba0f7295cc-1794637996.",
     "finding_text_copied": false,
     "outcome_sha256": "07a8cba3b75c0cfe703bd71309e27018415e922ba1a296b95f35dcc6f805280c",
     "request_id": "OCOR-DEV-REM-0064-9b2845f0e0a3-pre",
@@ -712,8 +1032,8 @@
   ],
   "residual_risks": [
     "The three requalification records do not qualify requirements.",
-    "The four-lane run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 observed fuseki_lock_image_id 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b because that head had not merged origin/main. That run is full_campaign.rejected_run and does not qualify (VF-001). The qualifying run 5dbd827b29cf-1794628938 observed fuseki_lock_image_id f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875. Its four fuseki_built_image_id values differ from each other and from the lock. scripts/bootstrap_ci_environment.py does not fail the suite on that mismatch. Host scripts/bootstrap_development_environment.py --execute was not run.",
-    "probe.log names parent 9b2845f0e0a35d18fd7d95b12945b7265f579c0a because it was captured before the advisory commit existed. It is not a re-run at the execution commit. A first campaign start at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 failed before any lane because the worktree had no .ocor/tools copy. That attempt is full_campaign.rejected_run.nonqualifying_attempt. A later start at 5dbd827b29cf8b865befae6fe0ee1326b1a18a70 failed during the Fuseki recipe build before any test assertion (full_campaign.diagnostic_attempt, 205.076 s). It is not the qualifying result."
+    "The four-lane run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 observed fuseki_lock_image_id 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b because that head had not merged origin/main. That run is full_campaign.rejected_run and does not qualify. The run 5dbd827b29cf-1794628938 is full_campaign.withdrawn_run and does not qualify: its discarded attempt stays UNPROVEN_RECIPE_BUILD_EXIT. The qualifying run 38ba0f7295cc-1794637996 observed fuseki_lock_image_id f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875. Its four fuseki_built_image_id values differ from each other and from the lock. scripts/bootstrap_ci_environment.py does not fail the suite on that mismatch. Host scripts/bootstrap_development_environment.py --execute was not run.",
+    "probe.log names parent 9b2845f0e0a35d18fd7d95b12945b7265f579c0a because it was captured before the advisory commit existed. It is not a re-run at the execution commit. A first campaign start at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 failed before any lane because the worktree had no .ocor/tools copy. A later start at 5dbd827b29cf8b865befae6fe0ee1326b1a18a70 failed during the Fuseki recipe build before any test assertion. That attempt stays diagnostic and unproven. At 38ba0f7295cc9f79820905d06aca672376121cbd a four-lane start failed on pinned image pulls with Docker Hub HTTP 429 and is not qualifying. The qualifying result is campaign 38ba0f7295cc-1794637996."
   ],
   "role_coherence": {
     "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0064/scan_roles.py",
@@ -957,9 +1277,33 @@
   "task_id": "OCOR-DEV-REM-0064",
   "unit_id": "OCOR-DEV-REM-0064",
   "verification_request": {
-    "note": "The request file is ~/.ocor-codex/verify_request.json, written after this evidence commit is pushed. request_id is OCOR-DEV-REM-0064, the first 12 characters of that commit, and repair cycle 0. The verifier provider must not be xAI. This record does not embed its own commit sha.",
-    "repair_cycle": 0,
+    "note": "The request file is ~/.ocor-codex/verify_request.json, written after this evidence commit is pushed. request_id is OCOR-DEV-REM-0064, the first 12 characters of that commit, and repair cycle 1. The verifier provider must not be xAI. This record does not embed its own commit sha. Prior verdicts: OCOR-DEV-REM-0064-223f17854654-0 and OCOR-DEV-REM-0064-d41c20be9740-0.",
+    "repair_cycle": 1,
     "review_type": "REMEDIATION",
     "status": "REQUESTED_AFTER_THIS_COMMIT"
+  },
+  "repair_cycle_1": {
+    "class_members": [
+      "regular recipe log after success, then the checkout file removed",
+      "regular recipe log after a nonzero exit, then the checkout file removed",
+      "partial recipe log after a timeout",
+      "symlink at the recipe log path, refused before the build runs and not read"
+    ],
+    "defect_class": "The only copy of the Fuseki recipe build log lived in the lane checkout, and lane teardown deletes that checkout, so a failed build left no docker log.",
+    "green_commit": "38ba0f7295cc9f79820905d06aca672376121cbd",
+    "implementer": "Grok Build, grok-4.7 (xAI)",
+    "negative_tests": [
+      "reports/tests/test_qualifying_campaign_guard.py::test_recipe_build_stdout_keeps_the_complete_log_after_the_file_is_removed",
+      "reports/tests/test_qualifying_campaign_guard.py::test_recipe_build_timeout_stdout_keeps_the_partial_log",
+      "reports/tests/test_qualifying_campaign_guard.py::test_recipe_build_refuses_a_symlink_log_and_does_not_read_its_target"
+    ],
+    "prior_verifier": "Codex (OpenAI), verdicts OCOR-DEV-REM-0064-223f17854654-0 and OCOR-DEV-REM-0064-d41c20be9740-0",
+    "red_commit": "4ae9aed27ec8a637787a1dbe743734f8d67c7979",
+    "retention": "execute_logged prints retained_log on stdout. The lane runner already stores that stdout in bootstrap.log, which teardown does not delete. run_local_lane_campaign.py is unchanged.",
+    "verdicts": [
+      "OCOR-DEV-REM-0064-d41c20be9740-0 VF-001",
+      "OCOR-DEV-REM-0064-d41c20be9740-0 VF-002",
+      "OCOR-DEV-REM-0064-d41c20be9740-0 VF-003"
+    ]
   }
 }
