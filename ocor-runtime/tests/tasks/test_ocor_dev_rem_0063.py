@@ -947,3 +947,253 @@ def test_an_unreferenced_non_schema_definition_is_not_a_resolved_target() -> Non
     document = _bare_descriptor()
     document["$defs"] = {"unused": 7}
     _validate(document)
+
+
+# Cycle 3 of OCOR-DEV-REM-0063, verdict OCOR-DEV-REM-0063-19f63aeec7d1-2.
+# REM-0063-CYCLE2-NO-GO (2026-11-14) option 1, and SELF-CHECK-CLASS-COVERAGE.
+#
+# VF-001 class: a schema a ``$ref`` actually reaches is checked with the dialect,
+# local-reference and resolution rules, including a target read from instance data
+# (``const``, ``default``, ``enum``, or any other non-keyword). The same rules
+# already reject that schema when it sits directly under ``$defs``. Instance data
+# that no ``$ref`` reaches stays data. Visited schema objects and the existing
+# depth and node limits are unchanged.
+# VF-002 class: after percent-decoding, every ``~`` in a JSON Pointer token must
+# introduce ``~0`` or ``~1``. An incomplete escape, or any other escape, is
+# ``McpProfileError`` before substitution, even when the literal key is planted.
+# VF-003 class: an array index that cannot address a bounded document does not
+# call an unbounded integer conversion. The refusal is ``McpProfileError``.
+
+_DRAFT_07 = "http://json-schema.org/draft-07/schema#"
+_CYCLE3_REACHED_TARGETS = (
+    ("external", {"$ref": "https://example.invalid/evil.json"}),
+    ("dangling", {"$ref": "#/$defs/missing"}),
+    ("foreign-dialect", {"$schema": _DRAFT_07}),
+    ("foreign-dialect-without-hash", {"$schema": "http://json-schema.org/draft-07/schema"}),
+    ("dynamic-ref", {"$dynamicRef": "https://example.invalid/evil.json"}),
+    ("recursive-ref", {"$recursiveRef": "https://example.invalid/evil.json"}),
+    ("nested-external", {"properties": {"name": {"$ref": "https://example.invalid/nested.json"}}}),
+    ("nested-anyof", {"anyOf": [{"$ref": "https://example.invalid/nested.json"}]}),
+    ("dialect-not-a-string", {"$schema": 7}),
+)
+_CYCLE3_DATA_LOCATIONS = ("const", "default", "enum", "example")
+
+
+def _cycle3_reached(target: object, *, location: str, field: str = "inputSchema") -> dict[str, Any]:
+    """Point one tool schema at ``target`` through ``location`` or ``$defs``."""
+    document = _bare_descriptor()
+    if location == "const":
+        document["$defs"] = {"holder": {"const": target}}
+        ref = "#/$defs/holder/const"
+    elif location == "default":
+        document["$defs"] = {"holder": {"default": target}}
+        ref = "#/$defs/holder/default"
+    elif location == "enum":
+        document["$defs"] = {"holder": {"enum": [target]}}
+        ref = "#/$defs/holder/enum/0"
+    elif location == "example":
+        document["$defs"] = {"holder": {"example": target}}
+        ref = "#/$defs/holder/example"
+    elif location == "defs":
+        document["$defs"] = {"target": target}
+        ref = "#/$defs/target"
+    else:
+        raise AssertionError(location)
+    schema = document["tools"][0][field]
+    if not isinstance(schema, dict):
+        raise AssertionError("tool schema is not an object")
+    schema["properties"] = {"name": {"$ref": ref}}
+    return document
+
+
+@pytest.mark.parametrize(
+    ("target", "location"),
+    [(case[1], location) for case in _CYCLE3_REACHED_TARGETS for location in _CYCLE3_DATA_LOCATIONS],
+    ids=[f"{case[0]}-{location}" for case in _CYCLE3_REACHED_TARGETS for location in _CYCLE3_DATA_LOCATIONS],
+)
+def test_cycle3_a_schema_reached_through_instance_data_is_checked(target: object, location: str) -> None:
+    """VF-001: dialect and resolution apply to a target read from instance data."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError):
+        _validate(_cycle3_reached(target, location=location))
+
+
+@pytest.mark.parametrize(
+    "target",
+    [case[1] for case in _CYCLE3_REACHED_TARGETS],
+    ids=[case[0] for case in _CYCLE3_REACHED_TARGETS],
+)
+def test_cycle3_the_same_target_directly_in_defs_stays_rejected(target: object) -> None:
+    """The five verdict targets, and the same class, stay rejected under ``$defs``."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError):
+        _validate(_cycle3_reached(target, location="defs"))
+
+
+def test_cycle3_output_schema_reaches_a_data_position_target() -> None:
+    """``outputSchema`` is the twin of ``inputSchema`` on the same resolver."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle3_reached(
+        {"$ref": "https://example.invalid/evil.json"},
+        location="const",
+        field="outputSchema",
+    )
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+@pytest.mark.parametrize("location", ["const", "default"])
+@pytest.mark.parametrize(
+    "target",
+    [True, {}, {"type": "integer"}, {"$schema": DRAFT_2020}],
+    ids=["boolean", "empty-object", "integer-schema", "draft-2020-12"],
+)
+def test_cycle3_a_valid_schema_reached_through_instance_data_is_accepted(
+    location: str,
+    target: object,
+) -> None:
+    """Positive: a real schema read from ``const`` or ``default`` is in profile."""
+    _validate(_cycle3_reached(target, location=location))
+
+
+@pytest.mark.parametrize("location", ["const", "default"])
+def test_cycle3_a_local_ref_inside_instance_data_resolves(location: str) -> None:
+    """A reached schema may itself point at a local schema. That hop is checked."""
+    document = _cycle3_reached({"$ref": "#/$defs/good"}, location=location)
+    document["$defs"]["good"] = {"type": "string"}
+    _validate(document)
+    nested = _cycle3_reached(
+        {"properties": {"name": {"$ref": "#/$defs/good"}}},
+        location=location,
+    )
+    nested["$defs"]["good"] = {"type": "string"}
+    _validate(nested)
+
+
+def test_cycle3_a_self_ref_through_const_stays_inside_the_visited_set() -> None:
+    """A cycle through instance data is one visited schema, not an unbounded walk."""
+    document = _bare_descriptor()
+    document["$defs"] = {"holder": {"const": {"$ref": "#/$defs/holder/const"}}}
+    body = document["tools"][0]["inputSchema"]
+    if not isinstance(body, dict):
+        raise AssertionError("input schema is not an object")
+    body["properties"] = {"name": {"$ref": "#/$defs/holder/const"}}
+    _validate(document)
+
+
+def test_cycle3_a_long_data_position_chain_still_hits_the_depth_bound() -> None:
+    """The depth limit is unchanged. A short chain passes and a 40-hop chain fails."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+
+    def chain(length: int) -> dict[str, Any]:
+        document = _bare_descriptor()
+        definitions: dict[str, Any] = {}
+        for index in range(length):
+            nxt = f"#/$defs/h{index + 1}/const" if index + 1 < length else "#/$defs/leaf"
+            definitions[f"h{index}"] = {"const": {"$ref": nxt}}
+        definitions["leaf"] = {"type": "string"}
+        document["$defs"] = definitions
+        body = document["tools"][0]["inputSchema"]
+        if not isinstance(body, dict):
+            raise AssertionError("input schema is not an object")
+        body["properties"] = {"name": {"$ref": "#/$defs/h0/const"}}
+        return document
+
+    _validate(chain(4))
+    with pytest.raises(profile.McpProfileError, match="bounds"):
+        _validate(chain(40))
+
+
+@pytest.mark.parametrize(
+    "target",
+    [case[1] for case in _CYCLE3_REACHED_TARGETS],
+    ids=[case[0] for case in _CYCLE3_REACHED_TARGETS],
+)
+def test_cycle3_unreferenced_instance_data_stays_accepted(target: object) -> None:
+    """No ``$ref`` lands on these values, so they are not schemas to resolve."""
+    document = _bare_descriptor()
+    document["$defs"] = {
+        "holder": {"const": target, "default": copy.deepcopy(target), "enum": [copy.deepcopy(target)]}
+    }
+    _validate(document)
+
+
+# VF-002. The literal key is planted, so a missing-key refusal would not fire.
+_CYCLE3_BAD_POINTERS = (
+    ("verdict-tilde-two", "~2", "~2"),
+    ("verdict-lone-tilde", "~", "~"),
+    ("verdict-embedded", "a~3b", "a~3b"),
+    ("tilde-three", "~3", "~3"),
+    ("tilde-letter", "~a", "~a"),
+    ("double-tilde", "~~", "~~"),
+    ("trailing-tilde", "abc~", "abc~"),
+    ("after-valid-escape", "~0~2", "~~2"),
+    ("encoded-tilde-two", "%7E2", "~2"),
+    ("encoded-lone-tilde", "%7E", "~"),
+    ("non-final", "~2/type", "~2"),
+)
+_CYCLE3_GOOD_POINTERS = (
+    ("verdict-escaped-two", "~02", "~2"),
+    ("verdict-escaped-tilde", "~0", "~"),
+    ("verdict-escaped-embedded", "a~03b", "a~3b"),
+    ("tilde-then-one", "~01", "~1"),
+    ("slash", "~1", "/"),
+    ("slash-then-zero", "~10", "/0"),
+    ("encoded-escape", "%7E0", "~"),
+    ("encoded-slash", "%7E1", "/"),
+)
+
+
+@pytest.mark.parametrize(
+    ("token", "key"),
+    [case[1:] for case in _CYCLE3_BAD_POINTERS],
+    ids=[case[0] for case in _CYCLE3_BAD_POINTERS],
+)
+def test_cycle3_a_bad_tilde_escape_is_rejected_before_substitution(token: str, key: str) -> None:
+    """VF-002: ``~`` introduces only ``~0`` or ``~1``, even if the literal key exists."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    if "/" in token:
+        document = _bare_descriptor()
+        # Segment ``type`` lands on a schema when the bad escape is treated as a literal key.
+        document["$defs"] = {key: {"type": {"type": "string"}}}
+        body = document["tools"][0]["inputSchema"]
+        if not isinstance(body, dict):
+            raise AssertionError("input schema is not an object")
+        body["properties"] = {"name": {"$ref": "#/$defs/" + token}}
+    else:
+        document = _with_ref("#/$defs/" + token, {key: {"type": "string"}})
+    with pytest.raises(profile.McpProfileError, match="JSON Pointer"):
+        _validate(document)
+
+
+@pytest.mark.parametrize(
+    ("token", "key"),
+    [case[1:] for case in _CYCLE3_GOOD_POINTERS],
+    ids=[case[0] for case in _CYCLE3_GOOD_POINTERS],
+)
+def test_cycle3_a_well_formed_tilde_escape_resolves_the_planted_key(token: str, key: str) -> None:
+    """The three verdict positives and the other legal escapes still resolve."""
+    _validate(_with_ref("#/$defs/" + token, {key: {"type": "string"}}))
+
+
+def test_cycle3_an_impossible_array_index_is_a_profile_error() -> None:
+    """VF-003: 5000 digits, the 4300-digit boundary, and any index past the node budget."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    for token in ("9" * 5000, "9" * 4300, "1" + "0" * 4299, "9" * 5, "0" * 5000):
+        document = _choices_descriptor()
+        body = document["tools"][0]["inputSchema"]
+        if not isinstance(body, dict):
+            raise AssertionError("input schema is not an object")
+        body["properties"] = {"name": {"$ref": "#/$defs/choices/anyOf/" + token}}
+        with pytest.raises(profile.McpProfileError):
+            _validate(document)
+
+
+def test_cycle3_a_canonical_array_index_still_resolves() -> None:
+    """The bound does not reject a one-digit index that addresses the array."""
+    document = _choices_descriptor()
+    body = document["tools"][0]["inputSchema"]
+    if not isinstance(body, dict):
+        raise AssertionError("input schema is not an object")
+    body["properties"] = {"name": {"$ref": "#/$defs/choices/anyOf/0"}}
+    _validate(document)
