@@ -66,21 +66,38 @@ def execute(repository: Path, command: list[str], label: str, timeout: int) -> s
     return result.stdout
 
 
+def retained_recipe_log(log: Path) -> str:
+    """Read a recipe log without following a symlink.
+
+    Lane teardown deletes the checkout, so the caller also prints this text.
+    Surrogate escapes keep every byte inside a JSON string.
+    """
+    if log.is_symlink() or not log.is_file():
+        raise BootstrapError(f"recipe build log must be a regular file, not a symlink: {log.name}")
+    return log.read_bytes().decode("utf-8", errors="surrogateescape")
+
+
 def execute_logged(repository: Path, command: list[str], label: str, timeout: int, log_name: str) -> None:
     """Retain build progress even when the process fails or reaches its deadline.
 
     Used only before credential generation, for the locked Docker recipe.
+    The on-disk log lives in the lane checkout, which teardown removes. The
+    same bytes are printed on stdout so the lane's bootstrap.log keeps them.
     """
     log = repository / "reports/tests" / log_name
     log.parent.mkdir(parents=True, exist_ok=True)
+    if log.is_symlink():
+        raise BootstrapError(f"recipe build log must be a regular file, not a symlink: {log.name}")
     with log.open("w") as stream:
         try:
             result = subprocess.run(command, cwd=repository, stdout=stream,
                                     stderr=subprocess.STDOUT, timeout=timeout, check=False)
         except subprocess.TimeoutExpired as exc:
-            print(json.dumps({"operation": label, "exit_code": 124, "log": str(log)}), flush=True)
+            print(json.dumps({"operation": label, "exit_code": 124, "log": str(log),
+                              "retained_log": retained_recipe_log(log)}), flush=True)
             raise BootstrapError(f"timeout after {timeout}s: {label}; see {log_name}") from exc
-    print(json.dumps({"operation": label, "exit_code": result.returncode, "log": str(log)}), flush=True)
+    print(json.dumps({"operation": label, "exit_code": result.returncode, "log": str(log),
+                      "retained_log": retained_recipe_log(log)}), flush=True)
     if result.returncode:
         raise BootstrapError(f"{label} failed; see {log_name}")
 
