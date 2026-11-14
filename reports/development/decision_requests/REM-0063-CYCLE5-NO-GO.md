@@ -1,6 +1,6 @@
 # REM-0063-CYCLE5-NO-GO
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -28,3 +28,34 @@ Opzione 1. VF-001 è un difetto riproducibile rispetto al punto 1(a) di `FABLE52
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta non parte il ciclo 5 di `OCOR-DEV-REM-0063`. `OCOR-DEV-REM-0063` resta bloccato. `OCOR-DEV-REM-0065` non è bloccato da questa richiesta. Restano bloccati, come già deciso, `OCOR-DEV-REM-0060` e `OCOR-DEV-REM-0061`. Non partono l'adozione della PR #599, l'unità del punto 5 e i task G6. La PR #595 non si integra. La PR #628 non si integra. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Nessun test, gate, timer, tetto, partizione o criterio è indebolito da questa richiesta: non cambia codice.
+
+## Disposition del Product Owner — 2026-11-14
+
+Decisione del PO, presa con istruzione esplicita il 2026-11-14: `REM-0063-CYCLE5-NO-GO (2026-11-14)`, **opzione 1**. Nota di registro: «presa con istruzione esplicita del PO il 2026-11-14». Vale come decisione del PO a ogni effetto, di livello operativo. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+La richiesta decisa è questo file al commit `aca9ebeafac72596f6cd3280668bfe0e9d77b072`, sha256 `7ca47e6b970d3999b01f1ecf6dddc5d5d0b46f17d4226e38d8e5f46b33fc5f99`. Il testo delle opzioni non è stato modificato. L'intestazione riporta `DECIDED_BY_PO`, lo stesso stato del registro `blockers`.
+
+L'opzione 1 autorizza un solo ciclo 5 di `OCOR-DEV-REM-0063` sul branch `governed/ocor-dev-rem-0063-mcp-profile`, a partire dall'HEAD `28c6815f8de3aedfabdf0585674ceec5ce0cce9f`, senza rebase, reset o force-push e senza toccare `governed/ocor-dev-rem-0061-lane-image-cache`. Perimetro di codice: VF-001 del verdetto `OCOR-DEV-REM-0063-28c6815f8de3-4`. VF-002 non cambia il resolver: la scansione del ciclo 3 resta storia e il record non sigillato si rigenera sull'HEAD finale.
+
+Classe, nominata prima del codice: il frammento vuoto `#` di un `$ref` dello stesso documento si risolve sulla risorsa di schema corrente, cioè lo schema che contiene il riferimento, identificato dal suo `$id` quando è presente, e non sul documento che lo racchiude se quel documento non è quella risorsa. Il frammento vuoto è il JSON Pointer vuoto. Non resta un ramo che risolve `#` sempre sul documento intero. Membri coperti: risorsa con `$id` e `$ref` `"#"` accettata contro se stessa; la stessa risorsa in `inputSchema`, in `outputSchema`, sotto `$defs` e annidata sotto `inputSchema`; una definizione sorella non referenziata e non schema che non diventa la radice; un caso negativo `#/$defs/bad` che distingue la radice; JSON Pointer, anchor, frammento percent-encoded, riferimento esterno e ambiguità restano sulle regole già verdi.
+
+Attuazione di questo ciclo, sullo stesso branch, non integrata e senza PR del candidato:
+
+- `b3a0b5c0fa9fcef6b3189959cfd589a349515316`: solo i test di VF-001. RED prima della correzione, rieseguito su questo commit: 4 failed, 1 passed, exit del log conservato. Le quattro posizioni (`inputSchema`, `outputSchema`, `$defs`, `nested`) falliscono con `McpProfileError` perché `$defs.unreferenced = 7` è controllato come bersaglio di `#` (`mcp_profile.py:460`). Il log è fuori dal repository, sha256 `8fec7f8fae0271001a0b0f3f8ba568c40fc06282503282bb03ac62688ba7787b`. `referencing` 0.37.0 e `Draft202012Validator` accettano la risorsa.
+- `3305ab4cf85ea8aabca0aad58c3d3ff60c770306`: correzione in `ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`. Il frammento decodificato vuoto è il JSON Pointer vuoto e identifica la risorsa corrente. GREEN del modulo del task: 431 passed. Il log è fuori dal repository, sha256 `5892508dbdd3de181a0e8b1f11a9d85b500eb9fa25c44de0728483ad3dbe72eb`.
+- Gate locale sullo stesso HEAD: 51 PASS, 0 fail, 6 `NOT_EXECUTED` (`mandatory-gates`, `integration-postgresql`, `qualifying-campaign-shards`, `fuseki-actions-cache`, `conditional-0049-aggregator`, `auto-merge`). Il log è fuori dal repository, sha256 `f150610d3124ebf2f89a2b5ac05b456d60f4bc0b1c71d98e6a08d961e6a8568a`. Base `4b277f76b743466f6f96245b5666d536d14a6a94`. La suite completa non è avviata. I record di evidenza non sono stati rigenerati: si rigenerano sull'HEAD finale, dopo la campagna. Il diff da `28c6815f8de3aedfabdf0585674ceec5ce0cce9f` non tocca `reports/evidence` né `reports/assurance`. Il controllo meccanico dei nomi è vuoto, sha256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+- Oracolo `referencing` 0.37.0. Test generato: `test_cycle5_ref_targets_match_referencing_on_the_current_resource`, 105 casi, esito PASS insieme al modulo. `Draft202012Validator` è la controprova di accettazione. I frammenti di anchor percent-encoded si confrontano dopo la decodifica, perché la libreria decodifica i JSON Pointer e non i nomi di anchor.
+
+La revisione preventiva richiesta è `OCOR-DEV-REM-0063-3305ab4cf85e-pre` sull'HEAD `3305ab4cf85ea8aabca0aad58c3d3ff60c770306`, base `4b277f76b743466f6f96245b5666d536d14a6a94`. Implementatore del ciclo originale e delle riparazioni 1, 2, 3, 4 e 5: Grok Build, grok-4.7, xAI. Il verifier del ciclo 5 è di un fornitore diverso da xAI e dal revisore preventivo di questo ciclo. Codex, OpenAI, ha verificato i cicli precedenti e non ha scritto codice né record: resta un verifier ammesso se non è il revisore preventivo di questo ciclo. Non si usa un verifier xAI. Se il verdetto è ancora `NO_GO`, non c'è un ciclo 6.
+
+La PR #638 non si integra: i percorsi non sono nell'allowlist. Si chiude come risolta citando il commit dello state sync, secondo `REPO-HYGIENE (2026-11-02)`. Il branch della richiesta resta. `OCOR-DEV-REM-0065` non è sospeso e resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599 e l'unità del punto 5. La PR #595 non si integra. La PR #628 non si integra e il suo job di `validation-closure` non si rilancia. La campagna `d849a827fae5-1794672102` e il run `d849a827fae5-1794683564` non trasferiscono conteggi.
+
+### REM-0063-CYCLE5-NO-GO (2026-11-14) — decisione del PO, presa con istruzione esplicita
+
+Presa con istruzione esplicita del PO il 2026-11-14. Il PO risolve la decision request `REM-0063-CYCLE5-NO-GO` (branch `governed/decision-request-rem0063-cycle5-nogo`, commit `aca9ebeafac72596f6cd3280668bfe0e9d77b072`, file `reports/development/decision_requests/REM-0063-CYCLE5-NO-GO.md`, sha256 `7ca47e6b970d3999b01f1ecf6dddc5d5d0b46f17d4226e38d8e5f46b33fc5f99`, PR #638) adottando l'**opzione 1**, con le precisazioni del preambolo sui punti 2 e 3, che stanno dentro VF-001.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «presa con istruzione esplicita del PO il 2026-11-14») e nell'`ITERATION_LOG.md`. Vale come decisione del PO a ogni effetto.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
+5. `OCOR-DEV-REM-0065` prosegue come la richiesta descrive. Claim invariati. Nessun nuovo `DEC-*`.
