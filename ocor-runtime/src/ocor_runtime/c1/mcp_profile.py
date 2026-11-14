@@ -114,15 +114,21 @@ def validate_mcp_descriptor(
     against its ``Tool`` definition. ``inputSchema`` and ``outputSchema`` are JSON
     Schema 2020-12 schemas (``Draft202012Validator.check_schema``). Every ``$ref`` is
     a same-document fragment. The fragment is percent-decoded as UTF-8, then
-    classified: a decoded fragment that starts with ``/`` is a JSON Pointer, and any
-    other decoded fragment is a plain-name anchor (``$anchor`` or ``$dynamicAnchor``).
-    ``~`` escapes are validated before substitution. A ref inside an embedded tool
-    schema resolves in that schema first and in the descriptor second. Two different
-    objects for one pointer or one plain name are rejected. A nested non-empty
-    ``$id`` is a separate resource, and ``additionalItems`` is not an anchor
-    applicator in draft 2020-12. The value a reference lands on must itself be a
-    2020-12 schema. Dialect, local-reference and resolution rules also apply to a
-    schema reached through instance data such as ``const`` or ``default``.
+    classified. A decoded empty fragment is the empty JSON Pointer: it identifies
+    the current resource, which is the schema with a non-empty ``$id`` that contains
+    the reference, otherwise the document resource. It is not a plain-name anchor
+    and there is no branch that always selects the whole document. A decoded
+    fragment that starts with ``/`` is a JSON Pointer, and any other decoded
+    fragment is a plain-name anchor (``$anchor`` or ``$dynamicAnchor``). ``~``
+    escapes are validated before substitution. A ref inside an embedded tool schema
+    resolves in that schema first and in the descriptor second. The empty pointer
+    does not use that two-root search: an embedded tool schema without ``$id`` is
+    not a second root, so ``#`` stays on the document resource and is not ambiguous.
+    Two different objects for one non-empty pointer or one plain name are rejected.
+    A nested non-empty ``$id`` is a separate resource, and ``additionalItems`` is
+    not an anchor applicator in draft 2020-12. The value a reference lands on must
+    itself be a 2020-12 schema. Dialect, local-reference and resolution rules also
+    apply to a schema reached through instance data such as ``const`` or ``default``.
     A fixture that is not an object, or whose ``$defs`` or ``Tool`` entry is not an
     object, is rejected before the library is called.
     """
@@ -588,19 +594,8 @@ def _resolve_pointer(
 ) -> None:
     if not isinstance(pointer, str) or not pointer.startswith("#"):
         raise McpProfileError("MCP $ref must be a same-document fragment")
-    if pointer == "#":
-        _require_schema(document)
-        _note_reached_schema(
-            document,
-            depth + 1,
-            seen,
-            deferred,
-            pointer_root=document,
-            resource_root=document,
-        )
-        return
     decoded = _decode_uri_fragment(pointer[1:])
-    if not decoded.startswith("/"):
+    if decoded != "" and not decoded.startswith("/"):
         _resolve_anchor(
             document,
             decoded,
@@ -612,11 +607,20 @@ def _resolve_pointer(
         )
         return
     local: object = _MISSING
-    if pointer_root is not document:
-        local = _follow_pointer(pointer_root, decoded)
     remote: object = _MISSING
-    if pointer_root is document or not _nonempty_id(pointer_root):
-        remote = _follow_pointer(document, decoded)
+    if decoded == "":
+        # Empty JSON Pointer (RFC 6901). One resource, not an anchor and not
+        # the two-root search used for a non-empty pointer: that search would
+        # treat every ``#`` inside a tool schema without ``$id`` as ambiguous.
+        if pointer_root is not document and _nonempty_id(pointer_root):
+            local = pointer_root
+        else:
+            remote = resource_root
+    else:
+        if pointer_root is not document:
+            local = _follow_pointer(pointer_root, decoded)
+        if pointer_root is document or not _nonempty_id(pointer_root):
+            remote = _follow_pointer(document, decoded)
     if local is _MISSING and remote is _MISSING:
         raise McpProfileError("MCP $ref does not resolve in the descriptor")
     if local is not _MISSING and remote is not _MISSING and local is not remote:
