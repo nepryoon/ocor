@@ -3,12 +3,11 @@
   "baseline_commit": "31ca1a64ec228965047ab310d8f84533aa0348b3",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "0f56b4ae673314b995c919ef06d185757712650212ffbe3a1f2e615749a286a6"
+    "sha256": "291e1f85603d52d9c7e83aa09ec5818f81805d6986d0a844052d786a036c3ebf"
   },
   "blocking_tasks": [
     "OCOR-DEV-REM-0060",
-    "OCOR-DEV-REM-0061",
-    "OCOR-DEV-REM-0063"
+    "OCOR-DEV-REM-0061"
   ],
   "claims": {
     "E1": 0,
@@ -21,26 +20,25 @@
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "blocked_scope": "Finche questa richiesta e aperta non parte il ciclo 4 di OCOR-DEV-REM-0063.",
-      "blocked_tasks": [
-        "OCOR-DEV-REM-0063"
-      ],
+      "blocked_scope": "Opzione 1 adottata. Il ciclo 4 attende la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre.",
+      "blocked_tasks": [],
       "decision_level": "OPERATIVE",
       "evidence": {
         "branch": "governed/decision-request-rem0063-cycle3-nogo",
         "commit": "0ccfae6cbab1b6165aa91dd66ce96fdd6cdce204",
+        "disposition_commit": "37311af3d2b01f2476858a0a05648a12bb39d5c6",
         "path": "reports/development/decision_requests/REM-0063-CYCLE3-NO-GO.md",
         "pr": 629,
-        "pr_disposition": "DRAFT_NOT_FOR_MERGE_PATHS_NOT_ALLOWLISTED",
+        "pr_disposition": "CLOSED_AS_RESOLVED_NOT_MERGED_AFTER_THIS_STATE_SYNC",
         "sha256": "70abda118b47725266e39b108f655880e9cb2c628e82cc8049a5b589c46bd149"
       },
-      "finding": "Verdetto NO_GO del ciclo 3. Nessun ciclo 4 automatico. OCOR-DEV-REM-0064 e gia integrato.",
+      "finding": "Verdetto NO_GO del ciclo 3. L'opzione 1 autorizza un solo ciclo 4, perimetro VF-001.",
       "id": "REM-0063-CYCLE3-NO-GO",
       "recommendation": "Option 1: un solo ciclo 4 di OCOR-DEV-REM-0063 dall'HEAD 660a8c6e129c0213f13ff9b98a4bf9b970bcaf3f, perimetro VF-001, senza rebase ne force-push.",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "DECIDED_BY_PO"
     }
   ],
-  "direct_ready_disposition": "G6 sospesi. OCOR-DEV-REM-0064 integrato. OCOR-DEV-REM-0060 e OCOR-DEV-REM-0061 bloccati dalle decisioni gia registrate. OCOR-DEV-REM-0063 attende REM-0063-CYCLE3-NO-GO. Nessuna unita e eseguibile.",
+  "direct_ready_disposition": "G6 sospesi. OCOR-DEV-REM-0064 integrato. OCOR-DEV-REM-0060 e OCOR-DEV-REM-0061 bloccati dalle decisioni gia registrate. OCOR-DEV-REM-0063 ciclo 4 attende la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre.",
   "direct_ready_tasks": [
     "OCOR-DEV-0060",
     "OCOR-DEV-0062",
@@ -48,9 +46,11 @@
     "OCOR-DEV-0064"
   ],
   "in_progress_unit": {
-    "note": "OCOR-DEV-REM-0064 e mergiato. Nessuna unita e in corso.",
-    "status": "NONE",
-    "task_id": "NONE"
+    "head": "fed65a3b0b8f32829f1d39902c162033552488cd",
+    "note": "Ciclo 4 fino alla revisione preventiva. La suite completa non e avviata.",
+    "phase": "PREVENTIVE_REVIEW_REQUESTED",
+    "status": "IN_PROGRESS",
+    "task_id": "OCOR-DEV-REM-0063"
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "local_controls": {
@@ -60,30 +60,30 @@
     "harness": "PASS verify.py sha256 61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413; language ca6cb78d, mypy 606cb758, plan c0753802, rccad 0043e5c7, ruff 82b3e6a6, runtime 0005/0049/0050/0082 PASS",
     "stack": "NOT_STARTED_BY_THIS_ITERATION"
   },
-  "minimal_unblock_action": "Serve la decisione su REM-0063-CYCLE3-NO-GO (commit 0ccfae6cbab1b6165aa91dd66ce96fdd6cdce204, sha256 70abda118b47725266e39b108f655880e9cb2c628e82cc8049a5b589c46bd149, PR 629 bozza e non da integrare). Non avviare il ciclo 4 prima di quella decisione.",
-  "next_executable_action": "Nessuna unita eseguibile. OCOR-DEV-REM-0064 e integrato: GO_FOR_EVIDENCE_SEAL OCOR-DEV-REM-0064-70e3f8f06293-1, head qualificato 70e3f8f062930d2382f9fd06182f2f7a4d6cf74c, sigillo 3d19546cb686a013ed10c2e312160c45f78ce995, PR 631 merge 31ca1a64ec228965047ab310d8f84533aa0348b3, 13/13 check obbligatori verdi, 0 rerun. VF-001 medium non bloccante resta non corretto. La richiesta REM-0063-CYCLE3-NO-GO e aperta (PR 629, commit 0ccfae6cbab1b6165aa91dd66ce96fdd6cdce204, sha256 70abda118b47725266e39b108f655880e9cb2c628e82cc8049a5b589c46bd149, bozza, non si integra). Il verdetto OCOR-DEV-REM-0063-660a8c6e129c-3 e NO_GO sull'HEAD 660a8c6e129c0213f13ff9b98a4bf9b970bcaf3f. Non avviare il ciclo 4 di OCOR-DEV-REM-0063, non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. Claim invariati.",
+  "minimal_unblock_action": "La decisione REM-0063-CYCLE3-NO-GO e adottata, opzione 1. La prossima azione e la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre. Non avviare la suite completa prima di quell'esito.",
+  "next_executable_action": "riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre. La suite completa non e avviata in questa iterazione. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. La PR 629 si chiude come risolta e non si integra. Se il verdetto e ancora NO_GO non c'e un ciclo 5. Claim invariati.",
   "preamble_recheck": {
     "decision_id": "REM-0063-CYCLE3-NO-GO",
-    "observed_at": "2026-11-14T14:11:19Z",
+    "observed_at": "2026-11-14T15:21:21Z",
     "openhands_preamble_sha256": "1a0346e9f1fd74fa3ee0f4f201fe0487c3ba9cbcf1d2bff467ff4c39255b04ff",
-    "result": "NO_SECTION_DECIDES_THIS_REQUEST",
-    "task_file": "/home/luca/.ocor-codex/logs/20261114T140024-implementer-task-grok.md",
-    "task_file_mtime": "2026-11-14T13:00:24Z",
-    "task_file_sha256": "de46d57ae90cde6e06fb0a685a04828c2d7dda8c5da1c54606d4f084af7a1d35"
+    "result": "MATCHED_OPTION_1",
+    "task_file": "/home/luca/.ocor-codex/logs/20261114T155618-implementer-task-grok.md",
+    "task_file_mtime": "2026-11-14T14:56:18Z",
+    "task_file_sha256": "81a607cd89af8916571c7691768ca014a4b08f1c91eb4cdc2619d365a9f50e95"
   },
   "previous_report": {
-    "commit": "31ca1a64ec228965047ab310d8f84533aa0348b3",
+    "commit": "bba062bb86ea545f7bbdbe184d5add2121db6cbc",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "b0e94edcc2d0fbdeed5c03e045924ef8e338ba0e1b8a6d63741246e16baded39"
+    "sha256": "b515436516f0ff22d3672bbbcfc875487294ceefe7923b8670809f2459a262ce"
   },
   "previous_status": "TERMINAL_BLOCKED",
-  "reason": "OCOR-DEV-REM-0064 e integrato. Non resta un'altra unita eseguibile. La richiesta REM-0063-CYCLE3-NO-GO e aperta.",
-  "recorded_at": "2026-11-14T14:11:19Z",
+  "reason": "REM-0063-CYCLE3-NO-GO (2026-11-14) opzione 1 e adottata su delega completa. Il ciclo 4 di OCOR-DEV-REM-0063 e in corso e attende la revisione preventiva. Lo stato TERMINAL_BLOCKED del report precedente non resta.",
+  "recorded_at": "2026-11-14T15:21:21Z",
   "remaining_backlog_tasks": 9,
-  "resolution": "Nessuna unita eseguibile. OCOR-DEV-REM-0064 e integrato: GO_FOR_EVIDENCE_SEAL OCOR-DEV-REM-0064-70e3f8f06293-1, head qualificato 70e3f8f062930d2382f9fd06182f2f7a4d6cf74c, sigillo 3d19546cb686a013ed10c2e312160c45f78ce995, PR 631 merge 31ca1a64ec228965047ab310d8f84533aa0348b3, 13/13 check obbligatori verdi, 0 rerun. VF-001 medium non bloccante resta non corretto. La richiesta REM-0063-CYCLE3-NO-GO e aperta (PR 629, commit 0ccfae6cbab1b6165aa91dd66ce96fdd6cdce204, sha256 70abda118b47725266e39b108f655880e9cb2c628e82cc8049a5b589c46bd149, bozza, non si integra). Il verdetto OCOR-DEV-REM-0063-660a8c6e129c-3 e NO_GO sull'HEAD 660a8c6e129c0213f13ff9b98a4bf9b970bcaf3f. Non avviare il ciclo 4 di OCOR-DEV-REM-0063, non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. Claim invariati.",
+  "resolution": "riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre. La suite completa non e avviata in questa iterazione. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. La PR 629 si chiude come risolta e non si integra. Se il verdetto e ancora NO_GO non c'e un ciclo 5. Claim invariati.",
   "schema_version": "1.0",
-  "session_resources_created": "Nessun container nuovo. Worktree .ocor/worktrees/state-sync-rem0064-integrated-20261114. Stack non avviato da questa iterazione.",
-  "status": "TERMINAL_BLOCKED",
+  "session_resources_created": "Nessun container nuovo. Worktree .ocor/worktrees/state-sync-rem0063-cycle4-pre-20261114 e .ocor/worktrees/dr-rem0063-cycle3-nogo. Stack non avviato da questa iterazione.",
+  "status": "SUPERSEDED",
   "suspended_by_programme": [
     "OCOR-DEV-0060",
     "OCOR-DEV-0062",
@@ -93,6 +93,6 @@
     "OCOR-DEV-0066",
     "OCOR-DEV-REM-0043"
   ],
-  "terminal_state": "TERMINAL_BLOCKED",
-  "updated_at": "2026-11-14T14:11:19Z"
+  "terminal_state": "NOT_TERMINAL",
+  "updated_at": "2026-11-14T15:21:21Z"
 }
