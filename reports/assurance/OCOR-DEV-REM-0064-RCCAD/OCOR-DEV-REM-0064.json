@@ -26,19 +26,19 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit_role": "execution_commit is c4cb2d558693b20afab3aba725b1d89ff68e34f5, the commit of the probe, the advisory tests and the regenerated probe log. The register integrity log and the regression log were produced earlier and their bytes are unchanged. The three requalification records still declare 00bd2b8671c13c93f932b7e12380ddd94c7c9522. The qualifying campaign ran at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25, whose only file change from the execution commit is this record. This later evidence commit records the gate and the campaign. It does not change the declared inputs.",
+  "commit_role": "execution_commit is 8314663c44c2c6020313d76127af30d51f5b6f33, the merge of origin/main that carries the Fuseki identity. The probe and the advisory tests remain the bytes committed at c4cb2d558693b20afab3aba725b1d89ff68e34f5; those paths are unchanged by the merge. The plan validator and the plan run state changed because the allowlists were united. The qualifying campaign is not the run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25.",
   "created_at": "2026-11-13T13:39:16Z",
   "decision": "FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13) point 4",
-  "execution_commit": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
+  "execution_commit": "8314663c44c2c6020313d76127af30d51f5b6f33",
   "execution_commit_digest_check": {
     "checked_inputs": 8,
     "checked_records": 1,
-    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit c4cb2d558693b20afab3aba725b1d89ff68e34f5 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
-    "execution_commit": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
+    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 8314663c44c2c6020313d76127af30d51f5b6f33 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json",
+    "execution_commit": "8314663c44c2c6020313d76127af30d51f5b6f33",
     "exit_code": 0,
-    "note": "stdout_sha256 is the canonical checker payload with head set to the execution commit. The checker does not read this field. A repeat after the campaign update, while HEAD was 77340bce8de8d1e6f2c1ac94dc6a287fca850f25, returned PASS with 8 inputs and 1 record. Rewriting that payload's head back to the execution commit reproduces stdout_sha256. The three requalification records are checked by a separate command against 00bd2b8671c13c93f932b7e12380ddd94c7c9522.",
+    "note": "Captured while HEAD was the execution commit and this record was still a worktree draft. The combined four-record command is requalification_digest_check. A later commit that changes only records does not change these inputs.",
     "result": "PASS",
-    "stdout_sha256": "9e06da65c95f3c1c16690cd2ae6b135cdfbcac6f0cab9ff629b30086d2bd58a7"
+    "stdout_sha256": "050870c05aecc648c3ad9caa3e476351b404cc1f4e6b32373c45353512166c95"
   },
   "execution_state_registration": "Deferred to the post-verify state sync. This unit does not edit EXECUTION_STATE.json, MODEL_HANDOFF.json or ITERATION_LOG.md.",
   "full_campaign": {
@@ -140,7 +140,7 @@
     "result_path": "/home/luca/.ocor-codex/rem-0064/campaign-77340bce8de8/campaign_result.json",
     "result_sha256": "1e36ac7a9631fde3198a89f0b146bc11eb7cfdcc47380d609cdad9aaad337bcf",
     "started_at": "2026-11-14T02:14:30Z",
-    "status": "PASS",
+    "status": "NOT_QUALIFYING",
     "supervision_returncodes": {
       "1": 0,
       "2": 0,
@@ -182,7 +182,9 @@
       ],
       "missing": [],
       "unexpected": []
-    }
+    },
+    "qualification": "REJECTED",
+    "rejection": "OCOR-DEV-REM-0064-223f17854654-0 VF-001. The run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 omitted the merge of origin/main required by FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 option 1. Its counts stay in this object and do not qualify. The lock image id it observed, 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b, is the pre-merge value."
   },
   "implementers": [
     {
@@ -239,9 +241,9 @@
     "reports/assurance/OCOR-DEV-REM-0064-RCCAD/probe.log": "c7caa234dd2c5c0128ecfc9aa8e82f630491a8dec54a8c9edb4ffe17f50a7e39",
     "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json": "e8efa5c8cb914b4053c0d579e31038eeca4856464513c7a47678f5876b8b0b2f",
     "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md": "bcf636db0f6f1c062ce57045932fe91d6a3754f5bd5be081a8603b665e4bf076",
-    "reports/planning/OCOR_PLAN_RUN_STATE.json": "86adf2664435ef67a78e421c07e9b4b8fc85bbdf836ef6f4dfa1709a6e424f7d",
+    "reports/planning/OCOR_PLAN_RUN_STATE.json": "cd5d246871c268626a50b2a5a1f575cbf2587f1c3b4c57e872d3047462bf28d0",
     "scripts/probe_ncr_claim_identity_mission.py": "7f9658fd0d8710bb869f9f5460ea2e7cc8971ad39991307d027208c215d389d1",
-    "scripts/validate_ocor_development_plan.py": "6375b220ad5f50fdd332defb0a5574a6f5b627e0acef4e21b502964149a3658b"
+    "scripts/validate_ocor_development_plan.py": "6d5291c96c677d7aab9824be77fb7be1ca9db43dad44a8080083d4704db25c15"
   },
   "integrity": {
     "advisory_tests_note": "This log is the 15-test register integrity run. ProbeNcrClaimIdentityMissionTest is not in the log. Those six tests are recorded under local_gates.",
@@ -509,24 +511,32 @@
   },
   "regression": {
     "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
-    "duration_seconds": 4.95,
-    "ended_at": "2026-11-13T13:39:16Z",
+    "duration_seconds": 4.9,
+    "ended_at": "2026-11-14T03:44:57Z",
     "exit_code": 0,
+    "historical_run": {
+      "duration_seconds": 4.95,
+      "ended_at": "2026-11-13T13:39:16Z",
+      "head_sha": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+      "passed": 214,
+      "raw_output_sha256": "0be424d92b97ab273f7c74656a2834704f4261d5fb6dce4a4de720cdb9603b80",
+      "started_at": "2026-11-13T13:39:11Z"
+    },
     "log": "reports/assurance/OCOR-DEV-REM-0064-RCCAD/regression.log",
     "passed": 214,
-    "raw_output_sha256": "0be424d92b97ab273f7c74656a2834704f4261d5fb6dce4a4de720cdb9603b80",
-    "started_at": "2026-11-13T13:39:11Z"
+    "raw_output_sha256": "7d8de4f703712e73b04e4f393c20d141dd40b5e26fb69e5f92ca210227060f33",
+    "started_at": "2026-11-14T03:44:52Z"
   },
   "requalification_digest_check": {
-    "captured_head": "c4cb2d558693b20afab3aba725b1d89ff68e34f5",
-    "checked_inputs": 22,
-    "checked_records": 3,
-    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 00bd2b8671c13c93f932b7e12380ddd94c7c9522 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
-    "execution_commit": "00bd2b8671c13c93f932b7e12380ddd94c7c9522",
+    "captured_head": "8314663c44c2c6020313d76127af30d51f5b6f33",
+    "checked_inputs": 30,
+    "checked_records": 4,
+    "command": "python scripts/check_execution_commit_inputs.py --root . --execution-commit 8314663c44c2c6020313d76127af30d51f5b6f33 --record reports/assurance/OCOR-DEV-REM-0064-RCCAD/OCOR-DEV-REM-0064.json --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
+    "execution_commit": "8314663c44c2c6020313d76127af30d51f5b6f33",
     "exit_code": 0,
-    "note": "Those three records do not list the probe or the advisory test as inputs. Their declared commit stays 00bd2b8671c13c93f932b7e12380ddd94c7c9522. A repeat while HEAD was 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 returned PASS with 22 inputs and 3 records. Rewriting that payload's head back to c4cb2d558693b20afab3aba725b1d89ff68e34f5 reproduces stdout_sha256.",
+    "note": "The stdout hash is of the four-record payload captured at the execution commit, including this draft. The three requalification records declare the same commit.",
     "result": "PASS",
-    "stdout_sha256": "c29b7980f312e536c368e6afc962f6843cd73caf317ccaffa99ad6683cf9384d"
+    "stdout_sha256": "050870c05aecc648c3ad9caa3e476351b404cc1f4e6b32373c45353512166c95"
   },
   "requalification_records": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0064.json",
@@ -535,7 +545,7 @@
   ],
   "residual_risks": [
     "The three requalification records do not qualify requirements.",
-    "The four lane bootstraps recorded fuseki_lock_image_id 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b and four different fuseki_built_image_id values. The CI bootstrap does not fail on that mismatch. infra/services.lock.json was not updated. Image ids were not reproducible across lanes. FUSEKI-LOCAL-IDENTITY-REBUILD-20261113 is already decided and does not block this suite.",
+    "The four-lane run at 77340bce8de8d1e6f2c1ac94dc6a287fca850f25 observed fuseki_lock_image_id 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b because that head had not merged origin/main. That run is not qualifying (VF-001). After merge 8314663c44c2c6020313d76127af30d51f5b6f33 the lock output_sha256 is f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875. Image ids of the rejected run were not reproducible across lanes.",
     "probe.log names parent 9b2845f0e0a35d18fd7d95b12945b7265f579c0a because it was captured before the advisory commit existed. It is not a re-run at the execution commit. A first campaign start at the same head failed before any lane because the worktree had no .ocor/tools copy. That attempt is full_campaign.nonqualifying_attempt and is not the qualifying result."
   ],
   "role_coherence": {
