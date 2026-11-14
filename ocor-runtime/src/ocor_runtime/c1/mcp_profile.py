@@ -104,9 +104,11 @@ def validate_mcp_descriptor(
     against its ``Tool`` definition. ``inputSchema`` and ``outputSchema`` are JSON
     Schema 2020-12 schemas (``Draft202012Validator.check_schema``). Every ``$ref`` is
     a same-document fragment: the fragment is percent-decoded as UTF-8 before JSON
-    Pointer resolution, and the value it lands on must itself be a 2020-12 schema.
-    A fixture that is not an object, or whose ``$defs`` or ``Tool`` entry is not an
-    object, is rejected before the library is called.
+    Pointer resolution, ``~`` escapes are validated before substitution, and the
+    value it lands on must itself be a 2020-12 schema. Dialect, local-reference and
+    resolution rules also apply to a schema reached through instance data such as
+    ``const`` or ``default``. A fixture that is not an object, or whose ``$defs`` or
+    ``Tool`` entry is not an object, is rejected before the library is called.
     """
 
     if not isinstance(document, Mapping):
@@ -127,13 +129,28 @@ def validate_mcp_descriptor(
         raise McpProfileError("MCP tools are not in deterministic name order")
     _walk_json(document, depth=1, nodes=[0])
     # Keyword checks start at schema objects. Property names, const, default and enum
-    # are instance data and are not read as keywords.
-    _check_schema_keywords(document, document, depth=1)
+    # are instance data and are not read as keywords. A schema a ``$ref`` actually
+    # reaches is checked afterwards, including one stored in that instance data.
+    seen: set[int] = set()
+    deferred: dict[int, tuple[Any, int]] = {}
+    _check_schema_keywords(document, document, depth=1, seen=seen, deferred=deferred)
     for tool in tools:
         if isinstance(tool, Mapping):
             for field in ("inputSchema", "outputSchema"):
                 if field in tool:
-                    _check_schema_keywords(tool[field], document, depth=1)
+                    _check_schema_keywords(
+                        tool[field],
+                        document,
+                        depth=1,
+                        seen=seen,
+                        deferred=deferred,
+                    )
+    while deferred:
+        identity = min(deferred, key=lambda item: deferred[item][1])
+        target, depth = deferred.pop(identity)
+        if identity in seen:
+            continue
+        _check_schema_keywords(target, document, depth=depth, seen=seen, deferred=deferred)
     for tool in tools:
         if not isinstance(tool, Mapping):
             raise McpProfileError("MCP tool must be an object")
@@ -233,12 +250,23 @@ def _walk_json(node: object, *, depth: int, nodes: list[int]) -> None:
         _walk_json(value, depth=depth + 1, nodes=nodes)
 
 
-def _check_schema_keywords(node: object, document: Mapping[str, Any], *, depth: int) -> None:
+def _check_schema_keywords(
+    node: object,
+    document: Mapping[str, Any],
+    *,
+    depth: int,
+    seen: set[int],
+    deferred: dict[int, tuple[Any, int]],
+) -> None:
     """Apply dialect and ``$ref`` rules only to schema objects, not to instance data."""
     if depth > MAX_SCHEMA_DEPTH:
         raise McpProfileError("MCP schema exceeds the revision bounds")
     if not isinstance(node, Mapping):
         return
+    identity = id(node)
+    if identity in seen:
+        return
+    seen.add(identity)
     if "$dynamicRef" in node or "$recursiveRef" in node:
         raise McpProfileError("MCP $ref resolution does not follow dynamic references")
     if "$schema" in node:
@@ -249,22 +277,22 @@ def _check_schema_keywords(node: object, document: Mapping[str, Any], *, depth: 
         reference = node["$ref"]
         if not isinstance(reference, str) or not reference.startswith("#"):
             raise McpProfileError("MCP $ref must be a same-document fragment")
-        _resolve_pointer(document, reference)
+        _resolve_pointer(document, reference, depth=depth, seen=seen, deferred=deferred)
     for key, value in node.items():
         if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
             for child in value.values():
-                _check_schema_keywords(child, document, depth=depth + 1)
+                _check_schema_keywords(child, document, depth=depth + 1, seen=seen, deferred=deferred)
             continue
         if key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
             for child in value:
-                _check_schema_keywords(child, document, depth=depth + 1)
+                _check_schema_keywords(child, document, depth=depth + 1, seen=seen, deferred=deferred)
             continue
         if key in _SCHEMA_OBJECT_KEYWORDS:
             if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
                 for child in value:
-                    _check_schema_keywords(child, document, depth=depth + 1)
+                    _check_schema_keywords(child, document, depth=depth + 1, seen=seen, deferred=deferred)
             else:
-                _check_schema_keywords(value, document, depth=depth + 1)
+                _check_schema_keywords(value, document, depth=depth + 1, seen=seen, deferred=deferred)
 
 
 _HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
@@ -334,29 +362,79 @@ def _require_schema(target: object) -> None:
         raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema") from exc
 
 
-def _resolve_pointer(document: Mapping[str, Any], pointer: str) -> None:
+def _json_pointer_token(raw: str) -> str:
+    """Validate JSON Pointer escapes, then unescape.
+
+    RFC 6901: ``~`` introduces ``~0`` or ``~1`` and nothing else. Validation
+    happens before substitution, so a planted literal key cannot admit ``~2``.
+    ``~1`` is replaced before ``~0``.
+    """
+
+    index = 0
+    length = len(raw)
+    while index < length:
+        if raw[index] == "~":
+            if index + 1 >= length or raw[index + 1] not in "01":
+                raise McpProfileError("MCP $ref fragment is not a valid JSON Pointer")
+            index += 2
+            continue
+        index += 1
+    return raw.replace("~1", "/").replace("~0", "~")
+
+
+def _note_reached_schema(
+    target: object,
+    depth: int,
+    seen: set[int],
+    deferred: dict[int, tuple[Any, int]],
+) -> None:
+    """Queue a schema object the tree walk does not enter.
+
+    Schemas already visited keep the shallower depth. The numeric limits are
+    the same ``MAX_SCHEMA_DEPTH`` and ``MAX_SCHEMA_NODES`` as the tree walk.
+    """
+
+    if not isinstance(target, Mapping):
+        return
+    identity = id(target)
+    if identity in seen:
+        return
+    current = deferred.get(identity)
+    if current is None or depth < current[1]:
+        deferred[identity] = (target, depth)
+
+
+def _resolve_pointer(
+    document: Mapping[str, Any],
+    pointer: str,
+    *,
+    depth: int,
+    seen: set[int],
+    deferred: dict[int, tuple[Any, int]],
+) -> None:
     if not isinstance(pointer, str) or not pointer.startswith("#"):
         raise McpProfileError("MCP $ref must be a same-document fragment")
     if pointer == "#":
         _require_schema(document)
+        _note_reached_schema(document, depth + 1, seen, deferred)
         return
     decoded = _decode_uri_fragment(pointer[1:])
     if not decoded.startswith("/"):
         raise McpProfileError("MCP $ref must be a same-document fragment")
     current: object = document
     for raw in decoded[1:].split("/"):
-        token = raw.replace("~1", "/").replace("~0", "~")
+        token = _json_pointer_token(raw)
         if isinstance(current, Mapping) and token in current:
             current = current[token]
             continue
-        if isinstance(current, list) and _array_index(token) is not None:
+        if isinstance(current, list):
             index = _array_index(token)
-            assert index is not None
-            if index < len(current):
+            if index is not None and index < len(current):
                 current = current[index]
                 continue
         raise McpProfileError("MCP $ref does not resolve in the descriptor")
     _require_schema(current)
+    _note_reached_schema(current, depth + 1, seen, deferred)
 
 
 def _reject_surrogate(value: str) -> None:
@@ -368,10 +446,16 @@ def _array_index(token: str) -> int | None:
     """Return a canonical JSON Pointer array index.
 
     One ASCII digit is an index. A longer index cannot have a leading zero.
-    A non-ASCII digit is not an index.
+    A non-ASCII digit is not an index. An index outside the node budget cannot
+    address a document the walk accepts, and ``int`` is not called on it.
     """
     if not token.isascii() or not token.isdigit():
         return None
     if len(token) > 1 and token[0] == "0":
         return None
-    return int(token)
+    if len(token) > len(str(MAX_SCHEMA_NODES)):
+        return None
+    index = int(token)
+    if index >= MAX_SCHEMA_NODES:
+        return None
+    return index
