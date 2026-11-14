@@ -1727,3 +1727,383 @@ def test_cycle4_an_anchor_under_additional_items_in_the_tool_schema_is_not_index
     }
     with pytest.raises(profile.McpProfileError, match="does not resolve"):
         _validate(_cycle4_embedded_tool(schema))
+
+
+# VF-001 repair cycle 5, REM-0063-CYCLE5-NO-GO (2026-11-14).
+# Class: the empty fragment ``#`` of a same-document ``$ref`` resolves on the
+# current schema resource, the schema that contains the reference, identified
+# by its ``$id`` when present, and not on the enclosing document when that
+# document is not that resource.
+# Members covered here:
+# 1. a resource with ``$id`` and ``$ref`` ``#`` is accepted against itself;
+# 2. the same resource stays accepted against itself in ``inputSchema``,
+#    ``outputSchema``, under ``$defs``, and nested under ``inputSchema``;
+# 3. an unreferenced sibling that is not a schema does not become the root;
+# 4. a negative ``#/$defs/bad`` distinguishes that root from the descriptor;
+# 5. JSON Pointer, plain-name anchor, percent-encoded fragment, external
+#    reference and the ambiguous-anchor rule stay on the paths already green.
+# Oracle: referencing 0.37.0 on the current resource. Draft202012Validator is
+# the acceptance counterproof. Percent-encoded anchors are compared after
+# decoding because that library decodes JSON Pointers and not anchor names.
+# SELF-CHECK-CLASS-COVERAGE. SELF-CHECK-ORACOLO.
+
+_CYCLE5_ID = "https://example.invalid/independent.json"
+_CYCLE5_EXTERNAL = "https://example.invalid/other.json"
+_CYCLE5_LOCATIONS = ("inputSchema", "outputSchema", "$defs", "nested")
+_CYCLE5_REFS = (
+    "#",
+    "#/$defs/part",
+    "#/$defs/p%61rt",
+    "#part",
+    "#p%61rt",
+    "#/$defs/a%20b",
+)
+# referencing 0.37.0 percent-decodes pointer tokens and leaves anchor names raw.
+_CYCLE5_ORACLE_FRAGMENT = {
+    "#": "#",
+    "#/$defs/part": "#/$defs/part",
+    "#/$defs/p%61rt": "#/$defs/p%61rt",
+    "#part": "#part",
+    "#p%61rt": "#part",
+    "#/$defs/a%20b": "#/$defs/a%20b",
+    "#/$defs/bad": "#/$defs/bad",
+}
+
+
+def _cycle5_cases() -> list[tuple[str, str, bool, int | None, str]]:
+    """Every accepted schema shape in this cycle, plus the closed negatives."""
+    cases: list[tuple[str, str, bool, int | None, str]] = []
+    for location in _CYCLE5_LOCATIONS:
+        for with_id in (False, True):
+            for sibling in (None, 7):
+                for ref in _CYCLE5_REFS:
+                    cases.append(("matrix", location, with_id, sibling, ref))
+        cases.append(("external", location, True, None, _CYCLE5_EXTERNAL))
+        cases.append(("foreign-root", location, True, None, "#/$defs/bad"))
+    cases.append(("ambiguous", "inputSchema", False, None, "#part"))
+    return cases
+
+
+_CYCLE5_CASES = _cycle5_cases()
+
+
+def _cycle5_case_id(case: tuple[str, str, bool, int | None, str]) -> str:
+    kind, location, with_id, sibling, ref = case
+    return f"{kind}-{location}-id{int(with_id)}-sib{sibling}-{ref}"
+
+
+def _cycle5_attach_target(holder: dict[str, Any], ref: str) -> None:
+    """Put the object ``ref`` names on ``holder`` and nowhere else."""
+    if ref in ("#", _CYCLE5_EXTERNAL):
+        return
+    definitions = holder.setdefault("$defs", {})
+    if not isinstance(definitions, dict):
+        raise AssertionError("$defs is not an object")
+    if ref in ("#/$defs/part", "#/$defs/p%61rt"):
+        definitions["part"] = {"type": "integer"}
+    elif ref in ("#part", "#p%61rt"):
+        definitions["holder"] = {"$anchor": "part", "type": "integer"}
+    elif ref == "#/$defs/a%20b":
+        definitions["a b"] = {"type": "integer"}
+    elif ref == "#/$defs/bad":
+        definitions["bad"] = 7
+    else:
+        raise AssertionError(ref)
+
+
+def _cycle5_place(document: dict[str, Any], location: str, schema: dict[str, Any]) -> None:
+    """Install ``schema`` at one of the four class positions."""
+    if location == "inputSchema":
+        document["tools"][0]["inputSchema"] = schema
+    elif location == "outputSchema":
+        document["tools"][0]["outputSchema"] = schema
+    elif location == "$defs":
+        document["$defs"] = {"sub": schema}
+    elif location == "nested":
+        document["tools"][0]["inputSchema"] = {
+            "type": "object",
+            "properties": {"inner": schema},
+        }
+    else:
+        raise AssertionError(location)
+
+
+def _cycle5_placed(document: Mapping[str, Any], location: str) -> dict[str, Any]:
+    """Return the schema object installed by :func:`_cycle5_place`."""
+    tool = document["tools"][0]
+    if not isinstance(tool, dict):
+        raise AssertionError("tool is not an object")
+    if location == "inputSchema":
+        placed = tool["inputSchema"]
+    elif location == "outputSchema":
+        placed = tool["outputSchema"]
+    elif location == "$defs":
+        defs = document["$defs"]
+        if not isinstance(defs, dict):
+            raise AssertionError("$defs is not an object")
+        placed = defs["sub"]
+    elif location == "nested":
+        body = tool["inputSchema"]
+        if not isinstance(body, dict):
+            raise AssertionError("input schema is not an object")
+        properties = body["properties"]
+        if not isinstance(properties, dict):
+            raise AssertionError("properties is not an object")
+        placed = properties["inner"]
+    else:
+        raise AssertionError(location)
+    if not isinstance(placed, dict):
+        raise AssertionError("placed schema is not an object")
+    return placed
+
+
+def _cycle5_document(
+    kind: str,
+    location: str,
+    with_id: bool,
+    sibling: int | None,
+    ref: str,
+) -> dict[str, Any]:
+    """Build one generated descriptor. Targets live on the current resource."""
+    document = _bare_descriptor()
+    if kind == "ambiguous":
+        document["tools"][0]["inputSchema"] = {
+            "type": "object",
+            "$defs": {"local": {"$anchor": "part", "type": "integer"}},
+            "properties": {"n": {"$ref": "#part"}},
+        }
+        document["$defs"] = {"remote": {"$anchor": "part", "type": "string"}}
+        return document
+    if kind == "foreign-root":
+        schema = {
+            "$id": _CYCLE5_ID,
+            "type": "object",
+            "$defs": {"bad": 7},
+            "properties": {"n": {"$ref": "#/$defs/bad"}},
+        }
+        _cycle5_place(document, location, schema)
+        present = document.setdefault("$defs", {})
+        if not isinstance(present, dict):
+            raise AssertionError("$defs is not an object")
+        present["present"] = {"type": "integer"}
+        return document
+    schema = {
+        "type": "object",
+        "required": ["n"],
+        "properties": {
+            "n": {"type": "integer"},
+            "next": {"$ref": ref},
+        },
+    }
+    if with_id:
+        schema["$id"] = _CYCLE5_ID
+        _cycle5_attach_target(schema, ref)
+    _cycle5_place(document, location, schema)
+    if not with_id:
+        _cycle5_attach_target(document, ref)
+    if sibling is not None:
+        definitions = document.setdefault("$defs", {})
+        if not isinstance(definitions, dict):
+            raise AssertionError("$defs is not an object")
+        definitions["unreferenced"] = sibling
+    return document
+
+
+def _cycle5_current_resource(
+    document: Mapping[str, Any],
+    kind: str,
+    location: str,
+    with_id: bool,
+) -> Mapping[str, Any]:
+    """The resource referencing must use: the ``$id`` schema, else the document."""
+    if kind == "ambiguous" or not with_id:
+        return document
+    return _cycle5_placed(document, location)
+
+
+def _cycle5_lookup(resource: Mapping[str, Any], ref: str) -> tuple[Any, BaseException | None]:
+    """Resolve ``ref`` with referencing 0.37.0 on ``resource``. Anchor names are decoded."""
+    import importlib.metadata
+    from referencing import Registry, Resource
+    from referencing.jsonschema import DRAFT202012
+
+    if importlib.metadata.version("referencing") != "0.37.0":
+        raise AssertionError("cycle-5 oracle is referencing 0.37.0")
+    body = dict(resource)
+    body.setdefault("$schema", DRAFT_2020)
+    uri = body.get("$id")
+    if not isinstance(uri, str) or not uri:
+        uri = "urn:ocor-rem0063"
+    registry = Registry().with_resource(uri, Resource.from_contents(body, DRAFT202012))
+    fragment = _CYCLE5_ORACLE_FRAGMENT.get(ref, ref)
+    try:
+        return registry.resolver(uri).lookup(fragment).contents, None
+    except Exception as exc:
+        return None, exc
+
+
+def _cycle5_library_accepts(contents: Any, error: BaseException | None) -> bool:
+    """True when the oracle target exists and Draft 2020-12 accepts it as a schema."""
+    if error is not None or contents is None:
+        return False
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError
+
+    try:
+        Draft202012Validator.check_schema(contents)
+    except (SchemaError, TypeError, ValueError):
+        return False
+    return True
+
+
+def _cycle5_counterproof(schema: Mapping[str, Any], ref: str) -> None:
+    """Draft202012Validator accepts a good instance and rejects a bad one.
+
+    The instance check uses the oracle fragment. referencing 0.37.0 and
+    Draft202012Validator percent-decode JSON Pointers and do not percent-decode
+    plain-name anchors; ``#p%61rt`` is compared as ``#part``.
+    """
+    from jsonschema import Draft202012Validator
+
+    body = copy.deepcopy(dict(schema))
+    properties = body.get("properties")
+    if not isinstance(properties, dict):
+        raise AssertionError("counterproof schema has no properties")
+    nxt = properties.get("next")
+    if not isinstance(nxt, dict):
+        raise AssertionError("counterproof schema has no next")
+    nxt["$ref"] = _CYCLE5_ORACLE_FRAGMENT.get(ref, ref)
+    if ref == "#":
+        good: dict[str, Any] = {"n": 1, "next": {"n": 2}}
+        bad: dict[str, Any] = {"n": 1, "next": {"n": "bad"}}
+    else:
+        good = {"n": 1, "next": 2}
+        bad = {"n": 1, "next": "bad"}
+    validator = Draft202012Validator(body)
+    assert list(validator.iter_errors(good)) == []
+    assert list(validator.iter_errors(bad))
+
+
+def _cycle5_expect_target(contents: Any, ref: str, *, with_id: bool) -> None:
+    """The oracle object for ``ref`` is the current resource or its definition."""
+    if not isinstance(contents, dict):
+        raise AssertionError(f"oracle target for {ref} is not an object")
+    if ref == "#":
+        if with_id:
+            assert contents.get("$id") == _CYCLE5_ID
+        else:
+            assert "tools" in contents
+        return
+    if ref in ("#part", "#p%61rt"):
+        assert contents.get("$anchor") == "part"
+        return
+    assert contents.get("type") == "integer"
+
+
+def _cycle5_corrupt(
+    document: Mapping[str, Any],
+    location: str,
+    with_id: bool,
+    ref: str,
+) -> dict[str, Any]:
+    """Replace the oracle target with a non-schema so the profile must reject it."""
+    corrupted = copy.deepcopy(document)
+    if ref == "#":
+        target = _cycle5_placed(corrupted, location) if with_id else corrupted
+        definitions = target.get("$defs")
+        if isinstance(definitions, dict):
+            definitions["bad"] = 7
+        else:
+            target["$defs"] = {"bad": 7}
+        return corrupted
+    holder = _cycle5_placed(corrupted, location) if with_id else corrupted
+    definitions = holder["$defs"]
+    if not isinstance(definitions, dict):
+        raise AssertionError("$defs is not an object")
+    if ref in ("#/$defs/part", "#/$defs/p%61rt"):
+        definitions["part"] = 7
+    elif ref in ("#part", "#p%61rt"):
+        definitions["holder"] = 7
+    elif ref == "#/$defs/a%20b":
+        definitions["a b"] = 7
+    else:
+        raise AssertionError(ref)
+    return corrupted
+
+
+@pytest.mark.parametrize("location", _CYCLE5_LOCATIONS)
+def test_cycle5_empty_fragment_on_an_id_resource_ignores_a_non_schema_sibling(
+    location: str,
+) -> None:
+    """``#`` on an ``$id`` resource stays that resource when the descriptor is not a schema.
+
+    RED fingerprint of VF-001 before the empty-pointer repair: the profile
+    checks the descriptor, and ``$defs.unreferenced = 7`` makes that check fail.
+    referencing 0.37.0 and Draft202012Validator accept the resource itself.
+    """
+    document = _cycle5_document("matrix", location, True, 7, "#")
+    schema = _cycle5_placed(document, location)
+    _cycle5_counterproof(schema, "#")
+    contents, error = _cycle5_lookup(schema, "#")
+    assert error is None
+    _cycle5_expect_target(contents, "#", with_id=True)
+    _validate(document)
+
+
+def test_cycle5_generated_case_count_is_stable() -> None:
+    """The cycle record cites this count. The oracle package stays pinned."""
+    import importlib.metadata
+
+    assert importlib.metadata.version("referencing") == "0.37.0"
+    assert len(_CYCLE5_CASES) == 105
+
+
+@pytest.mark.parametrize(
+    ("kind", "location", "with_id", "sibling", "ref"),
+    _CYCLE5_CASES,
+    ids=[_cycle5_case_id(case) for case in _CYCLE5_CASES],
+)
+def test_cycle5_ref_targets_match_referencing_on_the_current_resource(
+    kind: str,
+    location: str,
+    with_id: bool,
+    sibling: int | None,
+    ref: str,
+) -> None:
+    """Each accepted ``$ref`` lands on the object referencing 0.37.0 returns.
+
+    A profile rejection is allowed when the oracle also rejects the target, or
+    when two anchors make the target ambiguous. Corrupting the oracle target
+    must make an accepted descriptor fail, including ``#`` on an ``$id`` resource
+    whose descriptor holds an unreferenced non-schema sibling.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle5_document(kind, location, with_id, sibling, ref)
+    resource = _cycle5_current_resource(document, kind, location, with_id)
+    contents, error = _cycle5_lookup(resource, ref)
+    library_ok = _cycle5_library_accepts(contents, error)
+    try:
+        _validate(document)
+    except profile.McpProfileError as exc:
+        profile_error: profile.McpProfileError | None = exc
+    else:
+        profile_error = None
+    if profile_error is None:
+        if not library_ok:
+            # The library crawl raises AttributeError when a document resource
+            # holds a non-schema sibling and the fragment is a plain-name anchor.
+            # The profile still resolves the anchor. Pointers and ``#`` do not use that path.
+            assert kind == "matrix" and not with_id and sibling == 7 and ref in ("#part", "#p%61rt")
+        else:
+            _cycle5_expect_target(contents, ref, with_id=with_id)
+            if with_id and kind == "matrix":
+                _cycle5_counterproof(_cycle5_placed(document, location), ref)
+        corrupted = _cycle5_corrupt(document, location, with_id, ref)
+        with pytest.raises(profile.McpProfileError):
+            _validate(corrupted)
+        return
+    if library_ok:
+        assert kind == "ambiguous", str(profile_error)
+        assert "ambiguous" in str(profile_error)
+        return
+    assert profile_error is not None
