@@ -3,11 +3,12 @@
   "baseline_commit": "31ca1a64ec228965047ab310d8f84533aa0348b3",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "291e1f85603d52d9c7e83aa09ec5818f81805d6986d0a844052d786a036c3ebf"
+    "sha256": "e8e9bf2ed3d20992d8bbb2f4165affb725e80f613ded9433f8394761fefb6e48"
   },
   "blocking_tasks": [
     "OCOR-DEV-REM-0060",
-    "OCOR-DEV-REM-0061"
+    "OCOR-DEV-REM-0061",
+    "OCOR-DEV-REM-0063"
   ],
   "claims": {
     "E1": 0,
@@ -20,7 +21,7 @@
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "blocked_scope": "Opzione 1 adottata. Il ciclo 4 attende la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre.",
+      "blocked_scope": "Opzione 1 adottata. Il ciclo 4 si e fermato sul controllo distinto. Il successore REM-0063-CYCLE4-DISTINCT-INFRA e aperto.",
       "blocked_tasks": [],
       "decision_level": "OPERATIVE",
       "evidence": {
@@ -36,9 +37,28 @@
       "id": "REM-0063-CYCLE3-NO-GO",
       "recommendation": "Option 1: un solo ciclo 4 di OCOR-DEV-REM-0063 dall'HEAD 660a8c6e129c0213f13ff9b98a4bf9b970bcaf3f, perimetro VF-001, senza rebase ne force-push.",
       "status": "DECIDED_BY_PO"
+    },
+    {
+      "blocked_scope": "OCOR-DEV-REM-0063 e bloccato. Il controllo distinto non si ripete.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0063"
+      ],
+      "decision_level": "OPERATIVE",
+      "evidence": {
+        "branch": "governed/decision-request-rem0063-cycle4-distinct-infra",
+        "commit": "42ebb66d5733940a0ff160ce72ed6de92c8775ff",
+        "path": "reports/development/decision_requests/REM-0063-CYCLE4-DISTINCT-INFRA.md",
+        "pr": 634,
+        "pr_disposition": "DRAFT_NOT_TO_MERGE",
+        "sha256": "446a6862334891dc9a061af497fe76e4bc44103a2dbba839d01c397d778e714c"
+      },
+      "finding": "Terzo fallimento infrastrutturale del controllo distinto, senza asserzioni fallite.",
+      "id": "REM-0063-CYCLE4-DISTINCT-INFRA",
+      "recommendation": "Option 2: nessuna altra esecuzione.",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "direct_ready_disposition": "G6 sospesi. OCOR-DEV-REM-0064 integrato. OCOR-DEV-REM-0060 e OCOR-DEV-REM-0061 bloccati dalle decisioni gia registrate. OCOR-DEV-REM-0063 ciclo 4 attende la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre.",
+  "direct_ready_disposition": "G6 sospesi. OCOR-DEV-REM-0064 integrato. OCOR-DEV-REM-0060 e OCOR-DEV-REM-0061 bloccati dalle decisioni gia registrate. OCOR-DEV-REM-0063 e bloccato da REM-0063-CYCLE4-DISTINCT-INFRA.",
   "direct_ready_tasks": [
     "OCOR-DEV-0060",
     "OCOR-DEV-0062",
@@ -46,10 +66,10 @@
     "OCOR-DEV-0064"
   ],
   "in_progress_unit": {
-    "head": "fed65a3b0b8f32829f1d39902c162033552488cd",
-    "note": "Ciclo 4 fino alla revisione preventiva. La suite completa non e avviata.",
-    "phase": "PREVENTIVE_REVIEW_REQUESTED",
-    "status": "IN_PROGRESS",
+    "head": "d849a827fae51d56e371357812b453a7082d4e59",
+    "note": "Ciclo 4 fermo sul controllo distinto. La richiesta di decisione e aperta.",
+    "phase": "BLOCKED_OPEN_PO_DECISION",
+    "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED",
     "task_id": "OCOR-DEV-REM-0063"
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
@@ -60,8 +80,8 @@
     "harness": "PASS verify.py sha256 61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413; language ca6cb78d, mypy 606cb758, plan c0753802, rccad 0043e5c7, ruff 82b3e6a6, runtime 0005/0049/0050/0082 PASS",
     "stack": "NOT_STARTED_BY_THIS_ITERATION"
   },
-  "minimal_unblock_action": "La decisione REM-0063-CYCLE3-NO-GO e adottata, opzione 1. La prossima azione e la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre. Non avviare la suite completa prima di quell'esito.",
-  "next_executable_action": "riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre. La suite completa non e avviata in questa iterazione. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. La PR 629 si chiude come risolta e non si integra. Se il verdetto e ancora NO_GO non c'e un ciclo 5. Claim invariati.",
+  "minimal_unblock_action": "Attendere la decisione REM-0063-CYCLE4-DISTINCT-INFRA. Non ripetere il controllo distinto e non avviare un ciclo 5 prima di quella decisione.",
+  "next_executable_action": "Attendere la decisione REM-0063-CYCLE4-DISTINCT-INFRA (PR 634 bozza, non si integra, commit 42ebb66d5733940a0ff160ce72ed6de92c8775ff, sha256 446a6862334891dc9a061af497fe76e4bc44103a2dbba839d01c397d778e714c). Non ripetere il controllo distinto di OCOR-DEV-0048 e delle regressioni 0005, 0050 e 0082. Non rigenerare l'evidenza non sigillata. Non scrivere verify_request.json. Non c'e un ciclo 5. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. La campagna completa d849a827fae5-1794672102 resta PASS e non si ripete. Claim invariati.",
   "preamble_recheck": {
     "decision_id": "REM-0063-CYCLE3-NO-GO",
     "observed_at": "2026-11-14T15:21:21Z",
@@ -77,10 +97,10 @@
     "sha256": "b515436516f0ff22d3672bbbcfc875487294ceefe7923b8670809f2459a262ce"
   },
   "previous_status": "TERMINAL_BLOCKED",
-  "reason": "REM-0063-CYCLE3-NO-GO (2026-11-14) opzione 1 e adottata su delega completa. Il ciclo 4 di OCOR-DEV-REM-0063 e in corso e attende la revisione preventiva. Lo stato TERMINAL_BLOCKED del report precedente non resta.",
-  "recorded_at": "2026-11-14T15:21:21Z",
+  "reason": "REM-0063-CYCLE4-DISTINCT-INFRA e aperta. Il controllo distinto ha esaurito le due ripetizioni senza avviare pytest. Non c'e un ciclo 5. Lo stato TERMINAL_BLOCKED precedente non resta.",
+  "recorded_at": "2026-11-14T16:51:00Z",
   "remaining_backlog_tasks": 9,
-  "resolution": "riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva OCOR-DEV-REM-0063-fed65a3b0b8f-pre. La suite completa non e avviata in questa iterazione. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. La PR 629 si chiude come risolta e non si integra. Se il verdetto e ancora NO_GO non c'e un ciclo 5. Claim invariati.",
+  "resolution": "Attendere la decisione REM-0063-CYCLE4-DISTINCT-INFRA (PR 634 bozza, non si integra, commit 42ebb66d5733940a0ff160ce72ed6de92c8775ff, sha256 446a6862334891dc9a061af497fe76e4bc44103a2dbba839d01c397d778e714c). Non ripetere il controllo distinto di OCOR-DEV-0048 e delle regressioni 0005, 0050 e 0082. Non rigenerare l'evidenza non sigillata. Non scrivere verify_request.json. Non c'e un ciclo 5. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si integra e il suo job di validation-closure non si rilancia. La campagna completa d849a827fae5-1794672102 resta PASS e non si ripete. Claim invariati.",
   "schema_version": "1.0",
   "session_resources_created": "Nessun container nuovo. Worktree .ocor/worktrees/state-sync-rem0063-cycle4-pre-20261114 e .ocor/worktrees/dr-rem0063-cycle3-nogo. Stack non avviato da questa iterazione.",
   "status": "SUPERSEDED",
