@@ -1,6 +1,6 @@
 # REM-0063-CYCLE3-NO-GO
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -28,3 +28,32 @@ Opzione 1. VF-001 è un difetto riproducibile rispetto al punto 1(a) di `FABLE52
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta non parte il ciclo 4 di `OCOR-DEV-REM-0063`. `OCOR-DEV-REM-0063` resta bloccato. L'integrazione di `OCOR-DEV-REM-0064` non è bloccata da questa richiesta. Restano bloccati, come già deciso, `OCOR-DEV-REM-0060` e `OCOR-DEV-REM-0061`. Non partono l'adozione della PR #599, l'unità del punto 5 e i task G6. La PR #595 non si integra. La PR #628 non si integra. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Nessun test, gate, timer, tetto, partizione o criterio è indebolito da questa richiesta: non cambia codice.
+
+## Disposition del Product Owner — 2026-11-14
+
+Decisione del PO, su delega completa, modello `claude-opus-5-5`, effort `high`: `REM-0063-CYCLE3-NO-GO (2026-11-14)`, **opzione 1**. Nota di registro: «decisa su delega completa del PO, modello claude-opus-5-5, effort high». Vale come decisione del PO a ogni effetto, di livello operativo. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+La richiesta decisa è questo file al commit `0ccfae6cbab1b6165aa91dd66ce96fdd6cdce204`, sha256 `70abda118b47725266e39b108f655880e9cb2c628e82cc8049a5b589c46bd149`. Il testo delle opzioni non è stato modificato. L'intestazione riporta `DECIDED_BY_PO`, lo stesso stato del registro `blockers`.
+
+L'opzione 1 autorizza un solo ciclo 4 di `OCOR-DEV-REM-0063` sul branch `governed/ocor-dev-rem-0063-mcp-profile`, a partire dall'HEAD `660a8c6e129c0213f13ff9b98a4bf9b970bcaf3f`, senza rebase, reset o force-push e senza toccare `governed/ocor-dev-rem-0061-lane-image-cache`. Perimetro: VF-001 del verdetto `OCOR-DEV-REM-0063-660a8c6e129c-3`. VF-002 non è corretto nel codice.
+
+Classe, nominata prima del codice: dopo la decodifica percent, un frammento `$ref` dello stesso documento è un JSON Pointer se il testo decodificato inizia con `/`, altrimenti un anchor di JSON Schema 2020-12 (`$anchor` o `$dynamicAnchor`). Membri coperti: anchor esistente accettato e risolto allo stesso schema del JSON Pointer equivalente; anchor assente rifiutato; anchor ambiguo rifiutato; frammento percent-encoded; riferimento esterno ancora rifiutato; JSON Pointer ancora accettato; il target resta controllato; visited set e limiti invariati.
+
+Attuazione di questo ciclo, sullo stesso branch, non integrata e senza PR del candidato:
+
+- `85eb79fb7f4bde3cef51ed186dd383fd4d91442e`: solo i test di VF-001. RED prima della correzione: 15 failed, 2 passed, 276 deselected. Il log è fuori dal repository, sha256 `2352551e4b9fb6be7b17b98b464a080d1db77dea65bac72c38935b3232e92864`.
+- `fed65a3b0b8f32829f1d39902c162033552488cd`: correzione in `ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`. Il frammento è decodificato e poi classificato. GREEN del modulo del task: 293 passed. Il log è fuori dal repository, sha256 `8f5e1f74af138b8aa46758f09fa26cacd07161c24a687ddd03b0ab9a7ea43153`.
+- Gate locale sullo stesso HEAD: 51 PASS, 0 fail, 6 `NOT_EXECUTED`. Il log è fuori dal repository, sha256 `17927abd0eea6b42696c88bae3e46f06002cd758129efded486630d3e424d3fa`. La suite completa non è avviata. I record di evidenza non sono stati rigenerati: si rigenerano sull'HEAD finale, dopo la campagna. Il diff da `660a8c6e129c0213f13ff9b98a4bf9b970bcaf3f` non tocca `reports/evidence` né `reports/assurance`. Il controllo meccanico dei nomi è vuoto, sha256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+La revisione preventiva richiesta è `OCOR-DEV-REM-0063-fed65a3b0b8f-pre` sull'HEAD `fed65a3b0b8f32829f1d39902c162033552488cd`, base `4b277f76b743466f6f96245b5666d536d14a6a94`. Il verifier del ciclo 4 è di un fornitore diverso da xAI. Codex, OpenAI, ha verificato i cicli 0, 1, 2 e 3 e non ha scritto codice né record: resta un verifier ammesso. Non si usa un verifier xAI. Se il verdetto è ancora `NO_GO`, non c'è un ciclo 5.
+
+La PR #629 non si integra: i percorsi non sono nell'allowlist. Si chiude come risolta citando il commit dello state sync, secondo `REPO-HYGIENE (2026-11-02)`. Il branch della richiesta resta. `OCOR-DEV-REM-0064` è già integrato e non è sospeso da questa opzione. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599 e l'unità del punto 5. La PR #595 non si integra. La PR #628 non si integra e il suo job di `validation-closure` non si rilancia.
+
+### REM-0063-CYCLE3-NO-GO (2026-11-14) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO, con il modello `claude-opus-5-5` ed effort `high` (scelta di `grok-4.7` con effort `high`, delicatezza ALTA; modello ed effort alzati dalla delega al minimo previsto). Il PO risolve la decision request `REM-0063-CYCLE3-NO-GO` (branch `governed/decision-request-rem0063-cycle3-nogo`, commit `0ccfae6cbab1b6165aa91dd66ce96fdd6cdce204`, file `reports/development/decision_requests/REM-0063-CYCLE3-NO-GO.md`, sha256 `70abda118b47725266e39b108f655880e9cb2c628e82cc8049a5b589c46bd149`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort high») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
