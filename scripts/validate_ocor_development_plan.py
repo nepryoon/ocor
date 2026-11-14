@@ -1844,6 +1844,16 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
+        # OCOR-DEV-REM-0065 (FABLE52-POST-POC-PROGRAMME point 2): derived
+        # agentic risk map, generated inventory, decision request and tests.
+        "docs/security/OCOR_AGENTIC_RISK_MAP.md",
+        "docs/security/agentic_risk_inventory.json",
+        "scripts/generate_agentic_risk_inventory.py",
+        "reports/tests/test_agentic_risk_inventory.py",
+        "reports/development/decision_requests/AGENTIC-RISK-MAP-PARTIAL-GAPS.md",
+        "reports/assurance/OCOR-DEV-REM-0065-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0065-RCCAD/red.log",
+        "reports/assurance/OCOR-DEV-REM-0065-RCCAD/green.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
