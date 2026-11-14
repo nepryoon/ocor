@@ -1197,3 +1197,240 @@ def test_cycle3_a_canonical_array_index_still_resolves() -> None:
         raise AssertionError("input schema is not an object")
     body["properties"] = {"name": {"$ref": "#/$defs/choices/anyOf/0"}}
     _validate(document)
+
+
+# Cycle 4 of OCOR-DEV-REM-0063, verdict OCOR-DEV-REM-0063-660a8c6e129c-3 VF-001.
+# REM-0063-CYCLE3-NO-GO (2026-11-14) option 1, and SELF-CHECK-CLASS-COVERAGE.
+#
+# Class: after percent-decoding, a same-document ``$ref`` fragment is either a
+# JSON Pointer (the decoded text starts with ``/``) or a JSON Schema 2020-12
+# plain-name anchor. The pinned ``referencing`` resolver indexes ``$anchor``
+# and ``$dynamicAnchor``. This profile does too, then fails closed when two
+# different schema objects carry the same name (the resolver keeps one).
+# Members: an existing anchor resolves to the same schema as its JSON Pointer;
+# an absent anchor is rejected; an ambiguous anchor is rejected; a
+# percent-encoded fragment is classified only after decoding; an external
+# reference stays rejected; a JSON Pointer stays accepted; the value landed on
+# is still checked as a 2020-12 schema; the visited set and the depth bound
+# stay in force. An anchor written only inside instance data is not a target.
+
+
+def _cycle4_anchor_document(
+    ref: str,
+    definitions: Mapping[str, Any],
+    *,
+    field: str = "inputSchema",
+) -> dict[str, Any]:
+    """Point one tool schema at ``ref``. ``definitions`` are the descriptor ``$defs``."""
+    return _with_ref(ref, definitions, field=field)
+
+
+def _cycle4_library_contents(document: Mapping[str, Any], ref: str) -> Any:
+    """Return the schema the pinned resolver yields for a same-document ``ref``."""
+    from referencing import Registry, Resource
+    from referencing.jsonschema import DRAFT202012
+
+    resource = Resource.from_contents({"$schema": DRAFT_2020, **dict(document)}, DRAFT202012)
+    registry = Registry().with_resource("urn:ocor-rem0063", resource)
+    contents = registry.resolver("urn:ocor-rem0063").lookup(ref).contents
+    if not isinstance(contents, Mapping):
+        raise AssertionError("pinned resolver did not return a schema object")
+    return contents
+
+
+def test_cycle4_an_existing_anchor_matches_the_pinned_resolver_and_the_pointer() -> None:
+    """VF-001: ``#part`` and ``#/$defs/part`` are the same integer schema.
+
+    The pinned resolver and ``Draft202012Validator`` accept an integer and
+    reject a string. The profile accepts both descriptors.
+    """
+    from jsonschema import Draft202012Validator
+    from referencing import Registry, Resource
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    definitions = {"part": {"$anchor": "part", "type": "integer"}}
+    for ref in ("#part", "#/$defs/part"):
+        document = _cycle4_anchor_document(ref, definitions)
+        resource = Resource.from_contents({"$schema": DRAFT_2020, **document}, DRAFT202012)
+        registry = Registry().with_resource("urn:ocor-rem0063", resource)
+        contents = registry.resolver("urn:ocor-rem0063").lookup(ref).contents
+        assert isinstance(contents, Mapping)
+        assert contents["type"] == "integer"
+        validator = Draft202012Validator({"$ref": "urn:ocor-rem0063" + ref}, registry=registry)
+        assert list(validator.iter_errors(7)) == []
+        assert list(validator.iter_errors("not-an-integer"))
+        profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=REVISION)
+
+
+def test_cycle4_the_same_anchor_is_accepted_on_the_output_schema() -> None:
+    """``outputSchema`` is the twin of ``inputSchema`` for a plain-name anchor."""
+    document = _cycle4_anchor_document(
+        "#part",
+        {"part": {"$anchor": "part", "type": "integer"}},
+        field="outputSchema",
+    )
+    _validate(document)
+
+
+def test_cycle4_a_dynamic_anchor_resolves_when_the_pinned_resolver_does() -> None:
+    """``$dynamicAnchor`` is an anchor the pinned resolver indexes by plain name."""
+    document = _cycle4_anchor_document("#part", {"part": {"$dynamicAnchor": "part", "type": "integer"}})
+    contents = _cycle4_library_contents(document, "#part")
+    assert contents["type"] == "integer"
+    _validate(document)
+
+
+def test_cycle4_one_schema_with_both_anchor_keywords_is_a_single_target() -> None:
+    """The same object declaring both keywords under one name is not ambiguous."""
+    document = _cycle4_anchor_document(
+        "#part",
+        {"part": {"$anchor": "part", "$dynamicAnchor": "part", "type": "integer"}},
+    )
+    contents = _cycle4_library_contents(document, "#part")
+    assert contents["type"] == "integer"
+    _validate(document)
+
+
+def test_cycle4_an_anchor_under_properties_matches_its_json_pointer() -> None:
+    """A plain name and the pointer of that schema object land on one target."""
+    definitions = {
+        "holder": {
+            "type": "object",
+            "properties": {"name": {"$anchor": "part", "type": "integer"}},
+        }
+    }
+    _validate(_cycle4_anchor_document("#part", definitions))
+    _validate(_cycle4_anchor_document("#/$defs/holder/properties/name", definitions))
+
+
+def test_cycle4_an_absent_anchor_does_not_resolve() -> None:
+    """A plain name with no ``$anchor`` or ``$dynamicAnchor`` is not a pointer."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document("#missing", {"part": {"$anchor": "part", "type": "integer"}})
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+def test_cycle4_an_ambiguous_anchor_is_rejected() -> None:
+    """Two schema objects with the same plain name do not pick a winner."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document(
+        "#part",
+        {
+            "one": {"$anchor": "part", "type": "integer"},
+            "two": {"$anchor": "part", "type": "string"},
+        },
+    )
+    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+        _validate(document)
+
+
+def test_cycle4_an_anchor_shared_by_dynamic_and_plain_keywords_is_ambiguous() -> None:
+    """The same name on two objects is ambiguous even across the two keywords."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document(
+        "#part",
+        {
+            "one": {"$anchor": "part", "type": "integer"},
+            "two": {"$dynamicAnchor": "part", "type": "string"},
+        },
+    )
+    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+        _validate(document)
+
+
+def test_cycle4_a_percent_encoded_plain_name_is_decoded_before_classification() -> None:
+    """``#p%61rt`` decodes to ``part``. The slash test is what forces this order."""
+    document = _cycle4_anchor_document("#p%61rt", {"part": {"$anchor": "part", "type": "integer"}})
+    _validate(document)
+
+
+def test_cycle4_a_percent_encoded_slash_stays_a_json_pointer() -> None:
+    """``#%2F`` decodes to ``/``, so the fragment is a pointer, not an anchor."""
+    document = _cycle4_anchor_document(
+        "#%2F$defs/part",
+        {"part": {"$anchor": "part", "type": "integer"}},
+    )
+    _validate(document)
+
+
+def test_cycle4_a_decoded_absent_name_does_not_select_the_undecoded_anchor() -> None:
+    """``#mis%73ing`` is ``missing``. The planted undecoded anchor is not the target."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document("#mis%73ing", {"decoy": {"$anchor": "mis%73ing", "type": "string"}})
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+def test_cycle4_an_external_anchor_fragment_stays_rejected() -> None:
+    """Percent-encoding and a plain name do not make an external reference local."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document(
+        "https://example.invalid/schema.json#part",
+        {"part": {"$anchor": "part", "type": "integer"}},
+    )
+    with pytest.raises(profile.McpProfileError, match="same-document"):
+        _validate(document)
+
+
+def test_cycle4_an_anchor_target_that_is_not_a_schema_is_rejected() -> None:
+    """Landing on the anchor still runs the 2020-12 schema check."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document(
+        "#part",
+        {"part": {"$anchor": "part", "type": "not-a-json-schema-type"}},
+    )
+    with pytest.raises(profile.McpProfileError, match="not a JSON Schema"):
+        _validate(document)
+
+
+def test_cycle4_a_non_string_anchor_keyword_is_not_a_match() -> None:
+    """A boolean ``$anchor`` is not the plain name ``part``."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle4_anchor_document("#part", {"part": {"$anchor": True, "type": "integer"}})
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+def test_cycle4_an_anchor_inside_instance_data_is_not_a_plain_name_target() -> None:
+    """``const`` is not crawled for anchors. The JSON Pointer to that value still resolves."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    hidden = {"holder": {"const": {"$anchor": "hidden", "type": "integer"}}}
+    absent = _cycle4_anchor_document("#hidden", hidden)
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(absent)
+    _validate(_cycle4_anchor_document("#/$defs/holder/const", hidden))
+
+
+def test_cycle4_a_self_anchor_stays_inside_the_visited_set() -> None:
+    """An anchor that points at itself is one visited schema, not a recursive walk."""
+    document = _bare_descriptor()
+    document["$defs"] = {"part": {"$anchor": "part", "$ref": "#part"}}
+    body = document["tools"][0]["inputSchema"]
+    if not isinstance(body, dict):
+        raise AssertionError("input schema is not an object")
+    body["properties"] = {"name": {"$ref": "#part"}}
+    _validate(document)
+
+
+def test_cycle4_an_anchor_hop_does_not_lift_the_depth_bound() -> None:
+    """The last hop is an anchor. Four hops pass and forty still hit the bound."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+
+    def chain(length: int) -> dict[str, Any]:
+        document = _bare_descriptor()
+        definitions: dict[str, Any] = {"leaf": {"$anchor": "leaf", "type": "string"}}
+        for index in range(length):
+            nxt = f"#/$defs/h{index + 1}/const" if index + 1 < length else "#leaf"
+            definitions[f"h{index}"] = {"const": {"$ref": nxt}}
+        document["$defs"] = definitions
+        body = document["tools"][0]["inputSchema"]
+        if not isinstance(body, dict):
+            raise AssertionError("input schema is not an object")
+        body["properties"] = {"name": {"$ref": "#/$defs/h0/const"}}
+        return document
+
+    _validate(chain(4))
+    with pytest.raises(profile.McpProfileError, match="bounds"):
+        _validate(chain(40))
