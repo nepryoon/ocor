@@ -1,6 +1,6 @@
 # REM-0063-CYCLE2-NO-GO
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -30,3 +30,30 @@ Opzione 1. VF-001 e VF-002 sono difetti riproducibili rispetto al punto 1(a) di 
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta non parte il ciclo 3 di `OCOR-DEV-REM-0063`. `OCOR-DEV-REM-0063` resta bloccato. La suite di `OCOR-DEV-REM-0064` non è bloccata da questa richiesta. Restano bloccati, come già deciso, `OCOR-DEV-REM-0060` e `OCOR-DEV-REM-0061`. Non partono l'adozione della PR #599, l'unità del punto 5 e i task G6. La PR #595 non si integra. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Nessun test, gate, timer, tetto, partizione o criterio è indebolito da questa richiesta: non cambia codice.
+
+## Disposition del Product Owner — 2026-11-14
+
+Decisione del PO, su delega completa, modello `claude-fable-5-2`, effort `high`: `REM-0063-CYCLE2-NO-GO (2026-11-14)`, **opzione 1**. Nota di registro: «decisa su delega completa del PO, modello claude-fable-5-2, effort high». Vale come decisione del PO a ogni effetto, di livello operativo. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+La richiesta decisa è questo file al commit `bf34ae1377f2581629ee13325f89a610e0f9e50f`, sha256 `d66460e4a2bea6e55f2e727f3a785a6c41bb788915602263020b3ea9260eab24`. Il testo delle opzioni non è stato modificato. L'intestazione riporta `DECIDED_BY_PO`, lo stesso stato del registro `blockers`.
+
+L'opzione 1 autorizza un solo ciclo 3 di `OCOR-DEV-REM-0063` sul branch `governed/ocor-dev-rem-0063-mcp-profile`, a partire dall'HEAD `19f63aeec7d16c7d329aff3421415bcb5e5dd43a`, senza rebase, reset o force-push e senza toccare `governed/ocor-dev-rem-0061-lane-image-cache`. Perimetro: VF-001, VF-002 e VF-003 del verdetto `OCOR-DEV-REM-0063-19f63aeec7d1-2`. VF-004 non è corretto nel codice.
+
+Attuazione di questo ciclo, sullo stesso branch, non integrata e senza PR del candidato:
+
+- `51a3b58ecda1e52aaab47c97269e45170562a6c1`: solo i test dei tre finding. RED prima della correzione: 46 failed, 42 passed, 188 deselected. Il log è fuori dal repository, sha256 `9ac32dc6d95bee2ca8a485e9060df77651e20a353b55b73febb08093daf75d96`.
+- `aec75cd69010a29fe0997cd3dd15e5c89c639633`: correzione in `ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`. Le regole di dialetto, di riferimento locale e di risoluzione valgono anche per uno schema raggiunto da `$ref` attraverso una posizione di dato (`const`, `default`, `enum`, `example`). Ogni escape `~` è validato prima della sostituzione. Un indice di array più lungo del limite dei nodi non esegue la conversione intera. GREEN: 276 passed. Il log è fuori dal repository, sha256 `32b1b8c49083f6c38646f13a59acc792787891867f67f87a33ec6af719cab92b`.
+- Gate locale sullo stesso HEAD: 51 PASS, 0 fail, 6 `NOT_EXECUTED`. Il log è fuori dal repository, sha256 `688c6200791952c5ef9abbf17fe65fffbdff3cf902a4fb2721ae0e8d57913e5a`. La suite completa non è avviata. I record di evidenza non sono stati rigenerati: si rigenerano sull'HEAD finale, dopo la campagna.
+
+La revisione preventiva richiesta è `OCOR-DEV-REM-0063-aec75cd69010-pre` sull'HEAD `aec75cd69010a29fe0997cd3dd15e5c89c639633`, base `4b277f76b743466f6f96245b5666d536d14a6a94`. Il verifier del ciclo 3 è di un fornitore diverso da xAI. Codex, OpenAI, ha verificato i cicli 0, 1 e 2 e non ha scritto codice né record: resta un verifier ammesso. Non si usa un verifier xAI. Se il verdetto è ancora `NO_GO`, non c'è un ciclo 4.
+
+La PR #625 non si integra: i percorsi non sono nell'allowlist. Si chiude come risolta citando il commit dello state sync, secondo `REPO-HYGIENE (2026-11-02)`. Il branch della richiesta resta. La suite di `OCOR-DEV-REM-0064` non è sospesa: parte quando il ciclo 3 non è l'unità in corso, senza ripetere la revisione preventiva `OCOR-DEV-REM-0064-9b2845f0e0a3-pre`. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599 e l'unità del punto 5. La PR #595 non si integra.
+
+### REM-0063-CYCLE2-NO-GO (2026-11-14) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO, con il modello `claude-fable-5-2` ed effort `high` (scelta di `grok-4.7` con effort `high`, delicatezza CRITICA; modello ed effort alzati dalla delega al minimo previsto). Il PO risolve la decision request `REM-0063-CYCLE2-NO-GO` (branch `governed/decision-request-rem0063-cycle2-nogo`, commit `bf34ae1377f2581629ee13325f89a610e0f9e50f`, file `reports/development/decision_requests/REM-0063-CYCLE2-NO-GO.md`, sha256 `d66460e4a2bea6e55f2e727f3a785a6c41bb788915602263020b3ea9260eab24`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-fable-5-2, effort high») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
