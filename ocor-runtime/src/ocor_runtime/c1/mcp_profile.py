@@ -51,6 +51,8 @@ _SCHEMA_OBJECT_KEYWORDS = frozenset(
     }
 )
 _SCHEMA_ARRAY_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
+# Plain-name anchors indexed by the pinned referencing resolver for draft 2020-12.
+_ANCHOR_KEYWORDS = ("$anchor", "$dynamicAnchor")
 
 
 class McpProfileError(ValueError):
@@ -103,12 +105,15 @@ def validate_mcp_descriptor(
     ``schema`` is the official schema document of that revision. Each tool is checked
     against its ``Tool`` definition. ``inputSchema`` and ``outputSchema`` are JSON
     Schema 2020-12 schemas (``Draft202012Validator.check_schema``). Every ``$ref`` is
-    a same-document fragment: the fragment is percent-decoded as UTF-8 before JSON
-    Pointer resolution, ``~`` escapes are validated before substitution, and the
-    value it lands on must itself be a 2020-12 schema. Dialect, local-reference and
-    resolution rules also apply to a schema reached through instance data such as
-    ``const`` or ``default``. A fixture that is not an object, or whose ``$defs`` or
-    ``Tool`` entry is not an object, is rejected before the library is called.
+    a same-document fragment. The fragment is percent-decoded as UTF-8, then
+    classified: a decoded fragment that starts with ``/`` is a JSON Pointer, and any
+    other decoded fragment is a plain-name anchor (``$anchor`` or ``$dynamicAnchor``).
+    ``~`` escapes are validated before substitution. Two different schema objects
+    with the same plain name are rejected. The value a reference lands on must
+    itself be a 2020-12 schema. Dialect, local-reference and resolution rules also
+    apply to a schema reached through instance data such as ``const`` or ``default``.
+    A fixture that is not an object, or whose ``$defs`` or ``Tool`` entry is not an
+    object, is rejected before the library is called.
     """
 
     if not isinstance(document, Mapping):
@@ -420,7 +425,8 @@ def _resolve_pointer(
         return
     decoded = _decode_uri_fragment(pointer[1:])
     if not decoded.startswith("/"):
-        raise McpProfileError("MCP $ref must be a same-document fragment")
+        _resolve_anchor(document, decoded, depth=depth, seen=seen, deferred=deferred)
+        return
     current: object = document
     for raw in decoded[1:].split("/"):
         token = _json_pointer_token(raw)
@@ -435,6 +441,80 @@ def _resolve_pointer(
         raise McpProfileError("MCP $ref does not resolve in the descriptor")
     _require_schema(current)
     _note_reached_schema(current, depth + 1, seen, deferred)
+
+
+def _resolve_anchor(
+    document: Mapping[str, Any],
+    name: str,
+    *,
+    depth: int,
+    seen: set[int],
+    deferred: dict[int, tuple[Any, int]],
+) -> None:
+    """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
+
+    The search follows the same schema keywords as the dialect walk, so a name
+    that exists only inside instance data (``const``, ``default``, ``enum``)
+    does not resolve. A non-string keyword value is not a name. Two different
+    schema objects with the same name are ambiguous: the profile does not pick
+    one. The single target is still checked as a 2020-12 schema, then queued
+    at the next depth so the visited set and the bounds stay those of the walk.
+    """
+
+    if not isinstance(name, str) or not name:
+        raise McpProfileError("MCP $ref does not resolve in the descriptor")
+    matches: list[Mapping[str, Any]] = []
+    _collect_anchors(document, name, matches, depth=1, visited=set())
+    if not matches:
+        raise McpProfileError("MCP $ref does not resolve in the descriptor")
+    if len(matches) > 1:
+        raise McpProfileError("MCP $ref anchor is ambiguous")
+    target = matches[0]
+    _require_schema(target)
+    _note_reached_schema(target, depth + 1, seen, deferred)
+
+
+def _collect_anchors(
+    node: object,
+    name: str,
+    matches: list[Mapping[str, Any]],
+    *,
+    depth: int,
+    visited: set[int],
+) -> None:
+    """Append each schema object whose plain-name anchor equals ``name``."""
+
+    if depth > MAX_SCHEMA_DEPTH or len(visited) > MAX_SCHEMA_NODES:
+        raise McpProfileError("MCP schema exceeds the revision bounds")
+    if not isinstance(node, Mapping):
+        return
+    identity = id(node)
+    if identity in visited:
+        return
+    visited.add(identity)
+    matched = False
+    for keyword in _ANCHOR_KEYWORDS:
+        value = node.get(keyword)
+        if isinstance(value, str) and value == name:
+            matched = True
+            break
+    if matched:
+        matches.append(node)
+    for key, value in node.items():
+        if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
+            for child in value.values():
+                _collect_anchors(child, name, matches, depth=depth + 1, visited=visited)
+            continue
+        if key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+            for child in value:
+                _collect_anchors(child, name, matches, depth=depth + 1, visited=visited)
+            continue
+        if key in _SCHEMA_OBJECT_KEYWORDS:
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+                for child in value:
+                    _collect_anchors(child, name, matches, depth=depth + 1, visited=visited)
+            else:
+                _collect_anchors(value, name, matches, depth=depth + 1, visited=visited)
 
 
 def _reject_surrogate(value: str) -> None:
