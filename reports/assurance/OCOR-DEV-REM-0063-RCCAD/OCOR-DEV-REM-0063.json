@@ -2,9 +2,9 @@
   "allowlist_precheck": {
     "base": "4b277f76b743466f6f96245b5666d536d14a6a94",
     "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref 4b277f76b743466f6f96245b5666d536d14a6a94 --authorized-extension",
-    "head": "400efecb253895e665df2faf2b1cc454026d16ad",
+    "head": "edfe829322d57875c2bd0685a50f9710b4636726",
     "log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
-    "note": "Repeated on the corrected cycle-8 evidence head 400efecb253895e665df2faf2b1cc454026d16ad before the final evidence commit. The validator rewrote reports/planning/OCOR_PLAN_RUN_STATE.json and reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md; both were restored and are not part of this change set. Paths are unchanged: the assurance record, its logs and the three regression requalifications already in the change set.",
+    "note": "Repeated on the cycle-8 prereview-fix evidence head edfe829322d57875c2bd0685a50f9710b4636726 before the final evidence commit. The validator rewrote reports/planning/OCOR_PLAN_RUN_STATE.json and reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md; both were restored and are not part of this change set. Paths are unchanged: the assurance record, its logs and the three regression requalifications already in the change set.",
     "paths": [
       "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json",
       "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.log",
@@ -23,17 +23,18 @@
       "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json",
       "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.log"
     ],
-    "repeated_at": "400efecb253895e665df2faf2b1cc454026d16ad",
+    "repeated_at": "edfe829322d57875c2bd0685a50f9710b4636726",
     "section": "EVIDENCE-PATHS-ALLOWLIST-PRECHECK (2026-11-09)",
     "status": "PASS",
     "stdout": "{\"verdict\": \"PASS\", \"counts\": {\"PASS\": 37, \"NOT_EXECUTED\": 2}, \"tasks\": 84, \"requirements\": 285, \"waves\": 29, \"critical_days\": 161}",
     "verdict": "PASS"
   },
   "artifact_digests": {
-    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.log": "7dba219c07a82a9944e454d6dd50140f85fe1200d71752eaee062d22435103c5",
-    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/green.log": "7dba219c07a82a9944e454d6dd50140f85fe1200d71752eaee062d22435103c5",
+    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.log": "a90ce7dda4d54198857ac4c3c02a807770e6f83b4edadcf38dd07b3b1ed6995f",
+    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/execution-commit-inputs.log": "181def258d69783b6a7b8e8f6e74a8d48f9ce5e740a5eac2fdd7b0a94468b4c1",
+    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/green.log": "a90ce7dda4d54198857ac4c3c02a807770e6f83b4edadcf38dd07b3b1ed6995f",
     "reports/assurance/OCOR-DEV-REM-0063-RCCAD/pre-campaign.log": "dcb5c2aad967e40bb7f737ec72733d8dee0eb0631bdd08c367d732aa812a767b",
-    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/red.log": "9c352d1648227d95672870563fd0236bd3b0eef2d829e9371657261c3d00e1ed"
+    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/red.log": "438879b11136c7de225cb5012885af82b04fe3f0445be5ee9f54d48747e2f873"
   },
   "campaign": {
     "admission_level": "SERIAL",
@@ -160,14 +161,40 @@
       "committed_sha256": "7dba219c07a82a9944e454d6dd50140f85fe1200d71752eaee062d22435103c5",
       "exit_code": 0,
       "failed": 0,
+      "note": "Superseded by the prereview-fix GREEN. Its committed bytes remain verifiable in git history as the green.log blob at 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f (sha256 7dba219c07a82a9944e454d6dd50140f85fe1200d71752eaee062d22435103c5).",
       "passed": 1146,
-      "raw_sha256": "7dba219c07a82a9944e454d6dd50140f85fe1200d71752eaee062d22435103c5",
+      "skipped": 0,
+      "status": "PASS"
+    },
+    {
+      "command": "Cycle-8 prereview-repair RED on the pre-fix head e2efce6f3dfa996dada7374694cf7b20719cd7b5: detached worktree with the final test module and the pre-fix code, pytest -q --tb=short -k cycle8. 102 failed, 134 passed, 934 deselected.",
+      "committed_sha256": "438879b11136c7de225cb5012885af82b04fe3f0445be5ee9f54d48747e2f873",
+      "deselected": 934,
+      "exit_code": 1,
+      "failed": 102,
+      "normalization": "The raw pytest bytes are preserved content-addressed outside the repository at ~/.ocor-codex/rem-0063/preserved/edfe829/red.log.cycle8-prereview.raw (sha256 84b2f853ab6370d0f3ebba7f560ed08fcbff6550e70df400934aa85ffaba1d79). The committed red.log appends the same bytes without trailing whitespace, with a two-line header naming the command and the head, and committed_sha256 carries the digest of the full appended file.",
+      "passed": 134,
+      "raw_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/edfe829/red.log.cycle8-prereview.raw",
+      "raw_preserved_sha256": "84b2f853ab6370d0f3ebba7f560ed08fcbff6550e70df400934aa85ffaba1d79",
+      "skipped": 0,
+      "status": "FAIL"
+    },
+    {
+      "command": "pytest of ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py at edfe829322d57875c2bd0685a50f9710b4636726, three consecutive runs: 1170 passed each.",
+      "committed_sha256": "a90ce7dda4d54198857ac4c3c02a807770e6f83b4edadcf38dd07b3b1ed6995f",
+      "exit_code": 0,
+      "failed": 0,
+      "note": "raw_sha256 carries the digest of the committed green.log. The three raw run logs are preserved content-addressed outside the repository: raw_preserved (run 1), ~/.ocor-codex/rem-0063/preserved/edfe829/green.run2.raw and green.run3.raw.",
+      "passed": 1170,
+      "raw_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/edfe829/green.run1.raw",
+      "raw_preserved_sha256": "f6aac01a7fdcb919e356551cf7a6bc4c789a57787807ba5ae8ddb12f04e71d42",
+      "raw_sha256": "a90ce7dda4d54198857ac4c3c02a807770e6f83b4edadcf38dd07b3b1ed6995f",
       "skipped": 0,
       "status": "PASS"
     }
   ],
-  "commit": "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
-  "commit_role": "Cycle-8 code and tests are 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f, with the anchor RED, the three-run GREEN and the pre-campaign gate bound at the evidence head ed10cd1cd0c3a5f11e5ffbb7b026238282ba0463 and the corrected record and checker log bound at the following evidence commit. The qualifying serial campaign f72a324e25ed-1794759063 qualified the pre-repair head f72a324e25ed72fd58f688bf365058bc40555f11; it does not qualify the repair head 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f and must be re-run after the new preventive review. Input digests match 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f. 0c8bf777f363-1794742597 qualified cycle 7 and does not qualify this head. The evidence commits that bind this record do not change the input files.",
+  "commit": "edfe829322d57875c2bd0685a50f9710b4636726",
+  "commit_role": "Cycle-8 code and tests are edfe829322d57875c2bd0685a50f9710b4636726: the prereview-fix that closes P1-P3 of OCOR-DEV-REM-0063-e2efce6f3dfa-pre. _resolve_graph resolves every $ref path with the resolver its referencing 0.37.0 lookup returns before any keyword check and static descent applies only to nodes no reference reaches; each tool schema keeps its own tree registry and anchor index; a non-string $id at any schema position is the typed 'MCP schema resource index is not resolvable' refusal. RED of the new class on the pre-fix head e2efce6f3dfa996dada7374694cf7b20719cd7b5: 102 failed, 134 passed, 934 deselected. GREEN of the task module on the final head: 1170 passed, three consecutive runs. The qualifying serial campaign f72a324e25ed-1794759063 qualified the pre-repair head f72a324e25ed72fd58f688bf365058bc40555f11 and must be re-run after the new preventive review. Input digests match edfe829322d57875c2bd0685a50f9710b4636726 for every input file. 0c8bf777f363-1794742597 qualified cycle 7 and does not qualify this head.",
   "created_at": "2026-11-13T23:11:16Z",
   "environment": {
     "arch": "x86_64",
@@ -331,21 +358,21 @@
     "source": "Measured on the cycle-8 host after the qualifying serial campaign f72a324e25ed-1794759063 on f72a324e25ed72fd58f688bf365058bc40555f11. Fuseki local digest reflects the rebuild of this machine (REM-0017-CI-ARCHIVE-ACQUISITION Dockerfile); all other local digests match the pinned ones."
   },
   "execution_commit_digest_check": {
-    "checked_artifacts": 4,
-    "checked_inputs": 38,
-    "checked_records": 4,
-    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f --record reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json ; ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json",
+    "checked_artifacts": 5,
+    "checked_inputs": 16,
+    "checked_records": 1,
+    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit edfe829322d57875c2bd0685a50f9710b4636726 --record reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json ; ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json",
     "exit_code": 0,
     "findings": 0,
-    "head_at_check": "400efecb253895e665df2faf2b1cc454026d16ad",
-    "note": "The unit record is checked at the cycle-8 execution commit 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f. The three regression requalifications still declare d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7. This log is the check on the corrected cycle-8 evidence head 400efecb253895e665df2faf2b1cc454026d16ad before the final evidence commit that binds this log and block. The qualifying serial campaign f72a324e25ed-1794759063 and the distinct check f72a324e25ed-1794763318 qualified the pre-repair head and do not transfer to the repair head.",
+    "head_at_check": "edfe829322d57875c2bd0685a50f9710b4636726",
+    "note": "The unit record is checked at the cycle-8 prereview-fix execution commit edfe829322d57875c2bd0685a50f9710b4636726. The three regression requalifications still declare d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7. This log is the check on the cycle-8 prereview-fix evidence head before the final evidence commit that binds this log and block. The qualifying serial campaign f72a324e25ed-1794759063 and the distinct check f72a324e25ed-1794763318 qualified the pre-repair head and do not transfer to the repair head.",
     "requalifications": {
       "checked_artifacts": 0,
       "checked_inputs": 22,
       "checked_records": 3,
       "execution_commit": "d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7",
       "findings": [],
-      "head": "400efecb253895e665df2faf2b1cc454026d16ad",
+      "head": "edfe829322d57875c2bd0685a50f9710b4636726",
       "records": [
         {
           "declared_commit": "d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7",
@@ -383,30 +410,30 @@
     ],
     "cell_scan": {
       "cells": 276,
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0063/cycle5/cell_scan.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0063/cycle5/cell_scan.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json edfe829322d57875c2bd0685a50f9710b4636726 /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
       "counts": {
-        "FIXED": 49,
-        "N/A": 129,
-        "PASS": 98
+        "FIXED": 53,
+        "N/A": 132,
+        "PASS": 97
       },
       "errors": 0,
-      "head": "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
-      "rows": 46,
+      "head": "edfe829322d57875c2bd0685a50f9710b4636726",
+      "rows": 47,
       "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "stdout_sha256": "bad5cbb7215f1680551a7a214bbbcd0e305278a53264635ed2b5e91f99d291eb",
-      "table_sha256": "21c259cd21b02ebc3ab45792afc7a4d0a892aacf76439952984fc835e13538d8",
+      "stdout_sha256": "f219a5290b97dc517810e01ac8a5ba095ab1248d0e0078db073a04247885e04e",
+      "table_sha256": "9fc9d7c83120b83693edea667bfaf6460d2ae288bcca391698f84956cec6d098",
       "table_sha256_method": "sha256 of json.dumps(table, indent=2, sort_keys=True) plus a trailing newline",
-      "tests_cited": 88
+      "tests_cited": 84
     },
     "change_set_rows": {
       "codegen.py": 1,
       "mcp_boundary.py": 1,
       "mcp_call.py": 7,
-      "mcp_profile.py": 37
+      "mcp_profile.py": 38
     },
     "first_application": "inventory realigned after preventive review OCOR-DEV-REM-0063-241a2af5792d-pre; execution commit c28cd9c411c466f38e9671d2774939bb9a910a30. The first table was the d3382f6 repair at 524837d841db. Cycle 2 re-examined _resolve_pointer and added _decode_uri_fragment and _require_schema at 3dd37e29222ae2c85f400f4fc7573def127f6a53. Cycle 3 adds _json_pointer_token and _note_reached_schema and corrects the _require_schema and _array_index cells at aec75cd69010a29fe0997cd3dd15e5c89c639633. Cycle 6 realigns the inventory on 265f6ad2ced262999bd23c35c9dea3fc94caf988: 22 rows for mcp_profile.py, 7, 1 and 1 for the other files, 31 rows, 186 cells. Cycle 7 replaces the manual resolver with referencing 0.37.0 on 0c8bf777f363fffc42234d14b239e4f0b0a8e652: 37 rows for mcp_profile.py, 7, 1 and 1 for the other files, 46 rows, 276 cells. The stale _roots_for_target cell of VF-003 in OCOR-DEV-REM-0063-d70920ea901f-6 is removed together with the function; it is not rewritten and not reintroduced. Cycle 8 fixes the embedded-resource identity across a no-op $id in instance data on 8a4893df052b04f3e357490e1e83c64288bb5603: every tool schema gets its own local registry keyed by the effective base in _build_resolution_index; _enter_tool_schema resolves through that registry at the effective base; _context_after_resolution keeps the current resource and fallback unless the base really changed. Cycle-8 anchor repair on 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f: _profile_id_of returns the raw $id exactly as the pinned draft's id_of; _build_resolution_index builds a local registry for every tool schema with its own $id; _enter_schema_resource keeps the no-op identity check first and resolves a distinct resource through the current resolver's registry; _enter_tool_schema resolves a distinct tool-schema $id through its own local registry; _check_schema_keywords does not re-enter a child already reached through the library crawl.",
-    "inventory_note": "An ast walk lists every function. McpProfileError.__init__, McpCallError.__init__ and _deny only build a typed error and have no row. codegen.py contributes the _mcp row; its other functions do not receive an MCP payload. _walk was removed and replaced by _walk_json and _check_schema_keywords. mcp_call._reject_surrogate has its own row. flush inside _decode_uri_fragment only decodes the byte buffer that function already accepted and has no separate row. ocor_runtime.c8.tool_contract._require_resolvable is outside this cycle: that file is not in the diff against 4b277f76b743466f6f96245b5666d536d14a6a94. Cycle 3 adds rows for _json_pointer_token and _note_reached_schema. Those two functions are not omitted. Cycle 6 replaces _nonempty_id with _declared_id, _resource_uri and _changes_resource. An ast walk of mcp_profile.py at 265f6ad2ced262999bd23c35c9dea3fc94caf988 lists 22 functions. Each of those functions has a row. McpProfileError.__init__ still has no row.",
-    "inventory_search": "Python ast walk of mcp_profile.py at f72a324e25ed72fd58f688bf365058bc40555f11 lists 42 function names. 37 of them have a row; __init__, enter, flush, visit and without_context_overwrite do not receive an MCP payload and keep no row, as in previous cycles. The manual resolver was removed in cycle 7, so _resolve_pointer, _resolve_anchor, _collect_anchors, _follow_pointer, _contains, _roots_for_target, _array_index and _note_reached_schema are not functions on this head and have no row. McpProfileError.__init__ still has no row.",
+    "inventory_note": "An ast walk lists every module-level function and class. McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and have no row. codegen.py contributes the _mcp row; its other functions do not receive an MCP payload. _walk was removed and replaced by _walk_json and _check_schema_keywords in cycle 7. In this prereview fix the resolution index and the descent machinery were rebuilt around per-tree registries: _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph, _check_reached_schemas and _iter_check_children replace _ResolutionIndex, _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver.",
+    "inventory_search": "Python ast walk of mcp_profile.py at edfe829322d57875c2bd0685a50f9710b4636726 lists 41 module-level names. 38 of them have a row; McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and keep no row, as in previous cycles. The manual resolver was removed in cycle 7 and the two-level descriptor fallback in this prereview fix; _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver are replaced by _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph and _check_reached_schemas, plus _iter_check_children for additionalItems.",
     "role_coherence_scan": {
       "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0063/cycle8/role_scan.py /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
       "compared_fields": 120,
@@ -462,7 +489,7 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: _declared_id validates the URI text and decodes no bytes here.",
-          "types_before_conversions": "FIXED: no-effect-identity class. Empty, hash and same-URI $id values keep the current resource; a different identifier changes it once. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl, 48 generated cases, result PASS: the raw $id feeds the crawl exactly as the pinned draft's id_of, so an anchor lookup keeps the crawl state the library computes."
+          "types_before_conversions": "FIXED: resource-identity class. The raw $id feeds the crawl exactly as the pinned draft's id_of, so an anchor lookup keeps the crawl state the library computes; a non-string $id (number, boolean, list, object) fails inside the library crawl and the profile translates it to the typed 'MCP schema resource index is not resolvable' refusal for every schema position, descriptor and tool schemas alike, with no raw exception escaping the module. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl, 48 generated cases, result PASS; negatives: test_cycle8_non_string_schema_id_is_typed, 20 cases."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
         "function": "_profile_id_of",
@@ -472,7 +499,8 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_a_distinct_id_stays_inside_its_own_resource",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_repair_noop_id_keeps_the_embedded_tool_resource",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_non_string_schema_id_is_typed"
         ]
       },
       {
@@ -693,6 +721,24 @@
           "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: schema-position class. _iter_schema_children covers the draft 2020-12 applicator positions; additionalItems is added even though the pinned draft does not crawl it as a subresource, because a $ref stored there is a schema position for dialect, local-reference and resolution rules. Oracle referencing 0.37.0: test_every_schema_keyword_validates_its_resolved_target drives the same typed non-schema refusal through 19 keyword slots, additionalItems included, without calling the library."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_iter_check_children",
+        "paths": "schema children for keyword checks, including additionalItems",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_every_schema_keyword_validates_its_resolved_target",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_property_names_and_instance_data_are_not_schema_keywords"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
+          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: only a mapping is passed to the pinned specification; no bytes are decoded.",
           "types_before_conversions": "FIXED: canonical-copy class. The resource root may be a shallow copy with an absolute $id, every child remains the original document object, and the alias map recovers the original target. A non-mapping cannot reach this function."
         },
@@ -712,17 +758,58 @@
           "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: the URI is the already-joined string; this function decodes nothing.",
-          "types_before_conversions": "PASS: the registry contains only the current Resource. An external URI or a foreign $id cannot resolve; a nested resource is reached by the library from the current resource."
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: autonomous-tree class. The descriptor is its own tree and every tool inputSchema/outputSchema is a separate tree; the base URI is the schema $id when present, otherwise a fixed urn distinct for every tool and field that coincides with no $id of the document; no registry or anchor index is shared between trees, so a lookup can never reach another tree's resource. A non-mapping tool or schema is skipped and left to the descriptor type check. Oracle referencing 0.37.0: the repeated-$id tests (8 generated cases) resolve in the current tree only; the outer and ambiguous matrices (96 cases) are profile-rule assertions of the same autonomy."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_resource_resolver",
-        "paths": "single-resource registry for the current schema resource",
+        "function": "_build_schema_trees",
+        "paths": "one autonomous tree per schema resource root",
         "rereads_stored_data": true,
         "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_external_dangling_and_foreign_dialect_refs_fail",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_an_external_percent_encoded_ref_stays_rejected",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_an_external_anchor_fragment_stays_rejected"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_ignores_the_descriptor_defs",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_root_id_resolves_in_the_current_tree",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_outer_target_still_resolves_beside_the_local_miss",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_two_targets_are_rejected_as_ambiguous"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
+          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: single-tree-index class. The pinned crawl, the anchor owners, the node-URI ownership map and the registry are built per tree from one crawl pass, so every lookup starts from the tree's own resource set and a URI repeated in another tree can never join the two registries. Oracle referencing 0.37.0: the repeated-$id tests (8 generated cases) and the local instance-data matrix (48 generated cases)."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_schema_tree",
+        "paths": "single-tree crawl, anchor, ownership and registry index",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_root_id_resolves_in_the_current_tree",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_local_target_resolves_through_instance_data"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
+          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: crawl-ownership class. Every schema-position node maps to the resource URI the library crawl owns it under and every other node inherits the URI of its enclosing resource, so keyword descent cannot diverge from the library across a no-op $id chain; a repeated object is visited once and the depth and node bounds are enforced during the visit."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_collect_node_uris",
+        "paths": "schema-node to crawl-owned resource URI mapping",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_local_target_resolves_through_instance_data",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_repair_noop_id_keeps_the_embedded_tool_resource",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle3_a_long_data_position_chain_still_hits_the_depth_bound"
         ]
       },
       {
@@ -761,52 +848,6 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_repair_duplicate_keyword_id_follows_the_crawled_resource",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_repair_noop_id_keeps_the_embedded_tool_resource",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_a_distinct_id_stays_inside_its_own_resource"
-        ]
-      },
-      {
-        "checks": {
-          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
-          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
-          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
-          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: the embedded URI is generated from an integer index and field name; no bytes are decoded.",
-          "types_before_conversions": "PASS: only a Mapping root is registered; its canonical copy is bound back to the original object through the alias map."
-        },
-        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_register_resource_root",
-        "paths": "profile-defined root for an embedded tool schema",
-        "rereads_stored_data": true,
-        "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_local_pointer_in_the_tool_schema_resolves",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_repair_noop_id_keeps_two_resource_ambiguity",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_empty_pointer_uses_the_effective_resource"
-        ]
-      },
-      {
-        "checks": {
-          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
-          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
-          "finite_numbers": "PASS: depths and visited counts are bounded integers; no float is converted.",
-          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: only str $id values are accepted; a trailing empty fragment is stripped in _declared_id, and the descriptor walk rejects a lone surrogate before this index.",
-          "types_before_conversions": "FIXED: resource-identity class. The document root, every embedded $id and tool schemas without $id get one resource; an $id that joins to the current URI does not start a second resource; the depth and node bounds apply to the discovery walk; a repeated object is not indexed twice. Each embedded tool schema now gets its own local registry keyed by the effective base so that a no-op $id inside const/default/examples keeps the embedded resource. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl (48 generated cases) and the three repeated-$id tests (8 generated cases), result PASS: each tool schema with its own $id gets a local registry, so a nested $id repeated across schema trees stays in the current tree as the library resolves."
-        },
-        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_build_resolution_index",
-        "paths": "descriptor discovery of document and embedded schema resources",
-        "rereads_stored_data": true,
-        "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_a_distinct_id_stays_inside_its_own_resource",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_an_anchor_inside_an_id_resource_resolves_there",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_local_target_resolves_through_instance_data",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_outer_target_still_resolves_beside_the_local_miss",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_two_targets_are_rejected_as_ambiguous",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_missing_target_is_rejected_for_the_right_reason",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_ignores_the_descriptor_defs",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_root_id_resolves_in_the_current_tree"
         ]
       },
       {
@@ -854,17 +895,51 @@
           "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: only a mapping with a str $id changes the resource; an empty $id restores the fallback context when one exists.",
-          "types_before_conversions": "FIXED: resource-transition class. An $id that joins to the current resource does not start another; a relative $id is joined once from the current base; a tool-schema fallback is dropped only when the resource changes. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl, 48 generated cases, result PASS: the no-op identity check stays first and a distinct resource resolves through the current resolver's registry, not the document-wide one."
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: root-state class. The resolver is the registry resolver at the tree root URI and the base and resource URI are the root URI, never a URI of another tree, so a descriptor-side lookup can never start from a tool tree or vice versa."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_enter_schema_resource",
-        "paths": "resource transition when a schema node declares $id",
+        "function": "_root_context",
+        "paths": "resolver state at the root resource of one tree",
         "rereads_stored_data": true,
         "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_a_distinct_id_stays_inside_its_own_resource",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_empty_pointer_uses_the_effective_resource",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_local_pointer_in_the_tool_schema_resolves"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
+          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: child-context class. A child that stays inside the current resource keeps the current resolver, because a lookup across an anchor keeps crawl state in the resolver and rebuilding it from the tree registry would drop that state, so pointers inside the reached schema keep using it; only a child that starts another resource gets a fresh resolver rooted at its own URI; children reached through instance data keep the resource URI of the parent. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl (48 generated cases) and test_cycle8_noop_id_local_target_resolves_through_instance_data (48 generated cases)."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_descend",
+        "paths": "keyword child entered with the URI the crawl assigned to it",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_local_target_resolves_through_instance_data"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
+          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: target-context class. The resolver a lookup returned for the target is kept, the base URI is the library's own, and the resource URI comes from the crawl ownership map, so the anchor ambiguity index stays aligned with the tree the target belongs to."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_ref_target_context",
+        "paths": "context kept after a library lookup returned a target",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl"
         ]
       },
@@ -874,78 +949,8 @@
           "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: the effective URI is compared as an already-decoded string.",
-          "types_before_conversions": "PASS: delegates the resource transition to _enter_schema_resource; a no-op $id remains on the embedded tool resource."
-        },
-        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_enter_root_schema_resource",
-        "paths": "tool schema root whose $id changes the current resource",
-        "rereads_stored_data": true,
-        "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_repair_noop_id_keeps_the_embedded_tool_resource",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_repair_noop_id_keeps_two_resource_ambiguity"
-        ]
-      },
-      {
-        "checks": {
-          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
-          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
-          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
-          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: a tool schema without $id gets a URN resource; the URI is generated from an integer index and a field name, not decoded input.",
-          "types_before_conversions": "FIXED: tool-resource class. A tool schema with $id follows its declared identity; without $id it is its own pointer root with a document fallback; the empty fragment keeps the existing document rule; a non-mapping is left to the descriptor type check. The resolver comes from the local registry of that tool schema at the effective base, not from the synthetic URN registration alone. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl (48 generated cases) and the three repeated-$id tests (8 generated cases), result PASS: a tool schema with its own $id resolves through its own local registry keyed by the effective base."
-        },
-        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_enter_tool_schema",
-        "paths": "embedded tool inputSchema or outputSchema resource",
-        "rereads_stored_data": true,
-        "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_local_pointer_in_the_tool_schema_resolves",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_a_whole_document_fragment_rejects_a_non_schema_document",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_local_target_resolves_through_instance_data",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_outer_target_still_resolves_beside_the_local_miss",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_two_targets_are_rejected_as_ambiguous",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_missing_target_is_rejected_for_the_right_reason",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_ignores_the_descriptor_defs",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_root_id_resolves_in_the_current_tree"
-        ]
-      },
-      {
-        "checks": {
-          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
-          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
-          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
-          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: the resource URI is recovered from the resolved root identity; no decoding happens.",
-          "types_before_conversions": "FIXED: effective-resource class. The resolver returned by lookup is kept; the resource URI is the current one while the resolver base equals the effective base, even when the pointer crosses a no-op $id in instance data; the base follows only a resource that really changed; a fallback survives only while the resource is unchanged."
-        },
-        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_context_after_resolution",
-        "paths": "effective resource and base after a library lookup",
-        "rereads_stored_data": true,
-        "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle5_empty_fragment_on_an_id_resource_ignores_a_non_schema_sibling",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_local_target_resolves_through_instance_data",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_outer_target_still_resolves_beside_the_local_miss",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_two_targets_are_rejected_as_ambiguous",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_missing_target_is_rejected_for_the_right_reason"
-        ]
-      },
-      {
-        "checks": {
-          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
-          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
-          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
-          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: the fragment is percent-decoded once as strict UTF-8; a truncated or non-hex escape is a typed error; a surrogate is rejected; the library receives a re-encoded fragment so a literal percent is not decoded twice.",
-          "types_before_conversions": "FIXED: reference-class. Only a same-document fragment is accepted; an empty fragment is the empty pointer; an anchor is decoded before classification; a pointer token is validated then unescaped; a local or fallback ambiguity is rejected; the resolved target must be a schema. Oracle referencing 0.37.0: test_cycle7_pointer_crossing_resource_preserves_resolver, 36 generated cases, result PASS; test_cycle7_empty_pointer_uses_the_effective_resource, 32 generated cases, result PASS. The profile refuses more than the library only for rules already written in this module: ambiguity, a target that is not a schema, an external reference, and the depth and node limits. Cycle-8 oracle extension referencing 0.37.0: test_cycle8_noop_id_local_target_resolves_through_instance_data compares each local positive with Draft202012Validator over the library registry; together with the outer and ambiguous matrices that is 144 generated cases, result PASS; test_cycle8_noop_id_missing_target_is_rejected_for_the_right_reason asserts the typed does-not-resolve reason."
+          "types_before_conversions": "FIXED: reference-class. Only a same-document fragment is accepted; an empty fragment is the empty pointer; an anchor is decoded before classification; a pointer token is validated then unescaped; the lookup runs only on the resolver of the current tree with no fallback onto the descriptor or another tool schema; the resolved target must be a schema. Oracle referencing 0.37.0: test_cycle7_pointer_crossing_resource_preserves_resolver, 36 generated cases, result PASS; test_cycle7_empty_pointer_uses_the_effective_resource, 32 generated cases, result PASS; test_cycle8_noop_id_local_target_resolves_through_instance_data compares each local positive with Draft202012Validator over the library registry (48 generated cases). The profile refuses more than the library only for rules already written in this module: anchor ambiguity, a target that is not a schema, an external reference, and the depth and node limits."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
         "function": "_resolve_reference",
@@ -1006,6 +1011,44 @@
           "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: path-order class. Every $ref path resolves before any keyword check; the queue keeps one state per (node, base URI, registry) for static and reference paths; a reference path carries the resolver its lookup returned and propagates down the children it reached; a static state defers its own $ref and it runs only for nodes no reference path reaches, so the outcome cannot depend on the order of members or visits. A reference that does not resolve rejects the descriptor here with the typed error. Oracle referencing 0.37.0: test_cycle8_pointer_and_anchor_paths_are_each_resolved, 8 generated cases (4 member orders x pointer and anchor oracles), result PASS: typed 'does not resolve' in every order, where the pre-fix profile accepted [props_first-b_first]."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_resolve_graph",
+        "paths": "every $ref path resolved before any keyword check",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_pointer_and_anchor_paths_are_each_resolved",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle3_a_schema_reached_through_instance_data_is_checked"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
+          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
+          "strict_decoding": "PASS: this function decodes no bytes.",
+          "types_before_conversions": "FIXED: state-filter class. Each reached state is checked with its own context and depth; a state reached only by static descent is skipped when a reference path already reached the same node, so the keyword pass runs with the contexts the library produced and never re-resolves a $ref with the profile's root state."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_check_reached_schemas",
+        "paths": "keyword pass on the states the graph produced",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_pointer_and_anchor_paths_are_each_resolved",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_property_names_and_instance_data_are_not_schema_keywords",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle3_a_self_ref_through_const_stays_inside_the_visited_set"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
+          "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: the name is already decoded; the lookup key is the effective URI and the name.",
           "types_before_conversions": "FIXED: ambiguity class. Zero or one owner is accepted; two distinct owners for the same effective resource and plain name are rejected before the target check; different resources do not collide."
         },
@@ -1015,7 +1058,7 @@
         "rereads_stored_data": true,
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_an_ambiguous_anchor_is_rejected",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_resolves_locally",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_two_anchors_inside_one_tool_schema_are_ambiguous"
         ]
       },
@@ -1042,32 +1085,12 @@
       },
       {
         "checks": {
-          "boundary_digests": "N/A: this path does not receive a digest, URN or other fixed-form identifier.",
-          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
-          "finite_numbers": "PASS: depths and visited counts are bounded integers; no float is converted.",
-          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
-          "strict_decoding": "PASS: this function decodes no bytes.",
-          "types_before_conversions": "FIXED: reached-schema class. A mapping is queued by identity; a non-mapping is ignored; a shallower depth replaces a deeper one; an already-seen identity is not queued; the effective context travels with the target."
-        },
-        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_queue_reached_schema",
-        "paths": "resolved schema queued at the next reference depth",
-        "rereads_stored_data": true,
-        "tests": [
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle3_a_schema_reached_through_instance_data_is_checked",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle3_a_self_ref_through_const_stays_inside_the_visited_set",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle3_unreferenced_instance_data_stays_accepted",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle3_a_long_data_position_chain_still_hits_the_depth_bound"
-        ]
-      },
-      {
-        "checks": {
           "boundary_digests": "PASS: an external URL, a dangling fragment and a foreign dialect are rejected. A dynamic reference keyword is rejected. The pointer is not a digest.",
           "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record with the kernel codec.",
           "finite_numbers": "PASS: NaN and the non-finite probe are rejected on the structural descriptor walk.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: a lone surrogate and a non-JSON value are rejected on the structural walk before this function reads a dialect or a reference. Percent-decoding of the fragment is _decode_uri_fragment.",
-          "types_before_conversions": "FIXED: non-string dialect class (list, object, bool, int or None) raises McpProfileError before the dialect is used as a set member. Property names, default, const, enum and examples are instance data and are not schema keywords. A nested non-empty $id switches both roots to that resource. An embedded tool schema keeps itself as the pointer root until that switch. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl (48 generated cases) and the three repeated-$id tests (8 generated cases), result PASS: a child already reached through the library crawl is not re-entered, so the seen set keeps the resolved context instead of the pre-index context."
+          "types_before_conversions": "FIXED: non-string dialect class (list, object, bool, int or None) raises McpProfileError before the dialect is used as a set member. Property names, default, const, enum and examples are instance data and are not schema keywords. A nested non-empty $id switches both roots to that resource. An embedded tool schema keeps itself as the pointer root until that switch. $ref resolution already happened in _resolve_graph with the context of each path that reached this node: this pass only reads the node's own keywords, and the pre-fix seen/deferred merging is removed in favour of the state filter of _check_reached_schemas. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl (48 generated cases) and the three repeated-$id tests (8 generated cases), result PASS."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
         "function": "_check_schema_keywords",
@@ -1338,7 +1361,7 @@
     "docs/development_plan/OCOR_MCP_2026-07-28_PROFILE.md": "856a033a0f466bec0e0c734eecbc057d1b37a97bf9f0995c73878655f1147f52",
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/c1/codegen.py": "9feaf63c73d78c22fa59e44cc4b7fe6930315148f94f8e79d45cd9447409ac00",
-    "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py": "754bf711d2f7bc1b486be4e6c7f3eb82b1e51cf20c1668fc2236891833f4f58e",
+    "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py": "feca5a8b27aa48af289a410aa2780536c5cb7b9313275c44f1d087e1dbba6059",
     "ocor-runtime/src/ocor_runtime/c2/mcp_boundary.py": "cdb392d06977c504db178844b9a4adb24cde15afba9d56b00f29fd5daa6c5007",
     "ocor-runtime/src/ocor_runtime/c8/mcp_call.py": "0dfb0bb36527d896751a3a1c485c2feae43e7f942b4e03b297966de84724300f",
     "ocor-runtime/tests/fixtures/mcp/2026-07-28/DEPENDENCY.md": "604aa3880afb6f6f33137f025cdc1b07051d7d46b8348fdf8c943dc759f4ad78",
@@ -1346,7 +1369,7 @@
     "ocor-runtime/tests/fixtures/mcp/2026-07-28/changelog.mdx": "b327e576f4c96b34e92f338f8ffefc35e13d0e953ab76bdb3aab342d104c8e53",
     "ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json": "edbb197ed0f92e90d658866e23cf76f107df0caac5ce25c2b9e64e1ca9a6314a",
     "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py": "305ffc90c9ec090f5ed05bd2d2f7109811ffbf3c095ad2c487d592d0c7d60701",
-    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py": "46fa10ec9051a747766f8c8eff792b30a93923637f444cbc86b4ee7492a9096e",
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py": "6e460e8d2ac3a14108b06d4f2618fe9a798d13bf2ec0e12e4dd1acd35579ac06",
     "reports/planning/OCOR_PLAN_RUN_STATE.json": "53934ef7a9061c343f01959300d5df621dc4679f544fdb512441aa04ca1ac809",
     "reports/tests/test_check_execution_commit_inputs.py": "286b458aa06cc40d58165d0b64c035b47ca4f2d0042cb487940f61d6e067237f",
     "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json": "efaedb5495e35bf5e292f3c10c4b0acdcd05314d46519778b77820472f396b3e",
@@ -1500,76 +1523,58 @@
   ],
   "preventive_review": {
     "counts": {
-      "advisory": 6,
+      "advisory": 2,
       "blocking": 3,
       "high": 0,
       "low": 0,
       "medium": 0,
-      "total": 9
+      "total": 5
     },
     "dispositions": [
       {
         "disposition": "FIXED",
         "finding": "P1",
-        "row": "The anchor path keeps the crawl state referencing 0.37.0 computes: _profile_id_of returns the raw $id like the pinned draft's id_of, _enter_schema_resource keeps the no-op identity check first and resolves a distinct resource through the current resolver's registry, and _check_schema_keywords does not re-enter a child already reached through the library. New test test_cycle8_anchor_ref_follows_the_referencing_crawl: 48 generated cases, positive and negative, against referencing 0.37.0."
+        "row": "_resolve_graph resolves every $ref path with the resolver the referencing 0.37.0 lookup returns, before any keyword check; keyword descent carries the crawl-assigned resource URI and a node already reached through a reference path is never re-resolved with the profile's own root state. New test test_cycle8_pointer_and_anchor_paths_are_each_resolved: the same holder is reached by a JSON Pointer (library rejects, _WrappedReferencingError) and by an anchor (library validates), over all four member orders; RED on the pre-fix head fails exactly for [props_first-b_first], GREEN on the final head rejects the descriptor with the typed 'does not resolve' in every order. 8 generated differential cases."
       },
       {
         "disposition": "FIXED",
         "finding": "P2",
-        "row": "Each embedded tool schema with its own $id gets a local registry in _build_resolution_index and _enter_tool_schema resolves through it, so a nested $id repeated across schema trees resolves in the current tree, as referencing does. New tests cover two tools, inputSchema and outputSchema of one tool, the descriptor $defs and two tool roots: 8 generated cases."
+        "row": "_build_schema_trees indexes one autonomous tree per schema resource root with its own registry and anchor index; no resources map or registry is shared between trees, so a nested $id repeated across schema trees resolves inside the current tree only, and a descriptor $defs resource never leaks into a tool lookup (or vice versa). The repeated-$id tests cover two tools, inputSchema and outputSchema of one tool, the descriptor $defs beside a tool schema and two tool roots, in both member orders."
       },
       {
-        "disposition": "FIXED_RECORD",
+        "disposition": "FIXED",
         "finding": "P3",
-        "row": "The record, the README and this disposition state the real gate outcome: git diff --check <base>..<head> exits 2 because the pinned byte-exact official fixture schema.json ends with a blank line at EOF. No green claim; the red.log normalization is described for what it is."
+        "row": "_profile_id_of returns the raw $id exactly like the pinned draft's id_of; a non-string $id (number, boolean, list, object) fails inside the library crawl and is translated to the typed 'MCP schema resource index is not resolvable' refusal, with no raw exception escaping the module. New test test_cycle8_non_string_schema_id_is_typed: 5 bad ids x 4 schema positions (descriptor root, descriptor $defs, tool root, tool $defs) = 20 negative cases."
+      },
+      {
+        "disposition": "OPEN_PO_DECISION_REQUIRED",
+        "finding": "P4 (advisory)",
+        "row": "The explicit gate `git diff --check <base>..<head>` exits 2 because the pinned byte-exact official fixture ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json ends with a blank line at EOF; the real gate outcome is recorded, never declared green. A fix would change a pinned digest and needs a governed disposition (decision request); no test, gate, timer, digest or fixture was changed in this cycle."
       },
       {
         "disposition": "FIXED_RECORD",
-        "finding": "P4",
-        "row": "The cell scan and the role-coherence scan are re-run on the repair head 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f with the regenerated table."
-      },
-      {
-        "disposition": "FIXED_RECORD",
-        "finding": "P5",
-        "row": "oracle.differential_cases counts only the cases that query the pinned library: 104 (48 local matrix + 56 anchor and repeated-$id matrices). The 96 outer and ambiguous matrix cases and the 12 missing-target cases are profile-rule cases and are described as such."
-      },
-      {
-        "disposition": "FIXED_RECORD",
-        "finding": "P6",
-        "row": "commands[0] carries committed_sha256 of the normalized committed blob (853983de..., verifiable in git history at 5356e0d3eb7b7168192afec98ea7685f00f641bb) and raw_preserved_sha256 of the raw preserved bytes (6ae5073a...); there is no raw_sha256 field because the raw bytes are not a committed artifact. The note says the raw of the cycles before cycle 8 is verifiable only in git history (blob at 07eb4fd2040b4081f577c80dcfb1641d09a4da7c)."
-      },
-      {
-        "disposition": "RECORDED_DEFICIT",
-        "finding": "P7",
-        "row": "The distinct check f72a324e25ed-1794763318 ran before this record update without an anonymous-pull rate-limit reading; the deficit is recorded (performed false) instead of fabricated, and every future lane-starting execution records time, value and wait."
-      },
-      {
-        "disposition": "OUT_OF_PERIMETER",
-        "finding": "P8",
-        "row": "call_tool admits a lone surrogate in tool_name. Outside the cycle-8 perimeter (REM-0063-CYCLE7-NO-GO point 4); fixing it here would exceed the mandate and needs a decision. Noted, not changed."
-      },
-      {
-        "disposition": "FIXED_RECORD",
-        "finding": "P9",
-        "row": "The serial-mode reason of the qualifying campaign is recorded: the relaunch kept SERIAL_FALLBACK because the discarded r1 started from the main checkout without --repository/--expected-head, without OCOR_LIVE_POSTGRES_DSN and with host node v22; four-lane mode was not attempted in this cycle and the memory headroom is registered."
+        "finding": "P5 (advisory)",
+        "row": "The introducing comment now reads 'Cycle-8 repair'; the path inventory is re-anchored at the new code head edfe829322d57875c2bd0685a50f9710b4636726 (41 module-level names in mcp_profile.py)."
       }
     ],
-    "outcome_sha256": "637c96a08f4b831950ec8a8e020080452c42c01a8f56e712c69bdcc3e8ccd5ef",
-    "pre_campaign_gate_head": "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
+    "outcome_sha256": null,
+    "pre_campaign_gate_head": null,
     "repair_commits": [
-      "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f"
+      "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
+      "edfe829322d57875c2bd0685a50f9710b4636726"
     ],
-    "request_id": "OCOR-DEV-REM-0063-5356e0d3eb7b-pre",
-    "result": "BLOCKING_FINDINGS",
-    "reviewed_head": "5356e0d3eb7b7168192afec98ea7685f00f641bb",
+    "request_id": "OCOR-DEV-REM-0063-edfe829322d-pre",
+    "result": "PENDING",
+    "reviewed_head": "edfe829322d57875c2bd0685a50f9710b4636726",
     "reviewer": {
       "agent": "Claude Code",
-      "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI). Per trasparenza: alcune decision request di questo task sono state decise per conto del PO con lo stesso modello, e la revisione informativa OCOR-DEV-REM-0063-baef056e5bf6-pre del ciclo 7 \u00e8 di Claude Code; quell'esito non \u00e8 stato letto n\u00e9 usato. Il verdetto OCOR-DEV-REM-0063-07eb4fd2040b-7 \u00e8 stato letto come dato, per conoscere il perimetro (VF-001 e VF-002).",
+      "effort": "max",
+      "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI), indicato dal PO per i cicli eccezionali di OCOR-DEV-REM-0063 (REM-0063-CYCLE7-NO-GO (2026-11-15) punto 4).",
       "model": "claude-fable-5-2",
       "provider": "Anthropic",
       "reserve": false
     },
-    "second_review": "Cycle-8 preventive review OCOR-DEV-REM-0063-5356e0d3eb7b-pre reviewed head 5356e0d3eb7b7168192afec98ea7685f00f641bb. Repair head 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f. A new preventive review is requested on the repair head."
+    "second_review": "The cycle-8 preventive review OCOR-DEV-REM-0063-e2efce6f3dfa-pre reviewed head e2efce6f3dfa996dada7374694cf7b20719cd7b5 (code 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f) and returned BLOCKING_FINDINGS (P1-P3). The prereview-fix commit edfe829322d57875c2bd0685a50f9710b4636726 closes P1-P3; a new preventive review is requested on it and is PENDING. The loop starts the reviewer after prereview_request.json is written (IMPLEMENTATORE-SENZA-AGENTI (2026-11-15))."
   },
   "preventive_review_history": [
     {
@@ -1927,6 +1932,102 @@
         "reserve": false
       },
       "second_review": "not requested; PRE-CAMPAIGN-REVIEW (2026-10-26) point 3. Reviewed head baef056e5bf6156c05578c303b0ab9edbbb87c79. Repair and gate head 0c8bf777f363fffc42234d14b239e4f0b0a8e652."
+    },
+    {
+      "counts": {
+        "advisory": 6,
+        "blocking": 3,
+        "high": 0,
+        "low": 0,
+        "medium": 0,
+        "total": 9
+      },
+      "dispositions": [
+        {
+          "disposition": "FIXED",
+          "finding": "P1",
+          "row": "The anchor path keeps the crawl state referencing 0.37.0 computes: _profile_id_of returns the raw $id like the pinned draft's id_of, _enter_schema_resource keeps the no-op identity check first and resolves a distinct resource through the current resolver's registry, and _check_schema_keywords does not re-enter a child already reached through the library. New test test_cycle8_anchor_ref_follows_the_referencing_crawl: 48 generated cases, positive and negative, against referencing 0.37.0."
+        },
+        {
+          "disposition": "FIXED",
+          "finding": "P2",
+          "row": "Each embedded tool schema with its own $id gets a local registry in _build_resolution_index and _enter_tool_schema resolves through it, so a nested $id repeated across schema trees resolves in the current tree, as referencing does. New tests cover two tools, inputSchema and outputSchema of one tool, the descriptor $defs and two tool roots: 8 generated cases."
+        },
+        {
+          "disposition": "FIXED_RECORD",
+          "finding": "P3",
+          "row": "The record, the README and this disposition state the real gate outcome: git diff --check <base>..<head> exits 2 because the pinned byte-exact official fixture schema.json ends with a blank line at EOF. No green claim; the red.log normalization is described for what it is."
+        },
+        {
+          "disposition": "FIXED_RECORD",
+          "finding": "P4",
+          "row": "The cell scan and the role-coherence scan are re-run on the repair head 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f with the regenerated table."
+        },
+        {
+          "disposition": "FIXED_RECORD",
+          "finding": "P5",
+          "row": "oracle.differential_cases counts only the cases that query the pinned library: 104 (48 local matrix + 56 anchor and repeated-$id matrices). The 96 outer and ambiguous matrix cases and the 12 missing-target cases are profile-rule cases and are described as such."
+        },
+        {
+          "disposition": "FIXED_RECORD",
+          "finding": "P6",
+          "row": "commands[0] carries committed_sha256 of the normalized committed blob (853983de..., verifiable in git history at 5356e0d3eb7b7168192afec98ea7685f00f641bb) and raw_preserved_sha256 of the raw preserved bytes (6ae5073a...); there is no raw_sha256 field because the raw bytes are not a committed artifact. The note says the raw of the cycles before cycle 8 is verifiable only in git history (blob at 07eb4fd2040b4081f577c80dcfb1641d09a4da7c)."
+        },
+        {
+          "disposition": "RECORDED_DEFICIT",
+          "finding": "P7",
+          "row": "The distinct check f72a324e25ed-1794763318 ran before this record update without an anonymous-pull rate-limit reading; the deficit is recorded (performed false) instead of fabricated, and every future lane-starting execution records time, value and wait."
+        },
+        {
+          "disposition": "OUT_OF_PERIMETER",
+          "finding": "P8",
+          "row": "call_tool admits a lone surrogate in tool_name. Outside the cycle-8 perimeter (REM-0063-CYCLE7-NO-GO point 4); fixing it here would exceed the mandate and needs a decision. Noted, not changed."
+        },
+        {
+          "disposition": "FIXED_RECORD",
+          "finding": "P9",
+          "row": "The serial-mode reason of the qualifying campaign is recorded: the relaunch kept SERIAL_FALLBACK because the discarded r1 started from the main checkout without --repository/--expected-head, without OCOR_LIVE_POSTGRES_DSN and with host node v22; four-lane mode was not attempted in this cycle and the memory headroom is registered."
+        }
+      ],
+      "outcome_sha256": "637c96a08f4b831950ec8a8e020080452c42c01a8f56e712c69bdcc3e8ccd5ef",
+      "repair_commits": [
+        "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f"
+      ],
+      "request_id": "OCOR-DEV-REM-0063-5356e0d3eb7b-pre",
+      "result": "BLOCKING_FINDINGS",
+      "reviewed_head": "5356e0d3eb7b7168192afec98ea7685f00f641bb",
+      "reviewer": {
+        "agent": "Claude Code",
+        "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI). Per trasparenza: alcune decision request di questo task sono state decise per conto del PO con lo stesso modello, e la revisione informativa OCOR-DEV-REM-0063-baef056e5bf6-pre del ciclo 7 \u00e8 di Claude Code; quell'esito non \u00e8 stato letto n\u00e9 usato. Il verdetto OCOR-DEV-REM-0063-07eb4fd2040b-7 \u00e8 stato letto come dato, per conoscere il perimetro (VF-001 e VF-002).",
+        "model": "claude-fable-5-2",
+        "provider": "Anthropic",
+        "reserve": false
+      }
+    },
+    {
+      "counts": {
+        "advisory": 2,
+        "blocking": 3,
+        "high": 0,
+        "low": 0,
+        "medium": 0,
+        "total": 5
+      },
+      "dispositions": [],
+      "outcome_sha256": null,
+      "repair_commits": [
+        "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f"
+      ],
+      "request_id": "OCOR-DEV-REM-0063-e2efce6f3dfa-pre",
+      "result": "BLOCKING_FINDINGS",
+      "reviewed_head": "e2efce6f3dfa996dada7374694cf7b20719cd7b5",
+      "reviewer": {
+        "agent": "Claude Code",
+        "effort": "max",
+        "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI).",
+        "model": "claude-fable-5-2",
+        "provider": "Anthropic"
+      }
     }
   ],
   "previous_observation": {
@@ -1937,7 +2038,7 @@
   },
   "qualification_limits": "Cycle-1 repair RED at 1c5855a: 7 failed, 91 passed, exit 1, log sha256 26aae449cdf071a5aa6dde145317891acd03dda7949d1bc0e002d541df6bc991. Cycle-1 repair GREEN at c28cd9c411c466f38e9671d2774939bb9a910a30: 98 passed, exit 0, log sha256 9216d114a2a9766bf7379a1a7995b49a24cdc1b451a60119e29bc1ae1776ee06. Those bytes remain at 0384449029efa6e3ddb65de02d5d821990e6e7b6. Digest-checker RED at 56854f8a26abfbd20802920fe679487a6d553392: the new tests failed because the checker still returned PASS, log sha256 0e365e7d9e438eb8c13540b6b4d974221a0664c73da238da288dbb1ab795c67c. Cycle-2 RED on the pre-fix resolver with the final test module: 43 failed, 127 passed, exit 1, log sha256 67868a1e29c59e4e42c5197874e15d89c2e3f0094c97b35c8d1dcbabbb511bec. Cycle-2 GREEN at 3dd37e29222ae2c85f400f4fc7573def127f6a53: 170 passed, exit 0, log sha256 0c873f462c4fa69d2024d5c2925485d5e4e2c1d794cafe7b96234b14760388cb. The qualifying four-lane campaign fbe0200c24c0-1794612781 ran on fbe0200c24c07340b67430a3b0a24a3cac65ba82: FOUR_LANE, 6014 tests, 0 failures, 0 errors, 0 skipped, union missing and unexpected empty, duration 1719.366 s, power MAINS, host residue empty, exit 0. The campaign at c28cd9c411c466f38e9671d2774939bb9a910a30 does not qualify this head. The pre-campaign gate on fbe0200c24c07340b67430a3b0a24a3cac65ba82 is 51 PASS, 6 NOT_EXECUTED, 0 failed, 98.198 s. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. FR-047, FR-169 and NFR-022 are not verified here. Class-coverage RED of the planted-key rows on the pre-fix resolver: 18 failed, 0 passed, exit 1. Identity-decode mutation: 18 failed, 12 passed. Those sections are appended to red.log; the whole-file sha256 is 5ace6c962622f65d30ddc637e465937a22315ea74c7549bcbf8ddb5c11622d86, and sha256 67868a1e29c59e4e42c5197874e15d89c2e3f0094c97b35c8d1dcbabbb511bec is only that prefix. GREEN of the module at a284c11238063760c471d80cd9e0f7b6c957e42b: 188 passed, exit 0, log sha256 9bb6f6c786bcb10068ddac5d1110724faf3fe07f23d614c4bc90321fdd6655a8. Cycle 3 RED at 51a3b58ecda1e52aaab47c97269e45170562a6c1 on the pre-fix profile 19f63aeec7d16c7d329aff3421415bcb5e5dd43a: 46 failed, 42 passed, 188 deselected, exit 1, log sha256 9ac32dc6d95bee2ca8a485e9060df77651e20a353b55b73febb08093daf75d96. The same log records one invocation that did not start pytest and a non-final tilde rerun of 1 failed, 1 passed, 274 deselected. Cycle-3 GREEN at aec75cd69010a29fe0997cd3dd15e5c89c639633: 276 passed, exit 0, log sha256 32b1b8c49083f6c38646f13a59acc792787891867f67f87a33ec6af719cab92b. The qualifying four-lane campaign aec75cd69010-1794649854 ran on aec75cd69010a29fe0997cd3dd15e5c89c639633: FOUR_LANE, 6102 tests, 0 failures, 0 errors, 0 skipped, duration 1674.782 s, power MAINS, host residue empty, exit 0. fbe0200c24c0-1794612781 remains the cycle-2 campaign and does not qualify this head. VF-004 of OCOR-DEV-REM-0063-19f63aeec7d1-2 is not closed: this suite is not the distinct 0048/requalification image-pull check, and the pins were not changed. The pre-campaign gate on aec75cd69010a29fe0997cd3dd15e5c89c639633 is 51 PASS, 6 NOT_EXECUTED, 0 failed, 98.313 s, log sha256 688c6200791952c5ef9abbf17fe65fffbdff3cf902a4fb2721ae0e8d57913e5a. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. Cycle 4 code is d849a827fae51d56e371357812b453a7082d4e59. RED 0914a61bcb78b0e1710b9fbc43df205450921005: 22 failed, 6 passed, 293 deselected. GREEN of the task module: 321 passed. The qualifying four-lane campaign is d849a827fae5-1794672102: 6147 tests, 0 failures, 0 errors, 0 skipped, 1748.014 s, MAINS. aec75cd69010-1794649854 qualified cycle 3 and does not qualify this head. The first three distinct 0048/0005/0050/0082 runs did not start pytest and stay diagnostic. The authorized extra repetition d849a827fae5-1794683564 passed: 410 tests, 0 failures, 0 errors, 0 skipped, exact union, empty residue. It is recorded in repair_cycle_4.distinct_check.authorized_repetition. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. Cycle 5 code is 3305ab4cf85ea8aabca0aad58c3d3ff60c770306. RED b3a0b5c0fa9fcef6b3189959cfd589a349515316 of the new tests against 28c6815f8de3aedfabdf0585674ceec5ce0cce9f: 4 failed, 1 passed. GREEN of the task module: 431 passed. Oracle referencing 0.37.0, test test_cycle5_ref_targets_match_referencing_on_the_current_resource, 105 generated cases, result PASS. The qualifying four-lane campaign is 3305ab4cf85e-1794700091: 6257 tests, 0 failures, 0 errors, 0 skipped, 1656.782 s, MAINS. d849a827fae5-1794672102 qualified cycle 4 and does not qualify this head. The distinct 0048/0005/0050/0082 check 3305ab4cf85e-1794701778 passed: 410 tests, 0 failures, 0 errors, 0 skipped, exact union, empty residue. d849a827fae5-1794683564 does not transfer counts. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. Cycle 6 code is 265f6ad2ced262999bd23c35c9dea3fc94caf988. RED of the cycle-6 tests on 2018893ae8f37a9a6428c8c2b785055c763bbeec before the production edit: 76 failed, 293 passed. GREEN of the task module: 800 passed. Oracle referencing 0.37.0, test test_cycle6_ref_targets_match_referencing_on_the_effective_resource, 240 generated cases, result PASS. The qualifying four-lane campaign is 265f6ad2ced2-1794717879: 6626 tests, 0 failures, 0 errors, 0 skipped, 1642.715 s, MAINS. 3305ab4cf85e-1794700091 qualified cycle 5 and does not qualify this head. The distinct 0048/0005/0050/0082 check 265f6ad2ced2-1794719545 passed: 410 tests, 0 failures, 0 errors, 0 skipped, exact union, empty residue. 3305ab4cf85e-1794701778 does not transfer counts. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. Cycle 7 code is 0c8bf777f363fffc42234d14b239e4f0b0a8e652. The manual resolver is replaced by referencing 0.37.0 on DRAFT202012, the current resource and base URI. RED of the cycle-7 tests on d70920ea901f before the production edit: 39 failed, 33 passed. GREEN of the task module: 934 passed; three consecutive runs are recorded in repair_cycle_7.stability. Oracle referencing 0.37.0: 36 differential cases and 32 empty-pointer cases, result PASS. The qualifying serial campaign is 0c8bf777f363-1794742597: 6760 tests, 0 failures, 0 errors, 0 skipped, 4267.300933112041 s, SERIAL_FALLBACK, exact JUnit/collection union. Power state was not recorded by the serial runner and is not claimed. 265f6ad2ced2-1794717879 qualified cycle 6 and does not qualify this head. The distinct 0048/0005/0050/0082 check 0c8bf777f363-1794746955 passed: 410 tests, 0 failures, 0 errors, 0 skipped, exact union, empty residue. 265f6ad2ced2-1794719545 does not transfer counts. The failed campaign d70920ea901f-1794720847 is an environment diagnostic (HTTP 429) and is not transferred. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.",
   "qualifies_requirements": false,
-  "raw_output_sha256": "7dba219c07a82a9944e454d6dd50140f85fe1200d71752eaee062d22435103c5",
+  "raw_output_sha256": "a90ce7dda4d54198857ac4c3c02a807770e6f83b4edadcf38dd07b3b1ed6995f",
   "record_id": "OCOR-DEV-REM-0063-3dd37e29222a",
   "repair_cycle_2": {
     "campaign_head": "fbe0200c24c07340b67430a3b0a24a3cac65ba82",
@@ -2510,12 +2611,12 @@
   },
   "repair_cycle_8": {
     "campaign_requalification": {
-      "head": "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
-      "reason": "The cycle-8 code changed after the campaign f72a324e25ed-1794759063 and the distinct check f72a324e25ed-1794763318 (preventive-review findings P1 and P2). The qualifying campaign and the distinct check must be re-run on the repair head.",
+      "head": "edfe829322d57875c2bd0685a50f9710b4636726",
+      "reason": "The cycle-8 code changed after the campaign f72a324e25ed-1794759063 and the distinct check f72a324e25ed-1794763318 (preventive-review findings P1-P3 of OCOR-DEV-REM-0063-e2efce6f3dfa-pre). The qualifying campaign and the distinct check must be re-run on the prereview-fix head.",
       "required": true,
       "status": "PENDING_PREREVIEW"
     },
-    "code_commit": "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
+    "code_commit": "edfe829322d57875c2bd0685a50f9710b4636726",
     "decision": "REM-0063-CYCLE7-NO-GO (2026-11-15) point 4, cycle 8",
     "decision_commit": "c515db74eed0f10e7a08f3434898cc47bad2efab",
     "decision_sha256": "f642f1ae719c4645827db2b19f09e7e2f578bfa8f63c2a7aedeb02010508066f",
@@ -2577,50 +2678,52 @@
       }
     },
     "green": {
-      "commit": "271bdaf561ab99a6b8b96c58f067f6aa096b6f2f",
+      "commit": "edfe829322d57875c2bd0685a50f9710b4636726",
       "deselected": 0,
       "failed": 0,
-      "passed": 1146,
+      "passed": 1170,
       "runs": [
         {
-          "duration_seconds": 2.74,
-          "log_sha256": "77127277996704aaeec2f2e16a23e4b12d7169738cf7acdce7c3a630cca519f6",
+          "duration_seconds": 2.96,
+          "log_sha256": "f6aac01a7fdcb919e356551cf7a6bc4c789a57787807ba5ae8ddb12f04e71d42",
           "run": 1,
           "status": "PASS",
-          "tests": 1146
+          "tests": 1170
         },
         {
-          "duration_seconds": 3.04,
-          "log_sha256": "79813b030414e2135217e25b464bf84a6ebc61024ea57758b1d58fd84affd7ad",
+          "duration_seconds": 2.74,
+          "log_sha256": "e7f536fceda69ff056d22cb66cd2c7c0400485e54146da12487789d2fe5ade72",
           "run": 2,
           "status": "PASS",
-          "tests": 1146
+          "tests": 1170
         },
         {
-          "duration_seconds": 2.72,
-          "log_sha256": "1571df9912a2cacd43c0844f490de1f64ee771763953d44b8d1581c2a82a0dd1",
+          "duration_seconds": 2.98,
+          "log_sha256": "7747cda9e9d64aa82397e12b1fc8cdcf1dfc46a70444b66b03cba8a45a3aeac9",
           "run": 3,
           "status": "PASS",
-          "tests": 1146
+          "tests": 1170
         }
-      ]
+      ],
+      "superseded_runs_note": "The three-run GREEN at 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f (1146 passed each) documented before the prereview-fix commit is superseded: the final code head is edfe829322d57875c2bd0685a50f9710b4636726 and the qualifying GREEN must run there."
     },
     "oracle": {
-      "differential_cases": 104,
+      "differential_cases": 112,
       "library": "referencing",
-      "notes": "104 generated cases query the pinned library (48 of test_cycle8_noop_id_local_target_resolves_through_instance_data and 56 of the cycle-8 anchor and repeated-$id matrices). 96 further cases (outer and ambiguous matrices) assert profile rules without calling the library, and 12 missing-target cases assert the typed does-not-resolve reason: they are profile-rule cases, not differential cases.",
+      "notes": "112 generated cases query the pinned library (48 of test_cycle8_noop_id_local_target_resolves_through_instance_data, 56 of the cycle-8 anchor and repeated-$id matrices, 8 of test_cycle8_pointer_and_anchor_paths_are_each_resolved, which runs the pointer and the anchor oracle for each of the four member orders). 116 further cases (outer and ambiguous matrices, 48 each, plus the 20 non-string-$id negatives) assert profile rules without calling the library, and 12 missing-target cases assert the typed does-not-resolve reason: they are profile-rule cases, not differential cases.",
       "result": "PASS",
       "tests": [
         "test_cycle8_noop_id_local_target_resolves_through_instance_data",
         "test_cycle8_anchor_ref_follows_the_referencing_crawl",
         "test_cycle8_repeated_nested_id_resolves_in_the_current_tree",
         "test_cycle8_repeated_nested_id_ignores_the_descriptor_defs",
-        "test_cycle8_repeated_root_id_resolves_in_the_current_tree"
+        "test_cycle8_repeated_root_id_resolves_in_the_current_tree",
+        "test_cycle8_pointer_and_anchor_paths_are_each_resolved"
       ],
       "version": "0.37.0"
     },
     "p8_tool_name_surrogate_note": "Prereview P8 (advisory): call_tool admits a lone surrogate in tool_name, returned as-is in the frozen result. The module fixes only 'non-empty string' for tool_name, the return does not admit executing a tool, the self-check row declares the class for argument strings only, and the file is unchanged in cycle 8. It is outside the cycle-8 perimeter (REM-0063-CYCLE7-NO-GO point 4): a fix here would exceed the mandate and needs a decision. Noted, not changed.",
-    "preventive_review": "OCOR-DEV-REM-0063-5356e0d3eb7b-pre: BLOCKING_FINDINGS, P1-P3 blocking and P4-P9 advisory. P1 and P2 fixed in code with 56 new differential cases against referencing 0.37.0; P3 recorded with the real gate outcome (exit 2); P4-P7 and P9 fixed in this record; P8 is out of the cycle-8 perimeter and is noted without code change. New preventive review requested on the repair head: PENDING.",
+    "preventive_review": "OCOR-DEV-REM-0063-e2efce6f3dfa-pre: BLOCKING_FINDINGS on the repair head 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f (P1-P3 blocking, P4-P5 advisory). P1, P2 and P3 are fixed in code at edfe829322d57875c2bd0685a50f9710b4636726 with the differential cases and the typed negatives described in the dispositions; P4 requires a governed disposition (pinned fixture digest) and stays recorded, not fixed; P5 is fixed (comment renamed to Cycle-8 and the path inventory re-anchored at the new head). New preventive review requested on edfe829322d57875c2bd0685a50f9710b4636726: PENDING.",
     "prior_campaigns_not_transferred": [
       "0c8bf777f363-1794742597"
     ],
@@ -2638,11 +2741,23 @@
         "raw_preserved_sha256": "b328269e2bce1c550c2624e417969347f4e1036a451c5f4818019a2fd74ec0fa",
         "raw_sha256": "b328269e2bce1c550c2624e417969347f4e1036a451c5f4818019a2fd74ec0fa"
       },
-      "committed_sha256": "853983dee277509ff81eaf72a7093af6f92d6ba276e27538abc0520325dc6706",
+      "committed_sha256": "438879b11136c7de225cb5012885af82b04fe3f0445be5ee9f54d48747e2f873",
       "failed": 60,
-      "normalization": "The raw RED logs have trailing-whitespace lines from pytest progress rendering; the committed logs are the same text without trailing whitespace. The pre-anchor committed bytes remain verifiable in git history as the red.log blob at 5356e0d3eb7b7168192afec98ea7685f00f641bb (853983de...); the anchor committed bytes are the current red.log (9c352d...). Both raw byte streams remain preserved content-addressed outside the repository at their raw_preserved paths (6ae5073a... and b328269e...). The explicit gate `git diff --check <base>..<head>` is NOT green: it exits 2 because the pinned byte-exact official fixture ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json ends with a blank line at EOF (schema.json:3963: new blank line at EOF.), kept byte-exact per DEPENDENCY.md. The RED lines of the cycles before cycle 8 remain verifiable in their raw form only in git history (blob at 07eb4fd2040b4081f577c80dcfb1641d09a4da7c).",
+      "normalization": "The raw RED logs have trailing-whitespace lines from pytest progress rendering; the committed logs are the same text without trailing whitespace. The pre-anchor committed bytes remain verifiable in git history as the red.log blob at 5356e0d3eb7b7168192afec98ea7685f00f641bb (853983de...); the anchor committed bytes are the current red.log (9c352d...). Both raw byte streams remain preserved content-addressed outside the repository at their raw_preserved paths (6ae5073a... and b328269e...). The explicit gate `git diff --check <base>..<head>` is NOT green: it exits 2 because the pinned byte-exact official fixture ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json ends with a blank line at EOF (schema.json:3963: new blank line at EOF.), kept byte-exact per DEPENDENCY.md. The RED lines of the cycles before cycle 8 remain verifiable in their raw form only in git history (blob at 07eb4fd2040b4081f577c80dcfb1641d09a4da7c). The prereview-repair RED appends the same normalization: the raw pytest bytes (102 failed, 134 passed, 934 deselected) are preserved content-addressed outside the repository at ~/.ocor-codex/rem-0063/preserved/edfe829/red.log.cycle8-prereview.raw (sha256 84b2f853ab6370d0f3ebba7f560ed08fcbff6550e70df400934aa85ffaba1d79); the committed red.log appends those bytes without trailing whitespace and a two-line header with the command and the head. The explicit gate `git diff --check <base>..<head>` is NOT green: it exits 2 because the pinned byte-exact official fixture ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json ends with a blank line at EOF, kept byte-exact per DEPENDENCY.md; a fix would change a pinned digest and needs a governed disposition (decision request), outside this cycle's perimeter.",
       "parent": "07eb4fd2040b4081f577c80dcfb1641d09a4da7c",
       "passed": 96,
+      "prereview_repair": {
+        "command": "Cycle-8 prereview-repair RED on the pre-fix head: detached worktree at e2efce6f3dfa996dada7374694cf7b20719cd7b5 with the final test module, PYTHONPATH=<detached>/ocor-runtime/src, pytest -q --tb=short -k cycle8. 102 failed, 134 passed, 934 deselected.",
+        "committed_in": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/red.log (normalized, appended)",
+        "committed_sha256": "438879b11136c7de225cb5012885af82b04fe3f0445be5ee9f54d48747e2f873",
+        "deselected": 934,
+        "failed": 102,
+        "parent": "e2efce6f3dfa996dada7374694cf7b20719cd7b5",
+        "passed": 134,
+        "raw_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/edfe829/red.log.cycle8-prereview.raw",
+        "raw_preserved_sha256": "84b2f853ab6370d0f3ebba7f560ed08fcbff6550e70df400934aa85ffaba1d79",
+        "scope": "cycle8 prereview-fix tests on e2efce6f3dfa996dada7374694cf7b20719cd7b5 before the production edit"
+      },
       "raw_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/8a4893df052b/red.log.cycle8.raw",
       "raw_sha256": "6ae5073a2a67fd062c4314618f9fe0cd8144e70f2a63cda9cdcbaf3258a1d3c7",
       "scope": "cycle8 tests on 07eb4fd before the production edit"
@@ -2844,17 +2959,37 @@
         "reserve": false,
         "result": "BLOCKING_FINDINGS",
         "reviewed_head": "baef056e5bf6156c05578c303b0ab9edbbb87c79"
+      },
+      {
+        "agent": "Claude Code",
+        "independence_limits": "Fornitore (Anthropic) diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI). Revisore indicato dal PO per i cicli eccezionali di OCOR-DEV-REM-0063 (REM-0063-CYCLE7-NO-GO (2026-11-15) punto 4).",
+        "model": "claude-fable-5-2",
+        "provider": "Anthropic",
+        "request_id": "OCOR-DEV-REM-0063-5356e0d3eb7b-pre",
+        "reserve": false,
+        "result": "BLOCKING_FINDINGS",
+        "reviewed_head": "5356e0d3eb7b7168192afec98ea7685f00f641bb"
+      },
+      {
+        "agent": "Claude Code",
+        "independence_limits": "Fornitore (Anthropic) diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI). Revisore indicato dal PO per i cicli eccezionali di OCOR-DEV-REM-0063 (REM-0063-CYCLE7-NO-GO (2026-11-15) punto 4).",
+        "model": "claude-fable-5-2",
+        "provider": "Anthropic",
+        "request_id": "OCOR-DEV-REM-0063-e2efce6f3dfa-pre",
+        "reserve": false,
+        "result": "BLOCKING_FINDINGS",
+        "reviewed_head": "e2efce6f3dfa996dada7374694cf7b20719cd7b5"
       }
     ],
     "preventive_reviewer": {
       "agent": "Claude Code",
-      "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI). Per trasparenza: alcune decision request di questo task sono state decise per conto del PO con lo stesso modello, e la revisione informativa OCOR-DEV-REM-0063-baef056e5bf6-pre del ciclo 7 \u00e8 di Claude Code; quell'esito non \u00e8 stato letto n\u00e9 usato. Il verdetto OCOR-DEV-REM-0063-07eb4fd2040b-7 \u00e8 stato letto come dato, per conoscere il perimetro (VF-001 e VF-002).",
+      "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI), indicato dal PO per i cicli eccezionali di OCOR-DEV-REM-0063 (REM-0063-CYCLE7-NO-GO (2026-11-15) punto 4).",
       "model": "claude-fable-5-2",
       "provider": "Anthropic",
-      "request_id": "OCOR-DEV-REM-0063-5356e0d3eb7b-pre",
+      "request_id": "OCOR-DEV-REM-0063-edfe829322d-pre",
       "reserve": false,
-      "result": "BLOCKING_FINDINGS",
-      "reviewed_head": "5356e0d3eb7b7168192afec98ea7685f00f641bb"
+      "result": "PENDING",
+      "reviewed_head": "edfe829322d57875c2bd0685a50f9710b4636726"
     },
     "verifier_excluded_providers": [
       "xAI",
@@ -3167,5 +3302,5 @@
   ],
   "supersedes": "OCOR-DEV-REM-0063-d215c7d2c1dc",
   "task_id": "OCOR-DEV-REM-0063",
-  "updated_at": "2026-11-15T18:40:45Z"
+  "updated_at": "2026-11-15T21:03:08Z"
 }
