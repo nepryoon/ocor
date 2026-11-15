@@ -99,9 +99,19 @@ def _profile_anchors_in(
 
 
 def _profile_id_of(contents: Any) -> str | None:
-    """Use the profile's no-effect rule when the pinned registry crawls."""
+    """Return the raw ``$id``, exactly as the pinned draft's ``id_of`` does.
 
-    return _declared_id(contents)
+    ``Resource.id`` strips a trailing empty fragment, so an ``$id`` of ``#``
+    becomes the empty URI reference and joins to the current URI. The crawl of
+    referencing 0.37.0 then replaces the current resource for that URI; the
+    profile must see the same crawl. The profile's no-op rule stays in
+    ``_declared_id`` and ``_resource_uri``, which never change what the library
+    crawls.
+    """
+
+    if not isinstance(contents, Mapping):
+        return None
+    return contents.get("$id")
 
 
 def _profile_subresources_of(
@@ -649,13 +659,15 @@ def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
                 schema = tool.get(field)
                 if not isinstance(schema, Mapping):
                     continue
+                embedded_uri = f"urn:ocor:embedded-tool:{index}:{field}"
                 candidate = _resource_uri(schema, document_uri)
                 if candidate != document_uri:
-                    resources.update(
-                        _crawl_document_resources(schema, candidate, aliases)
+                    tree = _crawl_document_resources(schema, candidate, aliases)
+                    resources.update(tree)
+                    local_registries[embedded_uri] = Registry().with_resources(
+                        list(tree.items())
                     )
                     continue
-                embedded_uri = f"urn:ocor:embedded-tool:{index}:{field}"
                 temporary = dict(schema)
                 temporary.pop("$id", None)
                 discovered = _crawl_document_resources(
@@ -780,6 +792,8 @@ def _enter_schema_resource(
     if not isinstance(node, Mapping) or "$id" not in node:
         return context
     resource_uri = _resource_uri(node, context.base_uri)
+    if resource_uri == context.base_uri or resource_uri == context.resource_uri:
+        return context
     if context.fallback_resource_uri == resource_uri:
         return _ResolutionContext(
             resolver=context.fallback_resolver,
@@ -790,14 +804,16 @@ def _enter_schema_resource(
             resources=context.resources,
             aliases=context.aliases,
             anchors=context.anchors,
+            embedded_local_registries=context.embedded_local_registries,
             fallback_resolver=context.resolver,
             fallback_resource_uri=context.resource_uri,
             fallback_registry=context.registry,
         )
-    if resource_uri == context.base_uri or resource_uri == context.resource_uri:
-        return context
+    resolver_registry = getattr(context.resolver, "_registry", None)
+    if resolver_registry is None:
+        resolver_registry = context.registry
     return _ResolutionContext(
-        resolver=context.registry.resolver(resource_uri),
+        resolver=resolver_registry.resolver(resource_uri),
         resource_uri=resource_uri,
         base_uri=resource_uri,
         document_uri=context.document_uri,
@@ -805,6 +821,7 @@ def _enter_schema_resource(
         resources=context.resources,
         aliases=context.aliases,
         anchors=context.anchors,
+        embedded_local_registries=context.embedded_local_registries,
     )
 
 
@@ -839,10 +856,26 @@ def _enter_tool_schema(
 
     if not isinstance(node, Mapping):
         return context
-    if "$id" in node:
-        if _resource_uri(node, context.base_uri) != context.base_uri:
-            return _enter_root_schema_resource(context, node)
     resource_uri = f"urn:ocor:embedded-tool:{index}:{field}"
+    if "$id" in node:
+        candidate = _resource_uri(node, context.base_uri)
+        if candidate != context.base_uri:
+            local_registry = context.embedded_local_registries.get(resource_uri)
+            if local_registry is None:
+                raise McpProfileError(
+                    "MCP embedded tool schema resource is not indexed"
+                )
+            return _ResolutionContext(
+                resolver=local_registry.resolver(candidate),
+                resource_uri=candidate,
+                base_uri=candidate,
+                document_uri=context.document_uri,
+                registry=context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+                embedded_local_registries=context.embedded_local_registries,
+            )
     if resource_uri not in context.resources:
         raise McpProfileError("MCP embedded tool schema resource is not indexed")
     local_registry = context.embedded_local_registries.get(resource_uri)
@@ -1103,6 +1136,8 @@ def _check_schema_keywords(
         )
 
     def enter(child: object) -> None:
+        if isinstance(child, Mapping) and id(child) in deferred:
+            return
         _check_schema_keywords(
             child,
             _enter_schema_resource(context, child),

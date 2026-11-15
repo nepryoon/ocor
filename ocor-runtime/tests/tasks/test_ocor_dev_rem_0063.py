@@ -3395,3 +3395,261 @@ def test_cycle8_noop_id_missing_target_is_rejected_for_the_right_reason(
                 fragment="#/$defs/private",
             )
         )
+
+
+# Cycle-9 repair of OCOR-DEV-REM-0063 (prereview OCOR-DEV-REM-0063-5356e0d3eb7b-pre,
+# findings P1 and P2). P1: an anchor into a schema whose ``$id`` joins to the
+# current base must follow the crawl state referencing 0.37.0 keeps after the
+# anchor lookup; a JSON Pointer inside that schema resolves against the crawled
+# resource (last resource for the URI), not against the profile's static root.
+# P2: a nested ``$id`` repeated across schema trees (two tools, inputSchema and
+# outputSchema of one tool, descriptor ``$defs`` beside a tool schema, two tool
+# roots) resolves inside the current schema tree, never in the other tree that
+# happens to share the URI. Oracle: referencing 0.37.0 and Draft202012Validator.
+
+_CYCLE8_ANCHOR_IDS = ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json")
+_CYCLE8_ANCHOR_FRAGMENTS = ("#/$defs/private", "#/$defs/pri%76ate")
+_CYCLE8_REPEAT_URI = "https://example.invalid/h.json"
+
+
+def _cycle8_anchor_descriptor(
+    *,
+    field: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+) -> dict[str, Any]:
+    """A tool schema whose root ``$ref`` is the ``#hold`` anchor.
+
+    ``holder`` declares an ``$id`` that joins to the descriptor base and an
+    ``$anchor``. Its inner ``$ref`` targets ``private``, which lives only in
+    the tool schema root (``root``), only in ``holder`` (``holder``), in both
+    (``both``) or in neither (unused by this matrix).
+    """
+    holder: dict[str, Any] = {
+        "$id": identifier,
+        "$anchor": "hold",
+        "type": "object",
+        "properties": {"n": {"$ref": fragment}},
+    }
+    if placement in ("holder", "both"):
+        holder["$defs"] = {"private": {"type": "integer"}}
+    body: dict[str, Any] = {
+        "type": "object",
+        "$ref": "#hold",
+        "$defs": {"holder": holder},
+    }
+    if placement in ("root", "both"):
+        body["$defs"]["private"] = {"type": "integer"}
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"][0][field] = body
+    return document
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+@pytest.mark.parametrize("placement", ("root", "holder", "both"))
+@pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+    field: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+) -> None:
+    """The anchor path keeps the crawl the library triggers, pointer included."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle8_anchor_descriptor(
+        field=field,
+        identifier=identifier,
+        placement=placement,
+        fragment=fragment,
+    )
+    body = document["tools"][0][field]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    validator = Draft202012Validator(
+        body,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    if placement == "root":
+        with pytest.raises(_WrappedReferencingError):
+            validator.is_valid({"n": 11})
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+    else:
+        assert validator.is_valid({"n": 11})
+        assert not validator.is_valid({"n": "bad"})
+        _validate(document)
+
+
+def _cycle8_repeated_id_bodies(
+    *,
+    placement: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Two schema trees that both declare the nested ``$id`` ``h.json``.
+
+    The first tree reaches its ``h`` through a root ``$ref``; the inner ``$ref``
+    targets ``t``, which lives only in the first (``first``) or only in the
+    second (``second``) tree.
+    """
+    inner_first: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+        "properties": {"n": {"$ref": "#/$defs/t"}},
+    }
+    if placement == "first":
+        inner_first["$defs"] = {"t": {"type": "integer"}}
+    inner_second: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+    }
+    if placement == "second":
+        inner_second["$defs"] = {"t": {"type": "integer"}}
+    first: dict[str, Any] = {
+        "type": "object",
+        "properties": {"a": {"$ref": "#/$defs/h"}},
+        "$defs": {"h": inner_first},
+    }
+    second: dict[str, Any] = {
+        "type": "object",
+        "$defs": {"h": inner_second},
+    }
+    return first, second
+
+
+@pytest.mark.parametrize("arrangement", ("two_tools", "in_out"))
+@pytest.mark.parametrize("placement", ("first", "second"))
+def test_cycle8_repeated_nested_id_resolves_in_the_current_tree(
+    arrangement: str,
+    placement: str,
+) -> None:
+    """Two trees sharing one nested ``$id`` stay separate resources."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    first, second = _cycle8_repeated_id_bodies(placement=placement)
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    if arrangement == "two_tools":
+        document["tools"] = [
+            {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+            {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+        ]
+    else:
+        document["tools"] = [
+            {"name": "t0", "inputSchema": first, "outputSchema": second},
+        ]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(first),
+    )
+    validator = Draft202012Validator(
+        first,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    if placement == "first":
+        assert validator.is_valid({"a": {"n": 11}})
+        assert not validator.is_valid({"a": {"n": "bad"}})
+        _validate(document)
+    else:
+        with pytest.raises(_WrappedReferencingError):
+            list(validator.iter_errors({"a": {"n": 11}}))
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+
+
+@pytest.mark.parametrize("placement", ("first", "second"))
+def test_cycle8_repeated_nested_id_ignores_the_descriptor_defs(
+    placement: str,
+) -> None:
+    """A descriptor ``$defs`` entry with the same ``$id`` is not the tool's resource."""
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    first, second = _cycle8_repeated_id_bodies(placement=placement)
+    first.pop("properties", None)
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["$defs"] = {"h": second["$defs"]["h"]}
+    document["tools"] = [
+        {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+    ]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(first),
+    )
+    entered = registry.resolver(_CYCLE7_REPAIR_ROOT).lookup("#/$defs/h")
+    if placement == "first":
+        target = entered.resolver.lookup("#/$defs/t").contents
+        Draft202012Validator.check_schema(target)
+        _validate(document)
+    else:
+        with pytest.raises(Exception):
+            entered.resolver.lookup("#/$defs/t")
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+
+
+@pytest.mark.parametrize("placement", ("first", "second"))
+def test_cycle8_repeated_root_id_resolves_in_the_current_tree(
+    placement: str,
+) -> None:
+    """Two tool roots declaring the same ``$id`` stay separate resources."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    first: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+        "properties": {"a": {"$ref": "#/$defs/t"}},
+    }
+    second: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+    }
+    if placement == "first":
+        first["$defs"] = {"t": {"type": "integer"}}
+    else:
+        second["$defs"] = {"t": {"type": "integer"}}
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"] = [
+        {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+        {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+    ]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(first),
+    )
+    validator = Draft202012Validator(
+        first,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    if placement == "first":
+        assert validator.is_valid({"a": 11})
+        assert not validator.is_valid({"a": "bad"})
+        _validate(document)
+    else:
+        with pytest.raises(_WrappedReferencingError):
+            list(validator.iter_errors({"a": 11}))
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
