@@ -13,7 +13,35 @@ permissions:
   contents: read
 
 jobs:
+  classify-ci-route:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      route: ${{ steps.classify.outputs.route }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Classify pull request CI route
+        id: classify
+        run: |
+          set -euo pipefail
+          route_file="$RUNNER_TEMP/ci-route.env"
+          set +e
+          python3 scripts/classify_pull_request_ci_route.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --github-output "$route_file"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] || ! grep -Eq '^route=(full|state_only)$' "$route_file"; then
+            echo "route=full" > "$route_file"
+          fi
+          cat "$route_file" >> "$GITHUB_OUTPUT"
+
   validation-closure-part:
+    needs: classify-ci-route
+    if: always() && needs.classify-ci-route.outputs.route != 'state_only'
     # One deterministic part of the complete suite on its own runner and full
     # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
     name: validation-closure part ${{ matrix.part }}/4
@@ -155,7 +183,7 @@ jobs:
 
   validation-closure:
     # Aggregator keeps the required check name; ruleset 23412233 is unchanged.
-    needs: [validation-closure-part, conditional-infrastructure-0049]
+    needs: [classify-ci-route, validation-closure-part, conditional-infrastructure-0049]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 110
@@ -172,28 +200,33 @@ jobs:
           fetch-depth: 0
 
       - name: Reject missing, failed or cancelled parts
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           test "${{ needs.validation-closure-part.result }}" = success
           test "${{ needs.conditional-infrastructure-0049.result }}" = success
 
       - name: Set up Python
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12.11"
 
       - name: Set up pinned Node oracle
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20.20.2"
 
       - name: Install uv
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           version: "0.12.5"
           enable-cache: true
 
       - name: Install and verify pinned ruff executable
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           uv tool install ruff==0.13.1
@@ -214,6 +247,7 @@ jobs:
           PYTHON
 
       - name: Synchronize locked runtime environment
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         working-directory: ocor-runtime
         run: |
           set -euo pipefail
@@ -226,6 +260,7 @@ jobs:
           PY
 
       - name: Build pinned TypeScript SDK and oracle
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         working-directory: ocor-runtime/sdk/typescript
         run: |
           set -euo pipefail
@@ -234,13 +269,16 @@ jobs:
           echo "$(pwd)/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Reset or positively verify absence of the previous stack
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: python3 scripts/bootstrap_ci_environment.py --teardown --execute
 
       - name: Resolve governed Fuseki content address
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         id: fuseki-key
         run: python3 scripts/acquire_fuseki_archive.py --github-output >> "$GITHUB_OUTPUT"
 
       - name: Restore exact SHA512-addressed Fuseki archive
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         id: fuseki-cache
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -248,6 +286,7 @@ jobs:
           key: ${{ steps.fuseki-key.outputs.key }}
 
       - name: Provision the full pinned disposable stack
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600 | tee reports/tests/ci_bootstrap.log
@@ -265,7 +304,7 @@ jobs:
           PYTHON
 
       - name: Save verified Fuseki archive in this repository cache
-        if: success() && steps.fuseki-cache.outputs.cache-hit != 'true'
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only' && steps.fuseki-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ steps.fuseki-key.outputs.path }}
@@ -273,12 +312,14 @@ jobs:
 
 
       - name: Verify immutable source and report manifests
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           sha256sum -c inputs/normative/SHA256SUMS | tee reports/tests/post_remediation_input_checksums.txt
           sha256sum -c reports/OCOR_ADD_v1.2_SHA256SUMS | tee reports/tests/post_remediation_report_checksums.txt
 
       - name: Run complete post-remediation document harness
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           PY=ocor-runtime/.venv/bin/python
@@ -290,17 +331,20 @@ jobs:
           "$PY" reports/tests/test_v12_approval_readiness.py | tee reports/tests/post_remediation_approval_readiness.log
 
       - name: Run governed OpenAPI 3.1 validation
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python reports/tests/validate_openapi_governed.py | tee reports/tests/post_remediation_openapi.log
 
       - name: Download every part of the parallel complete suite
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: ocor-closure-full-part-*-${{ github.sha }}
           path: reports/tests/closure-parts
 
       - name: Aggregate the runtime parts and run BA, EV and live PostgreSQL campaigns
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         working-directory: ocor-runtime
         run: |
           set -euo pipefail
@@ -312,6 +356,7 @@ jobs:
           "$PY" -m pytest -v --junitxml=../reports/tests/postgres_junit_post_approval.xml tests/integration/test_postgres_outbox_live.py | tee ../reports/tests/post_remediation_postgres.log
 
       - name: Execute conditional report guards and campaign supervisor tests
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python -m pytest -v --junitxml=reports/tests/guards_junit.xml reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_local_lane_campaign.py | tee reports/tests/ci_guards.log
@@ -324,11 +369,13 @@ jobs:
           PYTHON
 
       - name: Build governed closure evidence
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python reports/tests/build_validation_closure_report.py
 
       - name: Verify DEC-208 authoritative promotion
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           python reports/tests/build_dec208_approval_manifest.py
@@ -336,7 +383,7 @@ jobs:
           ocor-runtime/.venv/bin/python reports/tests/validate_openapi_remediation_c.py
 
       - name: Teardown this disposable stack
-        if: always()
+        if: always() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           mkdir -p reports/tests
@@ -345,7 +392,7 @@ jobs:
           test -z "$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)"
 
       - name: Upload immutable evidence candidate
-        if: always()
+        if: always() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ocor-validation-closure-${{ github.sha }}
@@ -369,7 +416,58 @@ jobs:
             reports/tests/dec208_authoritative_promotion_results.json
             ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVAL_SHA256SUMS
 
+      - name: Set up Python for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12.11"
+
+      - name: Install uv for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.12.5"
+          enable-cache: true
+
+      - name: Install and verify pinned ruff executable for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        run: |
+          set -euo pipefail
+          uv tool install ruff==0.13.1
+          tool_bin="$(uv tool dir --bin)"
+          echo "$tool_bin" >> "$GITHUB_PATH"
+          "$tool_bin/ruff" --version
+          python - "$tool_bin/ruff" <<'PYTHON'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          lock = json.loads(Path('infra/toolchain.lock.json').read_text())
+          entry = next(tool for tool in lock['tools'] if tool['id'] == 'ruff')
+          actual = hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()
+          if actual != entry['integrity']:
+              raise SystemExit('Installed ruff digest differs from the governed lock')
+          print(f"ruff {entry['version']}: SHA-256 matches governed lock")
+          PYTHON
+
+      - name: Synchronize locked runtime environment for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        working-directory: ocor-runtime
+        run: |
+          set -euo pipefail
+          uv sync --frozen --extra test --extra lint
+          .venv/bin/python --version
+
+      - name: Run state-only local gates and non-stack tests
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        run: |
+          set -euo pipefail
+          ocor-runtime/.venv/bin/python scripts/run_state_only_ci_path.py \
+            --base-ref "${{ github.event.pull_request.base.sha || 'origin/main' }}" \
+            --branch "${{ github.head_ref || github.ref_name }}"
   conditional-infrastructure-0049-part:
+    needs: classify-ci-route
+    if: always() && needs.classify-ci-route.outputs.route != 'state_only'
     # TEST-INFRA-006 remains mandatory; 0049 is integrated and qualified at github.sha.
     # One deterministic part of the complete suite on its own runner and full
     # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
@@ -524,8 +622,8 @@ jobs:
 
   conditional-infrastructure-0049:
     # Stackless aggregator: every part ran on its own runner and full pinned stack.
-    needs: conditional-infrastructure-0049-part
-    if: always()
+    needs: [classify-ci-route, conditional-infrastructure-0049-part]
+    if: always() && needs.classify-ci-route.outputs.route != 'state_only'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -541,39 +639,45 @@ jobs:
           fetch-depth: 0
 
       - name: Reject missing, failed or cancelled parts
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           test "${{ needs.conditional-infrastructure-0049-part.result }}" = success
 
       - name: Set up Python
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12.11"
 
       - name: Install uv
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           version: "0.12.5"
           enable-cache: true
 
       - name: Synchronize locked runtime environment
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         working-directory: ocor-runtime
         run: uv sync --frozen --extra test --extra lint
 
       - name: Download every part of the parallel complete suite
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: ocor-conditional-0049-part-*-${{ github.sha }}
           path: reports/tests/candidate-0049-parts
 
       - name: Aggregate current-revision parts and prove their union equals pytest --collect-only on the same HEAD
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           mkdir -p reports/tests
           ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/candidate-0049-parts --repository . --expected-head "${{ github.sha }}" --shard-count 5 --output-dir reports/tests/candidate-0049 | tee reports/tests/ci_candidate_aggregate.log
 
       - name: Upload current-revision guard execution (not an evidence seal)
-        if: always()
+        if: always() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ocor-conditional-0049-${{ github.sha }}

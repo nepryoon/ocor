@@ -10,7 +10,35 @@ permissions:
   contents: read
 
 jobs:
+  classify-ci-route:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      route: ${{ steps.classify.outputs.route }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Classify pull request CI route
+        id: classify
+        run: |
+          set -euo pipefail
+          route_file="$RUNNER_TEMP/ci-route.env"
+          set +e
+          python3 scripts/classify_pull_request_ci_route.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --github-output "$route_file"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] || ! grep -Eq '^route=(full|state_only)$' "$route_file"; then
+            echo "route=full" > "$route_file"
+          fi
+          cat "$route_file" >> "$GITHUB_OUTPUT"
+
   delivery-activation-part:
+    needs: classify-ci-route
+    if: always() && needs.classify-ci-route.outputs.route != 'state_only'
     # One deterministic part of the complete suite on its own runner and full
     # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
     name: delivery-activation part ${{ matrix.part }}/4
@@ -154,7 +182,7 @@ jobs:
 
   delivery-activation:
     # Aggregator keeps the required check name; ruleset 23412233 is unchanged.
-    needs: delivery-activation-part
+    needs: [classify-ci-route, delivery-activation-part]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 110
@@ -169,27 +197,32 @@ jobs:
 
 
       - name: Reject missing, failed or cancelled parts
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           test "${{ needs.delivery-activation-part.result }}" = success
 
       - name: Set up Python
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12.11"
 
       - name: Set up pinned Node oracle
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20.20.2"
 
       - name: Install uv
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           version: "0.12.5"
           enable-cache: true
 
       - name: Install and verify pinned ruff executable
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           uv tool install ruff==0.13.1
@@ -210,6 +243,7 @@ jobs:
           PYTHON
 
       - name: Synchronize locked runtime environment
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         working-directory: ocor-runtime
         run: |
           set -euo pipefail
@@ -222,6 +256,7 @@ jobs:
           PY
 
       - name: Reject immutable-path and task-ledger regressions
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: >-
           ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py
           --base "${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}"
@@ -229,11 +264,13 @@ jobs:
           --branch "${{ github.head_ref || github.ref_name }}"
 
       - name: Acquire official checksum-pinned Kubernetes qualification tools
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python scripts/provision_qualification_tools.py --execute | tee reports/tests/ci_qualification_tools.log
 
       - name: Build pinned TypeScript SDK and oracle
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         working-directory: ocor-runtime/sdk/typescript
         run: |
           set -euo pipefail
@@ -242,13 +279,16 @@ jobs:
           echo "$(pwd)/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Reset or positively verify absence of the previous stack
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: python3 scripts/bootstrap_ci_environment.py --teardown --execute
 
       - name: Resolve governed Fuseki content address
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         id: fuseki-key
         run: python3 scripts/acquire_fuseki_archive.py --github-output >> "$GITHUB_OUTPUT"
 
       - name: Restore exact SHA512-addressed Fuseki archive
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         id: fuseki-cache
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -256,6 +296,7 @@ jobs:
           key: ${{ steps.fuseki-key.outputs.key }}
 
       - name: Provision the full pinned disposable stack
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600 | tee reports/tests/ci_bootstrap.log
@@ -273,7 +314,7 @@ jobs:
           PYTHON
 
       - name: Save verified Fuseki archive in this repository cache
-        if: success() && steps.fuseki-cache.outputs.cache-hit != 'true'
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only' && steps.fuseki-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ steps.fuseki-key.outputs.path }}
@@ -281,11 +322,13 @@ jobs:
 
 
       - name: Validate language policy (DEC-212)
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_validate_language_policy
           ocor-runtime/.venv/bin/python scripts/validate_language_policy.py
 
       - name: Validate approved development plan and runner
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           PY=ocor-runtime/.venv/bin/python
@@ -294,25 +337,30 @@ jobs:
           # PO mandate: runner validation uses only --validate and --dry-run.
 
       - name: Test repository protection and runner controls
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: >-
           uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q
           ocor-runtime/tests/tasks/test_ocor_dev_0001.py
 
       - name: Download every part of the parallel complete suite
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: ocor-activation-full-part-*-${{ github.sha }}
           path: reports/tests/activation-parts
 
       - name: Aggregate parts and prove their union equals pytest --collect-only on this HEAD
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/activation-parts --shard-count 4 --output-dir reports/tests/activation-full
 
       - name: Lint approved planning Markdown
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: >-
           npx --yes markdownlint-cli2@0.18.1
           'docs/development_plan/*.md' 'reports/planning/*.md'
 
       - name: Validate and render Mermaid DAG
+        if: success() && needs.classify-ci-route.outputs.route != 'state_only'
         run: >-
           npx --yes @mermaid-js/mermaid-cli@11.12.0
           --input docs/development_plan/OCOR_DEPENDENCY_DAG.mmd
@@ -321,7 +369,7 @@ jobs:
           --quiet
 
       - name: Teardown this disposable stack
-        if: always()
+        if: always() && needs.classify-ci-route.outputs.route != 'state_only'
         run: |
           set -euo pipefail
           mkdir -p reports/tests
@@ -330,7 +378,7 @@ jobs:
           test -z "$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)"
 
       - name: Upload real-stack regression and teardown results
-        if: always()
+        if: always() && needs.classify-ci-route.outputs.route != 'state_only'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ocor-activation-full-${{ github.sha }}
@@ -339,3 +387,53 @@ jobs:
           path: |
             reports/tests/ci_*.log
             reports/tests/activation-full/
+
+      - name: Set up Python for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12.11"
+
+      - name: Install uv for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.12.5"
+          enable-cache: true
+
+      - name: Install and verify pinned ruff executable for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        run: |
+          set -euo pipefail
+          uv tool install ruff==0.13.1
+          tool_bin="$(uv tool dir --bin)"
+          echo "$tool_bin" >> "$GITHUB_PATH"
+          "$tool_bin/ruff" --version
+          python - "$tool_bin/ruff" <<'PYTHON'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          lock = json.loads(Path('infra/toolchain.lock.json').read_text())
+          entry = next(tool for tool in lock['tools'] if tool['id'] == 'ruff')
+          actual = hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()
+          if actual != entry['integrity']:
+              raise SystemExit('Installed ruff digest differs from the governed lock')
+          print(f"ruff {entry['version']}: SHA-256 matches governed lock")
+          PYTHON
+
+      - name: Synchronize locked runtime environment for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        working-directory: ocor-runtime
+        run: |
+          set -euo pipefail
+          uv sync --frozen --extra test --extra lint
+          .venv/bin/python --version
+
+      - name: Run state-only local gates and non-stack tests
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        run: |
+          set -euo pipefail
+          ocor-runtime/.venv/bin/python scripts/run_state_only_ci_path.py \
+            --base-ref "${{ github.event.pull_request.base.sha || 'origin/main' }}" \
+            --branch "${{ github.head_ref || github.ref_name }}"
