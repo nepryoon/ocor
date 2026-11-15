@@ -118,8 +118,10 @@ def validate_mcp_descriptor(
     classified. A decoded empty fragment is the empty JSON Pointer: it identifies
     the current resource. That resource is the URI produced by ``urljoin`` of each
     ``$id`` onto the base URI, the same join referencing 0.37.0 uses on the
-    governed Python. An ``$id`` of ``#``, an empty ``$id``, or any ``$id`` that
-    joins to the same URI does not start another resource. A joined URI that
+    governed Python. A trailing empty fragment on ``$id`` is stripped before
+    that join, matching referencing 0.37.0 ``Resource.id``. An ``$id`` of ``#``,
+    an empty ``$id``, or any ``$id`` that joins to the same URI does not start
+    another resource. A joined URI that
     differs does. The empty fragment is not a plain-name anchor and there is no
     branch that always selects the whole document. A decoded fragment that
     starts with ``/`` is a JSON Pointer, and any other decoded fragment is a
@@ -327,21 +329,32 @@ def _walk_json(node: object, *, depth: int, nodes: list[int]) -> None:
 
 
 def _declared_id(node: object) -> str | None:
-    """Return a non-empty string ``$id``, or None when the node does not declare one."""
+    """Return the resource identifier, or None when the node does not declare one.
+
+    A trailing empty fragment is removed before the join, as referencing
+    0.37.0 does in ``Resource.id`` (``rstrip("#")``). ``#`` and ``###`` are
+    not identifiers. An empty string stays absent.
+    """
     if not isinstance(node, Mapping):
         return None
     value = node.get("$id")
-    if isinstance(value, str) and value:
-        return value
-    return None
+    if not isinstance(value, str) or not value:
+        return None
+    stripped = value.rstrip("#")
+    if not stripped:
+        return None
+    return stripped
 
 
 def _resource_uri(node: object, base_uri: str) -> str:
     """Join a declared ``$id`` onto ``base_uri``.
 
     ``urljoin`` is the resource identity used by referencing 0.37.0 on the
-    governed Python: ``urljoin(base, '#')`` is ``base``. An identifier that
-    joins to ``base_uri`` does not start another resource.
+    governed Python. The identifier has already had a trailing empty fragment
+    removed, so ``#`` never reaches ``urljoin`` from here. ``urljoin(base, '#')``
+    is not always ``base`` (an empty base and a non-relative scheme both yield
+    ``#``). An identifier that joins to ``base_uri`` does not start another
+    resource.
     """
     identifier = _declared_id(node)
     if identifier is None:
@@ -545,8 +558,10 @@ def _note_reached_schema(
 
     Schemas already visited keep the shallower depth. The numeric limits are
     the same ``MAX_SCHEMA_DEPTH`` and ``MAX_SCHEMA_NODES`` as the tree walk.
-    A nested ``$id`` whose joined URI differs becomes the resource for the
-    refs inside it. An ``$id`` that joins to the current URI does not.
+    The caller passes the base already joined for ``resource_root``. A relative
+    ``$id`` is not applied a second time. A target that itself joins to a
+    different URI becomes the resource for the refs inside it. An ``$id`` that
+    joins to the current URI does not.
     """
 
     if not isinstance(target, Mapping):
@@ -555,8 +570,6 @@ def _note_reached_schema(
         pointer_root = target
         resource_root = target
         base_uri = _resource_uri(target, base_uri)
-    elif _changes_resource(resource_root, base_uri):
-        base_uri = _resource_uri(resource_root, base_uri)
     identity = id(target)
     if identity in seen:
         return
@@ -690,6 +703,12 @@ def _resolve_pointer(
     next_pointer, next_resource = _roots_for_target(
         target, found_in, document, base_uri, resource_root
     )
+    # Join a relative ``$id`` once, when the resource is entered. Re-joining
+    # the current resource would turn ``sub/child.json`` into a second path
+    # segment. The base is already canonical when the resource does not change.
+    next_base = base_uri
+    if next_resource is not resource_root:
+        next_base = _resource_uri(next_resource, base_uri)
     _note_reached_schema(
         target,
         depth + 1,
@@ -697,7 +716,7 @@ def _resolve_pointer(
         deferred,
         pointer_root=next_pointer,
         resource_root=next_resource,
-        base_uri=base_uri,
+        base_uri=next_base,
     )
 
 
@@ -772,6 +791,11 @@ def _resolve_anchor(
     next_pointer, next_resource = _roots_for_target(
         target, found_in, document, base_uri, resource_root
     )
+    # Same single join as ``_resolve_pointer``: the anchor target may enter a
+    # new resource, and the current resource must not be joined again.
+    next_base = base_uri
+    if next_resource is not resource_root:
+        next_base = _resource_uri(next_resource, base_uri)
     _note_reached_schema(
         target,
         depth + 1,
@@ -779,7 +803,7 @@ def _resolve_anchor(
         deferred,
         pointer_root=next_pointer,
         resource_root=next_resource,
-        base_uri=base_uri,
+        base_uri=next_base,
     )
 
 
