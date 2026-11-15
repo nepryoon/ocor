@@ -1,6 +1,6 @@
 # REM-0063-CYCLE6-NO-GO
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -29,3 +29,33 @@ Opzione 1. VF-001 contraddice il punto 1(a) di `FABLE52-POST-POC-PROGRAMME (2026
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta non parte il ciclo 6 di `OCOR-DEV-REM-0063`. `OCOR-DEV-REM-0063` resta bloccato su `REM-0063-CYCLE6-NO-GO`. La prossima unità eseguibile è l'unità «CI rapida per le PR di solo stato» di `CI-STATO-RAPIDA (2026-11-14)`, perché il ciclo 5 si chiude con questa richiesta finale, prima dell'unità del punto 5 e di `OCOR-DEV-REM-0061`. All'avvio si riconferma in sola lettura il primo identificativo `REM-` libero. Alla stesura, `OCOR-DEV-REM-0066` è assente su `origin/main` `5ac109ea8e658f56bd1d0334c0e9185359b99dc6`. `OCOR-DEV-REM-0065` non è bloccato da questa richiesta: resta dopo quell'unità, all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`, e prima della propria PR o della propria verifica gli manca ancora la riqualifica di sola regressione di `OCOR-DEV-0005`, `OCOR-DEV-0050` e `OCOR-DEV-0082`. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599 e l'unità del punto 5. La PR #595 non si integra. La PR #628 non si riapre e il suo job di `validation-closure` non si rilancia. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Nessun test, gate, timer, tetto, partizione o criterio è indebolito da questa richiesta: non cambia codice.
+
+## Disposition del Product Owner — 2026-11-15
+
+Decisione del PO, su delega completa, modello `grok-4.7`, effort `xhigh`: `REM-0063-CYCLE6-NO-GO (2026-11-15)`, **opzione 1**. Nota di registro: «decisa su delega completa del PO, modello grok-4.7, effort xhigh». Vale come decisione del PO a ogni effetto, di livello operativo. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+La richiesta decisa è questo file al commit `99c2f8ab372070415faa82328305b7f99c6647ef`, sha256 `f1d9c0528bb03763b3a7de9c297925bdbff5cd0baff5dd5181fd552a0247b600`. Il testo delle opzioni non è stato modificato. L'intestazione riporta `DECIDED_BY_PO`, lo stesso stato del registro `blockers`.
+
+L'opzione 1 autorizza un solo ciclo 6 di `OCOR-DEV-REM-0063` sul branch `governed/ocor-dev-rem-0063-mcp-profile`, a partire dall'HEAD `c20d296e7f974c4e72f2853aef2bc1c419c30e18`, senza rebase, reset o force-push e senza toccare `governed/ocor-dev-rem-0061-lane-image-cache`. Perimetro di codice: VF-001 del verdetto `OCOR-DEV-REM-0063-c20d296e7f97-5`. Classe: l'identità della risorsa corrente è l'URI effettivo dopo la risoluzione, non la presenza lessicale di un `$id` non vuoto. Il frammento vuoto `#` resta il JSON Pointer vuoto.
+
+Attuazione di questo ciclo, sullo stesso branch, non integrata e senza PR del candidato:
+
+- Codice `265f6ad2ced262999bd23c35c9dea3fc94caf988`, in `ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`. Commit intermedi `94359686811f2c8ce5bc63d36b9b5014e505f5b0`, `2018893ae8f37a9a6428c8c2b785055c763bbeec`, `dbf8f6da471ce3304abf95a88dd4c67746ceefbf` e `265f6ad2ced262999bd23c35c9dea3fc94caf988`.
+- RED dei test di ciclo 6 sull'HEAD `2018893ae8f37a9a6428c8c2b785055c763bbeec`, prima della modifica di produzione successiva: 76 failed, 293 passed. GREEN del modulo del task: 800 passed. Oracolo `referencing` 0.37.0, test `test_cycle6_ref_targets_match_referencing_on_the_effective_resource`, 240 casi, esito PASS.
+- Revisione preventiva `OCOR-DEV-REM-0063-2018893ae8f3-pre`, `BLOCKING_FINDINGS`, head `2018893ae8f37a9a6428c8c2b785055c763bbeec`, sha256 `44ae4ac80cfb3fc7ee2ff1cc64294456d43571d29cf068969a115df01a571bfc`, Antigravity CLI, Gemini 4 Argon (High), Google. P1, P2 e P3 sono corretti sui commit successivi. Non c'è una seconda revisione.
+- Gate locale sull'HEAD di codice: PASS, 51 pass, 6 `NOT_EXECUTED`, 0 failed, 98,264 s, log sha256 `885e183a16c30a663dc98e49738b964d9320f72299a7562c858a43a5a25aeced`.
+- Campagna `265f6ad2ced2-1794717879`: PASS, 6626 test, zero failure, zero errori, zero skip, 1642,715 s, `MAINS`. Controllo distinto `265f6ad2ced2-1794719545`: PASS, 410 test, zero failure, zero errori, zero skip, unione esatta, residui vuoti. Qualificano l'HEAD di codice e non si trasferiscono all'HEAD di evidenza.
+- Evidenza non sigillata `d70920ea901ffa5b06b2c28fd1fdd785b2f7b125`.
+
+Verdetto `OCOR-DEV-REM-0063-d70920ea901f-6`, `NO_GO`, head `d70920ea901ffa5b06b2c28fd1fdd785b2f7b125`, sha256 `1bc1779774a570afebdedb0734b410df821fe72080906a3af01bc406c0c9caf3`, creato `2026-11-15T06:08:29.141050Z`. VF-001 high, codice: un JSON Pointer che attraversa un `$id` intermedio non conserva la risorsa effettiva. VF-002 high, ambiente: campagna indipendente `d70920ea901f-1794720847` FAIL per HTTP 429, senza asserzioni del profilo fallite; controllo distinto `d70920ea901f-1794722431` PASS e non sostituisce la suite. VF-003 medium, non bloccante: la cella `strict_decoding` di `_roots_for_target` descrive ancora il criterio lessicale. L'opzione 1 non autorizza un ciclo 7. Il task resta bloccato. L'unica richiesta nuova è `REM-0063-CYCLE7-NO-GO`, branch `governed/decision-request-rem0063-cycle7-nogo`, commit `c515db74eed0f10e7a08f3434898cc47bad2efab`, sha256 `f642f1ae719c4645827db2b19f09e7e2f578bfa8f63c2a7aedeb02010508066f`, PR #645 bozza, non si integra. L'implementatore non decide quella richiesta e non avvia il ciclo 7.
+
+La PR #642 non si integra: il percorso non è nell'allowlist. Si chiude come risolta citando il commit dello state sync, secondo `REPO-HYGIENE (2026-11-02)`. Il branch della richiesta resta. `OCOR-DEV-REM-0066` non è sospeso e resta all'HEAD `5ba27f78e20bb9900b93c5442b1994b7411866b0`. `OCOR-DEV-REM-0065` non è sospeso e resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599 e l'unità del punto 5. La PR #595 non si integra. La PR #628 non si riapre. La PR #640 non si modifica. I conteggi di `265f6ad2ced2-1794717879`, `265f6ad2ced2-1794719545`, `d70920ea901f-1794720847` e `d70920ea901f-1794722431` non si trasferiscono. Nessun sigillo.
+
+### REM-0063-CYCLE6-NO-GO (2026-11-15) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO, con il modello `grok-4.7` ed effort `xhigh`. Il PO risolve la decision request `REM-0063-CYCLE6-NO-GO` (branch `governed/decision-request-rem0063-cycle6-nogo`, commit `99c2f8ab372070415faa82328305b7f99c6647ef`, file `reports/development/decision_requests/REM-0063-CYCLE6-NO-GO.md`, sha256 `f1d9c0528bb03763b3a7de9c297925bdbff5cd0baff5dd5181fd552a0247b600`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello grok-4.7, effort xhigh») e nell'`ITERATION_LOG.md`. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
