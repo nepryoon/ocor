@@ -657,6 +657,10 @@ def _resolve_pointer(
             deferred=deferred,
         )
         return
+    # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+    # rejects a value that is not a schema. The empty pointer is one resource.
+    target: object
+    found_in: Mapping[str, Any]
     if decoded == "":
         # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
         # ``$id``. Not an anchor, and not the two-root search used for a
