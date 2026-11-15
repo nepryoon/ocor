@@ -1850,6 +1850,15 @@ def main() -> int:
         "scripts/run_state_only_ci_path.py",
         "reports/tests/conftest.py",
         "reports/tests/test_classify_pull_request_ci_route.py",
+        # Regression-only requalification after the workflow and allowlist
+        # change. The task tests are unchanged. These records do not qualify
+        # requirements.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
