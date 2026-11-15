@@ -2107,3 +2107,293 @@ def test_cycle5_ref_targets_match_referencing_on_the_current_resource(
         assert "ambiguous" in str(profile_error)
         return
     assert profile_error is not None
+
+
+# VF-001 repair cycle 6, REM-0063-CYCLE6-NO-GO (2026-11-15), option 1.
+# Class: the current resource is the URI after joining ``$id``, not the
+# presence of a lexically non-empty ``$id``. ``#`` stays the empty JSON
+# Pointer on that resource. It does not become a branch that always selects
+# the whole document. Members: ``$id`` ``#``; an ``$id`` that joins to the
+# same URI (the same absolute URI, and ``./root.json``); a non-schema target
+# rejected when referencing 0.37.0 names it and Draft202012Validator rejects
+# it; an empty ``$id`` and a distinct ``$id`` stay on the paths already green.
+# Oracle: referencing 0.37.0. SELF-CHECK-CLASS-COVERAGE. SELF-CHECK-ORACOLO.
+
+_CYCLE6_URI = "https://verifier.invalid/root.json"
+_CYCLE6_DISTINCT = "https://example.invalid/independent.json"
+_CYCLE6_LOCATIONS = ("inputSchema", "outputSchema", "$defs", "nested")
+_CYCLE6_IDENTIFIERS = ("#", "", _CYCLE6_URI, "./root.json", _CYCLE6_DISTINCT, "child.json")
+_CYCLE6_REFS = ("#", "#/$defs/part", "#/$defs/p%61rt", "#part", "#p%61rt")
+_CYCLE6_ORACLE_FRAGMENT = {
+    "#": "#",
+    "#/$defs/part": "#/$defs/part",
+    "#/$defs/p%61rt": "#/$defs/p%61rt",
+    "#part": "#part",
+    "#p%61rt": "#part",
+}
+
+
+def _cycle6_same_resource(identifier: str) -> bool:
+    """True when ``identifier`` joins to the parent URI on the governed Python."""
+    from urllib.parse import urljoin
+
+    if identifier == "":
+        return True
+    return urljoin(_CYCLE6_URI, identifier) == _CYCLE6_URI
+
+
+def _cycle6_cases() -> list[tuple[str, str, str]]:
+    """Locations, identifiers and fragments of the cycle-6 differential."""
+    return [
+        (location, identifier, ref)
+        for location in _CYCLE6_LOCATIONS
+        for identifier in _CYCLE6_IDENTIFIERS
+        for ref in _CYCLE6_REFS
+    ]
+
+
+_CYCLE6_CASES = _cycle6_cases()
+
+
+def _cycle6_case_id(case: tuple[str, str, str]) -> str:
+    location, identifier, ref = case
+    label = identifier if identifier else "empty"
+    return f"{location}-{label}-{ref}"
+
+
+def _cycle6_descriptor() -> dict[str, Any]:
+    return {
+        "x-ocor-mcp-protocol-revision": REVISION,
+        "tools": [
+            {
+                "name": "probe",
+                "inputSchema": {"type": "object"},
+                "outputSchema": {"type": "object"},
+            }
+        ],
+    }
+
+
+def _cycle6_attach(owner: dict[str, Any], ref: str) -> None:
+    """Put the object ``ref`` names on the resource that owns the reference."""
+    if ref == "#":
+        return
+    definitions = owner.setdefault("$defs", {})
+    if not isinstance(definitions, dict):
+        raise AssertionError("$defs is not an object")
+    if ref in ("#/$defs/part", "#/$defs/p%61rt"):
+        definitions["part"] = {"type": "integer"}
+    elif ref in ("#part", "#p%61rt"):
+        definitions["anchor"] = {"$anchor": "part", "type": "integer"}
+    else:
+        raise AssertionError(ref)
+
+
+def _cycle6_place(document: dict[str, Any], location: str, parent: dict[str, Any]) -> None:
+    """Install ``parent`` at one class position. ``nested`` sits under properties."""
+    if location == "inputSchema":
+        document["tools"][0]["inputSchema"] = parent
+    elif location == "outputSchema":
+        document["tools"][0]["outputSchema"] = parent
+    elif location == "$defs":
+        document["$defs"] = {"root": parent}
+    elif location == "nested":
+        document["tools"][0]["inputSchema"] = {
+            "type": "object",
+            "properties": {"inner": parent},
+        }
+    else:
+        raise AssertionError(location)
+
+
+def _cycle6_document(location: str, identifier: str, ref: str) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Return the descriptor, the parent resource and the schema that holds ``$ref``."""
+    document = _cycle6_descriptor()
+    holder: dict[str, Any] = {
+        "type": "object",
+        "properties": {"n": {"type": "integer"}, "next": {"$ref": ref}},
+    }
+    if identifier != "":
+        holder["$id"] = identifier
+    parent: dict[str, Any] = {
+        "$id": _CYCLE6_URI,
+        "type": "object",
+        "properties": {"holder": holder},
+    }
+    if _cycle6_same_resource(identifier):
+        _cycle6_attach(parent, ref)
+    else:
+        _cycle6_attach(holder, ref)
+    _cycle6_place(document, location, parent)
+    return document, parent, holder
+
+
+def _cycle6_lookup(parent: Mapping[str, Any], ref: str) -> tuple[Any, BaseException | None]:
+    """Resolve ``ref`` with referencing 0.37.0 after entering the holder."""
+    import importlib.metadata
+    from referencing import Registry, Resource
+    from referencing.jsonschema import DRAFT202012
+
+    if importlib.metadata.version("referencing") != "0.37.0":
+        raise AssertionError("cycle-6 oracle is referencing 0.37.0")
+    registry = Registry().with_resource(
+        _CYCLE6_URI,
+        Resource.from_contents(parent, DRAFT202012),
+    )
+    holder = registry.resolver(_CYCLE6_URI).lookup("#/properties/holder")
+    fragment = _CYCLE6_ORACLE_FRAGMENT.get(ref, ref)
+    try:
+        return holder.resolver.lookup(fragment).contents, None
+    except Exception as exc:
+        return None, exc
+
+
+def _cycle6_library_accepts(contents: Any, error: BaseException | None) -> bool:
+    """True when the oracle target exists and Draft 2020-12 accepts it as a schema."""
+    if error is not None or not isinstance(contents, dict):
+        return False
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError
+
+    try:
+        Draft202012Validator.check_schema(contents)
+    except (SchemaError, TypeError, ValueError):
+        return False
+    return True
+
+
+def _cycle6_ruin(contents: dict[str, Any]) -> None:
+    """Make this object fail ``check_schema`` without replacing its identity.
+
+    The object stays in place, including a ``$ref`` it contains. Clearing it
+    would delete that reference, so a later profile run would no longer land
+    on the resource ``#`` names when the resource is not a tool schema.
+    """
+    contents["type"] = 7
+
+
+@pytest.mark.parametrize("identifier", ["#", "", _CYCLE6_URI, "./root.json"])
+@pytest.mark.parametrize("location", ["inputSchema", "outputSchema", "$defs"])
+def test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource(
+    identifier: str,
+    location: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``#`` after a no-op ``$id`` is the parent resource referencing keeps.
+
+    RED of the nine divergent targets: ``#``, the same absolute URI and
+    ``./root.json``, on inputSchema, outputSchema and ``$defs``. An empty
+    ``$id`` is the member that already agreed and must stay green.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document, parent, holder = _cycle6_document(location, identifier, "#")
+    contents, error = _cycle6_lookup(parent, "#")
+    assert error is None
+    assert contents is parent
+    assert holder is not parent
+    seen: list[object] = []
+    original = profile._require_schema
+
+    def record(target: object) -> None:
+        seen.append(target)
+        original(target)
+
+    monkeypatch.setattr(profile, "_require_schema", record)
+    _validate(document)
+    assert parent in seen, (identifier, location)
+    assert holder not in seen, (identifier, location)
+
+
+@pytest.mark.parametrize("location", ["inputSchema", "outputSchema", "$defs"])
+def test_cycle6_hash_id_does_not_hide_a_non_schema_current_resource(location: str) -> None:
+    """``$id`` ``#`` does not hide the descriptor when ``$defs.not_schema`` is 7.
+
+    referencing 0.37.0 resolves ``#`` to the descriptor.
+    Draft202012Validator.check_schema rejects that descriptor. The profile
+    must refuse it with the non-schema reason, not accept the child.
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError
+    from referencing import Registry, Resource
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle6_descriptor()
+    document["$id"] = _CYCLE6_URI
+    document["$defs"] = {"not_schema": 7}
+    child: dict[str, Any] = {
+        "$id": "#",
+        "type": "object",
+        "properties": {"tail": {"$ref": "#"}},
+    }
+    if location == "$defs":
+        document["$defs"]["child"] = child
+    else:
+        document["tools"][0][location] = child
+    resource = Resource.from_contents(document, DRAFT202012)
+    resolver = Registry().with_resource(_CYCLE6_URI, resource).resolver(_CYCLE6_URI)
+    if location == "$defs":
+        entered = resolver.lookup("#/$defs/child").resolver
+    else:
+        entered = resolver.in_subresource(Resource.from_contents(child, DRAFT202012))
+    resolved = entered.lookup("#").contents
+    assert resolved is document
+    with pytest.raises(SchemaError):
+        Draft202012Validator.check_schema(resolved)
+    with pytest.raises(profile.McpProfileError, match="target is not a JSON Schema"):
+        _validate(document)
+
+
+def test_cycle6_a_distinct_id_stays_inside_its_own_resource() -> None:
+    """A different joined URI is still its own resource. The document sibling is ignored."""
+    document = _cycle6_descriptor()
+    document["$defs"] = {"not_schema": 7}
+    document["tools"][0]["inputSchema"] = {
+        "$id": _CYCLE6_DISTINCT,
+        "type": "object",
+        "properties": {"tail": {"$ref": "#"}},
+    }
+    _validate(document)
+
+
+def test_cycle6_generated_case_count_is_stable() -> None:
+    """The cycle record cites this count. The oracle package stays pinned."""
+    import importlib.metadata
+
+    assert importlib.metadata.version("referencing") == "0.37.0"
+    assert len(_CYCLE6_CASES) == 120
+
+
+@pytest.mark.parametrize(
+    ("location", "identifier", "ref"),
+    _CYCLE6_CASES,
+    ids=[_cycle6_case_id(case) for case in _CYCLE6_CASES],
+)
+def test_cycle6_ref_targets_match_referencing_on_the_effective_resource(
+    location: str,
+    identifier: str,
+    ref: str,
+) -> None:
+    """Each accepted ``$ref`` lands on the object referencing 0.37.0 returns.
+
+    Ruining that object must make the profile refuse. A no-op ``$id`` keeps
+    the parent resource. A joined URI that differs keeps the holder.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document, parent, _holder = _cycle6_document(location, identifier, ref)
+    contents, error = _cycle6_lookup(parent, ref)
+    library_ok = _cycle6_library_accepts(contents, error)
+    try:
+        _validate(document)
+    except profile.McpProfileError as exc:
+        profile_error: profile.McpProfileError | None = exc
+    else:
+        profile_error = None
+    if library_ok:
+        assert profile_error is None, (location, identifier, ref, profile_error)
+        assert isinstance(contents, dict)
+        _cycle6_ruin(contents)
+        with pytest.raises(profile.McpProfileError):
+            _validate(document)
+        return
+    assert profile_error is not None, (location, identifier, ref)

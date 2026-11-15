@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from typing import Any
+from urllib.parse import urljoin
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError, UnknownType
@@ -115,19 +116,23 @@ def validate_mcp_descriptor(
     Schema 2020-12 schemas (``Draft202012Validator.check_schema``). Every ``$ref`` is
     a same-document fragment. The fragment is percent-decoded as UTF-8, then
     classified. A decoded empty fragment is the empty JSON Pointer: it identifies
-    the current resource, which is the schema with a non-empty ``$id`` that contains
-    the reference, otherwise the document resource. It is not a plain-name anchor
-    and there is no branch that always selects the whole document. A decoded
-    fragment that starts with ``/`` is a JSON Pointer, and any other decoded
-    fragment is a plain-name anchor (``$anchor`` or ``$dynamicAnchor``). ``~``
-    escapes are validated before substitution. A ref inside an embedded tool schema
-    resolves in that schema first and in the descriptor second. The empty pointer
-    does not use that two-root search: an embedded tool schema without ``$id`` is
-    not a second root, so ``#`` stays on the document resource and is not ambiguous.
-    Two different objects for one non-empty pointer or one plain name are rejected.
-    A nested non-empty ``$id`` is a separate resource, and ``additionalItems`` is
-    not an anchor applicator in draft 2020-12. The value a reference lands on must
-    itself be a 2020-12 schema. Dialect, local-reference and resolution rules also
+    the current resource. That resource is the URI produced by ``urljoin`` of each
+    ``$id`` onto the base URI, the same join referencing 0.37.0 uses on the
+    governed Python. An ``$id`` of ``#``, an empty ``$id``, or any ``$id`` that
+    joins to the same URI does not start another resource. A joined URI that
+    differs does. The empty fragment is not a plain-name anchor and there is no
+    branch that always selects the whole document. A decoded fragment that
+    starts with ``/`` is a JSON Pointer, and any other decoded fragment is a
+    plain-name anchor (``$anchor`` or ``$dynamicAnchor``). ``~`` escapes are
+    validated before substitution. A ref inside an embedded tool schema that
+    does not change the resource URI resolves in that schema first and in the
+    current resource second. The empty pointer does not use that two-root
+    search, so ``#`` stays on the current resource and is not ambiguous. Two
+    different objects for one non-empty pointer or one plain name are rejected.
+    A nested ``$id`` whose joined URI differs is a separate resource, and
+    ``additionalItems`` is not an anchor applicator in draft 2020-12. The value
+    a reference lands on must itself be a 2020-12 schema. Dialect,
+    local-reference and resolution rules also
     apply to a schema reached through instance data such as ``const`` or ``default``.
     A fixture that is not an object, or whose ``$defs`` or ``Tool`` entry is not an
     object, is rejected before the library is called.
@@ -160,12 +165,14 @@ def validate_mcp_descriptor(
     # are instance data and are not read as keywords. A schema a ``$ref`` actually
     # reaches is checked afterwards, including one stored in that instance data.
     seen: set[int] = set()
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any]]] = {}
+    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]] = {}
+    document_base = _resource_uri(document, "")
     _check_schema_keywords(
         document,
         document,
         pointer_root=document,
         resource_root=document,
+        base_uri=document_base,
         depth=1,
         seen=seen,
         deferred=deferred,
@@ -182,13 +189,14 @@ def validate_mcp_descriptor(
                         if isinstance(tool_schema, Mapping)
                         else document,
                         resource_root=document,
+                        base_uri=document_base,
                         depth=1,
                         seen=seen,
                         deferred=deferred,
                     )
     while deferred:
         identity = min(deferred, key=lambda item: deferred[item][1])
-        target, depth, pointer_root, resource_root = deferred.pop(identity)
+        target, depth, pointer_root, resource_root, base_uri = deferred.pop(identity)
         if identity in seen:
             continue
         _check_schema_keywords(
@@ -196,6 +204,7 @@ def validate_mcp_descriptor(
             document,
             pointer_root=pointer_root,
             resource_root=resource_root,
+            base_uri=base_uri,
             depth=depth,
             seen=seen,
             deferred=deferred,
@@ -317,12 +326,32 @@ def _walk_json(node: object, *, depth: int, nodes: list[int]) -> None:
         _walk_json(value, depth=depth + 1, nodes=nodes)
 
 
-def _nonempty_id(node: object) -> bool:
-    """A non-empty string ``$id`` starts another JSON Schema 2020-12 resource."""
+def _declared_id(node: object) -> str | None:
+    """Return a non-empty string ``$id``, or None when the node does not declare one."""
     if not isinstance(node, Mapping):
-        return False
+        return None
     value = node.get("$id")
-    return isinstance(value, str) and bool(value)
+    if isinstance(value, str) and value:
+        return value
+    return None
+
+
+def _resource_uri(node: object, base_uri: str) -> str:
+    """Join a declared ``$id`` onto ``base_uri``.
+
+    ``urljoin`` is the resource identity used by referencing 0.37.0 on the
+    governed Python: ``urljoin(base, '#')`` is ``base``. An identifier that
+    joins to ``base_uri`` does not start another resource.
+    """
+    identifier = _declared_id(node)
+    if identifier is None:
+        return base_uri
+    return urljoin(base_uri, identifier)
+
+
+def _changes_resource(node: object, base_uri: str) -> bool:
+    """True when ``node`` joins to a URI other than ``base_uri``."""
+    return _resource_uri(node, base_uri) != base_uri
 
 
 def _check_schema_keywords(
@@ -331,14 +360,20 @@ def _check_schema_keywords(
     *,
     pointer_root: Mapping[str, Any],
     resource_root: Mapping[str, Any],
+    base_uri: str,
     depth: int,
     seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any]]],
+    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
 ) -> None:
     """Apply dialect and ``$ref`` rules only to schema objects, not to instance data."""
-    if isinstance(node, Mapping) and _nonempty_id(node) and node is not resource_root:
+    if (
+        isinstance(node, Mapping)
+        and node is not resource_root
+        and _changes_resource(node, base_uri)
+    ):
         pointer_root = node
         resource_root = node
+        base_uri = _resource_uri(node, base_uri)
     if depth > MAX_SCHEMA_DEPTH:
         raise McpProfileError("MCP schema exceeds the revision bounds")
     if not isinstance(node, Mapping):
@@ -362,6 +397,7 @@ def _check_schema_keywords(
             reference,
             pointer_root=pointer_root,
             resource_root=resource_root,
+            base_uri=base_uri,
             depth=depth,
             seen=seen,
             deferred=deferred,
@@ -373,6 +409,7 @@ def _check_schema_keywords(
             document,
             pointer_root=pointer_root,
             resource_root=resource_root,
+            base_uri=base_uri,
             depth=depth + 1,
             seen=seen,
             deferred=deferred,
@@ -498,29 +535,34 @@ def _note_reached_schema(
     target: object,
     depth: int,
     seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any]]],
+    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
     *,
     pointer_root: Mapping[str, Any],
     resource_root: Mapping[str, Any],
+    base_uri: str,
 ) -> None:
     """Queue a schema object the tree walk does not enter.
 
     Schemas already visited keep the shallower depth. The numeric limits are
     the same ``MAX_SCHEMA_DEPTH`` and ``MAX_SCHEMA_NODES`` as the tree walk.
-    A nested ``$id`` on the target becomes the resource for the refs inside it.
+    A nested ``$id`` whose joined URI differs becomes the resource for the
+    refs inside it. An ``$id`` that joins to the current URI does not.
     """
 
     if not isinstance(target, Mapping):
         return
-    if _nonempty_id(target) and target is not resource_root:
+    if target is not resource_root and _changes_resource(target, base_uri):
         pointer_root = target
         resource_root = target
+        base_uri = _resource_uri(target, base_uri)
+    elif _changes_resource(resource_root, base_uri):
+        base_uri = _resource_uri(resource_root, base_uri)
     identity = id(target)
     if identity in seen:
         return
     current = deferred.get(identity)
     if current is None or depth < current[1]:
-        deferred[identity] = (target, depth, pointer_root, resource_root)
+        deferred[identity] = (target, depth, pointer_root, resource_root, base_uri)
 
 
 def _follow_pointer(root: object, decoded: str) -> object:
@@ -572,12 +614,19 @@ def _roots_for_target(
     target: object,
     found_in: Mapping[str, Any],
     document: Mapping[str, Any],
+    base_uri: str,
+    resource_root: Mapping[str, Any],
 ) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
     """Return the pointer root and the resource root that contain ``target``."""
 
-    if isinstance(target, Mapping) and _nonempty_id(target) and target is not document:
+    if (
+        isinstance(target, Mapping)
+        and target is not document
+        and target is not resource_root
+        and _changes_resource(target, base_uri)
+    ):
         return target, target
-    if found_in is document or _nonempty_id(found_in):
+    if found_in is document or found_in is resource_root:
         return found_in, found_in
     return found_in, document
 
@@ -588,9 +637,10 @@ def _resolve_pointer(
     *,
     pointer_root: Mapping[str, Any],
     resource_root: Mapping[str, Any],
+    base_uri: str,
     depth: int,
     seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any]]],
+    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
 ) -> None:
     if not isinstance(pointer, str) or not pointer.startswith("#"):
         raise McpProfileError("MCP $ref must be a same-document fragment")
@@ -601,38 +651,41 @@ def _resolve_pointer(
             decoded,
             pointer_root=pointer_root,
             resource_root=resource_root,
+            base_uri=base_uri,
             depth=depth,
             seen=seen,
             deferred=deferred,
         )
         return
-    local: object = _MISSING
-    remote: object = _MISSING
     if decoded == "":
-        # Empty JSON Pointer (RFC 6901). One resource, not an anchor and not
-        # the two-root search used for a non-empty pointer: that search would
-        # treat every ``#`` inside a tool schema without ``$id`` as ambiguous.
-        if pointer_root is not document and _nonempty_id(pointer_root):
-            local = pointer_root
-        else:
-            remote = resource_root
+        # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+        # ``$id``. Not an anchor, and not the two-root search used for a
+        # non-empty pointer. There is no branch that always selects the
+        # whole document.
+        target = resource_root
+        found_in = resource_root
     else:
-        if pointer_root is not document:
+        local: object = _MISSING
+        remote: object = _MISSING
+        if pointer_root is not resource_root:
             local = _follow_pointer(pointer_root, decoded)
-        if pointer_root is document or not _nonempty_id(pointer_root):
-            remote = _follow_pointer(document, decoded)
-    if local is _MISSING and remote is _MISSING:
-        raise McpProfileError("MCP $ref does not resolve in the descriptor")
-    if local is not _MISSING and remote is not _MISSING and local is not remote:
-        raise McpProfileError("MCP $ref target is ambiguous")
-    if local is not _MISSING:
-        target = local
-        found_in = pointer_root
-    else:
-        target = remote
-        found_in = document
+            remote = _follow_pointer(resource_root, decoded)
+        else:
+            local = _follow_pointer(resource_root, decoded)
+        if local is _MISSING and remote is _MISSING:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        if local is not _MISSING and remote is not _MISSING and local is not remote:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not _MISSING:
+            target = local
+            found_in = pointer_root
+        else:
+            target = remote
+            found_in = resource_root
     _require_schema(target)
-    next_pointer, next_resource = _roots_for_target(target, found_in, document)
+    next_pointer, next_resource = _roots_for_target(
+        target, found_in, document, base_uri, resource_root
+    )
     _note_reached_schema(
         target,
         depth + 1,
@@ -640,6 +693,7 @@ def _resolve_pointer(
         deferred,
         pointer_root=next_pointer,
         resource_root=next_resource,
+        base_uri=base_uri,
     )
 
 
@@ -649,50 +703,71 @@ def _resolve_anchor(
     *,
     pointer_root: Mapping[str, Any],
     resource_root: Mapping[str, Any],
+    base_uri: str,
     depth: int,
     seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any]]],
+    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
 ) -> None:
     """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
 
     The search follows schema keywords, so a name that exists only inside
     instance data (``const``, ``default``, ``enum``) does not resolve. A
-    non-string keyword value is not a name. An embedded tool schema without
-    its own ``$id`` is searched together with the document resource, because
-    the document walk does not enter ``tools``. A nested ``$id`` is searched
-    alone. ``additionalItems`` is not indexed. Two different schema objects
-    with the same name are ambiguous: the profile does not pick one. The
-    single target is still checked as a 2020-12 schema, then queued at the
-    next depth so the visited set and the bounds stay those of the walk.
+    non-string keyword value is not a name. An embedded tool schema that does
+    not change the resource URI is searched together with the current resource,
+    because the document walk does not enter ``tools``. A nested ``$id`` whose
+    joined URI differs is searched alone. ``additionalItems`` is not indexed.
+    Two different schema objects with the same name are ambiguous: the profile
+    does not pick one. The single target is still checked as a 2020-12 schema,
+    then queued at the next depth so the visited set and the bounds stay those
+    of the walk.
     """
 
     if not isinstance(name, str) or not name:
         raise McpProfileError("MCP $ref does not resolve in the descriptor")
     matches: list[Mapping[str, Any]] = []
     visited: set[int] = set()
-    if pointer_root is not document and not _nonempty_id(pointer_root):
+    if pointer_root is not resource_root:
         _collect_anchors(
-            pointer_root, name, matches, depth=1, visited=visited, at_root=True
+            pointer_root,
+            name,
+            matches,
+            depth=1,
+            visited=visited,
+            at_root=True,
+            base_uri=base_uri,
         )
         _collect_anchors(
-            document, name, matches, depth=1, visited=visited, at_root=True
+            resource_root,
+            name,
+            matches,
+            depth=1,
+            visited=visited,
+            at_root=True,
+            base_uri=base_uri,
         )
     else:
-        root = document if resource_root is document else resource_root
-        _collect_anchors(root, name, matches, depth=1, visited=visited, at_root=True)
+        _collect_anchors(
+            resource_root,
+            name,
+            matches,
+            depth=1,
+            visited=visited,
+            at_root=True,
+            base_uri=base_uri,
+        )
     if not matches:
         raise McpProfileError("MCP $ref does not resolve in the descriptor")
     if len(matches) > 1:
         raise McpProfileError("MCP $ref anchor is ambiguous")
     target = matches[0]
     _require_schema(target)
-    if pointer_root is not document and _contains(pointer_root, target):
+    if pointer_root is not resource_root and _contains(pointer_root, target):
         found_in = pointer_root
-    elif resource_root is not document:
-        found_in = resource_root
     else:
-        found_in = document
-    next_pointer, next_resource = _roots_for_target(target, found_in, document)
+        found_in = resource_root
+    next_pointer, next_resource = _roots_for_target(
+        target, found_in, document, base_uri, resource_root
+    )
     _note_reached_schema(
         target,
         depth + 1,
@@ -700,6 +775,7 @@ def _resolve_anchor(
         deferred,
         pointer_root=next_pointer,
         resource_root=next_resource,
+        base_uri=base_uri,
     )
 
 
@@ -711,6 +787,7 @@ def _collect_anchors(
     depth: int,
     visited: set[int],
     at_root: bool,
+    base_uri: str,
 ) -> None:
     """Append each schema object in this resource whose plain name equals ``name``."""
 
@@ -718,7 +795,7 @@ def _collect_anchors(
         raise McpProfileError("MCP schema exceeds the revision bounds")
     if not isinstance(node, Mapping):
         return
-    if not at_root and _nonempty_id(node):
+    if not at_root and _changes_resource(node, base_uri):
         return
     identity = id(node)
     if identity in visited:
@@ -744,6 +821,7 @@ def _collect_anchors(
                     depth=depth + 1,
                     visited=visited,
                     at_root=False,
+                    base_uri=base_uri,
                 )
             continue
         if (
@@ -759,6 +837,7 @@ def _collect_anchors(
                     depth=depth + 1,
                     visited=visited,
                     at_root=False,
+                    base_uri=base_uri,
                 )
             continue
         if key in _ANCHOR_OBJECT_KEYWORDS:
@@ -771,6 +850,7 @@ def _collect_anchors(
                         depth=depth + 1,
                         visited=visited,
                         at_root=False,
+                        base_uri=base_uri,
                     )
             else:
                 _collect_anchors(
@@ -780,6 +860,7 @@ def _collect_anchors(
                     depth=depth + 1,
                     visited=visited,
                     at_root=False,
+                    base_uri=base_uri,
                 )
 
 
