@@ -270,10 +270,14 @@ def validate_mcp_descriptor(
     objects declaring one plain name inside one resource are rejected; an
     anchor of another tree cannot collide. The value a reference lands on
     must itself be a 2020-12 schema. Each schema node reached by a reference
-    is checked with the context of every path that reaches it, and static
-    keyword descent applies only to nodes no reference reaches. Dialect,
-    local-reference and resolution rules also apply to a schema reached
-    through instance data such as ``const`` or ``default``. A fixture that is
+    is checked with the context of every path that reaches it, and every
+    ``$ref`` is resolved in every context that reaches its node, so the
+    outcome never depends on member order. Dialect, local-reference and
+    resolution rules also apply to a schema reached through instance data
+    such as ``const`` or ``default``, whose ``$id`` changes the base URI of
+    the references inside it exactly as the pinned library descends. The
+    descriptor tree is the document without the tool schemas, so the tree
+    boundary holds in both directions. A fixture that is
     not an object, or whose ``$defs`` or ``Tool`` entry is not an object, is
     rejected before the library is called.
     """
@@ -301,11 +305,10 @@ def validate_mcp_descriptor(
     if names != sorted(names) or len(names) != len(set(names)):
         raise McpProfileError("MCP tools are not in deterministic name order")
     _walk_json(document, depth=1, nodes=[0])
-    # Every schema-position node is resolved before any keyword check: a node
-    # reached through a reference is checked with the context of each path a
-    # reference reaches it, and static keyword descent applies only to nodes
-    # no reference reaches. A reference path that does not resolve rejects the
-    # descriptor here, so the outcome never depends on member order.
+    # Every schema-position node is resolved before any keyword check, and
+    # every ``$ref`` is resolved in every context that reaches its node, so
+    # the outcome never depends on the order of members or visits. A
+    # reference path that does not resolve rejects the descriptor here.
     document_tree, tool_trees = _build_schema_trees(document)
     roots: list[tuple[Any, _ResolutionContext]] = [
         (document_tree.root, _root_context(document_tree)),
@@ -609,6 +612,51 @@ def _same_uri_resource_ancestors(
     return ancestors
 
 
+def _collect_declared_ids(document: Mapping[str, Any]) -> set[str]:
+    """Collect every string ``$id`` value anywhere in the document.
+
+    The walk is bounded like the JSON bounds walk, which already ran on the
+    same document. Values are compared raw: a nested absolute ``$id`` that
+    spells a candidate synthetic URI would collide by string equality, and a
+    relative ``$id`` cannot spell a ``urn:`` URI.
+    """
+
+    declared_ids: set[str] = set()
+    nodes = [0]
+
+    def visit(node: object, depth: int) -> None:
+        nodes[0] += 1
+        if depth > MAX_SCHEMA_DEPTH or nodes[0] > MAX_SCHEMA_NODES:
+            raise McpProfileError("MCP schema exceeds the revision bounds")
+        if isinstance(node, Mapping):
+            declared = node.get("$id")
+            if isinstance(declared, str):
+                declared_ids.add(declared)
+            for value in node.values():
+                visit(value, depth + 1)
+        elif isinstance(node, Sequence) and not isinstance(node, (str, bytes)):
+            for item in node:
+                visit(item, depth + 1)
+
+    visit(document, 1)
+    return declared_ids
+
+
+def _synthetic_tool_uri(
+    index: int,
+    field: str,
+    declared_ids: set[str],
+) -> str:
+    """A fixed base URI distinct from every declared ``$id`` of the document."""
+
+    candidate = f"urn:ocor:embedded-tool:{index}:{field}"
+    suffix = 2
+    while candidate in declared_ids:
+        candidate = f"urn:ocor:embedded-tool:{index}:{field}:{suffix}"
+        suffix += 1
+    return candidate
+
+
 def _build_schema_trees(
     document: Mapping[str, Any],
 ) -> tuple[_SchemaTree, tuple[tuple[int, str, _SchemaTree], ...]]:
@@ -617,14 +665,20 @@ def _build_schema_trees(
     MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): each ``inputSchema`` and each
     ``outputSchema`` is an autonomous JSON Schema 2020-12 resource. Its base
     URI is its ``$id`` when present, otherwise a fixed URI that is distinct
-    for every tool and field and coincides with no ``$id`` of the document.
-    The descriptor is its own tree. No registry or anchor index is shared
-    between trees, so a lookup can never reach another tree's resource and
-    an anchor declared in another tree can never be ambiguous here.
+    for every tool and field and coincides with no ``$id`` of the document
+    (``_synthetic_tool_uri`` picks the URI after reading every declared
+    ``$id``). The descriptor is its own tree, and the boundary holds in both
+    directions: the descriptor tree is built from the document without the
+    ``tools`` array, so a descriptor-level ``$ref`` whose pointer enters a
+    tool schema does not resolve there, while no registry or anchor index
+    is shared between trees and a lookup can never reach another tree's
+    resource.
     """
 
+    declared_ids = _collect_declared_ids(document)
     document_uri = _resource_uri(document, "")
-    document_tree = _schema_tree(document, document_uri)
+    pruned = {key: value for key, value in document.items() if key != "tools"}
+    document_tree = _schema_tree(pruned, document_uri)
     tool_trees: list[tuple[int, str, _SchemaTree]] = []
     tools = document.get("tools")
     if isinstance(tools, Sequence) and not isinstance(tools, (str, bytes)):
@@ -639,7 +693,7 @@ def _build_schema_trees(
                 if declared is not None:
                     root_uri = declared
                 else:
-                    root_uri = f"urn:ocor:embedded-tool:{index}:{field}"
+                    root_uri = _synthetic_tool_uri(index, field, declared_ids)
                 tool_trees.append((index, field, _schema_tree(schema, root_uri)))
     return document_tree, tuple(tool_trees)
 
@@ -787,37 +841,61 @@ def _root_context(tree: _SchemaTree) -> _ResolutionContext:
 
 
 def _descend(context: _ResolutionContext, child: object) -> _ResolutionContext:
-    """Enter a keyword child with the URI the crawl assigned to it.
+    """Enter a keyword child with the resolver the pinned library gives.
 
     A node no reference reaches is checked with this context; a reference
-    path replaces it with the resolver its lookup returned. Children of a
-    node reached through instance data keep the resource URI of the parent:
-    the pinned library does not start a subresource on ``const``, ``default``,
-    ``enum`` or ``example``.
+    path replaces it with the resolver its lookup returned. A child the
+    crawl indexed keeps the crawl-assigned resource URI. A child outside
+    the crawl map — a schema position such as ``additionalItems``, or a
+    schema reached through instance data such as ``const``, ``default`` or
+    ``examples`` — enters through ``Resolver.in_subresource`` on the
+    current resource, exactly as the jsonschema validator descends: an
+    ``$id`` there changes the base URI for the references inside it while
+    the registry is unchanged, so a look-up against a URI the crawl never
+    registered fails closed.
 
-    When the child stays inside the current resource the resolver that
-    reached it is preserved: a lookup across an anchor keeps crawl state in
-    the resolver, and rebuilding it from the tree registry would drop that
-    state, so pointers inside the reached schema must keep using it. Only a
-    child that starts another resource gets a fresh resolver rooted at its
-    own URI.
+    When a crawled child stays inside the current resource the resolver
+    that reached it is preserved: a lookup across an anchor keeps crawl
+    state in the resolver, and rebuilding it from the tree registry would
+    drop that state, so pointers inside the reached schema must keep using
+    it. Only a child that starts another resource gets a fresh resolver
+    rooted at its own URI.
     """
 
     if not isinstance(child, Mapping):
         return context
-    uri = context.node_uris.get(id(child), context.resource_uri)
-    if uri == context.resource_uri:
+    uri = context.node_uris.get(id(child))
+    if uri is not None:
+        if uri == context.resource_uri:
+            return _ResolutionContext(
+                tree=context.tree,
+                resolver=context.resolver,
+                base_uri=context.base_uri,
+                resource_uri=context.resource_uri,
+            )
         return _ResolutionContext(
             tree=context.tree,
-            resolver=context.resolver,
-            base_uri=context.base_uri,
-            resource_uri=context.resource_uri,
+            resolver=context.tree.registry.resolver(uri),
+            base_uri=uri,
+            resource_uri=uri,
         )
+    try:
+        entered = context.resolver.in_subresource(_create_resource(child))
+    except McpProfileError:
+        raise
+    except _SCHEMA_LIBRARY_ERRORS as exc:
+        raise McpProfileError("MCP $id is not a valid URI reference") from exc
+    base_uri = getattr(entered, "_base_uri", context.base_uri)
+    if not isinstance(base_uri, str) or not base_uri:
+        base_uri = context.base_uri
+    resource_uri = (
+        context.resource_uri if base_uri == context.base_uri else base_uri
+    )
     return _ResolutionContext(
         tree=context.tree,
-        resolver=context.tree.registry.resolver(uri),
-        base_uri=uri,
-        resource_uri=uri,
+        resolver=entered,
+        base_uri=base_uri,
+        resource_uri=resource_uri,
     )
 
 
@@ -849,93 +927,123 @@ def _resolve_graph(
 ) -> tuple[list[tuple[Any, _ResolutionContext, int]], set[tuple[int, str]]]:
     """Resolve every ``$ref`` path before any keyword is checked.
 
-    ``referencing`` owns every lookup. The queue records, for each schema
-    node, every distinct resolver state that reaches it: keyword descent
-    carries the crawl-assigned resource URI, a reference path carries the
-    resolver its lookup returned. A reference that does not resolve rejects
-    the descriptor here, so the outcome cannot depend on the order of
-    members or the order of visits. Returns the states to check in visit
-    order and the states that came from a reference path.
+    ``referencing`` owns every lookup. The static descent records, for each
+    schema node, the state the crawl assigns it; a reference path records
+    the resolver its lookup returned. A reference that does not resolve
+    rejects the descriptor, so the outcome cannot depend on the order of
+    members or the order of visits.
 
-    A node that lies on a reference path is resolved with the resolver the
-    library kept along that path; the static root descent must not resolve
-    the same ``$ref`` again with the profile's own root state, because the
-    library never switches base across ``$defs`` or instance data, while
-    the profile's crawl ownership does. Static states therefore defer their
-    ``$ref`` resolution and it runs only for nodes no reference path
-    reaches.
+    The profile rule that static keyword descent applies only to nodes no
+    reference reaches is realized as a fixed point. A static ``$ref`` is
+    resolved for every statically reached node, but its failure only
+    rejects the descriptor when no reference path reaches that node; the
+    set of reference-reached nodes is recomputed until it stops growing,
+    because a reference path can reach a node whose own static ``$ref``
+    seeds further reference paths. Reference-path resolutions are never
+    suppressed and raise at once. Trees never share state: every path
+    starts from its tree's root context and the descriptor tree is built
+    without the tool schemas, so a node of one tree is reached only with
+    contexts of that tree.
     """
 
+    static_order: list[tuple[Any, _ResolutionContext, int]] = []
+    static_refs: list[tuple[Any, _ResolutionContext, int]] = []
     visited_static: set[tuple[int, str, int]] = set()
-    visited_via_ref: set[tuple[int, str, int]] = set()
-    order: list[tuple[Any, _ResolutionContext, int]] = []
-    ref_states: set[tuple[int, str]] = set()
-    via_ref_nodes: set[int] = set()
-    queue: list[tuple[Any, _ResolutionContext, int, bool, bool]] = [
-        (node, context, 1, False, False) for node, context in roots
+    queue: list[tuple[Any, _ResolutionContext, int]] = [
+        (node, context, 1) for node, context in roots
     ]
-    deferred: list[tuple[Any, _ResolutionContext, int]] = []
     while queue:
-        node, context, depth, came_from_ref, via_ref = queue.pop(0)
+        node, context, depth = queue.pop(0)
         if not isinstance(node, Mapping):
             continue
         if depth > MAX_SCHEMA_DEPTH:
             raise McpProfileError("MCP schema exceeds the revision bounds")
         state = (id(node), context.base_uri, id(context.registry))
-        visited = visited_via_ref if via_ref else visited_static
-        if state in visited:
+        if state in visited_static:
             continue
-        visited.add(state)
-        if came_from_ref:
-            ref_states.add((id(node), context.base_uri))
-        if via_ref:
-            via_ref_nodes.add(id(node))
-        order.append((node, context, depth))
+        visited_static.add(state)
+        static_order.append((node, context, depth))
         if "$ref" in node:
-            if via_ref:
-                target, target_context = _resolve_reference(node["$ref"], context)
-                if isinstance(target, Mapping):
-                    queue.append((target, target_context, depth + 1, True, True))
-            else:
-                deferred.append((node, context, depth))
+            static_refs.append((node, context, depth))
         for child in _iter_check_children(node):
-            queue.append(
-                (child, _descend(context, child), depth + 1, False, via_ref)
-            )
-    pending: list[tuple[Any, _ResolutionContext, int, bool]] = []
-    index = 0
-    while index < len(deferred) or pending:
-        if pending:
-            node, context, depth, came_from_ref = pending.pop(0)
+            queue.append((child, _descend(context, child), depth + 1))
+
+    ref_states: set[tuple[int, str]] = set()
+    ref_reached: set[int] = set()
+    static_outcomes: dict[tuple[int, str], tuple[object, _ResolutionContext]] = {}
+
+    static_sequence: list[tuple[int, int]] = []
+    static_failures: dict[tuple[int, str], McpProfileError] = {}
+    ref_queue: list[tuple[Any, _ResolutionContext, int]] = []
+    visited_ref: set[tuple[int, str, int]] = set()
+    ref_order: list[tuple[Any, _ResolutionContext, int]] = []
+
+    def seed_static() -> None:
+        for node, context, depth in static_refs:
+            identity = id(node)
+            key = (identity, context.base_uri)
+            static_sequence.append((identity, depth))
+            try:
+                target, target_context = _resolve_reference(
+                    node["$ref"], context
+                )
+            except McpProfileError as exc:
+                static_failures[key] = exc
+                continue
+            static_outcomes[key] = (target, target_context)
+        for node, _context, depth in static_refs:
+            key = (id(node), _context.base_uri)
+            if id(node) in ref_reached:
+                continue
+            outcome = static_outcomes.get(key)
+            if outcome is None:
+                continue
+            target, target_context = outcome
+            if isinstance(target, Mapping):
+                ref_queue.append((target, target_context, depth + 1))
+
+    def drain_refs() -> None:
+        while ref_queue:
+            node, context, depth = ref_queue.pop(0)
             if not isinstance(node, Mapping):
                 continue
             if depth > MAX_SCHEMA_DEPTH:
                 raise McpProfileError("MCP schema exceeds the revision bounds")
             state = (id(node), context.base_uri, id(context.registry))
-            if state in visited_via_ref:
+            if state in visited_ref:
                 continue
-            visited_via_ref.add(state)
-            if came_from_ref:
-                ref_states.add((id(node), context.base_uri))
-            via_ref_nodes.add(id(node))
-            order.append((node, context, depth))
+            visited_ref.add(state)
+            ref_reached.add(id(node))
+            ref_states.add((id(node), context.base_uri))
+            ref_order.append((node, context, depth))
             if "$ref" in node:
-                target, target_context = _resolve_reference(node["$ref"], context)
+                target, target_context = _resolve_reference(
+                    node["$ref"], context
+                )
                 if isinstance(target, Mapping):
-                    pending.append((target, target_context, depth + 1, True))
+                    ref_queue.append((target, target_context, depth + 1))
             for child in _iter_check_children(node):
-                pending.append((child, _descend(context, child), depth + 1, False))
+                ref_queue.append((child, _descend(context, child), depth + 1))
+
+    seed_static()
+    drain_refs()
+    previous: set[int] | None = None
+    iterations = 0
+    while previous != ref_reached:
+        previous = set(ref_reached)
+        seed_static()
+        drain_refs()
+        iterations += 1
+        if iterations > MAX_SCHEMA_NODES:
+            raise McpProfileError("MCP schema exceeds the revision bounds")
+
+    for identity, _depth in static_sequence:
+        if identity in ref_reached:
             continue
-        node, context, depth = deferred[index]
-        index += 1
-        if id(node) in via_ref_nodes:
-            continue
-        if "$ref" not in node:
-            continue
-        target, target_context = _resolve_reference(node["$ref"], context)
-        if isinstance(target, Mapping):
-            pending.append((target, target_context, depth + 1, True))
-    return order, ref_states
+        for key, error in static_failures.items():
+            if key[0] == identity:
+                raise error
+    return static_order + ref_order, ref_states
 
 
 def _check_reached_schemas(
