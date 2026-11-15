@@ -7520,3 +7520,3800 @@ FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_t
 FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_two_targets_are_rejected_as_ambiguous[#/$defs/pri%76ate-./root.json-examples-inputSchema]
 FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_noop_id_two_targets_are_rejected_as_ambiguous[#/$defs/pri%76ate-./root.json-examples-outputSchema]
 60 failed, 96 passed, 934 deselected in 2.28s
+FFFFFFFFFFFFFFFF........FFFFFFFFFFFFFFFF........FFFF..FF                 [100%]
+=================================== FAILURES ===================================
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root--inputSchema] _
+
+field = 'inputSchema', identifier = '', placement = 'root'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root--outputSchema] _
+
+field = 'outputSchema', identifier = '', placement = 'root'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-#-inputSchema] _
+
+field = 'inputSchema', identifier = '#', placement = 'root'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-#-outputSchema] _
+
+field = 'outputSchema', identifier = '#', placement = 'root'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-https://example.invalid/root.json-inputSchema] _
+
+field = 'inputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'root', fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-https://example.invalid/root.json-outputSchema] _
+
+field = 'outputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'root', fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-./root.json-inputSchema] _
+
+field = 'inputSchema', identifier = './root.json', placement = 'root'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-./root.json-outputSchema] _
+
+field = 'outputSchema', identifier = './root.json', placement = 'root'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder--inputSchema] _
+
+field = 'inputSchema', identifier = '', placement = 'holder'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder--outputSchema] _
+
+field = 'outputSchema', identifier = '', placement = 'holder'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-#-inputSchema] _
+
+field = 'inputSchema', identifier = '#', placement = 'holder'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-#-outputSchema] _
+
+field = 'outputSchema', identifier = '#', placement = 'holder'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-https://example.invalid/root.json-inputSchema] _
+
+field = 'inputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'holder', fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-https://example.invalid/root.json-outputSchema] _
+
+field = 'outputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'holder', fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-./root.json-inputSchema] _
+
+field = 'inputSchema', identifier = './root.json', placement = 'holder'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-./root.json-outputSchema] _
+
+field = 'outputSchema', identifier = './root.json', placement = 'holder'
+fragment = '#/$defs/private'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/private'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root--inputSchema] _
+
+field = 'inputSchema', identifier = '', placement = 'root'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root--outputSchema] _
+
+field = 'outputSchema', identifier = '', placement = 'root'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-#-inputSchema] _
+
+field = 'inputSchema', identifier = '#', placement = 'root'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-#-outputSchema] _
+
+field = 'outputSchema', identifier = '#', placement = 'root'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-https://example.invalid/root.json-inputSchema] _
+
+field = 'inputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'root', fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-https://example.invalid/root.json-outputSchema] _
+
+field = 'outputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'root', fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-./root.json-inputSchema] _
+
+field = 'inputSchema', identifier = './root.json', placement = 'root'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-./root.json-outputSchema] _
+
+field = 'outputSchema', identifier = './root.json', placement = 'root'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3486: Failed
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder--inputSchema] _
+
+field = 'inputSchema', identifier = '', placement = 'holder'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder--outputSchema] _
+
+field = 'outputSchema', identifier = '', placement = 'holder'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-#-inputSchema] _
+
+field = 'inputSchema', identifier = '#', placement = 'holder'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-#-outputSchema] _
+
+field = 'outputSchema', identifier = '#', placement = 'holder'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-https://example.invalid/root.json-inputSchema] _
+
+field = 'inputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'holder', fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-https://example.invalid/root.json-outputSchema] _
+
+field = 'outputSchema', identifier = 'https://example.invalid/root.json'
+placement = 'holder', fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-./root.json-inputSchema] _
+
+field = 'inputSchema', identifier = './root.json', placement = 'holder'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...:ocor:embedded-tool:0:inputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-./root.json-outputSchema] _
+
+field = 'outputSchema', identifier = './root.json', placement = 'holder'
+fragment = '#/$defs/pri%76ate'
+
+    @pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+    @pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+    @pytest.mark.parametrize("placement", ("root", "holder", "both"))
+    @pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+    def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+        field: str,
+        identifier: str,
+        placement: str,
+        fragment: str,
+    ) -> None:
+        """The anchor path keeps the crawl the library triggers, pointer included."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle8_anchor_descriptor(
+            field=field,
+            identifier=identifier,
+            placement=placement,
+            fragment=fragment,
+        )
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        validator = Draft202012Validator(
+            body,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "root":
+            with pytest.raises(_WrappedReferencingError):
+                validator.is_valid({"n": 11})
+            with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                _validate(document)
+        else:
+            assert validator.is_valid({"n": 11})
+            assert not validator.is_valid({"n": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3491:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/pri%76ate'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/root.json', _registry=<Registry (3 uncrawled r...ocor:embedded-tool:0:outputSchema', fallback_registry=<Registry (3 uncrawled resources)>, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+
+        fallback_uri = context.fallback_resource_uri
+        if fallback_uri is None:
+            raise McpProfileError("MCP $ref fallback has no resource")
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+        fallback = _lookup_reference(context.fallback_resolver, library_reference)
+        empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+        if empty_uses_fallback:
+            if fallback is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+        if decoded == "":
+            if local is None:
+                raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if local is not None and fallback is not None and local.contents is not fallback.contents:
+            raise McpProfileError("MCP $ref target is ambiguous")
+        if local is not None:
+            target = _resolved_contents(context, local)
+            _require_schema(target)
+            return target, _context_after_resolution(context, local.resolver)
+        if fallback is not None:
+            fallback_context = _ResolutionContext(
+                resolver=context.fallback_resolver,
+                resource_uri=fallback_uri,
+                base_uri=fallback_uri,
+                document_uri=context.document_uri,
+                registry=context.fallback_registry or context.registry,
+                resources=context.resources,
+                aliases=context.aliases,
+                anchors=context.anchors,
+            )
+            target = _resolved_contents(context, fallback)
+            _require_schema(target)
+            return target, _context_after_resolution(fallback_context, fallback.resolver)
+>       raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E       ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:988: McpProfileError
+_ test_cycle8_repeated_nested_id_resolves_in_the_current_tree[first-two_tools] _
+
+arrangement = 'two_tools', placement = 'first'
+
+    @pytest.mark.parametrize("arrangement", ("two_tools", "in_out"))
+    @pytest.mark.parametrize("placement", ("first", "second"))
+    def test_cycle8_repeated_nested_id_resolves_in_the_current_tree(
+        arrangement: str,
+        placement: str,
+    ) -> None:
+        """Two trees sharing one nested ``$id`` stay separate resources."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        first, second = _cycle8_repeated_id_bodies(placement=placement)
+        document = _bare_descriptor()
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        if arrangement == "two_tools":
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+                {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+            ]
+        else:
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": second},
+            ]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(first),
+        )
+        validator = Draft202012Validator(
+            first,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "first":
+            assert validator.is_valid({"a": {"n": 11}})
+            assert not validator.is_valid({"a": {"n": "bad"}})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3566:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/t'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/h.json', _registry=<Registry (6 uncrawled reso..., anchors={}, fallback_resolver=None, fallback_resource_uri=None, fallback_registry=None, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:934: McpProfileError
+__ test_cycle8_repeated_nested_id_resolves_in_the_current_tree[first-in_out] ___
+
+arrangement = 'in_out', placement = 'first'
+
+    @pytest.mark.parametrize("arrangement", ("two_tools", "in_out"))
+    @pytest.mark.parametrize("placement", ("first", "second"))
+    def test_cycle8_repeated_nested_id_resolves_in_the_current_tree(
+        arrangement: str,
+        placement: str,
+    ) -> None:
+        """Two trees sharing one nested ``$id`` stay separate resources."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        first, second = _cycle8_repeated_id_bodies(placement=placement)
+        document = _bare_descriptor()
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        if arrangement == "two_tools":
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+                {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+            ]
+        else:
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": second},
+            ]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(first),
+        )
+        validator = Draft202012Validator(
+            first,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "first":
+            assert validator.is_valid({"a": {"n": 11}})
+            assert not validator.is_valid({"a": {"n": "bad"}})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3566:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/t'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/h.json', _registry=<Registry (4 uncrawled reso..., anchors={}, fallback_resolver=None, fallback_resource_uri=None, fallback_registry=None, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:934: McpProfileError
+_ test_cycle8_repeated_nested_id_resolves_in_the_current_tree[second-two_tools] _
+
+arrangement = 'two_tools', placement = 'second'
+
+    @pytest.mark.parametrize("arrangement", ("two_tools", "in_out"))
+    @pytest.mark.parametrize("placement", ("first", "second"))
+    def test_cycle8_repeated_nested_id_resolves_in_the_current_tree(
+        arrangement: str,
+        placement: str,
+    ) -> None:
+        """Two trees sharing one nested ``$id`` stay separate resources."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        first, second = _cycle8_repeated_id_bodies(placement=placement)
+        document = _bare_descriptor()
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        if arrangement == "two_tools":
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+                {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+            ]
+        else:
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": second},
+            ]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(first),
+        )
+        validator = Draft202012Validator(
+            first,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "first":
+            assert validator.is_valid({"a": {"n": 11}})
+            assert not validator.is_valid({"a": {"n": "bad"}})
+            _validate(document)
+        else:
+            with pytest.raises(_WrappedReferencingError):
+                list(validator.iter_errors({"a": {"n": 11}}))
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3570: Failed
+__ test_cycle8_repeated_nested_id_resolves_in_the_current_tree[second-in_out] __
+
+arrangement = 'in_out', placement = 'second'
+
+    @pytest.mark.parametrize("arrangement", ("two_tools", "in_out"))
+    @pytest.mark.parametrize("placement", ("first", "second"))
+    def test_cycle8_repeated_nested_id_resolves_in_the_current_tree(
+        arrangement: str,
+        placement: str,
+    ) -> None:
+        """Two trees sharing one nested ``$id`` stay separate resources."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        first, second = _cycle8_repeated_id_bodies(placement=placement)
+        document = _bare_descriptor()
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        if arrangement == "two_tools":
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+                {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+            ]
+        else:
+            document["tools"] = [
+                {"name": "t0", "inputSchema": first, "outputSchema": second},
+            ]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(first),
+        )
+        validator = Draft202012Validator(
+            first,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "first":
+            assert validator.is_valid({"a": {"n": 11}})
+            assert not validator.is_valid({"a": {"n": "bad"}})
+            _validate(document)
+        else:
+            with pytest.raises(_WrappedReferencingError):
+                list(validator.iter_errors({"a": {"n": 11}}))
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3570: Failed
+_______ test_cycle8_repeated_root_id_resolves_in_the_current_tree[first] _______
+
+placement = 'first'
+
+    @pytest.mark.parametrize("placement", ("first", "second"))
+    def test_cycle8_repeated_root_id_resolves_in_the_current_tree(
+        placement: str,
+    ) -> None:
+        """Two tool roots declaring the same ``$id`` stay separate resources."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        first: dict[str, Any] = {
+            "$id": _CYCLE8_REPEAT_URI,
+            "type": "object",
+            "properties": {"a": {"$ref": "#/$defs/t"}},
+        }
+        second: dict[str, Any] = {
+            "$id": _CYCLE8_REPEAT_URI,
+            "type": "object",
+        }
+        if placement == "first":
+            first["$defs"] = {"t": {"type": "integer"}}
+        else:
+            second["$defs"] = {"t": {"type": "integer"}}
+        document = _bare_descriptor()
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        document["tools"] = [
+            {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+            {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+        ]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(first),
+        )
+        validator = Draft202012Validator(
+            first,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "first":
+            assert validator.is_valid({"a": 11})
+            assert not validator.is_valid({"a": "bad"})
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3650:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:302: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1117: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1106: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1096: in _check_schema_keywords
+    target, target_context = _resolve_reference(node["$ref"], context)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/t'
+context = _ResolutionContext(resolver=Resolver(_base_uri='https://example.invalid/h.json', _registry=<Registry (4 uncrawled reso..., anchors={}, fallback_resolver=None, fallback_resource_uri=None, fallback_registry=None, embedded_local_registries={})
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``."""
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            if context.fallback_resolver is not None:
+                _validate_pointer_array_indices(
+                    context.fallback_resolver,
+                    raw_tokens,
+                    tokens,
+                )
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+
+        local = _lookup_reference(context.resolver, library_reference)
+        if context.fallback_resolver is None:
+            if local is None:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:934: McpProfileError
+______ test_cycle8_repeated_root_id_resolves_in_the_current_tree[second] _______
+
+placement = 'second'
+
+    @pytest.mark.parametrize("placement", ("first", "second"))
+    def test_cycle8_repeated_root_id_resolves_in_the_current_tree(
+        placement: str,
+    ) -> None:
+        """Two tool roots declaring the same ``$id`` stay separate resources."""
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import _WrappedReferencingError
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        first: dict[str, Any] = {
+            "$id": _CYCLE8_REPEAT_URI,
+            "type": "object",
+            "properties": {"a": {"$ref": "#/$defs/t"}},
+        }
+        second: dict[str, Any] = {
+            "$id": _CYCLE8_REPEAT_URI,
+            "type": "object",
+        }
+        if placement == "first":
+            first["$defs"] = {"t": {"type": "integer"}}
+        else:
+            second["$defs"] = {"t": {"type": "integer"}}
+        document = _bare_descriptor()
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        document["tools"] = [
+            {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+            {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+        ]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(first),
+        )
+        validator = Draft202012Validator(
+            first,
+            registry=registry,
+            _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+        )
+        if placement == "first":
+            assert validator.is_valid({"a": 11})
+            assert not validator.is_valid({"a": "bad"})
+            _validate(document)
+        else:
+            with pytest.raises(_WrappedReferencingError):
+                list(validator.iter_errors({"a": 11}))
+>           with pytest.raises(profile.McpProfileError, match="does not resolve"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3654: Failed
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root--inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root--outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-#-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-#-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-https://example.invalid/root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-https://example.invalid/root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-./root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-root-./root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder--inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder--outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-#-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-#-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-https://example.invalid/root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-https://example.invalid/root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-./root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/private-holder-./root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root--inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root--outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-#-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-#-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-https://example.invalid/root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-https://example.invalid/root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-./root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-root-./root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder--inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder--outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-#-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-#-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-https://example.invalid/root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-https://example.invalid/root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-./root.json-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_anchor_ref_follows_the_referencing_crawl[#/$defs/pri%76ate-holder-./root.json-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree[first-two_tools]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree[first-in_out]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree[second-two_tools]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_nested_id_resolves_in_the_current_tree[second-in_out]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_root_id_resolves_in_the_current_tree[first]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_repeated_root_id_resolves_in_the_current_tree[second]
+38 failed, 18 passed, 1090 deselected in 1.41s
