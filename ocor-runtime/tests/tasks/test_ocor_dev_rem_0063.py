@@ -2887,7 +2887,7 @@ def test_cycle7_pointer_crossing_resource_preserves_resolver(
         with pytest.raises(Unresolvable):
             reached.resolver.lookup(fragment)
         profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
-        with pytest.raises(profile.McpProfileError):
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
             _validate(document)
 
 
@@ -2933,3 +2933,315 @@ def test_cycle7_generated_case_count_is_stable() -> None:
     assert len(_CYCLE7_EMPTY_CASES) == 32
     assert len(_CYCLE7_DIFFERENTIAL_CASES) == 36
     assert len(_CYCLE7_SLOTS) == 3
+
+
+# Repair of the cycle-7 preventive review, findings P1-P4. The class is the one
+# the manual resource index and the lexical pointer filters left open: resource
+# roots come from the current library resolver, an ``$id`` that does not change
+# the URI stays on the current resource, numeric tokens are filtered only when
+# their resolved parent is an array, and malformed schema identifiers are typed
+# profile errors. Oracle: referencing 0.37.0 and RFC 6901.
+
+_CYCLE7_REPAIR_ROOT = "https://example.invalid/root.json"
+_CYCLE7_REPAIR_CHILD = "https://example.invalid/child.json"
+_CYCLE7_REPAIR_BAD_IDS = ("http://[::1", "http://[zz]/x.json", "//[x")
+
+
+def _cycle7_repair_pointer(*tokens: str) -> str:
+    from urllib.parse import quote
+
+    return "#/" + "/".join(quote(token, safe="~") for token in tokens)
+
+
+def _cycle7_repair_decoy_descriptor(
+    *,
+    decoy_part: object,
+    real_part: object | None,
+) -> dict[str, Any]:
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["$defs"] = {
+        "decoy": {
+            "const": {
+                "$id": _CYCLE7_REPAIR_CHILD,
+                "$defs": {"part": copy.deepcopy(decoy_part)},
+            }
+        },
+        "real": {
+            "$id": _CYCLE7_REPAIR_CHILD,
+            "type": "object",
+            "properties": {"n": {"$ref": "#/$defs/part"}},
+        },
+    }
+    if real_part is not None:
+        real = document["$defs"]["real"]
+        if isinstance(real, dict):
+            real["$defs"] = {"part": copy.deepcopy(real_part)}
+    document["tools"][0]["inputSchema"] = {
+        "type": "object",
+        "properties": {"value": {"$ref": "#/$defs/real"}},
+    }
+    return document
+
+
+def test_cycle7_repair_instance_id_does_not_decide_a_schema_resource() -> None:
+    """P1: a decoy ``$id`` in ``const`` cannot make a missing definition resolve."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle7_repair_decoy_descriptor(
+        decoy_part={"type": "integer"},
+        real_part=None,
+    )
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+def test_cycle7_repair_instance_id_does_not_hide_the_real_schema_resource() -> None:
+    """P1: a non-schema definition in the decoy is not the real target."""
+    document = _cycle7_repair_decoy_descriptor(
+        decoy_part=7,
+        real_part={"type": "integer"},
+    )
+    _validate(document)
+
+
+def test_cycle7_repair_duplicate_keyword_id_follows_the_crawled_resource() -> None:
+    """P1: a duplicate ``$id`` does not let the first keyword schema win."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["$defs"] = {
+        "w": {
+            "properties": {
+                "a": {
+                    "$id": _CYCLE7_REPAIR_CHILD,
+                    "type": "object",
+                    "$defs": {"x": {"type": "integer"}},
+                    "properties": {"n": {"$ref": "#/$defs/x"}},
+                }
+            },
+            "not": {"$id": _CYCLE7_REPAIR_CHILD, "type": "object"},
+        }
+    }
+    document["tools"][0]["inputSchema"] = {
+        "type": "object",
+        "$ref": "#/$defs/w/properties/a",
+    }
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(document),
+    )
+    with pytest.raises(_WrappedReferencingError):
+        list(
+            Draft202012Validator(
+                {
+                    "$ref": (
+                        _CYCLE7_REPAIR_ROOT
+                        + "#/$defs/w/properties/a"
+                    )
+                },
+                registry=registry,
+            ).iter_errors({"n": 1})
+        )
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+def test_cycle7_repair_instance_reached_id_does_not_create_a_resource() -> None:
+    """P1: a nested ``$id`` reached through ``const`` is not registered."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["$defs"] = {
+        "holder": {
+            "const": {
+                "target": {
+                    "type": "object",
+                    "properties": {
+                        "p": {
+                            "$id": "inner.json",
+                            "$ref": "#/$defs/q",
+                            "$defs": {"q": {"type": "integer"}},
+                        }
+                    },
+                }
+            }
+        }
+    }
+    document["tools"][0]["inputSchema"] = {
+        "type": "object",
+        "$ref": "#/$defs/holder/const/target",
+    }
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(document),
+    )
+    with pytest.raises(_WrappedReferencingError):
+        list(
+            Draft202012Validator(
+                {
+                    "$ref": (
+                        _CYCLE7_REPAIR_ROOT
+                        + "#/$defs/holder/const/target"
+                    )
+                },
+                registry=registry,
+            ).iter_errors({"p": 1})
+        )
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("where", ("tool", "child"))
+def test_cycle7_repair_noop_id_keeps_the_embedded_tool_resource(
+    identifier: str,
+    where: str,
+) -> None:
+    """P2: an ``$id`` that joins to the current URI does not remove the fallback."""
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    local = {
+        "type": "object",
+        "$defs": {"part": {"type": "integer"}},
+        "properties": {"value": {"$ref": "#/$defs/part"}},
+    }
+    if where == "tool":
+        local["$id"] = identifier
+        body = local
+    else:
+        body = {
+            "type": "object",
+            "$defs": local["$defs"],
+            "properties": {
+                "nested": {"type": "object", "$id": identifier, "$ref": "#/$defs/part"}
+            },
+        }
+    document["tools"][0]["inputSchema"] = body
+    _validate(document)
+
+
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("where", ("tool", "child"))
+def test_cycle7_repair_noop_id_keeps_two_resource_ambiguity(
+    identifier: str,
+    where: str,
+) -> None:
+    """P2: the local and descriptor resources are both checked after a no-op ``$id``."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["$defs"] = {"part": {"type": "string"}}
+    local = {
+        "type": "object",
+        "$defs": {"part": {"type": "integer"}},
+        "properties": {"value": {"$ref": "#/$defs/part"}},
+    }
+    if where == "tool":
+        local["$id"] = identifier
+        body = local
+    else:
+        body = {
+            "type": "object",
+            "$defs": local["$defs"],
+            "properties": {
+                "nested": {"type": "object", "$id": identifier, "$ref": "#/$defs/part"}
+            },
+        }
+    document["tools"][0]["inputSchema"] = body
+    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+        _validate(document)
+
+
+@pytest.mark.parametrize("token", ("01", "007", "-1", "+1", "١"))
+@pytest.mark.parametrize("parent", ("$defs", "properties"))
+def test_cycle7_repair_numeric_object_members_still_resolve(token: str, parent: str) -> None:
+    """P3: canonical-index syntax applies to an array parent, not to object names."""
+    document = _bare_descriptor()
+    if parent == "$defs":
+        document["$defs"] = {token: {"type": "integer"}}
+        ref = _cycle7_repair_pointer("$defs", token)
+    else:
+        document["$defs"] = {
+            "holder": {"type": "object", "properties": {token: {"type": "integer"}}}
+        }
+        ref = _cycle7_repair_pointer("$defs", "holder", "properties", token)
+    document["tools"][0]["inputSchema"] = {
+        "type": "object",
+        "properties": {"value": {"$ref": ref}},
+    }
+    _validate(document)
+
+
+@pytest.mark.parametrize("token", (" 1", "1 ", "1_0", "0_1", "+١", "", "00", "-1"))
+def test_cycle7_repair_array_index_must_be_canonical(token: str) -> None:
+    """P3: an array parent admits only ``0`` or an ASCII decimal without a leading zero."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _choices_descriptor()
+    document["tools"][0]["inputSchema"]["properties"]["name"] = {
+        "$ref": _cycle7_repair_pointer("$defs", "choices", "anyOf", token)
+    }
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+@pytest.mark.parametrize("identifier", _CYCLE7_REPAIR_BAD_IDS)
+@pytest.mark.parametrize("where", ("root", "keyword"))
+def test_cycle7_repair_malformed_schema_id_is_typed(identifier: str, where: str) -> None:
+    """P4: a malformed ``$id`` at a schema position raises McpProfileError."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    if where == "root":
+        document["$id"] = identifier
+    else:
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        document["$defs"] = {"bad": {"$id": identifier, "type": "object"}}
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
+
+
+@pytest.mark.parametrize("identifier", _CYCLE7_REPAIR_BAD_IDS)
+@pytest.mark.parametrize("slot", _CYCLE7_SLOTS)
+def test_cycle7_repair_malformed_id_in_unreferenced_instance_data_is_accepted(
+    identifier: str,
+    slot: str,
+) -> None:
+    """P4: instance data is not a schema resource merely because it has ``$id``."""
+    document = _bare_descriptor()
+    box = {"$id": identifier}
+    document["$defs"] = {
+        "holder": {slot: [box] if slot == "examples" else box},
+    }
+    _validate(document)
+
+
+@pytest.mark.parametrize("identifier", _CYCLE7_REPAIR_BAD_IDS)
+@pytest.mark.parametrize("slot", _CYCLE7_SLOTS)
+def test_cycle7_repair_malformed_id_in_reached_instance_data_is_typed(
+    identifier: str,
+    slot: str,
+) -> None:
+    """P4: once a ``$ref`` reaches it, the malformed ``$id`` is a schema error."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    target = {"$id": identifier, "type": "object"}
+    box = {"target": target}
+    document["$defs"] = {"holder": {slot: [box] if slot == "examples" else box}}
+    suffix = "/0" if slot == "examples" else ""
+    document["tools"][0]["inputSchema"] = {
+        "type": "object",
+        "properties": {
+            "value": {"$ref": f"#/$defs/holder/{slot}{suffix}/target"}
+        },
+    }
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)

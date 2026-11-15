@@ -12,12 +12,11 @@ input schema.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, cast
 from urllib.parse import quote, urljoin
 
-from attrs import evolve
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError, UnknownType
 from referencing import Registry, Resource
@@ -84,11 +83,49 @@ def _pointer_maybe_in_subresource(
     try:
         return DRAFT202012.maybe_in_subresource(segments, resolver, subresource)
     except (AttributeError, TypeError):
+        contents = subresource.contents
+        if isinstance(contents, Sequence) and not isinstance(contents, (str, bytes)):
+            raise
         return resolver
 
 
-_PROFILE_SPECIFICATION: Any = evolve(
-    cast(Any, DRAFT202012),
+def _profile_anchors_in(
+    _specification: Any,
+    contents: Mapping[str, Any],
+) -> Any:
+    """Keep the pinned draft's anchor discovery in the profile specification."""
+
+    return DRAFT202012.anchors_in(contents)
+
+
+def _profile_id_of(contents: Any) -> str | None:
+    """Use the profile's no-effect rule when the pinned registry crawls."""
+
+    return _declared_id(contents)
+
+
+def _profile_subresources_of(
+    contents: Mapping[str, Any],
+) -> Any:
+    """Keep scalar instance values out of the schema-resource crawl.
+
+    The profile checks a reached scalar as a typed non-schema target. An
+    unreferenced scalar in a keyword position is not a resource and must not
+    make the library's resource identity fail while the index is built.
+    """
+
+    return (
+        resource
+        for resource in DRAFT202012.subresources_of(contents)
+        if isinstance(resource, Mapping)
+    )
+
+
+_PROFILE_SPECIFICATION: Any = cast(Any, type(DRAFT202012))(
+    name=DRAFT202012.name,
+    id_of=_profile_id_of,
+    subresources_of=_profile_subresources_of,
+    anchors_in=_profile_anchors_in,
     maybe_in_subresource=_pointer_maybe_in_subresource,
 )
 
@@ -104,12 +141,12 @@ class McpProfileError(ValueError):
 
 @dataclass(frozen=True)
 class _ResolutionIndex:
-    """Resources and stricter profile indexes built beside the pinned resolver."""
+    """Schema-position resources and the profile's anchor ambiguity index."""
 
     root_uri: str
-    identities: Mapping[int, str]
-    aliases: Mapping[int, object]
     resources: Mapping[str, Resource[Any]]
+    registry: Registry[Any]
+    aliases: Mapping[int, object]
     anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]
 
 
@@ -120,12 +157,14 @@ class _ResolutionContext:
     resolver: Any
     resource_uri: str
     base_uri: str
-    resource_roots: Mapping[int, str]
-    resource_aliases: Mapping[int, object]
+    document_uri: str
+    registry: Registry[Any]
     resources: Mapping[str, Resource[Any]]
+    aliases: Mapping[int, object]
     anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]
     fallback_resolver: Any | None = None
     fallback_resource_uri: str | None = None
+    fallback_registry: Registry[Any] | None = None
 
 
 def without_context_overwrite(schema: Mapping[str, Any]) -> dict[str, Any]:
@@ -228,12 +267,13 @@ def validate_mcp_descriptor(
     resolution = _build_resolution_index(document)
     document_base = resolution.root_uri
     document_context = _ResolutionContext(
-        resolver=_resource_resolver(document_base, resolution.resources[document_base]),
+        resolver=resolution.registry.resolver(document_base),
         resource_uri=document_base,
         base_uri=document_base,
-        resource_roots=resolution.identities,
-        resource_aliases=resolution.aliases,
+        document_uri=document_base,
+        registry=resolution.registry,
         resources=resolution.resources,
+        aliases=resolution.aliases,
         anchors=resolution.anchors,
     )
     _check_schema_keywords(
@@ -421,12 +461,42 @@ def _resource_uri(node: object, base_uri: str) -> str:
     identifier = _declared_id(node)
     if identifier is None:
         return base_uri
-    return urljoin(base_uri, identifier)
+    try:
+        joined = urljoin(base_uri, identifier)
+        if base_uri == "" and joined == identifier:
+            urljoin("https://ocor.invalid/", identifier)
+        return joined
+    except ValueError as exc:
+        raise McpProfileError("MCP $id is not a valid URI reference") from exc
 
 
 def _changes_resource(node: object, base_uri: str) -> bool:
     """True when ``node`` joins to a URI other than ``base_uri``."""
     return _resource_uri(node, base_uri) != base_uri
+
+
+def _iter_schema_children(node: Mapping[str, Any]) -> Iterator[object]:
+    """Yield only values in JSON Schema 2020-12 applicator positions."""
+
+    for key, value in node.items():
+        if key == "additionalItems":
+            continue
+        if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
+            yield from value.values()
+            continue
+        if (
+            key in _SCHEMA_ARRAY_KEYWORDS
+            and isinstance(value, Sequence)
+            and not isinstance(value, (str, bytes))
+        ):
+            yield from value
+            continue
+        if key in _SCHEMA_OBJECT_KEYWORDS:
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+                yield from value
+            else:
+                yield value
+
 
 def _create_resource(contents: Mapping[str, Any]) -> Resource[Any]:
     """Create one draft-2020-12 resource without copying the document object."""
@@ -446,54 +516,124 @@ def _resource_resolver(uri: str, resource: Resource[Any]) -> Any:
     return Registry().with_resource(uri, resource).resolver(uri)
 
 
-def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
-    """Index every declared subresource, then let referencing resolve references.
+def _crawl_document_resources(
+    document: Mapping[str, Any],
+    document_uri: str,
+    aliases: dict[int, object],
+) -> dict[str, Resource[Any]]:
+    """Use the pinned crawl as the authority for one schema resource tree."""
 
-    The registry is the only reference resolver. This walk only discovers
-    resources declared by ``$id`` inside the descriptor, including the tool
-    schemas that are not children of a JSON Schema applicator, and records the
-    effective URI for each resource root.
+    contents = _canonical_resource_contents(document, document_uri)
+    if contents is not document:
+        aliases[id(contents)] = document
+    root = _create_resource(contents)
+    try:
+        crawled = Registry().with_resource(document_uri, root).crawl()
+    except McpProfileError:
+        raise
+    except _SCHEMA_LIBRARY_ERRORS as exc:
+        raise McpProfileError("MCP schema resource index is not resolvable") from exc
+
+    ancestors = _same_uri_resource_ancestors(document, document_uri)
+    resources: dict[str, Resource[Any]] = {}
+    for resource_uri, resource in crawled.items():
+        inherited = ancestors.get(id(resource.contents), ())
+        original = cast(
+            Mapping[str, Any],
+            inherited[0]
+            if inherited
+            else aliases.get(id(resource.contents), resource.contents),
+        )
+        canonical = _canonical_resource_contents(original, resource_uri)
+        resources[resource_uri] = _create_resource(canonical)
+        if canonical is not original:
+            aliases[id(canonical)] = original
+    # A descendant whose ``$id`` joins to the URI already occupied by this
+    # crawl root does not replace that root. The library resolver keeps the
+    # current resource until an identifier actually changes the base URI.
+    resources[document_uri] = root
+    return resources
+
+
+def _same_uri_resource_ancestors(
+    root: Mapping[str, Any],
+    root_uri: str,
+) -> dict[int, tuple[Mapping[str, Any], ...]]:
+    """Record resource-root ancestors that already occupy the same URI.
+
+    ``Registry.crawl`` keeps the last resource for a URI. A descendant whose
+    ``$id`` joins to the current URI has not started a new resource, so it must
+    not replace the resource that owns that URI. Sibling collisions are left to
+    the library's last-wins rule.
+    """
+
+    ancestors: dict[int, tuple[Mapping[str, Any], ...]] = {}
+    active: dict[str, tuple[Mapping[str, Any], ...]] = {}
+    nodes = 0
+
+    def visit(
+        node: object,
+        base_uri: str,
+        *,
+        root_node: bool,
+        depth: int,
+    ) -> None:
+        nonlocal nodes
+        if not isinstance(node, Mapping):
+            return
+        nodes += 1
+        if depth > MAX_SCHEMA_DEPTH or nodes > MAX_SCHEMA_NODES:
+            raise McpProfileError("MCP schema exceeds the revision bounds")
+        resource_uri = _resource_uri(node, base_uri)
+        owners = active.get(resource_uri, ())
+        ancestors[id(node)] = owners
+        enters_resource = root_node or resource_uri != base_uri
+        if enters_resource:
+            active[resource_uri] = owners + (node,)
+        try:
+            for child in _iter_schema_children(node):
+                visit(
+                    child,
+                    resource_uri,
+                    root_node=False,
+                    depth=depth + 1,
+                )
+        finally:
+            if enters_resource:
+                active[resource_uri] = owners
+
+    visit(root, root_uri, root_node=True, depth=1)
+    return ancestors
+
+
+def _register_resource_root(
+    node: Mapping[str, Any],
+    resource_uri: str,
+    resources: dict[str, Resource[Any]],
+    aliases: dict[int, object],
+) -> None:
+    """Register one profile-defined root without inventing a second resolution."""
+
+    contents = _canonical_resource_contents(node, resource_uri)
+    resources[resource_uri] = _create_resource(contents)
+    if contents is not node:
+        aliases[id(contents)] = node
+
+
+def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
+    """Index the resources of schema positions, never data inside instance values.
+
+    Each resource root is a shallow copy when its ``$id`` is relative, with the
+    root identifier rewritten to the already joined effective URI. This is the
+    object ``referencing`` expects in a registry keyed by that URI: its crawl
+    would otherwise join the relative identifier a second time. Every child
+    remains the document object the profile checks.
     """
 
     document_uri = _resource_uri(document, "")
-    document_resource = _create_resource(
-        _canonical_resource_contents(document, document_uri)
-    )
-    resources: dict[str, Resource[Any]] = {document_uri: document_resource}
-    identities: dict[int, str] = {
-        id(document): document_uri,
-        id(document_resource.contents): document_uri,
-    }
     aliases: dict[int, object] = {}
-    if document_resource.contents is not document:
-        aliases[id(document_resource.contents)] = document
+    resources = _crawl_document_resources(document, document_uri, aliases)
 
-    def visit(node: object, base_uri: str, *, root: bool, depth: int) -> None:
-        if depth > MAX_SCHEMA_DEPTH:
-            raise McpProfileError("MCP schema exceeds the revision bounds")
-        if not isinstance(node, Mapping):
-            if isinstance(node, Sequence) and not isinstance(node, (str, bytes)):
-                for item in node:
-                    visit(item, base_uri, root=False, depth=depth + 1)
-            return
-        effective_uri = base_uri
-        if not root and _declared_id(node) is not None:
-            candidate = _resource_uri(node, base_uri)
-            if candidate != base_uri and candidate not in resources:
-                resource = _create_resource(
-                    _canonical_resource_contents(node, candidate)
-                )
-                resources[candidate] = resource
-                identities[id(node)] = candidate
-                identities[id(resource.contents)] = candidate
-                if resource.contents is not node:
-                    aliases[id(resource.contents)] = node
-            if candidate != base_uri:
-                effective_uri = candidate
-        for value in node.values():
-            visit(value, effective_uri, root=False, depth=depth + 1)
-
-    visit(document, document_uri, root=True, depth=1)
     tools = document.get("tools")
     if isinstance(tools, Sequence) and not isinstance(tools, (str, bytes)):
         for index, tool in enumerate(tools):
@@ -501,17 +641,37 @@ def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
                 continue
             for field in ("inputSchema", "outputSchema"):
                 schema = tool.get(field)
-                if not isinstance(schema, Mapping) or "$id" in schema:
+                if not isinstance(schema, Mapping):
                     continue
-                uri = f"urn:ocor:embedded-tool:{index}:{field}"
-                resources[uri] = _create_resource(schema)
-                identities[id(schema)] = uri
-    anchors = _collect_anchor_owners(resources)
+                candidate = _resource_uri(schema, document_uri)
+                if candidate != document_uri:
+                    resources.update(
+                        _crawl_document_resources(schema, candidate, aliases)
+                    )
+                    continue
+                embedded_uri = f"urn:ocor:embedded-tool:{index}:{field}"
+                temporary = dict(schema)
+                temporary.pop("$id", None)
+                discovered = _crawl_document_resources(
+                    temporary,
+                    document_uri,
+                    aliases,
+                )
+                discovered.pop(document_uri, None)
+                resources.update(discovered)
+                _register_resource_root(
+                    schema,
+                    embedded_uri,
+                    resources,
+                    aliases,
+                )
+    registry = Registry().with_resources(list(resources.items()))
+    anchors = _collect_anchor_owners(list(resources.items()))
     return _ResolutionIndex(
         root_uri=document_uri,
-        identities=identities,
-        aliases=aliases,
         resources=resources,
+        registry=registry,
+        aliases=aliases,
         anchors=anchors,
     )
 
@@ -520,15 +680,10 @@ def _canonical_resource_contents(
     node: Mapping[str, Any],
     resource_uri: str,
 ) -> Mapping[str, Any]:
-    """Give a resource root its already-joined identity before indexing anchors.
+    """Give a resource root its already-joined identity before registration."""
 
-    ``Registry.crawl`` joins ``Resource.id()`` onto the registry URI. A nested
-    resource discovered under its canonical URI would therefore join a relative
-    ``$id`` a second time. A shallow copy changes only the resource root's
-    ``$id``; every child object remains the document object the profile checks.
-    """
-
-    if _declared_id(node) is None:
+    declared = _declared_id(node)
+    if declared is None or resource_uri == declared:
         return node
     canonical = dict(node)
     canonical["$id"] = resource_uri
@@ -536,7 +691,7 @@ def _canonical_resource_contents(
 
 
 def _collect_anchor_owners(
-    resources: Mapping[str, Resource[Any]],
+    resources: Sequence[tuple[str, Resource[Any]]],
 ) -> dict[tuple[str, str], tuple[Mapping[str, Any], ...]]:
     """Index anchors per effective resource for the profile's ambiguity rule.
 
@@ -579,32 +734,10 @@ def _collect_anchor_owners(
         for name in names:
             owners.setdefault((resource_uri, name), []).append(node)
 
-        def enter(child: object) -> None:
+        for child in _iter_schema_children(node):
             visit(child, resource_uri, root=False, depth=depth + 1, visited=visited)
 
-        for key, value in node.items():
-            if key == "additionalItems":
-                continue
-            if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
-                for child in value.values():
-                    enter(child)
-                continue
-            if (
-                key in _SCHEMA_ARRAY_KEYWORDS
-                and isinstance(value, Sequence)
-                and not isinstance(value, (str, bytes))
-            ):
-                for child in value:
-                    enter(child)
-                continue
-            if key in _SCHEMA_OBJECT_KEYWORDS:
-                if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-                    for child in value:
-                        enter(child)
-                else:
-                    enter(value)
-
-    for resource_uri, resource in resources.items():
+    for resource_uri, resource in resources:
         visit(
             resource.contents,
             resource_uri,
@@ -619,38 +752,56 @@ def _enter_schema_resource(
     context: _ResolutionContext,
     node: object,
 ) -> _ResolutionContext:
-    """Return the context for a schema node, applying its ``$id`` only once."""
+    """Enter one schema resource whose ``$id`` changes the effective URI.
+
+    ``referencing`` owns the lookup of every fragment. The index contains only
+    resources discovered by its crawl, plus the profile-defined roots for tool
+    schemas. A resource that was not discovered therefore gets only a base URI:
+    the next lookup fails instead of creating a resource from instance data.
+    """
 
     if not isinstance(node, Mapping) or "$id" not in node:
         return context
-    if _declared_id(node) is None:
-        if context.fallback_resolver is None or context.fallback_resource_uri is None:
-            return context
+    resource_uri = _resource_uri(node, context.base_uri)
+    if context.fallback_resource_uri == resource_uri:
         return _ResolutionContext(
             resolver=context.fallback_resolver,
-            resource_uri=context.fallback_resource_uri,
-            base_uri=context.fallback_resource_uri,
-            resource_roots=context.resource_roots,
-            resource_aliases=context.resource_aliases,
+            resource_uri=resource_uri,
+            base_uri=resource_uri,
+            document_uri=context.document_uri,
+            registry=context.fallback_registry or context.registry,
             resources=context.resources,
+            aliases=context.aliases,
             anchors=context.anchors,
+            fallback_resolver=context.resolver,
+            fallback_resource_uri=context.resource_uri,
+            fallback_registry=context.registry,
         )
-    resource_uri = _resource_uri(node, context.base_uri)
-    if resource_uri == context.resource_uri:
+    if resource_uri == context.base_uri or resource_uri == context.resource_uri:
         return context
-    resource = context.resources.get(resource_uri)
-    if resource is None:
-        resource = _create_resource(node)
-    resolver = _resource_resolver(resource_uri, resource)
     return _ResolutionContext(
-        resolver=resolver,
+        resolver=context.registry.resolver(resource_uri),
         resource_uri=resource_uri,
         base_uri=resource_uri,
-        resource_roots=context.resource_roots,
-        resource_aliases=context.resource_aliases,
+        document_uri=context.document_uri,
+        registry=context.registry,
         resources=context.resources,
+        aliases=context.aliases,
         anchors=context.anchors,
     )
+
+
+def _enter_root_schema_resource(
+    context: _ResolutionContext,
+    node: Mapping[str, Any],
+) -> _ResolutionContext:
+    """Register a tool schema root whose ``$id`` changes the current resource.
+
+    A tool schema is not a JSON Schema subresource of the descriptor, so the
+    schema-position index registers it under its effective URI.
+    """
+
+    return _enter_schema_resource(context, node)
 
 
 def _enter_tool_schema(
@@ -669,20 +820,26 @@ def _enter_tool_schema(
     the fallback, so ``#`` remains the enclosing document for such a schema.
     """
 
-    if not isinstance(node, Mapping) or "$id" in node:
-        return _enter_schema_resource(context, node)
+    if not isinstance(node, Mapping):
+        return context
+    if "$id" in node:
+        if _resource_uri(node, context.base_uri) != context.base_uri:
+            return _enter_root_schema_resource(context, node)
     resource_uri = f"urn:ocor:embedded-tool:{index}:{field}"
-    resource = context.resources.get(resource_uri, _create_resource(node))
+    if resource_uri not in context.resources:
+        raise McpProfileError("MCP embedded tool schema resource is not indexed")
     return _ResolutionContext(
-        resolver=_resource_resolver(resource_uri, resource),
+        resolver=context.registry.resolver(resource_uri),
         resource_uri=resource_uri,
         base_uri=context.base_uri,
-        resource_roots=context.resource_roots,
-        resource_aliases=context.resource_aliases,
+        document_uri=context.document_uri,
+        registry=context.registry,
         resources=context.resources,
+        aliases=context.aliases,
         anchors=context.anchors,
         fallback_resolver=context.resolver,
         fallback_resource_uri=context.resource_uri,
+        fallback_registry=context.registry,
     )
 
 
@@ -692,25 +849,25 @@ def _context_after_resolution(
 ) -> _ResolutionContext:
     """Keep the resolver returned by ``lookup`` and recover its resource URI."""
 
-    try:
-        root = resolver.lookup("#").contents
-    except (Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
-        resource_uri = context.resource_uri
-    else:
-        resource_uri = context.resource_roots.get(id(root), context.resource_uri)
+    resolved_uri = getattr(resolver, "_base_uri", context.resource_uri)
+    resource_uri = (
+        resolved_uri if isinstance(resolved_uri, str) else context.resource_uri
+    )
     keeps_fallback = resource_uri == context.resource_uri
     return _ResolutionContext(
         resolver=resolver,
         resource_uri=resource_uri,
         base_uri=(context.base_uri if resource_uri == context.resource_uri else resource_uri),
-        resource_roots=context.resource_roots,
-        resource_aliases=context.resource_aliases,
+        document_uri=context.document_uri,
+        registry=getattr(resolver, "_registry", context.registry),
         resources=context.resources,
+        aliases=context.aliases,
         anchors=context.anchors,
         fallback_resolver=context.fallback_resolver if keeps_fallback else None,
         fallback_resource_uri=(
             context.fallback_resource_uri if keeps_fallback else None
         ),
+        fallback_registry=context.fallback_registry if keeps_fallback else None,
     )
 
 
@@ -727,9 +884,15 @@ def _resolve_reference(
         _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
         library_reference = "#" + decoded
     elif decoded:
-        for raw_token in decoded[1:].split("/"):
-            token = _json_pointer_token(raw_token)
-            _reject_noncanonical_array_index(token)
+        raw_tokens = decoded[1:].split("/")
+        tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+        _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+        if context.fallback_resolver is not None:
+            _validate_pointer_array_indices(
+                context.fallback_resolver,
+                raw_tokens,
+                tokens,
+            )
         # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
         # already decoded fragment so a literal ``%`` is not decoded twice,
         # while the leading separator stays visible to ``Resolver.lookup``.
@@ -751,21 +914,29 @@ def _resolve_reference(
     if decoded and not decoded.startswith("/"):
         _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
     fallback = _lookup_reference(context.fallback_resolver, library_reference)
-    if decoded == "":
+    empty_uses_fallback = decoded == "" and context.resource_uri != context.base_uri
+    if empty_uses_fallback:
         if fallback is None:
             raise McpProfileError("MCP $ref does not resolve in the descriptor")
         fallback_context = _ResolutionContext(
             resolver=context.fallback_resolver,
             resource_uri=fallback_uri,
             base_uri=fallback_uri,
-            resource_roots=context.resource_roots,
-            resource_aliases=context.resource_aliases,
+            document_uri=context.document_uri,
+            registry=context.fallback_registry or context.registry,
             resources=context.resources,
+            aliases=context.aliases,
             anchors=context.anchors,
         )
         target = _resolved_contents(context, fallback)
         _require_schema(target)
         return target, _context_after_resolution(fallback_context, fallback.resolver)
+    if decoded == "":
+        if local is None:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        target = _resolved_contents(context, local)
+        _require_schema(target)
+        return target, _context_after_resolution(context, local.resolver)
     if local is not None and fallback is not None and local.contents is not fallback.contents:
         raise McpProfileError("MCP $ref target is ambiguous")
     if local is not None:
@@ -777,9 +948,10 @@ def _resolve_reference(
             resolver=context.fallback_resolver,
             resource_uri=fallback_uri,
             base_uri=fallback_uri,
-            resource_roots=context.resource_roots,
-            resource_aliases=context.resource_aliases,
+            document_uri=context.document_uri,
+            registry=context.fallback_registry or context.registry,
             resources=context.resources,
+            aliases=context.aliases,
             anchors=context.anchors,
         )
         target = _resolved_contents(context, fallback)
@@ -798,9 +970,9 @@ def _lookup_reference(resolver: Any, reference: str) -> Any | None:
 
 
 def _resolved_contents(context: _ResolutionContext, resolved: Any) -> object:
-    """Return the document object behind a canonicalized resource wrapper."""
+    """Return the document object behind a canonical registry root."""
 
-    return context.resource_aliases.get(id(resolved.contents), resolved.contents)
+    return context.aliases.get(id(resolved.contents), resolved.contents)
 
 
 def _reject_ambiguous_anchor(
@@ -812,30 +984,41 @@ def _reject_ambiguous_anchor(
         raise McpProfileError("MCP $ref anchor is ambiguous")
 
 
-def _reject_noncanonical_array_index(token: str) -> None:
-    """Reject a token that cannot be an RFC 6901 array index.
+def _validate_pointer_array_indices(
+    resolver: Any,
+    raw_tokens: Sequence[str],
+    tokens: Sequence[str],
+) -> None:
+    """Require a canonical index only when the resolved parent is an array.
 
-    The profile cannot tell an object key from an array index without walking
-    the pointer, which is the library's job. It therefore rejects the closed
-    numeric form that is never a canonical array index: a leading zero, a
-    sign, or a non-ASCII decimal digit. A later miss still fails in the
-    library.
+    Every prefix is resolved by ``referencing``. The profile reads the parent
+    container from that result; it never infers an array from the token text.
+    Object member names therefore keep RFC 6901 syntax, while ``int()``-style
+    array spellings accepted by Python cannot become external input.
     """
 
-    if not token:
-        return
-    ascii_digits = token.isascii() and token.isdigit()
-    signed_digits = (
-        len(token) > 1
-        and token[0] in "+-"
-        and token[1:].isascii()
-        and token[1:].isdigit()
-    )
-    unicode_digits = token.isdecimal() and not token.isascii()
-    if (ascii_digits and len(token) > 1 and token[0] == "0") or signed_digits or unicode_digits:
-        raise McpProfileError("MCP $ref fragment is not a valid JSON Pointer")
-
-
+    prefix: list[str] = []
+    for raw_token, token in zip(raw_tokens, tokens, strict=True):
+        parent_reference = "#"
+        if prefix:
+            parent_reference = "#/" + "/".join(
+                quote(part, safe="~") for part in prefix
+            )
+        parent = _lookup_reference(resolver, parent_reference)
+        if parent is not None and isinstance(
+            parent.contents, Sequence
+        ) and not isinstance(parent.contents, (str, bytes)):
+            canonical = token == "0" or (
+                bool(token)
+                and token.isascii()
+                and token.isdigit()
+                and token[0] in "123456789"
+            )
+            if not canonical:
+                raise McpProfileError(
+                    "MCP $ref fragment is not a valid JSON Pointer"
+                )
+        prefix.append(raw_token)
 def _queue_reached_schema(
     target: object,
     depth: int,
@@ -873,6 +1056,8 @@ def _check_schema_keywords(
     if identity in seen:
         return
     seen.add(identity)
+    if "$id" in node:
+        _resource_uri(node, context.base_uri)
     if "$dynamicRef" in node or "$recursiveRef" in node:
         raise McpProfileError("MCP $ref resolution does not follow dynamic references")
     if "$schema" in node:
