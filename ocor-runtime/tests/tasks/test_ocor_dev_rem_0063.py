@@ -2711,3 +2711,225 @@ def test_cycle6_a_different_inner_id_does_not_see_the_holder_definitions(
     )
     with pytest.raises(profile.McpProfileError, match="does not resolve"):
         _validate(document)
+
+
+# Cycle 7 of OCOR-DEV-REM-0063, verdict OCOR-DEV-REM-0063-d70920ea901f-6 VF-001.
+# REM-0063-CYCLE7-NO-GO (2026-11-15) option 1 and SELF-CHECK-ORACOLO.
+#
+# Class: resolution context, meaning the effective resource and base URI, is
+# kept at every JSON Pointer step, including a step that crosses an intermediate
+# ``$id``. References inside the reached target inherit that context and not the
+# descriptor the pointer started from. The empty fragment remains the empty JSON
+# Pointer and selects the effective resource. The class members cover
+# ``const``, ``default`` and ``examples``; ``inputSchema`` and ``outputSchema``;
+# a definition only in the nested resource and one only outside it; pointers,
+# percent-encoded pointers, anchors and ``#``. The generated differential suite
+# uses referencing 0.37.0 as the oracle.
+
+_CYCLE7_BASE = "https://independent.invalid/review/root.json"
+_CYCLE7_WHERE = ("inputSchema", "outputSchema", "$defs", "nested")
+_CYCLE7_IDENTIFIERS = (
+    "#",
+    "./other/../root.json#",
+    "../review/root.json",
+    "child/schema.json#",
+)
+_CYCLE7_SLOTS = ("const", "default", "examples")
+_CYCLE7_FRAGMENTS = (
+    "#/$defs/only_here",
+    "#/%24defs/only_here",
+    "#independent_anchor",
+)
+_CYCLE7_AVAILABILITY = ("outer", "holder")
+_CYCLE7_FIELDS = ("inputSchema", "outputSchema")
+_CYCLE7_EMPTY_CASES = tuple(
+    (where, identifier, poison)
+    for where in _CYCLE7_WHERE
+    for identifier in _CYCLE7_IDENTIFIERS
+    for poison in (False, True)
+)
+_CYCLE7_DIFFERENTIAL_CASES = tuple(
+    (slot, fragment, available_in, where)
+    for slot in _CYCLE7_SLOTS
+    for fragment in _CYCLE7_FRAGMENTS
+    for available_in in _CYCLE7_AVAILABILITY
+    for where in _CYCLE7_FIELDS
+)
+
+
+def _cycle7_descriptor() -> dict[str, Any]:
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_BASE
+    document["type"] = "object"
+    return document
+
+
+def _cycle7_holder_pointer(slot: str) -> str:
+    suffix = "/0" if slot == "examples" else ""
+    return f"#/$defs/holder/{slot}{suffix}/target"
+
+
+def _cycle7_pointer_crossing_document(
+    slot: str,
+    fragment: str,
+    available_in: str,
+    where: str,
+) -> tuple[dict[str, Any], dict[str, Any], Mapping[str, Any]]:
+    document = _cycle7_descriptor()
+    target = {
+        "type": "object",
+        "properties": {"value": {"$ref": fragment}},
+    }
+    box = {"target": target}
+    holder = {
+        "$id": "review-child/holder.json",
+        "type": "object",
+        slot: [box] if slot == "examples" else box,
+    }
+    entry = {"$anchor": "independent_anchor", "type": "integer"}
+    document["$defs"] = {"holder": holder}
+    owner = document if available_in == "outer" else holder
+    definitions = owner.setdefault("$defs", {})
+    if not isinstance(definitions, dict):
+        raise AssertionError("$defs is not an object")
+    definitions["only_here"] = entry
+    document["tools"][0][where] = {
+        "type": "object",
+        "$ref": _cycle7_holder_pointer(slot),
+    }
+    return document, holder, entry
+
+
+@pytest.mark.parametrize(
+    ("where", "identifier", "poison"),
+    _CYCLE7_EMPTY_CASES,
+    ids=[f"{where}-{identifier}-{poison}" for where, identifier, poison in _CYCLE7_EMPTY_CASES],
+)
+def test_cycle7_empty_pointer_uses_the_effective_resource(
+    where: str,
+    identifier: str,
+    poison: bool,
+) -> None:
+    """``#`` after crossing or declaring an ``$id`` selects its resource."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+    from urllib.parse import urljoin
+
+    document = _cycle7_descriptor()
+    document["$defs"] = {
+        "root_mark": {"type": "not-a-type"} if poison else {"type": "integer"}
+    }
+    holder = {
+        "$id": identifier,
+        "type": "object",
+        "additionalProperties": {"$ref": "#"},
+    }
+    if where == "$defs":
+        document["$defs"]["independent_holder"] = holder
+    elif where == "nested":
+        document["tools"][0]["inputSchema"] = {
+            "type": "object",
+            "allOf": [holder],
+        }
+    else:
+        document["tools"][0][where] = holder
+    resource = DRAFT202012.create_resource(document)
+    registry = Registry().with_resource(_CYCLE7_BASE, resource)
+    holder_resource = DRAFT202012.create_resource(holder)
+    effective = urljoin(_CYCLE7_BASE, holder_resource.id() or "")
+    if effective != _CYCLE7_BASE:
+        registry = registry.with_resource(effective, holder_resource)
+    target = registry.resolver(_CYCLE7_BASE).in_subresource(holder_resource).lookup("#").contents
+    try:
+        Draft202012Validator.check_schema(target)
+    except (SchemaError, TypeError, ValueError):
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        with pytest.raises(profile.McpProfileError, match="target is not a JSON Schema"):
+            _validate(document)
+    else:
+        _validate(document)
+
+
+@pytest.mark.parametrize(
+    ("slot", "fragment", "available_in", "where"),
+    _CYCLE7_DIFFERENTIAL_CASES,
+    ids=[
+        f"{slot}-{fragment}-{available_in}-{where}"
+        for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+    ],
+)
+def test_cycle7_pointer_crossing_resource_preserves_resolver(
+    slot: str,
+    fragment: str,
+    available_in: str,
+    where: str,
+) -> None:
+    """A target reached through an intermediate ``$id`` keeps that resource."""
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    document, _, entry = _cycle7_pointer_crossing_document(
+        slot,
+        fragment,
+        available_in,
+        where,
+    )
+    resource = DRAFT202012.create_resource(document)
+    resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+    reached = resolver.lookup(_cycle7_holder_pointer(slot))
+    if available_in == "holder":
+        assert reached.resolver.lookup(fragment).contents is entry
+        _validate(document)
+    else:
+        with pytest.raises(Unresolvable):
+            reached.resolver.lookup(fragment)
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        with pytest.raises(profile.McpProfileError):
+            _validate(document)
+
+
+@pytest.mark.parametrize("slot", _CYCLE7_SLOTS)
+def test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison(
+    slot: str,
+) -> None:
+    """``#`` after a pointer crossing an ``$id`` uses the nested resource."""
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    document = _cycle7_descriptor()
+    target = {
+        "type": "object",
+        "properties": {"value": {"$ref": "#"}},
+    }
+    box = {"target": target}
+    holder = {
+        "$id": "child.json",
+        "type": "object",
+        slot: [box] if slot == "examples" else box,
+    }
+    document["$defs"] = {
+        "holder": holder,
+        "outer_poison": {"type": "not-a-type"},
+    }
+    document["tools"][0]["inputSchema"]["$ref"] = _cycle7_holder_pointer(slot)
+    resource = DRAFT202012.create_resource(document)
+    reached = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE).lookup(
+        _cycle7_holder_pointer(slot)
+    )
+    assert reached.resolver.lookup("#").contents is holder
+    Draft202012Validator.check_schema(holder)
+    _validate(document)
+
+
+def test_cycle7_generated_case_count_is_stable() -> None:
+    """The cycle record cites the generated case count and the pinned oracle."""
+    import importlib.metadata
+
+    assert importlib.metadata.version("referencing") == "0.37.0"
+    assert len(_CYCLE7_EMPTY_CASES) == 32
+    assert len(_CYCLE7_DIFFERENTIAL_CASES) == 36
+    assert len(_CYCLE7_SLOTS) == 3

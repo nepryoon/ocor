@@ -235,3 +235,3308 @@ FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_relative_
 FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_relative_id_is_joined_once_when_a_pointer_reenters_it[./sub/child.json-https://verifier.invalid/sub/child.json-#/$defs/part] - ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
 FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_relative_id_is_joined_once_when_a_pointer_reenters_it[./sub/child.json-https://verifier.invalid/sub/child.json-#part] - ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
 76 failed, 293 passed, 431 deselected in 0.88s
+
+===== CYCLE 7 RED — 2026-11-15T09:20:16Z =====
+command: ocor-runtime/.venv/bin/python -m pytest ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py -k cycle7 -q
+head: d70920ea901ffa5b06b2c28fd1fdd785b2f7b125
+exit: 1
+result: 39 failed, 33 passed, 800 deselected in 1.38s
+raw_sha256: 6978374d3c374d25b092165feeb6f96eef4bf8bddc493b7f258a290786abc162
+................................FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF. [100%]
+=================================== FAILURES ===================================
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-outer-inputSchema] _
+
+slot = 'const', fragment = '#/$defs/only_here', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-outer-outputSchema] _
+
+slot = 'const', fragment = '#/$defs/only_here', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-holder-inputSchema] _
+
+slot = 'const', fragment = '#/$defs/only_here', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/$defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947815588480, 131947815589248, 131947815590464, 131947815591296, 131947815592192, 131947815592384, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-holder-outputSchema] _
+
+slot = 'const', fragment = '#/$defs/only_here', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/$defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947813862080, 131947813929984, 131947813930240, 131947813930624, 131947813930816, 131947813931264, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-outer-inputSchema] _
+
+slot = 'const', fragment = '#/%24defs/only_here', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-outer-outputSchema] _
+
+slot = 'const', fragment = '#/%24defs/only_here', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-holder-inputSchema] _
+
+slot = 'const', fragment = '#/%24defs/only_here', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/%24defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947823515520, 131947823515584, 131947823516160, 131947823518016, 131947823518400, 131947823518720, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-holder-outputSchema] _
+
+slot = 'const', fragment = '#/%24defs/only_here', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/%24defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947812663488, 131947812663936, 131947812664128, 131947812664512, 131947812664768, 131947812753664, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-outer-inputSchema] _
+
+slot = 'const', fragment = '#independent_anchor', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-outer-outputSchema] _
+
+slot = 'const', fragment = '#independent_anchor', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-holder-inputSchema] _
+
+slot = 'const', fragment = '#independent_anchor', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:662: in _resolve_pointer
+    _resolve_anchor(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+name = 'independent_anchor'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947815798016, 131947815800384, 131947815803136, 131947815806848, 131947815809792, 131947815810240, ...}
+deferred = {}
+
+    def _resolve_anchor(
+        document: Mapping[str, Any],
+        name: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
+    
+        The search follows schema keywords, so a name that exists only inside
+        instance data (``const``, ``default``, ``enum``) does not resolve. A
+        non-string keyword value is not a name. An embedded tool schema that does
+        not change the resource URI is searched together with the current resource,
+        because the document walk does not enter ``tools``. A nested ``$id`` whose
+        joined URI differs is searched alone. ``additionalItems`` is not indexed.
+        Two different schema objects with the same name are ambiguous: the profile
+        does not pick one. The single target is still checked as a 2020-12 schema,
+        then queued at the next depth so the visited set and the bounds stay those
+        of the walk.
+        """
+    
+        if not isinstance(name, str) or not name:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        matches: list[Mapping[str, Any]] = []
+        visited: set[int] = set()
+        if pointer_root is not resource_root:
+            _collect_anchors(
+                pointer_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        else:
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        if not matches:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:782: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-holder-outputSchema] _
+
+slot = 'const', fragment = '#independent_anchor', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:662: in _resolve_pointer
+    _resolve_anchor(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+name = 'independent_anchor'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'$ref': '#/$defs/holder/const/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947812758400, 131947812763200, 131947812763456, 131947813602432, 131947813602624, 131947813602944, ...}
+deferred = {}
+
+    def _resolve_anchor(
+        document: Mapping[str, Any],
+        name: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
+    
+        The search follows schema keywords, so a name that exists only inside
+        instance data (``const``, ``default``, ``enum``) does not resolve. A
+        non-string keyword value is not a name. An embedded tool schema that does
+        not change the resource URI is searched together with the current resource,
+        because the document walk does not enter ``tools``. A nested ``$id`` whose
+        joined URI differs is searched alone. ``additionalItems`` is not indexed.
+        Two different schema objects with the same name are ambiguous: the profile
+        does not pick one. The single target is still checked as a 2020-12 schema,
+        then queued at the next depth so the visited set and the bounds stay those
+        of the walk.
+        """
+    
+        if not isinstance(name, str) or not name:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        matches: list[Mapping[str, Any]] = []
+        visited: set[int] = set()
+        if pointer_root is not resource_root:
+            _collect_anchors(
+                pointer_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        else:
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        if not matches:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:782: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-outer-inputSchema] _
+
+slot = 'default', fragment = '#/$defs/only_here', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-outer-outputSchema] _
+
+slot = 'default', fragment = '#/$defs/only_here', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-holder-inputSchema] _
+
+slot = 'default', fragment = '#/$defs/only_here', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/$defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947824878336, 131947824878400, 131947824878976, 131947824880832, 131947824881216, 131947824881536, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-holder-outputSchema] _
+
+slot = 'default', fragment = '#/$defs/only_here', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/$defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947813879936, 131947813880128, 131947813880576, 131947813885760, 131947813886592, 131947814075008, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-outer-inputSchema] _
+
+slot = 'default', fragment = '#/%24defs/only_here', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-outer-outputSchema] _
+
+slot = 'default', fragment = '#/%24defs/only_here', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-holder-inputSchema] _
+
+slot = 'default', fragment = '#/%24defs/only_here', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/%24defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947824140928, 131947824140992, 131947824141568, 131947824143424, 131947824143808, 131947824144128, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-holder-outputSchema] _
+
+slot = 'default', fragment = '#/%24defs/only_here', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/%24defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947812670848, 131947812677696, 131947812683456, 131947813993088, 131947814191232, 131947814191680, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-outer-inputSchema] _
+
+slot = 'default', fragment = '#independent_anchor', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-outer-outputSchema] _
+
+slot = 'default', fragment = '#independent_anchor', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-holder-inputSchema] _
+
+slot = 'default', fragment = '#independent_anchor', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:662: in _resolve_pointer
+    _resolve_anchor(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+name = 'independent_anchor'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947824148480, 131947824148608, 131947824148800, 131947824149824, 131947824150208, 131947824150656, ...}
+deferred = {}
+
+    def _resolve_anchor(
+        document: Mapping[str, Any],
+        name: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
+    
+        The search follows schema keywords, so a name that exists only inside
+        instance data (``const``, ``default``, ``enum``) does not resolve. A
+        non-string keyword value is not a name. An embedded tool schema that does
+        not change the resource URI is searched together with the current resource,
+        because the document walk does not enter ``tools``. A nested ``$id`` whose
+        joined URI differs is searched alone. ``additionalItems`` is not indexed.
+        Two different schema objects with the same name are ambiguous: the profile
+        does not pick one. The single target is still checked as a 2020-12 schema,
+        then queued at the next depth so the visited set and the bounds stay those
+        of the walk.
+        """
+    
+        if not isinstance(name, str) or not name:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        matches: list[Mapping[str, Any]] = []
+        visited: set[int] = set()
+        if pointer_root is not resource_root:
+            _collect_anchors(
+                pointer_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        else:
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        if not matches:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:782: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-holder-outputSchema] _
+
+slot = 'default', fragment = '#independent_anchor', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:662: in _resolve_pointer
+    _resolve_anchor(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+name = 'independent_anchor'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...ref': '#/$defs/holder/default/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947814795904, 131947815289728, 131947815289920, 131947815290240, 131947815290304, 131947815802368, ...}
+deferred = {}
+
+    def _resolve_anchor(
+        document: Mapping[str, Any],
+        name: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
+    
+        The search follows schema keywords, so a name that exists only inside
+        instance data (``const``, ``default``, ``enum``) does not resolve. A
+        non-string keyword value is not a name. An embedded tool schema that does
+        not change the resource URI is searched together with the current resource,
+        because the document walk does not enter ``tools``. A nested ``$id`` whose
+        joined URI differs is searched alone. ``additionalItems`` is not indexed.
+        Two different schema objects with the same name are ambiguous: the profile
+        does not pick one. The single target is still checked as a 2020-12 schema,
+        then queued at the next depth so the visited set and the bounds stay those
+        of the walk.
+        """
+    
+        if not isinstance(name, str) or not name:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        matches: list[Mapping[str, Any]] = []
+        visited: set[int] = set()
+        if pointer_root is not resource_root:
+            _collect_anchors(
+                pointer_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        else:
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        if not matches:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:782: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-outer-inputSchema] _
+
+slot = 'examples', fragment = '#/$defs/only_here', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-outer-outputSchema] _
+
+slot = 'examples', fragment = '#/$defs/only_here', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-holder-inputSchema] _
+
+slot = 'examples', fragment = '#/$defs/only_here', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/$defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947823530368, 131947823532224, 131947823532608, 131947823532928, 131947823532992, 131947823739200, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-holder-outputSchema] _
+
+slot = 'examples', fragment = '#/$defs/only_here', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/$defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947811377472, 131947811378304, 131947815711616, 131947815713536, 131947815714048, 131947815714240, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-outer-inputSchema] _
+
+slot = 'examples', fragment = '#/%24defs/only_here', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-outer-outputSchema] _
+
+slot = 'examples', fragment = '#/%24defs/only_here', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-holder-inputSchema] _
+
+slot = 'examples', fragment = '#/%24defs/only_here', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/%24defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947824611392, 131947824612544, 131947824618880, 131947825424256, 131947825424320, 131947825424448, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-holder-outputSchema] _
+
+slot = 'examples', fragment = '#/%24defs/only_here', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+pointer = '#/%24defs/only_here'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947811692800, 131947811693632, 131947811698880, 131947811699328, 131947811699520, 131947811699904, ...}
+deferred = {}
+
+    def _resolve_pointer(
+        document: Mapping[str, Any],
+        pointer: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        if not isinstance(pointer, str) or not pointer.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(pointer[1:])
+        if decoded != "" and not decoded.startswith("/"):
+            _resolve_anchor(
+                document,
+                decoded,
+                pointer_root=pointer_root,
+                resource_root=resource_root,
+                base_uri=base_uri,
+                depth=depth,
+                seen=seen,
+                deferred=deferred,
+            )
+            return
+        # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
+        # rejects a value that is not a schema. The empty pointer is one resource.
+        target: object
+        found_in: Mapping[str, Any]
+        if decoded == "":
+            # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
+            # ``$id``. Not an anchor, and not the two-root search used for a
+            # non-empty pointer. There is no branch that always selects the
+            # whole document.
+            target = resource_root
+            found_in = resource_root
+        else:
+            local: object = _MISSING
+            remote: object = _MISSING
+            if pointer_root is not resource_root:
+                local = _follow_pointer(pointer_root, decoded)
+                remote = _follow_pointer(resource_root, decoded)
+            else:
+                local = _follow_pointer(resource_root, decoded)
+            if local is _MISSING and remote is _MISSING:
+>               raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E               ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:693: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-outer-inputSchema] _
+
+slot = 'examples', fragment = '#independent_anchor', available_in = 'outer'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-outer-outputSchema] _
+
+slot = 'examples', fragment = '#independent_anchor', available_in = 'outer'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+            _validate(document)
+        else:
+            with pytest.raises(Unresolvable):
+                reached.resolver.lookup(fragment)
+            profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+>           with pytest.raises(profile.McpProfileError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2890: Failed
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-holder-inputSchema] _
+
+slot = 'examples', fragment = '#independent_anchor', available_in = 'holder'
+where = 'inputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:662: in _resolve_pointer
+    _resolve_anchor(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+name = 'independent_anchor'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', '$re...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947817442496, 131947817442560, 131947817443136, 131947817444992, 131947817445376, 131947817445696, ...}
+deferred = {}
+
+    def _resolve_anchor(
+        document: Mapping[str, Any],
+        name: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
+    
+        The search follows schema keywords, so a name that exists only inside
+        instance data (``const``, ``default``, ``enum``) does not resolve. A
+        non-string keyword value is not a name. An embedded tool schema that does
+        not change the resource URI is searched together with the current resource,
+        because the document walk does not enter ``tools``. A nested ``$id`` whose
+        joined URI differs is searched alone. ``additionalItems`` is not indexed.
+        Two different schema objects with the same name are ambiguous: the profile
+        does not pick one. The single target is still checked as a 2020-12 schema,
+        then queued at the next depth so the visited set and the bounds stay those
+        of the walk.
+        """
+    
+        if not isinstance(name, str) or not name:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        matches: list[Mapping[str, Any]] = []
+        visited: set[int] = set()
+        if pointer_root is not resource_root:
+            _collect_anchors(
+                pointer_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        else:
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        if not matches:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:782: McpProfileError
+_ test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-holder-outputSchema] _
+
+slot = 'examples', fragment = '#independent_anchor', available_in = 'holder'
+where = 'outputSchema'
+
+    @pytest.mark.parametrize(
+        ("slot", "fragment", "available_in", "where"),
+        _CYCLE7_DIFFERENTIAL_CASES,
+        ids=[
+            f"{slot}-{fragment}-{available_in}-{where}"
+            for slot, fragment, available_in, where in _CYCLE7_DIFFERENTIAL_CASES
+        ],
+    )
+    def test_cycle7_pointer_crossing_resource_preserves_resolver(
+        slot: str,
+        fragment: str,
+        available_in: str,
+        where: str,
+    ) -> None:
+        """A target reached through an intermediate ``$id`` keeps that resource."""
+        from referencing import Registry
+        from referencing.exceptions import Unresolvable
+        from referencing.jsonschema import DRAFT202012
+    
+        document, _, entry = _cycle7_pointer_crossing_document(
+            slot,
+            fragment,
+            available_in,
+            where,
+        )
+        resource = DRAFT202012.create_resource(document)
+        resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+        reached = resolver.lookup(_cycle7_holder_pointer(slot))
+        if available_in == "holder":
+            assert reached.resolver.lookup(fragment).contents is entry
+>           _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:662: in _resolve_pointer
+    _resolve_anchor(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+document = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+name = 'independent_anchor'
+pointer_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+resource_root = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...': '#/$defs/holder/examples/0/target'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+base_uri = 'https://independent.invalid/review/root.json', depth = 3
+seen = {131947813737088, 131947813737280, 131947813737600, 131947813737664, 131947815250496, 131947822615744, ...}
+deferred = {}
+
+    def _resolve_anchor(
+        document: Mapping[str, Any],
+        name: str,
+        *,
+        pointer_root: Mapping[str, Any],
+        resource_root: Mapping[str, Any],
+        base_uri: str,
+        depth: int,
+        seen: set[int],
+        deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    ) -> None:
+        """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
+    
+        The search follows schema keywords, so a name that exists only inside
+        instance data (``const``, ``default``, ``enum``) does not resolve. A
+        non-string keyword value is not a name. An embedded tool schema that does
+        not change the resource URI is searched together with the current resource,
+        because the document walk does not enter ``tools``. A nested ``$id`` whose
+        joined URI differs is searched alone. ``additionalItems`` is not indexed.
+        Two different schema objects with the same name are ambiguous: the profile
+        does not pick one. The single target is still checked as a 2020-12 schema,
+        then queued at the next depth so the visited set and the bounds stay those
+        of the walk.
+        """
+    
+        if not isinstance(name, str) or not name:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        matches: list[Mapping[str, Any]] = []
+        visited: set[int] = set()
+        if pointer_root is not resource_root:
+            _collect_anchors(
+                pointer_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        else:
+            _collect_anchors(
+                resource_root,
+                name,
+                matches,
+                depth=1,
+                visited=visited,
+                at_root=True,
+                base_uri=base_uri,
+            )
+        if not matches:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:782: McpProfileError
+_ test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison[const] _
+
+target = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+
+    def _require_schema(target: object) -> None:
+        """The value a ``$ref`` lands on must be a JSON Schema 2020-12 schema.
+    
+        Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
+        metaschema rejects are not. Callers pass only a resolved target, never
+        instance data such as ``const``, ``enum`` or ``default``. ``bool`` is a
+        subclass of ``int``, so the boolean check comes before any numeric test.
+        """
+    
+        if isinstance(target, bool):
+            Draft202012Validator.check_schema(target)
+            return
+        if not isinstance(target, Mapping):
+            raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema")
+        try:
+>           Draft202012Validator.check_schema(target)
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:514: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'jsonschema.validators.Draft202012Validator'>
+schema = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+format_checker = <FormatChecker checkers=['date', 'date-time', 'email', 'idn-email', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']>
+
+    @classmethod
+    def check_schema(cls, schema, format_checker=_UNSET):
+        Validator = validator_for(cls.META_SCHEMA, default=cls)
+        if format_checker is _UNSET:
+            format_checker = Validator.FORMAT_CHECKER
+        validator = Validator(
+            schema=cls.META_SCHEMA,
+            format_checker=format_checker,
+        )
+        for error in validator.iter_errors(schema):
+>           raise exceptions.SchemaError.create_from(error)
+E           jsonschema.exceptions.SchemaError: 'not-a-type' is not valid under any of the given schemas
+E           
+E           Failed validating 'anyOf' in metaschema['allOf'][0]['properties']['$defs']['additionalProperties']['$dynamicRef']['allOf'][3]['properties']['type']:
+E               {'anyOf': [{'$ref': '#/$defs/simpleTypes'},
+E                          {'type': 'array',
+E                           'items': {'$ref': '#/$defs/simpleTypes'},
+E                           'minItems': 1,
+E                           'uniqueItems': True}]}
+E           
+E           On schema['$defs']['outer_poison']['type']:
+E               'not-a-type'
+
+ocor-runtime/.venv/lib/python3.12/site-packages/jsonschema/validators.py:316: SchemaError
+
+The above exception was the direct cause of the following exception:
+
+slot = 'const'
+
+    @pytest.mark.parametrize("slot", _CYCLE7_SLOTS)
+    def test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison(
+        slot: str,
+    ) -> None:
+        """``#`` after a pointer crossing an ``$id`` uses the nested resource."""
+        from jsonschema import Draft202012Validator
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+    
+        document = _cycle7_descriptor()
+        target = {
+            "type": "object",
+            "properties": {"value": {"$ref": "#"}},
+        }
+        box = {"target": target}
+        holder = {
+            "$id": "child.json",
+            "type": "object",
+            slot: [box] if slot == "examples" else box,
+        }
+        document["$defs"] = {
+            "holder": holder,
+            "outer_poison": {"type": "not-a-type"},
+        }
+        document["tools"][0]["inputSchema"]["$ref"] = _cycle7_holder_pointer(slot)
+        resource = DRAFT202012.create_resource(document)
+        reached = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE).lookup(
+            _cycle7_holder_pointer(slot)
+        )
+        assert reached.resolver.lookup("#").contents is holder
+        Draft202012Validator.check_schema(holder)
+>       _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2925: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:702: in _resolve_pointer
+    _require_schema(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+target = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+
+    def _require_schema(target: object) -> None:
+        """The value a ``$ref`` lands on must be a JSON Schema 2020-12 schema.
+    
+        Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
+        metaschema rejects are not. Callers pass only a resolved target, never
+        instance data such as ``const``, ``enum`` or ``default``. ``bool`` is a
+        subclass of ``int``, so the boolean check comes before any numeric test.
+        """
+    
+        if isinstance(target, bool):
+            Draft202012Validator.check_schema(target)
+            return
+        if not isinstance(target, Mapping):
+            raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema")
+        try:
+            Draft202012Validator.check_schema(target)
+        except _SCHEMA_LIBRARY_ERRORS as exc:
+>           raise McpProfileError(
+                "MCP $ref target is not a JSON Schema 2020-12 schema"
+            ) from exc
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref target is not a JSON Schema 2020-12 schema
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:516: McpProfileError
+_ test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison[default] _
+
+target = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+
+    def _require_schema(target: object) -> None:
+        """The value a ``$ref`` lands on must be a JSON Schema 2020-12 schema.
+    
+        Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
+        metaschema rejects are not. Callers pass only a resolved target, never
+        instance data such as ``const``, ``enum`` or ``default``. ``bool`` is a
+        subclass of ``int``, so the boolean check comes before any numeric test.
+        """
+    
+        if isinstance(target, bool):
+            Draft202012Validator.check_schema(target)
+            return
+        if not isinstance(target, Mapping):
+            raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema")
+        try:
+>           Draft202012Validator.check_schema(target)
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:514: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'jsonschema.validators.Draft202012Validator'>
+schema = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+format_checker = <FormatChecker checkers=['date', 'date-time', 'email', 'idn-email', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']>
+
+    @classmethod
+    def check_schema(cls, schema, format_checker=_UNSET):
+        Validator = validator_for(cls.META_SCHEMA, default=cls)
+        if format_checker is _UNSET:
+            format_checker = Validator.FORMAT_CHECKER
+        validator = Validator(
+            schema=cls.META_SCHEMA,
+            format_checker=format_checker,
+        )
+        for error in validator.iter_errors(schema):
+>           raise exceptions.SchemaError.create_from(error)
+E           jsonschema.exceptions.SchemaError: 'not-a-type' is not valid under any of the given schemas
+E           
+E           Failed validating 'anyOf' in metaschema['allOf'][0]['properties']['$defs']['additionalProperties']['$dynamicRef']['allOf'][3]['properties']['type']:
+E               {'anyOf': [{'$ref': '#/$defs/simpleTypes'},
+E                          {'type': 'array',
+E                           'items': {'$ref': '#/$defs/simpleTypes'},
+E                           'minItems': 1,
+E                           'uniqueItems': True}]}
+E           
+E           On schema['$defs']['outer_poison']['type']:
+E               'not-a-type'
+
+ocor-runtime/.venv/lib/python3.12/site-packages/jsonschema/validators.py:316: SchemaError
+
+The above exception was the direct cause of the following exception:
+
+slot = 'default'
+
+    @pytest.mark.parametrize("slot", _CYCLE7_SLOTS)
+    def test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison(
+        slot: str,
+    ) -> None:
+        """``#`` after a pointer crossing an ``$id`` uses the nested resource."""
+        from jsonschema import Draft202012Validator
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+    
+        document = _cycle7_descriptor()
+        target = {
+            "type": "object",
+            "properties": {"value": {"$ref": "#"}},
+        }
+        box = {"target": target}
+        holder = {
+            "$id": "child.json",
+            "type": "object",
+            slot: [box] if slot == "examples" else box,
+        }
+        document["$defs"] = {
+            "holder": holder,
+            "outer_poison": {"type": "not-a-type"},
+        }
+        document["tools"][0]["inputSchema"]["$ref"] = _cycle7_holder_pointer(slot)
+        resource = DRAFT202012.create_resource(document)
+        reached = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE).lookup(
+            _cycle7_holder_pointer(slot)
+        )
+        assert reached.resolver.lookup("#").contents is holder
+        Draft202012Validator.check_schema(holder)
+>       _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2925: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:702: in _resolve_pointer
+    _require_schema(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+target = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+
+    def _require_schema(target: object) -> None:
+        """The value a ``$ref`` lands on must be a JSON Schema 2020-12 schema.
+    
+        Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
+        metaschema rejects are not. Callers pass only a resolved target, never
+        instance data such as ``const``, ``enum`` or ``default``. ``bool`` is a
+        subclass of ``int``, so the boolean check comes before any numeric test.
+        """
+    
+        if isinstance(target, bool):
+            Draft202012Validator.check_schema(target)
+            return
+        if not isinstance(target, Mapping):
+            raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema")
+        try:
+            Draft202012Validator.check_schema(target)
+        except _SCHEMA_LIBRARY_ERRORS as exc:
+>           raise McpProfileError(
+                "MCP $ref target is not a JSON Schema 2020-12 schema"
+            ) from exc
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref target is not a JSON Schema 2020-12 schema
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:516: McpProfileError
+_ test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison[examples] _
+
+target = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+
+    def _require_schema(target: object) -> None:
+        """The value a ``$ref`` lands on must be a JSON Schema 2020-12 schema.
+    
+        Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
+        metaschema rejects are not. Callers pass only a resolved target, never
+        instance data such as ``const``, ``enum`` or ``default``. ``bool`` is a
+        subclass of ``int``, so the boolean check comes before any numeric test.
+        """
+    
+        if isinstance(target, bool):
+            Draft202012Validator.check_schema(target)
+            return
+        if not isinstance(target, Mapping):
+            raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema")
+        try:
+>           Draft202012Validator.check_schema(target)
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:514: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'jsonschema.validators.Draft202012Validator'>
+schema = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+format_checker = <FormatChecker checkers=['date', 'date-time', 'email', 'idn-email', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']>
+
+    @classmethod
+    def check_schema(cls, schema, format_checker=_UNSET):
+        Validator = validator_for(cls.META_SCHEMA, default=cls)
+        if format_checker is _UNSET:
+            format_checker = Validator.FORMAT_CHECKER
+        validator = Validator(
+            schema=cls.META_SCHEMA,
+            format_checker=format_checker,
+        )
+        for error in validator.iter_errors(schema):
+>           raise exceptions.SchemaError.create_from(error)
+E           jsonschema.exceptions.SchemaError: 'not-a-type' is not valid under any of the given schemas
+E           
+E           Failed validating 'anyOf' in metaschema['allOf'][0]['properties']['$defs']['additionalProperties']['$dynamicRef']['allOf'][3]['properties']['type']:
+E               {'anyOf': [{'$ref': '#/$defs/simpleTypes'},
+E                          {'type': 'array',
+E                           'items': {'$ref': '#/$defs/simpleTypes'},
+E                           'minItems': 1,
+E                           'uniqueItems': True}]}
+E           
+E           On schema['$defs']['outer_poison']['type']:
+E               'not-a-type'
+
+ocor-runtime/.venv/lib/python3.12/site-packages/jsonschema/validators.py:316: SchemaError
+
+The above exception was the direct cause of the following exception:
+
+slot = 'examples'
+
+    @pytest.mark.parametrize("slot", _CYCLE7_SLOTS)
+    def test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison(
+        slot: str,
+    ) -> None:
+        """``#`` after a pointer crossing an ``$id`` uses the nested resource."""
+        from jsonschema import Draft202012Validator
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+    
+        document = _cycle7_descriptor()
+        target = {
+            "type": "object",
+            "properties": {"value": {"$ref": "#"}},
+        }
+        box = {"target": target}
+        holder = {
+            "$id": "child.json",
+            "type": "object",
+            slot: [box] if slot == "examples" else box,
+        }
+        document["$defs"] = {
+            "holder": holder,
+            "outer_poison": {"type": "not-a-type"},
+        }
+        document["tools"][0]["inputSchema"]["$ref"] = _cycle7_holder_pointer(slot)
+        resource = DRAFT202012.create_resource(document)
+        reached = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE).lookup(
+            _cycle7_holder_pointer(slot)
+        )
+        assert reached.resolver.lookup("#").contents is holder
+        Draft202012Validator.check_schema(holder)
+>       _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:2925: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:204: in validate_mcp_descriptor
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:434: in _check_schema_keywords
+    enter(child)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:420: in enter
+    _check_schema_keywords(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:408: in _check_schema_keywords
+    _resolve_pointer(
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:702: in _resolve_pointer
+    _require_schema(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+target = {'x-ocor-mcp-protocol-revision': '2026-07-28', 'tools': [{'name': 'get-vessel', 'inputSchema': {'type': 'object', 'pro...'}, 'outputSchema': {'type': 'object'}}], '$id': 'https://independent.invalid/review/root.json', 'type': 'object', ...}
+
+    def _require_schema(target: object) -> None:
+        """The value a ``$ref`` lands on must be a JSON Schema 2020-12 schema.
+    
+        Boolean schemas are schemas. Numbers, strings, null, arrays and objects the
+        metaschema rejects are not. Callers pass only a resolved target, never
+        instance data such as ``const``, ``enum`` or ``default``. ``bool`` is a
+        subclass of ``int``, so the boolean check comes before any numeric test.
+        """
+    
+        if isinstance(target, bool):
+            Draft202012Validator.check_schema(target)
+            return
+        if not isinstance(target, Mapping):
+            raise McpProfileError("MCP $ref target is not a JSON Schema 2020-12 schema")
+        try:
+            Draft202012Validator.check_schema(target)
+        except _SCHEMA_LIBRARY_ERRORS as exc:
+>           raise McpProfileError(
+                "MCP $ref target is not a JSON Schema 2020-12 schema"
+            ) from exc
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref target is not a JSON Schema 2020-12 schema
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:516: McpProfileError
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/$defs/only_here-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#/%24defs/only_here-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[const-#independent_anchor-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/$defs/only_here-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#/%24defs/only_here-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[default-#independent_anchor-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/$defs/only_here-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#/%24defs/only_here-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-outer-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-outer-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-holder-inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_pointer_crossing_resource_preserves_resolver[examples-#independent_anchor-holder-outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison[const]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison[default]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison[examples]
+39 failed, 33 passed, 800 deselected in 1.38s

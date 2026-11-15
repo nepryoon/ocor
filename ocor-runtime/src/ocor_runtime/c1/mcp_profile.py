@@ -13,13 +13,16 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from typing import Any
-from urllib.parse import urljoin
+from dataclasses import dataclass
+from typing import Any, cast
+from urllib.parse import quote, urljoin
 
+from attrs import evolve
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError, UnknownType
 from referencing import Registry, Resource
-from referencing.exceptions import CannotDetermineSpecification
+from referencing.exceptions import CannotDetermineSpecification, Unresolvable
+from referencing.jsonschema import DRAFT202012
 
 # Library failures on a tampered fixture or schema are profile errors. The caller
 # never sees TypeError, UnknownType or CannotDetermineSpecification.
@@ -27,6 +30,7 @@ _SCHEMA_LIBRARY_ERRORS = (
     SchemaError,
     UnknownType,
     CannotDetermineSpecification,
+    AttributeError,
     TypeError,
     ValueError,
 )
@@ -62,6 +66,33 @@ _SCHEMA_ARRAY_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
 _ANCHOR_KEYWORDS = ("$anchor", "$dynamicAnchor")
 
 
+def _pointer_maybe_in_subresource(
+    segments: Sequence[int | str],
+    resolver: Any,
+    subresource: Resource[Any],
+) -> Any:
+    """Keep library pointer context when the target is not a schema object.
+
+    ``referencing`` resolves every pointer segment and then asks the 2020-12
+    specification for a subresource. Its specification assumes a mapping and
+    raises ``AttributeError`` for a scalar target before returning it. The
+    profile still has to inspect that target to report the typed non-schema
+    refusal. The wrapper keeps the library traversal and only declines to
+    enter a subresource it cannot read.
+    """
+
+    try:
+        return DRAFT202012.maybe_in_subresource(segments, resolver, subresource)
+    except (AttributeError, TypeError):
+        return resolver
+
+
+_PROFILE_SPECIFICATION: Any = evolve(
+    cast(Any, DRAFT202012),
+    maybe_in_subresource=_pointer_maybe_in_subresource,
+)
+
+
 class McpProfileError(ValueError):
     """The MCP profile rejected a descriptor or an input schema."""
 
@@ -69,6 +100,32 @@ class McpProfileError(ValueError):
         if not isinstance(message, str) or not message or len(message) > 512:
             raise ValueError("MCP profile message must be bounded and non-empty")
         super().__init__(message)
+
+
+@dataclass(frozen=True)
+class _ResolutionIndex:
+    """Resources and stricter profile indexes built beside the pinned resolver."""
+
+    root_uri: str
+    identities: Mapping[int, str]
+    aliases: Mapping[int, object]
+    resources: Mapping[str, Resource[Any]]
+    anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]
+
+
+@dataclass(frozen=True)
+class _ResolutionContext:
+    """The resolver and the effective resource URI at one schema node."""
+
+    resolver: Any
+    resource_uri: str
+    base_uri: str
+    resource_roots: Mapping[int, str]
+    resource_aliases: Mapping[int, object]
+    resources: Mapping[str, Resource[Any]]
+    anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]
+    fallback_resolver: Any | None = None
+    fallback_resource_uri: str | None = None
 
 
 def without_context_overwrite(schema: Mapping[str, Any]) -> dict[str, Any]:
@@ -167,46 +224,51 @@ def validate_mcp_descriptor(
     # are instance data and are not read as keywords. A schema a ``$ref`` actually
     # reaches is checked afterwards, including one stored in that instance data.
     seen: set[int] = set()
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]] = {}
-    document_base = _resource_uri(document, "")
+    deferred: dict[int, tuple[Any, int, _ResolutionContext]] = {}
+    resolution = _build_resolution_index(document)
+    document_base = resolution.root_uri
+    document_context = _ResolutionContext(
+        resolver=_resource_resolver(document_base, resolution.resources[document_base]),
+        resource_uri=document_base,
+        base_uri=document_base,
+        resource_roots=resolution.identities,
+        resource_aliases=resolution.aliases,
+        resources=resolution.resources,
+        anchors=resolution.anchors,
+    )
     _check_schema_keywords(
         document,
-        document,
-        pointer_root=document,
-        resource_root=document,
-        base_uri=document_base,
+        document_context,
         depth=1,
         seen=seen,
         deferred=deferred,
     )
-    for tool in tools:
+    for index, tool in enumerate(tools):
         if isinstance(tool, Mapping):
             for field in ("inputSchema", "outputSchema"):
                 if field in tool:
                     tool_schema = tool[field]
+                    context = _enter_tool_schema(
+                        document_context,
+                        tool_schema,
+                        index=index,
+                        field=field,
+                    )
                     _check_schema_keywords(
                         tool_schema,
-                        document,
-                        pointer_root=tool_schema
-                        if isinstance(tool_schema, Mapping)
-                        else document,
-                        resource_root=document,
-                        base_uri=document_base,
+                        context,
                         depth=1,
                         seen=seen,
                         deferred=deferred,
                     )
     while deferred:
         identity = min(deferred, key=lambda item: deferred[item][1])
-        target, depth, pointer_root, resource_root, base_uri = deferred.pop(identity)
+        target, depth, context = deferred.pop(identity)
         if identity in seen:
             continue
         _check_schema_keywords(
             target,
-            document,
-            pointer_root=pointer_root,
-            resource_root=resource_root,
-            base_uri=base_uri,
+            context,
             depth=depth,
             seen=seen,
             deferred=deferred,
@@ -366,27 +428,443 @@ def _changes_resource(node: object, base_uri: str) -> bool:
     """True when ``node`` joins to a URI other than ``base_uri``."""
     return _resource_uri(node, base_uri) != base_uri
 
+def _create_resource(contents: Mapping[str, Any]) -> Resource[Any]:
+    """Create one draft-2020-12 resource without copying the document object."""
+    return cast(Resource[Any], _PROFILE_SPECIFICATION.create_resource(contents))
+
+
+def _resource_resolver(uri: str, resource: Resource[Any]) -> Any:
+    """Return a resolver whose registry contains only this resource.
+
+    Every fragment accepted by the profile is same-document. Keeping one
+    resource in the registry prevents an unrelated non-schema sibling in the
+    descriptor, or in another embedded schema, from deciding a lookup on the
+    current resource. Nested ``$id`` resources reached by a pointer are still
+    discovered by ``referencing`` from the current resource.
+    """
+
+    return Registry().with_resource(uri, resource).resolver(uri)
+
+
+def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
+    """Index every declared subresource, then let referencing resolve references.
+
+    The registry is the only reference resolver. This walk only discovers
+    resources declared by ``$id`` inside the descriptor, including the tool
+    schemas that are not children of a JSON Schema applicator, and records the
+    effective URI for each resource root.
+    """
+
+    document_uri = _resource_uri(document, "")
+    document_resource = _create_resource(
+        _canonical_resource_contents(document, document_uri)
+    )
+    resources: dict[str, Resource[Any]] = {document_uri: document_resource}
+    identities: dict[int, str] = {
+        id(document): document_uri,
+        id(document_resource.contents): document_uri,
+    }
+    aliases: dict[int, object] = {}
+    if document_resource.contents is not document:
+        aliases[id(document_resource.contents)] = document
+
+    def visit(node: object, base_uri: str, *, root: bool, depth: int) -> None:
+        if depth > MAX_SCHEMA_DEPTH:
+            raise McpProfileError("MCP schema exceeds the revision bounds")
+        if not isinstance(node, Mapping):
+            if isinstance(node, Sequence) and not isinstance(node, (str, bytes)):
+                for item in node:
+                    visit(item, base_uri, root=False, depth=depth + 1)
+            return
+        effective_uri = base_uri
+        if not root and _declared_id(node) is not None:
+            candidate = _resource_uri(node, base_uri)
+            if candidate != base_uri and candidate not in resources:
+                resource = _create_resource(
+                    _canonical_resource_contents(node, candidate)
+                )
+                resources[candidate] = resource
+                identities[id(node)] = candidate
+                identities[id(resource.contents)] = candidate
+                if resource.contents is not node:
+                    aliases[id(resource.contents)] = node
+            if candidate != base_uri:
+                effective_uri = candidate
+        for value in node.values():
+            visit(value, effective_uri, root=False, depth=depth + 1)
+
+    visit(document, document_uri, root=True, depth=1)
+    tools = document.get("tools")
+    if isinstance(tools, Sequence) and not isinstance(tools, (str, bytes)):
+        for index, tool in enumerate(tools):
+            if not isinstance(tool, Mapping):
+                continue
+            for field in ("inputSchema", "outputSchema"):
+                schema = tool.get(field)
+                if not isinstance(schema, Mapping) or "$id" in schema:
+                    continue
+                uri = f"urn:ocor:embedded-tool:{index}:{field}"
+                resources[uri] = _create_resource(schema)
+                identities[id(schema)] = uri
+    anchors = _collect_anchor_owners(resources)
+    return _ResolutionIndex(
+        root_uri=document_uri,
+        identities=identities,
+        aliases=aliases,
+        resources=resources,
+        anchors=anchors,
+    )
+
+
+def _canonical_resource_contents(
+    node: Mapping[str, Any],
+    resource_uri: str,
+) -> Mapping[str, Any]:
+    """Give a resource root its already-joined identity before indexing anchors.
+
+    ``Registry.crawl`` joins ``Resource.id()`` onto the registry URI. A nested
+    resource discovered under its canonical URI would therefore join a relative
+    ``$id`` a second time. A shallow copy changes only the resource root's
+    ``$id``; every child object remains the document object the profile checks.
+    """
+
+    if _declared_id(node) is None:
+        return node
+    canonical = dict(node)
+    canonical["$id"] = resource_uri
+    return canonical
+
+
+def _collect_anchor_owners(
+    resources: Mapping[str, Resource[Any]],
+) -> dict[tuple[str, str], tuple[Mapping[str, Any], ...]]:
+    """Index anchors per effective resource for the profile's ambiguity rule.
+
+    ``referencing`` keeps one anchor when a resource repeats a plain name. The
+    profile is stricter and records every owner, but the owner is used only to
+    reject ambiguity; the target itself still comes from ``Resolver.lookup``.
+    """
+
+    owners: dict[tuple[str, str], list[Mapping[str, Any]]] = {}
+
+    def visit(
+        node: object,
+        resource_uri: str,
+        *,
+        root: bool,
+        depth: int,
+        visited: set[int],
+    ) -> None:
+        if depth > MAX_SCHEMA_DEPTH or len(visited) > MAX_SCHEMA_NODES:
+            raise McpProfileError("MCP schema exceeds the revision bounds")
+        if not isinstance(node, Mapping):
+            return
+        identity = id(node)
+        if identity in visited:
+            return
+        visited.add(identity)
+        if (
+            not root
+            and _declared_id(node) is not None
+            and _changes_resource(node, resource_uri)
+        ):
+            return
+
+        names = {
+            value
+            for keyword in _ANCHOR_KEYWORDS
+            for value in (node.get(keyword),)
+            if isinstance(value, str)
+        }
+        for name in names:
+            owners.setdefault((resource_uri, name), []).append(node)
+
+        def enter(child: object) -> None:
+            visit(child, resource_uri, root=False, depth=depth + 1, visited=visited)
+
+        for key, value in node.items():
+            if key == "additionalItems":
+                continue
+            if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
+                for child in value.values():
+                    enter(child)
+                continue
+            if (
+                key in _SCHEMA_ARRAY_KEYWORDS
+                and isinstance(value, Sequence)
+                and not isinstance(value, (str, bytes))
+            ):
+                for child in value:
+                    enter(child)
+                continue
+            if key in _SCHEMA_OBJECT_KEYWORDS:
+                if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+                    for child in value:
+                        enter(child)
+                else:
+                    enter(value)
+
+    for resource_uri, resource in resources.items():
+        visit(
+            resource.contents,
+            resource_uri,
+            root=True,
+            depth=1,
+            visited=set(),
+        )
+    return {key: tuple(value) for key, value in owners.items()}
+
+
+def _enter_schema_resource(
+    context: _ResolutionContext,
+    node: object,
+) -> _ResolutionContext:
+    """Return the context for a schema node, applying its ``$id`` only once."""
+
+    if not isinstance(node, Mapping) or "$id" not in node:
+        return context
+    if _declared_id(node) is None:
+        if context.fallback_resolver is None or context.fallback_resource_uri is None:
+            return context
+        return _ResolutionContext(
+            resolver=context.fallback_resolver,
+            resource_uri=context.fallback_resource_uri,
+            base_uri=context.fallback_resource_uri,
+            resource_roots=context.resource_roots,
+            resource_aliases=context.resource_aliases,
+            resources=context.resources,
+            anchors=context.anchors,
+        )
+    resource_uri = _resource_uri(node, context.base_uri)
+    if resource_uri == context.resource_uri:
+        return context
+    resource = context.resources.get(resource_uri)
+    if resource is None:
+        resource = _create_resource(node)
+    resolver = _resource_resolver(resource_uri, resource)
+    return _ResolutionContext(
+        resolver=resolver,
+        resource_uri=resource_uri,
+        base_uri=resource_uri,
+        resource_roots=context.resource_roots,
+        resource_aliases=context.resource_aliases,
+        resources=context.resources,
+        anchors=context.anchors,
+    )
+
+
+def _enter_tool_schema(
+    context: _ResolutionContext,
+    node: object,
+    *,
+    index: int,
+    field: str,
+) -> _ResolutionContext:
+    """Enter a tool schema with the profile's embedded-schema fallback.
+
+    A tool schema that declares ``$id`` follows the resource identity of that
+    identifier. A schema without the keyword is also checked as a standalone
+    embedded schema: local pointers and anchors resolve there first, while a
+    miss falls back to the descriptor resource. The empty fragment does not use
+    the fallback, so ``#`` remains the enclosing document for such a schema.
+    """
+
+    if not isinstance(node, Mapping) or "$id" in node:
+        return _enter_schema_resource(context, node)
+    resource_uri = f"urn:ocor:embedded-tool:{index}:{field}"
+    resource = context.resources.get(resource_uri, _create_resource(node))
+    return _ResolutionContext(
+        resolver=_resource_resolver(resource_uri, resource),
+        resource_uri=resource_uri,
+        base_uri=context.base_uri,
+        resource_roots=context.resource_roots,
+        resource_aliases=context.resource_aliases,
+        resources=context.resources,
+        anchors=context.anchors,
+        fallback_resolver=context.resolver,
+        fallback_resource_uri=context.resource_uri,
+    )
+
+
+def _context_after_resolution(
+    context: _ResolutionContext,
+    resolver: Any,
+) -> _ResolutionContext:
+    """Keep the resolver returned by ``lookup`` and recover its resource URI."""
+
+    try:
+        root = resolver.lookup("#").contents
+    except (Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
+        resource_uri = context.resource_uri
+    else:
+        resource_uri = context.resource_roots.get(id(root), context.resource_uri)
+    keeps_fallback = resource_uri == context.resource_uri
+    return _ResolutionContext(
+        resolver=resolver,
+        resource_uri=resource_uri,
+        base_uri=(context.base_uri if resource_uri == context.resource_uri else resource_uri),
+        resource_roots=context.resource_roots,
+        resource_aliases=context.resource_aliases,
+        resources=context.resources,
+        anchors=context.anchors,
+        fallback_resolver=context.fallback_resolver if keeps_fallback else None,
+        fallback_resource_uri=(
+            context.fallback_resource_uri if keeps_fallback else None
+        ),
+    )
+
+
+def _resolve_reference(
+    reference: object,
+    context: _ResolutionContext,
+) -> tuple[object, _ResolutionContext]:
+    """Resolve one same-document fragment with the pinned ``referencing``."""
+
+    if not isinstance(reference, str) or not reference.startswith("#"):
+        raise McpProfileError("MCP $ref must be a same-document fragment")
+    decoded = _decode_uri_fragment(reference[1:])
+    if decoded and not decoded.startswith("/"):
+        _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+        library_reference = "#" + decoded
+    elif decoded:
+        for raw_token in decoded[1:].split("/"):
+            token = _json_pointer_token(raw_token)
+            _reject_noncanonical_array_index(token)
+        # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+        # already decoded fragment so a literal ``%`` is not decoded twice,
+        # while the leading separator stays visible to ``Resolver.lookup``.
+        library_reference = "#" + quote(decoded, safe="/~")
+    else:
+        library_reference = "#"
+
+    local = _lookup_reference(context.resolver, library_reference)
+    if context.fallback_resolver is None:
+        if local is None:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        target = _resolved_contents(context, local)
+        _require_schema(target)
+        return target, _context_after_resolution(context, local.resolver)
+
+    fallback_uri = context.fallback_resource_uri
+    if fallback_uri is None:
+        raise McpProfileError("MCP $ref fallback has no resource")
+    if decoded and not decoded.startswith("/"):
+        _reject_ambiguous_anchor(fallback_uri, decoded, context.anchors)
+    fallback = _lookup_reference(context.fallback_resolver, library_reference)
+    if decoded == "":
+        if fallback is None:
+            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        fallback_context = _ResolutionContext(
+            resolver=context.fallback_resolver,
+            resource_uri=fallback_uri,
+            base_uri=fallback_uri,
+            resource_roots=context.resource_roots,
+            resource_aliases=context.resource_aliases,
+            resources=context.resources,
+            anchors=context.anchors,
+        )
+        target = _resolved_contents(context, fallback)
+        _require_schema(target)
+        return target, _context_after_resolution(fallback_context, fallback.resolver)
+    if local is not None and fallback is not None and local.contents is not fallback.contents:
+        raise McpProfileError("MCP $ref target is ambiguous")
+    if local is not None:
+        target = _resolved_contents(context, local)
+        _require_schema(target)
+        return target, _context_after_resolution(context, local.resolver)
+    if fallback is not None:
+        fallback_context = _ResolutionContext(
+            resolver=context.fallback_resolver,
+            resource_uri=fallback_uri,
+            base_uri=fallback_uri,
+            resource_roots=context.resource_roots,
+            resource_aliases=context.resource_aliases,
+            resources=context.resources,
+            anchors=context.anchors,
+        )
+        target = _resolved_contents(context, fallback)
+        _require_schema(target)
+        return target, _context_after_resolution(fallback_context, fallback.resolver)
+    raise McpProfileError("MCP $ref does not resolve in the descriptor")
+
+
+def _lookup_reference(resolver: Any, reference: str) -> Any | None:
+    """Return one library lookup or ``None`` when the fragment does not resolve."""
+
+    try:
+        return resolver.lookup(reference)
+    except (Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
+        return None
+
+
+def _resolved_contents(context: _ResolutionContext, resolved: Any) -> object:
+    """Return the document object behind a canonicalized resource wrapper."""
+
+    return context.resource_aliases.get(id(resolved.contents), resolved.contents)
+
+
+def _reject_ambiguous_anchor(
+    resource_uri: str,
+    name: str,
+    anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]],
+) -> None:
+    if len(anchors.get((resource_uri, name), ())) > 1:
+        raise McpProfileError("MCP $ref anchor is ambiguous")
+
+
+def _reject_noncanonical_array_index(token: str) -> None:
+    """Reject a token that cannot be an RFC 6901 array index.
+
+    The profile cannot tell an object key from an array index without walking
+    the pointer, which is the library's job. It therefore rejects the closed
+    numeric form that is never a canonical array index: a leading zero, a
+    sign, or a non-ASCII decimal digit. A later miss still fails in the
+    library.
+    """
+
+    if not token:
+        return
+    ascii_digits = token.isascii() and token.isdigit()
+    signed_digits = (
+        len(token) > 1
+        and token[0] in "+-"
+        and token[1:].isascii()
+        and token[1:].isdigit()
+    )
+    unicode_digits = token.isdecimal() and not token.isascii()
+    if (ascii_digits and len(token) > 1 and token[0] == "0") or signed_digits or unicode_digits:
+        raise McpProfileError("MCP $ref fragment is not a valid JSON Pointer")
+
+
+def _queue_reached_schema(
+    target: object,
+    depth: int,
+    context: _ResolutionContext,
+    seen: set[int],
+    deferred: dict[int, tuple[Any, int, _ResolutionContext]],
+) -> None:
+    """Queue a resolved schema at the next reference depth."""
+
+    if not isinstance(target, Mapping):
+        return
+    identity = id(target)
+    if identity in seen:
+        return
+    current = deferred.get(identity)
+    if current is None or depth < current[1]:
+        deferred[identity] = (target, depth, context)
+
 
 def _check_schema_keywords(
     node: object,
-    document: Mapping[str, Any],
+    context: _ResolutionContext,
     *,
-    pointer_root: Mapping[str, Any],
-    resource_root: Mapping[str, Any],
-    base_uri: str,
     depth: int,
     seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
+    deferred: dict[int, tuple[Any, int, _ResolutionContext]],
 ) -> None:
-    """Apply dialect and ``$ref`` rules only to schema objects, not to instance data."""
-    if (
-        isinstance(node, Mapping)
-        and node is not resource_root
-        and _changes_resource(node, base_uri)
-    ):
-        pointer_root = node
-        resource_root = node
-        base_uri = _resource_uri(node, base_uri)
+    """Apply dialect and ``$ref`` rules only to schema objects, not instance data."""
+
     if depth > MAX_SCHEMA_DEPTH:
         raise McpProfileError("MCP schema exceeds the revision bounds")
     if not isinstance(node, Mapping):
@@ -402,27 +880,19 @@ def _check_schema_keywords(
         if not isinstance(dialect, str) or dialect not in ACCEPTED_DIALECTS:
             raise McpProfileError("MCP schema dialect must be JSON Schema 2020-12")
     if "$ref" in node:
-        reference = node["$ref"]
-        if not isinstance(reference, str) or not reference.startswith("#"):
-            raise McpProfileError("MCP $ref must be a same-document fragment")
-        _resolve_pointer(
-            document,
-            reference,
-            pointer_root=pointer_root,
-            resource_root=resource_root,
-            base_uri=base_uri,
-            depth=depth,
-            seen=seen,
-            deferred=deferred,
+        target, target_context = _resolve_reference(node["$ref"], context)
+        _queue_reached_schema(
+            target,
+            depth + 1,
+            target_context,
+            seen,
+            deferred,
         )
 
     def enter(child: object) -> None:
         _check_schema_keywords(
             child,
-            document,
-            pointer_root=pointer_root,
-            resource_root=resource_root,
-            base_uri=base_uri,
+            _enter_schema_resource(context, child),
             depth=depth + 1,
             seen=seen,
             deferred=deferred,
@@ -538,379 +1008,6 @@ def _json_pointer_token(raw: str) -> str:
     return raw.replace("~1", "/").replace("~0", "~")
 
 
-_MISSING = object()
-# ``additionalItems`` was removed in draft 2020-12. The keyword walk still
-# checks a ``$ref`` parked there. Anchor indexing does not treat it as an applicator.
-_ANCHOR_OBJECT_KEYWORDS = _SCHEMA_OBJECT_KEYWORDS - {"additionalItems"}
-
-
-def _note_reached_schema(
-    target: object,
-    depth: int,
-    seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
-    *,
-    pointer_root: Mapping[str, Any],
-    resource_root: Mapping[str, Any],
-    base_uri: str,
-) -> None:
-    """Queue a schema object the tree walk does not enter.
-
-    Schemas already visited keep the shallower depth. The numeric limits are
-    the same ``MAX_SCHEMA_DEPTH`` and ``MAX_SCHEMA_NODES`` as the tree walk.
-    The caller passes the base already joined for ``resource_root``. A relative
-    ``$id`` is not applied a second time. A target that itself joins to a
-    different URI becomes the resource for the refs inside it. An ``$id`` that
-    joins to the current URI does not.
-    """
-
-    if not isinstance(target, Mapping):
-        return
-    if target is not resource_root and _changes_resource(target, base_uri):
-        pointer_root = target
-        resource_root = target
-        base_uri = _resource_uri(target, base_uri)
-    identity = id(target)
-    if identity in seen:
-        return
-    current = deferred.get(identity)
-    if current is None or depth < current[1]:
-        deferred[identity] = (target, depth, pointer_root, resource_root, base_uri)
-
-
-def _follow_pointer(root: object, decoded: str) -> object:
-    """Walk a decoded JSON Pointer. Return ``_MISSING`` when a step is absent.
-
-    Invalid ``~`` escapes raise before a later root is tried. ``decoded``
-    starts with ``/``.
-    """
-
-    current: object = root
-    for raw in decoded[1:].split("/"):
-        token = _json_pointer_token(raw)
-        if isinstance(current, Mapping) and token in current:
-            current = current[token]
-            continue
-        if isinstance(current, list):
-            index = _array_index(token)
-            if index is not None and index < len(current):
-                current = current[index]
-                continue
-        return _MISSING
-    return current
-
-
-def _contains(root: object, node: object, seen: set[int] | None = None) -> bool:
-    """Return whether ``node`` is ``root`` or sits inside it. The walk is bounded."""
-
-    if root is node:
-        return True
-    if seen is None:
-        seen = set()
-    if not isinstance(root, Mapping) or len(seen) > MAX_SCHEMA_NODES:
-        return False
-    identity = id(root)
-    if identity in seen:
-        return False
-    seen.add(identity)
-    for value in root.values():
-        if _contains(value, node, seen):
-            return True
-        if isinstance(value, list):
-            for item in value:
-                if _contains(item, node, seen):
-                    return True
-    return False
-
-
-def _roots_for_target(
-    target: object,
-    found_in: Mapping[str, Any],
-    document: Mapping[str, Any],
-    base_uri: str,
-    resource_root: Mapping[str, Any],
-) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
-    """Return the pointer root and the resource root that contain ``target``."""
-
-    if (
-        isinstance(target, Mapping)
-        and target is not document
-        and target is not resource_root
-        and _changes_resource(target, base_uri)
-    ):
-        return target, target
-    if found_in is document or found_in is resource_root:
-        return found_in, found_in
-    return found_in, document
-
-
-def _resolve_pointer(
-    document: Mapping[str, Any],
-    pointer: str,
-    *,
-    pointer_root: Mapping[str, Any],
-    resource_root: Mapping[str, Any],
-    base_uri: str,
-    depth: int,
-    seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
-) -> None:
-    if not isinstance(pointer, str) or not pointer.startswith("#"):
-        raise McpProfileError("MCP $ref must be a same-document fragment")
-    decoded = _decode_uri_fragment(pointer[1:])
-    if decoded != "" and not decoded.startswith("/"):
-        _resolve_anchor(
-            document,
-            decoded,
-            pointer_root=pointer_root,
-            resource_root=resource_root,
-            base_uri=base_uri,
-            depth=depth,
-            seen=seen,
-            deferred=deferred,
-        )
-        return
-    # ``target`` stays ``object``: a non-empty pointer may miss, and ``_require_schema``
-    # rejects a value that is not a schema. The empty pointer is one resource.
-    target: object
-    found_in: Mapping[str, Any]
-    if decoded == "":
-        # Empty JSON Pointer (RFC 6901). One resource: the URI after joining
-        # ``$id``. Not an anchor, and not the two-root search used for a
-        # non-empty pointer. There is no branch that always selects the
-        # whole document.
-        target = resource_root
-        found_in = resource_root
-    else:
-        local: object = _MISSING
-        remote: object = _MISSING
-        if pointer_root is not resource_root:
-            local = _follow_pointer(pointer_root, decoded)
-            remote = _follow_pointer(resource_root, decoded)
-        else:
-            local = _follow_pointer(resource_root, decoded)
-        if local is _MISSING and remote is _MISSING:
-            raise McpProfileError("MCP $ref does not resolve in the descriptor")
-        if local is not _MISSING and remote is not _MISSING and local is not remote:
-            raise McpProfileError("MCP $ref target is ambiguous")
-        if local is not _MISSING:
-            target = local
-            found_in = pointer_root
-        else:
-            target = remote
-            found_in = resource_root
-    _require_schema(target)
-    next_pointer, next_resource = _roots_for_target(
-        target, found_in, document, base_uri, resource_root
-    )
-    # Join a relative ``$id`` once, when the resource is entered. Re-joining
-    # the current resource would turn ``sub/child.json`` into a second path
-    # segment. The base is already canonical when the resource does not change.
-    next_base = base_uri
-    if next_resource is not resource_root:
-        next_base = _resource_uri(next_resource, base_uri)
-    _note_reached_schema(
-        target,
-        depth + 1,
-        seen,
-        deferred,
-        pointer_root=next_pointer,
-        resource_root=next_resource,
-        base_uri=next_base,
-    )
-
-
-def _resolve_anchor(
-    document: Mapping[str, Any],
-    name: str,
-    *,
-    pointer_root: Mapping[str, Any],
-    resource_root: Mapping[str, Any],
-    base_uri: str,
-    depth: int,
-    seen: set[int],
-    deferred: dict[int, tuple[Any, int, Mapping[str, Any], Mapping[str, Any], str]],
-) -> None:
-    """Resolve a plain-name fragment to one ``$anchor`` or ``$dynamicAnchor``.
-
-    The search follows schema keywords, so a name that exists only inside
-    instance data (``const``, ``default``, ``enum``) does not resolve. A
-    non-string keyword value is not a name. An embedded tool schema that does
-    not change the resource URI is searched together with the current resource,
-    because the document walk does not enter ``tools``. A nested ``$id`` whose
-    joined URI differs is searched alone. ``additionalItems`` is not indexed.
-    Two different schema objects with the same name are ambiguous: the profile
-    does not pick one. The single target is still checked as a 2020-12 schema,
-    then queued at the next depth so the visited set and the bounds stay those
-    of the walk.
-    """
-
-    if not isinstance(name, str) or not name:
-        raise McpProfileError("MCP $ref does not resolve in the descriptor")
-    matches: list[Mapping[str, Any]] = []
-    visited: set[int] = set()
-    if pointer_root is not resource_root:
-        _collect_anchors(
-            pointer_root,
-            name,
-            matches,
-            depth=1,
-            visited=visited,
-            at_root=True,
-            base_uri=base_uri,
-        )
-        _collect_anchors(
-            resource_root,
-            name,
-            matches,
-            depth=1,
-            visited=visited,
-            at_root=True,
-            base_uri=base_uri,
-        )
-    else:
-        _collect_anchors(
-            resource_root,
-            name,
-            matches,
-            depth=1,
-            visited=visited,
-            at_root=True,
-            base_uri=base_uri,
-        )
-    if not matches:
-        raise McpProfileError("MCP $ref does not resolve in the descriptor")
-    if len(matches) > 1:
-        raise McpProfileError("MCP $ref anchor is ambiguous")
-    target = matches[0]
-    _require_schema(target)
-    if pointer_root is not resource_root and _contains(pointer_root, target):
-        found_in = pointer_root
-    else:
-        found_in = resource_root
-    next_pointer, next_resource = _roots_for_target(
-        target, found_in, document, base_uri, resource_root
-    )
-    # Same single join as ``_resolve_pointer``: the anchor target may enter a
-    # new resource, and the current resource must not be joined again.
-    next_base = base_uri
-    if next_resource is not resource_root:
-        next_base = _resource_uri(next_resource, base_uri)
-    _note_reached_schema(
-        target,
-        depth + 1,
-        seen,
-        deferred,
-        pointer_root=next_pointer,
-        resource_root=next_resource,
-        base_uri=next_base,
-    )
-
-
-def _collect_anchors(
-    node: object,
-    name: str,
-    matches: list[Mapping[str, Any]],
-    *,
-    depth: int,
-    visited: set[int],
-    at_root: bool,
-    base_uri: str,
-) -> None:
-    """Append each schema object in this resource whose plain name equals ``name``."""
-
-    if depth > MAX_SCHEMA_DEPTH or len(visited) > MAX_SCHEMA_NODES:
-        raise McpProfileError("MCP schema exceeds the revision bounds")
-    if not isinstance(node, Mapping):
-        return
-    if not at_root and _changes_resource(node, base_uri):
-        return
-    identity = id(node)
-    if identity in visited:
-        return
-    visited.add(identity)
-    matched = False
-    for keyword in _ANCHOR_KEYWORDS:
-        value = node.get(keyword)
-        if isinstance(value, str) and value == name:
-            matched = True
-            break
-    if matched:
-        matches.append(node)
-    for key, value in node.items():
-        if key == "additionalItems":
-            continue
-        if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
-            for child in value.values():
-                _collect_anchors(
-                    child,
-                    name,
-                    matches,
-                    depth=depth + 1,
-                    visited=visited,
-                    at_root=False,
-                    base_uri=base_uri,
-                )
-            continue
-        if (
-            key in _SCHEMA_ARRAY_KEYWORDS
-            and isinstance(value, Sequence)
-            and not isinstance(value, (str, bytes))
-        ):
-            for child in value:
-                _collect_anchors(
-                    child,
-                    name,
-                    matches,
-                    depth=depth + 1,
-                    visited=visited,
-                    at_root=False,
-                    base_uri=base_uri,
-                )
-            continue
-        if key in _ANCHOR_OBJECT_KEYWORDS:
-            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-                for child in value:
-                    _collect_anchors(
-                        child,
-                        name,
-                        matches,
-                        depth=depth + 1,
-                        visited=visited,
-                        at_root=False,
-                        base_uri=base_uri,
-                    )
-            else:
-                _collect_anchors(
-                    value,
-                    name,
-                    matches,
-                    depth=depth + 1,
-                    visited=visited,
-                    at_root=False,
-                    base_uri=base_uri,
-                )
-
-
 def _reject_surrogate(value: str) -> None:
     if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
         raise McpProfileError("MCP descriptor contains a lone surrogate")
-
-
-def _array_index(token: str) -> int | None:
-    """Return a canonical JSON Pointer array index.
-
-    One ASCII digit is an index. A longer index cannot have a leading zero.
-    A non-ASCII digit is not an index. An index outside the node budget cannot
-    address a document the walk accepts, and ``int`` is not called on it.
-    """
-    if not token.isascii() or not token.isdigit():
-        return None
-    if len(token) > 1 and token[0] == "0":
-        return None
-    if len(token) > len(str(MAX_SCHEMA_NODES)):
-        return None
-    index = int(token)
-    if index >= MAX_SCHEMA_NODES:
-        return None
-    return index
