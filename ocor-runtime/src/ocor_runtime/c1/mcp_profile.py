@@ -191,7 +191,7 @@ class _ResolutionContext:
         registry = getattr(self.resolver, "_registry", None)
         if registry is None:
             return self.tree.registry
-        return registry
+        return cast(Registry[Any], registry)
 
     @property
     def resources(self) -> Mapping[str, Resource[Any]]:
