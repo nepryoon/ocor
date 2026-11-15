@@ -3245,3 +3245,153 @@ def test_cycle7_repair_malformed_id_in_reached_instance_data_is_typed(
     }
     with pytest.raises(profile.McpProfileError):
         _validate(document)
+
+
+def _cycle8_noop_pointer_descriptor(
+    *,
+    field: str,
+    slot: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+) -> dict[str, Any]:
+    """Build the cycle-8 matrix descriptor of the cycle-7 verifier.
+
+    A tool schema reaches ``localHolder`` through ``const``, ``default`` or
+    ``examples``, and ``localHolder`` declares an ``$id`` that joins to the
+    descriptor base. The inner ``$ref`` then targets ``private``, which lives
+    only in the tool schema (``local``), only in the descriptor (``outer``),
+    in both (``both``) or in neither (``none``).
+    """
+
+    target = {"type": "object", "properties": {"n": {"$ref": fragment}}}
+    holder: dict[str, Any] = {"$id": identifier, "type": "object"}
+    if slot == "examples":
+        holder["examples"] = [{"novel": 0}, {"payload": target}]
+        pointer = _cycle7_repair_pointer(
+            "$defs", "localHolder", "examples", "1", "payload"
+        )
+    else:
+        holder[slot] = {"payload": target}
+        pointer = _cycle7_repair_pointer("$defs", "localHolder", slot, "payload")
+    body: dict[str, Any] = {
+        "type": "object",
+        "$defs": {"localHolder": holder},
+        "$ref": pointer,
+    }
+    if placement in ("local", "both"):
+        body["$defs"]["private"] = {"type": "integer"}
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"][0][field] = body
+    if placement in ("outer", "both"):
+        document["$defs"] = {"private": {"type": "string"}}
+    return document
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("fragment", ("#/$defs/private", "#/$defs/pri%76ate"))
+def test_cycle8_noop_id_local_target_resolves_through_instance_data(
+    field: str,
+    slot: str,
+    identifier: str,
+    fragment: str,
+) -> None:
+    """The inner ``$ref`` resolves the tool schema's own ``private``.
+
+    The no-op ``$id`` does not detach the embedded resource, so the local
+    definition wins and the library evaluator selects the integer, accepting
+    ``{"n": 11}`` and refusing ``{"n": "bad"}``.
+    """
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    document = _cycle8_noop_pointer_descriptor(
+        field=field,
+        slot=slot,
+        identifier=identifier,
+        placement="local",
+        fragment=fragment,
+    )
+    body = document["tools"][0][field]
+    local_registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    evaluator = Draft202012Validator(
+        body,
+        registry=local_registry,
+        _resolver=local_registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    assert evaluator.is_valid({"n": 11})
+    assert not evaluator.is_valid({"n": "bad"})
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("fragment", ("#/$defs/private", "#/$defs/pri%76ate"))
+def test_cycle8_noop_id_outer_target_still_resolves_beside_the_local_miss(
+    field: str,
+    slot: str,
+    identifier: str,
+    fragment: str,
+) -> None:
+    """A miss in the tool schema falls back to the descriptor ``$defs``."""
+    _validate(
+        _cycle8_noop_pointer_descriptor(
+            field=field,
+            slot=slot,
+            identifier=identifier,
+            placement="outer",
+            fragment=fragment,
+        )
+    )
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("fragment", ("#/$defs/private", "#/$defs/pri%76ate"))
+def test_cycle8_noop_id_two_targets_are_rejected_as_ambiguous(
+    field: str,
+    slot: str,
+    identifier: str,
+    fragment: str,
+) -> None:
+    """Two different objects for one non-empty pointer are never one target."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+        _validate(
+            _cycle8_noop_pointer_descriptor(
+                field=field,
+                slot=slot,
+                identifier=identifier,
+                placement="both",
+                fragment=fragment,
+            )
+        )
+
+
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+def test_cycle8_noop_id_missing_target_is_rejected_for_the_right_reason(
+    slot: str,
+    identifier: str,
+) -> None:
+    """A target present in neither resource fails with the resolution reason."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(
+            _cycle8_noop_pointer_descriptor(
+                field="inputSchema",
+                slot=slot,
+                identifier=identifier,
+                placement="none",
+                fragment="#/$defs/private",
+            )
+        )

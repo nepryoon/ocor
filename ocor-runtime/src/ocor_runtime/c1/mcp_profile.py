@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, cast
 from urllib.parse import quote, urljoin
 
@@ -148,6 +148,7 @@ class _ResolutionIndex:
     registry: Registry[Any]
     aliases: Mapping[int, object]
     anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]
+    local_registries: Mapping[str, Registry[Any]]
 
 
 @dataclass(frozen=True)
@@ -165,6 +166,9 @@ class _ResolutionContext:
     fallback_resolver: Any | None = None
     fallback_resource_uri: str | None = None
     fallback_registry: Registry[Any] | None = None
+    embedded_local_registries: Mapping[str, Registry[Any]] = field(
+        default_factory=dict
+    )
 
 
 def without_context_overwrite(schema: Mapping[str, Any]) -> dict[str, Any]:
@@ -275,6 +279,7 @@ def validate_mcp_descriptor(
         resources=resolution.resources,
         aliases=resolution.aliases,
         anchors=resolution.anchors,
+        embedded_local_registries=resolution.local_registries,
     )
     _check_schema_keywords(
         document,
@@ -633,6 +638,7 @@ def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
     document_uri = _resource_uri(document, "")
     aliases: dict[int, object] = {}
     resources = _crawl_document_resources(document, document_uri, aliases)
+    local_registries: dict[str, Registry[Any]] = {}
 
     tools = document.get("tools")
     if isinstance(tools, Sequence) and not isinstance(tools, (str, bytes)):
@@ -665,6 +671,16 @@ def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
                     resources,
                     aliases,
                 )
+                body = _canonical_resource_contents(schema, document_uri)
+                if body is not schema:
+                    aliases[id(body)] = schema
+                local: dict[str, Resource[Any]] = {
+                    document_uri: _create_resource(body)
+                }
+                local.update(discovered)
+                local_registries[embedded_uri] = Registry().with_resources(
+                    list(local.items())
+                )
     registry = Registry().with_resources(list(resources.items()))
     anchors = _collect_anchor_owners(list(resources.items()))
     return _ResolutionIndex(
@@ -673,6 +689,7 @@ def _build_resolution_index(document: Mapping[str, Any]) -> _ResolutionIndex:
         registry=registry,
         aliases=aliases,
         anchors=anchors,
+        local_registries=local_registries,
     )
 
 
@@ -828,8 +845,11 @@ def _enter_tool_schema(
     resource_uri = f"urn:ocor:embedded-tool:{index}:{field}"
     if resource_uri not in context.resources:
         raise McpProfileError("MCP embedded tool schema resource is not indexed")
+    local_registry = context.embedded_local_registries.get(resource_uri)
+    if local_registry is None:
+        raise McpProfileError("MCP embedded tool schema resource is not indexed")
     return _ResolutionContext(
-        resolver=context.registry.resolver(resource_uri),
+        resolver=local_registry.resolver(context.base_uri),
         resource_uri=resource_uri,
         base_uri=context.base_uri,
         document_uri=context.document_uri,
@@ -837,6 +857,7 @@ def _enter_tool_schema(
         resources=context.resources,
         aliases=context.aliases,
         anchors=context.anchors,
+        embedded_local_registries=context.embedded_local_registries,
         fallback_resolver=context.resolver,
         fallback_resource_uri=context.resource_uri,
         fallback_registry=context.registry,
@@ -847,22 +868,29 @@ def _context_after_resolution(
     context: _ResolutionContext,
     resolver: Any,
 ) -> _ResolutionContext:
-    """Keep the resolver returned by ``lookup`` and recover its resource URI."""
+    """Keep the resolver returned by ``lookup`` and recover its resource URI.
 
-    resolved_uri = getattr(resolver, "_base_uri", context.resource_uri)
-    resource_uri = (
-        resolved_uri if isinstance(resolved_uri, str) else context.resource_uri
-    )
-    keeps_fallback = resource_uri == context.resource_uri
+    The resolver base of an embedded tool schema is the effective base of the
+    enclosing resource, so a pointer that crosses an ``$id`` joining to that
+    same base keeps the current resource and its document fallback. Only a
+    base URI that actually differs starts another resource, which spends the
+    fallback.
+    """
+
+    resolved_uri = getattr(resolver, "_base_uri", context.base_uri)
+    if not isinstance(resolved_uri, str):
+        resolved_uri = context.base_uri
+    keeps_fallback = resolved_uri == context.base_uri
     return _ResolutionContext(
         resolver=resolver,
-        resource_uri=resource_uri,
-        base_uri=(context.base_uri if resource_uri == context.resource_uri else resource_uri),
+        resource_uri=context.resource_uri if keeps_fallback else resolved_uri,
+        base_uri=context.base_uri if keeps_fallback else resolved_uri,
         document_uri=context.document_uri,
-        registry=getattr(resolver, "_registry", context.registry),
+        registry=context.registry,
         resources=context.resources,
         aliases=context.aliases,
         anchors=context.anchors,
+        embedded_local_registries=context.embedded_local_registries,
         fallback_resolver=context.fallback_resolver if keeps_fallback else None,
         fallback_resource_uri=(
             context.fallback_resource_uri if keeps_fallback else None
