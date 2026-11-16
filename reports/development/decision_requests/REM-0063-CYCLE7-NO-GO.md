@@ -1,6 +1,6 @@
 # REM-0063-CYCLE7-NO-GO
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -29,3 +29,10 @@ Opzione 1. VF-001 contraddice il punto 1(a) di `FABLE52-POST-POC-PROGRAMME (2026
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta non parte il ciclo 7 di `OCOR-DEV-REM-0063`. `OCOR-DEV-REM-0063` resta bloccato su `REM-0063-CYCLE7-NO-GO`. La prossima unità eseguibile resta `OCOR-DEV-REM-0066` sul branch `governed/ocor-dev-rem-0066-state-only-ci` all'HEAD `5ba27f78e20bb9900b93c5442b1994b7411866b0`: riqualifica di sola regressione di `OCOR-DEV-0005`, `OCOR-DEV-0050` e `OCOR-DEV-0082`, poi un nuovo gate locale. Non si scrive una richiesta di revisione preventiva e non si avvia la suite completa di `OCOR-DEV-REM-0066` prima di quel gate. `OCOR-DEV-REM-0065` non è bloccato da questa richiesta: resta dopo, all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599 e l'unità del punto 5. La PR #595 non si integra. La PR #628 non si riapre e il suo job di `validation-closure` non si rilancia. La PR #640 resta lavoro concorrente. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Nessun test, gate, timer, tetto, partizione o criterio è indebolito da questa richiesta: non cambia codice.
+
+
+## Disposition del Product Owner — 2026-11-15
+
+Decisione esplicita `REM-0063-CYCLE7-NO-GO (2026-11-15)`: opzione 1 adottata con le precisazioni e deroghe dei punti 2–6 di quella decisione. Risoluzione interamente affidata a `referencing` 0.37.0, nessun secondo resolver manuale, controlli di profilo sul bersaglio risolto, test differenziali e campagne nuove. Nessun incremento dei claim. Le modifiche successive dei ruoli e della semantica degli schemi sono quelle delle decisioni esplicite del PO `MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)`, `MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)`, `REM-0063-CICLI-8-9-GROK (2026-11-16)` e `REM-0063-CICLO-10-CONTRATTO (2026-11-16)`. Non si modifica il testo originario delle opzioni.
+
+Registrazione differita ricostruita al checkpoint della fase A del ciclo 10: i cicli 7, 8 e 9 sono storici e `NO_GO`; questa richiesta non è più aperta. Il ciclo 10 ha contratto e test RED, senza modifiche di produzione; la questione nuova è `REM-0063-CYCLE10-ORACLE-CONFLICT`, distinta da questa disposizione. La PR #645 si chiude come risolta, senza merge. `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
