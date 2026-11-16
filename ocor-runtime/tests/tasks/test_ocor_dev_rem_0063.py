@@ -2470,7 +2470,7 @@ def test_cycle6_hash_id_does_not_hide_a_non_schema_current_resource(
     assert resolved is root
     with pytest.raises(SchemaError):
         Draft202012Validator.check_schema(resolved)
-    with pytest.raises(profile.McpProfileError, match="JSON Schema"):
+    with pytest.raises(profile.McpProfileError, match="target is not a JSON Schema"):
         _validate(document)
 
 
@@ -2973,7 +2973,10 @@ def test_cycle7_empty_pointer_uses_the_effective_resource(
         return
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     if poison:
-        with pytest.raises(profile.McpProfileError):
+        with pytest.raises(
+            profile.McpProfileError,
+            match=r"MCP tool \d+ (?:inputSchema|outputSchema) is not a JSON Schema",
+        ):
             _validate(document)
     else:
         _validate(document)
@@ -3063,7 +3066,10 @@ def test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison(
     )
     assert reached.resolver.lookup("#").contents is holder
     Draft202012Validator.check_schema(holder)
-    with pytest.raises(profile.McpProfileError, match="not a JSON Schema"):
+    with pytest.raises(
+        profile.McpProfileError,
+        match=r"MCP tool \d+ inputSchema is not a JSON Schema",
+    ):
         _validate(document)
 
 
