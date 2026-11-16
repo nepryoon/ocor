@@ -1,6 +1,6 @@
 # REM-0063-CYCLE10-ORACLE-CONFLICT
 
-Stato: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
 Livello: `NORMATIVE`. Unità interessata: `OCOR-DEV-REM-0063`, ciclo 10.
 Base esaminata: `f485dc964e47bde83842ecd5ba2627d8342612f9`.
 Contratto e test nuovi della fase A: `f92d038780f823ed6b9488326a1f7a1e3591b12b`,
@@ -149,3 +149,9 @@ Il flusso residuo resta GREEN, revisione preventiva, gate locale, campagna,
 controllo distinto, verifica indipendente sull'HEAD esatto; nessun esito della
 fase A li sostituisce. `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,
 PoC e Production `NO-GO`.
+
+## Disposition — REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)
+
+Decisione del PO di persona: quesito A, opzione A1; quesito B, opzione B1. Le sole aspettative e gli helper enumerati nelle opzioni adottate sono autorizzati al riallineamento nel ciclo 10; nessuna normalizzazione degli input delle librerie e nessuna selezione di suffissi per la base fissa. I testi delle opzioni restano invariati. Disposition adottata dopo verifica del file al commit 0531a438f0d68637d8a7221507080a7c672c0847, SHA256 35259990c43e2e2def484b7d763bdc691feb25e262e661d9a5323fa06fdeec41. La fase A prosegue con soli contratto e test nuovi; il riallineamento autorizzato dei test preesistenti resta alla fase B.
+
+La PR della richiesta si chiude come risolta con il riferimento al commit dello state sync; il branch resta conservato. Nessun merge della richiesta.
