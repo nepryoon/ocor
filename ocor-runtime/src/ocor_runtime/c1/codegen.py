@@ -344,6 +344,44 @@ def _mcp_take_instance(node: Mapping[str, Any], names: set[str], raw: set[str]) 
             _mcp_walk_json_refs(node[key], names, raw)
 
 
+def _mcp_defs_ids(node: Mapping[str, Any], path: str) -> set[int]:
+    """Identities of ``$defs`` entries, which are not reachable by themselves.
+
+    A definition is reachable only when a ``$ref`` outside ``$defs`` selects
+    its name, or when a selected definition body refers to it. References that
+    occur only inside an unreferenced ``$defs`` do not join the closure.
+    ``$defs`` that is not an object is a typed error.
+    """
+
+    defs = node.get("$defs")
+    if defs is None:
+        return set()
+    if not isinstance(defs, Mapping):
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $defs must be an object")
+    return {id(value) for value in defs.values()}
+
+
+def _mcp_uncrawled_schemas(
+    node: Mapping[str, Any],
+    resource_uri: str,
+    path: str,
+) -> list[Mapping[str, Any]]:
+    """Schema positions the draft does not crawl and the profile still checks.
+
+    ``additionalItems`` stays in the current resource. An ``$id`` on that
+    value is not a crawled resource, so the generator cannot close a
+    reference there: it fails closed instead of emitting a descriptor the
+    profile rejects.
+    """
+
+    extra = node.get("additionalItems")
+    if not isinstance(extra, Mapping):
+        return []
+    if _mcp_changes_resource(extra, resource_uri, path):
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not crawled")
+    return [extra]
+
+
 def _mcp_fragment_refs(
     node: object,
     resource_uri: str,
@@ -357,9 +395,12 @@ def _mcp_fragment_refs(
     """Collect references that resolve in ``resource_uri``.
 
     Descent follows referencing 0.37.0 subresources and stops where an
-    ``$id`` joins to a different URI. ``const``, ``default``, ``examples``
-    and ``enum`` stay on this resource: the generator rewrites every
-    ``$ref``, including those in instance data.
+    ``$id`` joins to a different URI. ``$defs`` entries are not descended
+    into: they join the closure only when a reference selects their name.
+    ``additionalItems`` is checked with the profile even though the draft
+    does not crawl it. ``const``, ``default``, ``examples`` and ``enum``
+    stay on this resource: the generator rewrites every ``$ref``, including
+    those in instance data.
     """
 
     if not isinstance(node, Mapping):
@@ -368,10 +409,19 @@ def _mcp_fragment_refs(
     _mcp_bounds(path, depth, nodes[0])
     _mcp_take_ref(node, names, raw)
     _mcp_take_instance(node, names, raw)
-    for child in _mcp_children(node, path):
-        if isinstance(child, Mapping) and _mcp_changes_resource(child, resource_uri, path):
+    skip = _mcp_defs_ids(node, path)
+    children = list(_mcp_children(node, path))
+    seen = {id(child) for child in children}
+    for child in children:
+        if id(child) in skip or not isinstance(child, Mapping):
+            continue
+        if _mcp_changes_resource(child, resource_uri, path):
             continue
         _mcp_fragment_refs(child, resource_uri, path, names, raw, nodes=nodes, depth=depth + 1)
+    for extra in _mcp_uncrawled_schemas(node, resource_uri, path):
+        if id(extra) in seen:
+            continue
+        _mcp_fragment_refs(extra, resource_uri, path, names, raw, nodes=nodes, depth=depth + 1)
 
 
 def _mcp_seed_refs(
@@ -384,26 +434,13 @@ def _mcp_seed_refs(
     nodes: list[int],
     depth: int,
 ) -> None:
-    """References of one resource, excluding that resource's own ``$defs``.
+    """References of one resource, excluding every ``$defs`` map it contains.
 
     A local definition, and a reference that appears only inside it, is not
     reachable until some other node of the resource selects its name.
     """
 
-    nodes[0] += 1
-    _mcp_bounds(path, depth, nodes[0])
-    defs = node.get("$defs")
-    if defs is not None and not isinstance(defs, Mapping):
-        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $defs must be an object")
-    _mcp_take_ref(node, names, raw)
-    _mcp_take_instance(node, names, raw)
-    skip = {id(value) for value in defs.values()} if isinstance(defs, Mapping) else set()
-    for child in _mcp_children(node, path):
-        if id(child) in skip or not isinstance(child, Mapping):
-            continue
-        if _mcp_changes_resource(child, resource_uri, path):
-            continue
-        _mcp_fragment_refs(child, resource_uri, path, names, raw, nodes=nodes, depth=depth + 1)
+    _mcp_fragment_refs(node, resource_uri, path, names, raw, nodes=nodes, depth=depth)
 
 
 def _mcp_iter_resources(
@@ -411,7 +448,15 @@ def _mcp_iter_resources(
     base_uri: str,
     path: str,
 ) -> list[tuple[str, dict[str, Any]]]:
+    """Resource roots of one tool schema.
+
+    Two different nodes that join to the same URI are one resource for
+    referencing 0.37.0 (last wins) and cannot both carry a closure. The
+    generator refuses that tree instead of emitting a dangling ``$ref``.
+    """
+
     found: list[tuple[str, dict[str, Any]]] = []
+    claimed: dict[str, int] = {}
     nodes = 0
 
     def visit(node: object, uri: str, depth: int, *, is_root: bool) -> None:
@@ -420,11 +465,22 @@ def _mcp_iter_resources(
             return
         nodes += 1
         _mcp_bounds(path, depth, nodes)
+        defs = node.get("$defs")
+        if defs is not None and not isinstance(defs, Mapping):
+            raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $defs must be an object")
         current = uri
         if is_root or _mcp_changes_resource(node, uri, path):
             current = uri if is_root else _mcp_resource_uri(node, uri, path)
             if not isinstance(node, dict):
                 raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not an object")
+            previous = claimed.get(current)
+            if previous is not None and previous != id(node):
+                raise _mcp_error(
+                    DiagnosticCode.DUPLICATE_RESOURCE,
+                    path,
+                    "MCP schema repeats a resource URI",
+                )
+            claimed[current] = id(node)
             found.append((current, node))
         for child in _mcp_children(node, path):
             visit(child, current, depth + 1, is_root=False)
@@ -446,6 +502,8 @@ def _mcp_record_user_defs(root: Mapping[str, Any], path: str) -> dict[int, dict[
         nodes += 1
         _mcp_bounds(path, depth, nodes)
         defs = node.get("$defs")
+        if defs is not None and not isinstance(defs, Mapping):
+            raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $defs must be an object")
         if isinstance(defs, Mapping) and isinstance(node, dict):
             recorded[id(node)] = dict(defs)
         for child in _mcp_children(node, path):
@@ -501,7 +559,10 @@ def _mcp_close_resource(
     pending = set(names)
     while pending:
         _mcp_bounds(path, 1, len(resolved) + len(pending))
-        name = pending.pop()
+        # The diagnostic names one missing definition. Set iteration follows
+        # PYTHONHASHSEED, so the name is the least one still pending.
+        name = min(pending)
+        pending.remove(name)
         if name in resolved:
             continue
         body = _mcp_select_body(resource, name, user_defs, type_schemas, placed, path)
@@ -523,13 +584,58 @@ def _mcp_close_resource(
     return False
 
 
+def _mcp_strip_unreachable_defs(root: Mapping[str, Any], base_uri: str, path: str) -> None:
+    """Drop ``$defs`` that no ``#/$defs/<name>`` reference can reach.
+
+    The generator rewrites every reference onto the resource root. A ``$defs``
+    map on a node that does not start a resource is therefore unreachable.
+    An entry that itself starts a resource stays: it is that resource's root.
+    """
+
+    def visit(node: object, uri: str, *, is_root: bool) -> None:
+        if not isinstance(node, dict):
+            return
+        current = uri
+        resource_root = is_root
+        if not is_root and _mcp_changes_resource(node, uri, path):
+            current = _mcp_resource_uri(node, uri, path)
+            resource_root = True
+        if not resource_root:
+            defs = node.get("$defs")
+            if isinstance(defs, dict):
+                kept = {
+                    name: body
+                    for name, body in defs.items()
+                    if isinstance(body, dict) and _mcp_changes_resource(body, current, path)
+                }
+                if kept:
+                    node["$defs"] = kept
+                else:
+                    node.pop("$defs", None)
+        for child in _mcp_children(node, path):
+            visit(child, current, is_root=False)
+        for extra in _mcp_uncrawled_schemas(node, current, path):
+            visit(extra, current, is_root=False)
+
+    visit(root, base_uri, is_root=True)
+
+
 def _mcp_post_check(tree: Mapping[str, Any], base_uri: str, path: str) -> None:
-    """Reject a schema whose ``$ref`` does not resolve in referencing 0.37.0."""
+    """Reject a schema whose ``$ref`` does not resolve in referencing 0.37.0.
+
+    ``Registry.crawl`` keeps the last node for a URI. A descendant whose
+    ``$id`` joins to the root URI has not started another resource and must
+    not replace the root: the profile pins that root, and so does this check.
+    """
 
     try:
-        registry = Registry().with_resource(base_uri, DRAFT202012.create_resource(tree)).crawl()
+        crawled = Registry().with_resource(base_uri, DRAFT202012.create_resource(tree)).crawl()
     except (Unresolvable, AttributeError, TypeError, ValueError) as exc:
         raise _mcp_error(DiagnosticCode.UNRESOLVED_REFERENCE, path, "unresolved MCP definition") from exc
+    pinned = DRAFT202012.create_resource(tree)
+    resources = {uri: resource for uri, resource in crawled.items()}
+    resources[base_uri] = pinned
+    registry = Registry().with_resources(list(resources.items()))
     for uri, resource in registry.items():
         contents = resource.contents
         if not isinstance(contents, Mapping):
@@ -564,12 +670,15 @@ def _mcp_attach_definitions(
     MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15), repaired for the
     per-resource class in VF-001 of cycle 8. A nested ``$id`` that joins to
     a new URI is its own JSON Schema resource and receives only the closure
-    of the references that resolve there. Unreferenced local definitions are
-    omitted. A definition body that does not change the URI contributes its
-    references to the enclosing resource. The descriptor still has no
-    top-level ``$defs``. A name that clashes with a different type schema,
-    or a reference with no definition, is a typed generation error. The
-    emitted schema is checked with referencing 0.37.0 before it is returned.
+    of the references that resolve there. The same URI claimed by two nodes
+    is a typed error: referencing keeps one resource. Unreferenced local
+    definitions, including a ``$defs`` map on a node that does not start a
+    resource, are omitted. A definition body that does not change the URI
+    contributes its references to the enclosing resource. ``additionalItems``
+    is closed on the current resource. The descriptor still has no top-level
+    ``$defs``. A name that clashes with a different type schema, or a
+    reference with no definition, is a typed generation error. The emitted
+    schema is checked with referencing 0.37.0 before it is returned.
     """
 
     if not isinstance(schema, Mapping):
@@ -592,6 +701,7 @@ def _mcp_attach_definitions(
             ):
                 changed = True
         if not changed:
+            _mcp_strip_unreachable_defs(copied, base_uri, path)
             _mcp_post_check(copied, base_uri, path)
             return copied
     raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema exceeds the revision bounds")

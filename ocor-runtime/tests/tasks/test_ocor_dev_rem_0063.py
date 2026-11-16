@@ -4786,3 +4786,318 @@ def test_cycle9_an_unresolvable_definition_is_a_typed_generation_error(field: st
     with pytest.raises(C1Error, match="unresolved MCP definition") as caught:
         _cycle9_render(field, schema)
     assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
+
+
+# Cycle 9 prereview repair. Class: a generated tool schema resolves on its
+# own, the same way referencing 0.37.0 resolves it. Members added here, each
+# with a positive twin or a typed refusal: repeated resource URI, ``$id``
+# that does not change the resource, ``additionalItems``, unreachable nested
+# ``$defs``, and the typed refusals of the generator bounds.
+
+
+_CYCLE9_ROOT = "https://probe.invalid/root.json"
+_CYCLE9_SAME = "https://probe.invalid/x.json"
+_CYCLE9_NOOP_IDS = ("#", "root.json", _CYCLE9_ROOT)
+
+
+def _cycle9_noop_schema(identifier: str) -> dict[str, Any]:
+    return {
+        "$id": _CYCLE9_ROOT,
+        "type": "object",
+        "properties": {
+            "n": {
+                "$id": identifier,
+                "type": "object",
+                "properties": {"status": {"$ref": _CYCLE9_STATUS}},
+            }
+        },
+    }
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+@pytest.mark.parametrize("identifier", _CYCLE9_NOOP_IDS)
+def test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure(
+    field: str,
+    identifier: str,
+) -> None:
+    """``#``, a same-URI relative and the root URI do not start a resource.
+
+    The closure stays on the root. referencing 0.37.0 and
+    Draft202012Validator accept the governed value and reject a wrong enum.
+    Six cases, two fields by three identifiers.
+    """
+    document, body = _cycle9_render(field, _cycle9_noop_schema(identifier))
+    assert set(body.get("$defs", {})) == {_CYCLE9_STATUS_NAME}
+    nested = body["properties"]["n"]
+    assert "$defs" not in nested
+    _validate(document)
+    uri = body["$id"] if isinstance(body.get("$id"), str) else _CYCLE9_ROOT
+    _cycle9_enum_oracle(body, uri, {"n": {"status": "ACTIVE"}}, bad={"n": {"status": "WRONG"}})
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error(field: str) -> None:
+    """Two nodes that join to one URI are not emitted with a dangling ref.
+
+    referencing keeps a single resource. The generator fails closed before
+    the profile can see the descriptor. The sibling shape and the
+    properties/allOf shape are both refused.
+    """
+    siblings = {
+        "type": "object",
+        "properties": {
+            "a": {
+                "$id": _CYCLE9_SAME,
+                "type": "object",
+                "properties": {"status": {"$ref": _CYCLE9_STATUS}},
+            },
+            "b": {
+                "$id": _CYCLE9_SAME,
+                "type": "object",
+                "properties": {"hull": {"$ref": _CYCLE9_HULL}},
+            },
+        },
+    }
+    mixed = {
+        "type": "object",
+        "properties": {
+            "a": {"$id": _CYCLE9_SAME, "$ref": _CYCLE9_STATUS},
+        },
+        "allOf": [{"$id": _CYCLE9_SAME, "type": "object"}],
+    }
+    for schema in (siblings, mixed):
+        with pytest.raises(C1Error, match="repeats a resource URI") as caught:
+            _cycle9_render(field, schema)
+        assert caught.value.diagnostics[0].code == DiagnosticCode.DUPLICATE_RESOURCE
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_additional_items_ref_is_closed_on_the_current_resource(field: str) -> None:
+    """A ``$ref`` under ``additionalItems`` receives the root closure.
+
+    The draft does not crawl ``additionalItems``. The profile still resolves
+    the reference on the current resource. The wrong enum is rejected.
+    """
+    document, body = _cycle9_render(
+        field,
+        {
+            "type": "object",
+            "properties": {
+                "rows": {
+                    "type": "array",
+                    "additionalItems": {"$ref": _CYCLE9_STATUS},
+                }
+            },
+        },
+    )
+    assert set(body.get("$defs", {})) == {_CYCLE9_STATUS_NAME}
+    assert body["properties"]["rows"]["additionalItems"]["$ref"] == f"#/$defs/{_CYCLE9_STATUS_NAME}"
+    _validate(document)
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    uri = body["$id"] if isinstance(body.get("$id"), str) and body.get("$id") else "urn:ocor:probe:cycle9-items"
+    registry = Registry().with_resource(uri, DRAFT202012.create_resource(body))
+    resolved = registry.resolver(uri).lookup(f"#/$defs/{_CYCLE9_STATUS_NAME}")
+    assert resolved.contents["enum"] == ["ACTIVE", "LAID_UP"]
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted(field: str) -> None:
+    """A ``$defs`` map on a node that is not a resource root is omitted.
+
+    References that occur only inside that map do not enter the root
+    closure. The twin without the map renders the same schema.
+    """
+    unused = {
+        "type": "object",
+        "properties": {
+            "n": {
+                "type": "integer",
+                "$defs": {"local-unused": {"$ref": _CYCLE9_VESSEL}},
+            }
+        },
+    }
+    twin = {"type": "object", "properties": {"n": {"type": "integer"}}}
+    document, body = _cycle9_render(field, unused)
+    _, plain = _cycle9_render(field, twin)
+    assert body == plain
+    assert _CYCLE9_VESSEL.split(":")[-1] not in json.dumps(body)
+    assert "urn.ocor.type.vessel" not in json.dumps(body)
+    _validate(document)
+
+
+def test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile() -> None:
+    """The profile does not resolve a shadowed ``$ref`` on the parent resource.
+
+    Two subschemas share one ``$id``. referencing keeps the last body, which
+    has no ``$defs``. The shadowed ``$ref`` does not resolve. The same schema
+    without the second subschema is refused as well, because the reference
+    points at the nested resource rather than the parent.
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    status = {"type": "string", "enum": ["ACTIVE", "LAID_UP"]}
+    schema = {
+        "type": "object",
+        "$defs": {"S": status},
+        "properties": {"a": {"$id": _CYCLE9_SAME, "$ref": "#/$defs/S"}},
+        "allOf": [{"$id": _CYCLE9_SAME, "type": "object"}],
+    }
+    document = _bare_descriptor()
+    document["tools"][0]["inputSchema"] = schema
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+    registry = Registry().with_resource(
+        "urn:ocor:embedded-tool:0:inputSchema",
+        DRAFT202012.create_resource(schema),
+    )
+    with pytest.raises(_WrappedReferencingError):
+        Draft202012Validator(schema, registry=registry).validate({"a": "ACTIVE"})
+
+
+def test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed() -> None:
+    """Several missing definitions report the least name, in every process."""
+    import os
+    import subprocess
+    import sys
+
+    script = (
+        "from ocor_runtime.c1.codegen import _mcp_attach_definitions\n"
+        "from ocor_runtime.c1.ports import C1Error\n"
+        "schema = {'type': 'object', 'properties': {\n"
+        " 'a': {'$ref': '#/$defs/alpha'},\n"
+        " 'b': {'$ref': '#/$defs/beta'},\n"
+        " 'c': {'$ref': '#/$defs/gamma'}}}\n"
+        "try:\n"
+        "    _mcp_attach_definitions(schema, {}, path='p',\n"
+        "        base_uri='urn:ocor:embedded-tool:0:inputSchema')\n"
+        "except C1Error as exc:\n"
+        "    print(exc.diagnostics[0].message)\n"
+    )
+    src = str(ROOT / "ocor-runtime" / "src")
+    messages: set[str] = set()
+    for seed in range(4):
+        env = os.environ.copy()
+        env["PYTHONHASHSEED"] = str(seed)
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
+        completed = subprocess.run(
+            [sys.executable, "-c", script],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        assert completed.returncode == 0, completed.stderr
+        messages.add(completed.stdout.strip())
+    assert messages == {"unresolved MCP definition alpha"}
+
+
+def _cycle9_attach(schema: object) -> None:
+    codegen = importlib.import_module("ocor_runtime.c1.codegen")
+    codegen._mcp_attach_definitions(
+        schema,
+        {},
+        path="mcp-descriptor/probe",
+        base_uri="urn:ocor:embedded-tool:0:inputSchema",
+    )
+
+
+def test_cycle9_generator_bounds_null_and_bad_defs_fail_closed() -> None:
+    """Typed refusals for bounds, a bad ``$defs``, a foreign ref and null.
+
+    These inputs reach ``_mcp_attach_definitions`` from a stored schema.
+    Removing the check would accept the schema or raise a raw exception.
+    """
+    deep: dict[str, Any] = {"type": "string"}
+    for _ in range(40):
+        deep = {"type": "object", "properties": {"n": deep}}
+    with pytest.raises(C1Error, match="exceeds the revision bounds") as caught:
+        _cycle9_attach(deep)
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+    wide = {
+        "type": "object",
+        "properties": {f"n{index}": {"type": "string"} for index in range(5000)},
+    }
+    with pytest.raises(C1Error, match="exceeds the revision bounds") as caught:
+        _cycle9_attach(wide)
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+    with pytest.raises(C1Error, match=r"\$defs must be an object") as caught:
+        _cycle9_attach({"type": "object", "$defs": ["no"]})
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+    with pytest.raises(C1Error, match="not a valid URI reference") as caught:
+        _cycle9_attach(
+            {"type": "object", "properties": {"n": {"$id": "http://[bad", "type": "string"}}}
+        )
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+    with pytest.raises(C1Error, match="unresolved MCP definition") as caught:
+        _cycle9_attach(
+            {"type": "object", "properties": {"n": {"$ref": "https://example.invalid/ext.json"}}}
+        )
+    assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
+
+    with pytest.raises(C1Error, match="not resolvable") as caught:
+        _cycle9_attach({"type": "object", "properties": None})
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+    # A null schema element is not a raw exception: the crawl fails closed.
+    with pytest.raises(C1Error, match="unresolved MCP definition") as caught:
+        _cycle9_attach({"allOf": [None], "type": "object"})
+    assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
+
+
+class _Cycle9Mapping(Mapping[str, Any]):
+    """A mapping that is not a dict, so the resource-object check can fire."""
+
+    def __init__(self, data: Mapping[str, Any]) -> None:
+        self._data = dict(data)
+
+    def __getitem__(self, key: str) -> Any:
+        return self._data[key]
+
+    def __iter__(self) -> Any:
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+
+def test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error() -> None:
+    """A stored schema object that is not a dict fails closed."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "n": _Cycle9Mapping({"$id": _CYCLE9_SAME, "type": "string"}),
+        },
+    }
+    with pytest.raises(C1Error, match="resource is not an object") as caught:
+        _cycle9_attach(schema)
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+
+def test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A crawl error from referencing becomes the generator's typed error."""
+    from referencing.exceptions import Unresolvable
+
+    codegen = importlib.import_module("ocor_runtime.c1.codegen")
+
+    class _BrokenRegistry:
+        def with_resource(self, *_args: object, **_kwargs: object) -> "_BrokenRegistry":
+            return self
+
+        def crawl(self) -> object:
+            raise Unresolvable("crawl refused the schema")
+
+    monkeypatch.setattr(codegen, "Registry", lambda: _BrokenRegistry())
+    with pytest.raises(C1Error, match="unresolved MCP definition") as caught:
+        _cycle9_attach({"type": "object"})
+    assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE

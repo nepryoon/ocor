@@ -742,7 +742,16 @@ def _collect_node_uris(
         identity = id(node)
         if identity in node_uris:
             return
-        owner = owned.get(identity, uri)
+        # A sibling whose ``$id`` joins to a URI the crawl already registered
+        # belongs to that resource. Last-wins keeps one body; inheriting the
+        # parent URI would resolve the shadowed node's ``$ref`` outside the
+        # resource referencing uses. A ``$id`` that joins to the current URI
+        # does not start another resource and stays on ``uri``.
+        joined = _resource_uri(node, uri)
+        if joined != uri and joined in resources:
+            owner = joined
+        else:
+            owner = owned.get(identity, uri)
         node_uris[identity] = owner
         for child in _iter_schema_children(node):
             visit(child, owner, depth=depth + 1)
