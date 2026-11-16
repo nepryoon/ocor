@@ -3431,6 +3431,958 @@ def _cycle8_ref_names(schema: Any, names: set[str]) -> None:
             _cycle8_ref_names(item, names)
 
 
+_CYCLE8_ANCHOR_IDS = ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json")
+_CYCLE8_ANCHOR_FRAGMENTS = ("#/$defs/private", "#/$defs/pri%76ate")
+_CYCLE8_REPEAT_URI = "https://example.invalid/h.json"
+_CYCLE8_NON_STRING_IDS = (7, True, 1.5, ["child.json"], {"child": "child.json"})
+_CYCLE8_BRIDGE_DIRECTIONS = ("descriptor_to_tool", "tool_to_descriptor")
+_CYCLE8_BRIDGE_TARGETS = ("node", "root")
+_CYCLE8_BRIDGE_FIELDS = ("inputSchema", "outputSchema")
+_CYCLE8_URI_COLLISION_FIELDS = ("inputSchema", "outputSchema")
+_CYCLE8_URI_COLLISION_MODES = ("resolvable", "missing")
+_CYCLE8_DEPTH_POSITIONS = ("root", "properties", "properties_nested", "allOf", "items")
+_CYCLE8_DEPTH_ORDERS = ("defs_first", "props_first")
+_CYCLE8_DEPTH_IDS = ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json")
+_CYCLE8_DEPTH_PLACEMENTS = ("root", "holder", "both")
+_CYCLE8_DEPTH_FRAGMENTS = ("#/$defs/private", "#/$defs/pri%76ate")
+_CYCLE8_DEPTH_FIELDS = ("inputSchema", "outputSchema")
+_CYCLE8_DEPTH_CASES = tuple(
+    (position, order, identifier, placement, fragment, field)
+    for position in _CYCLE8_DEPTH_POSITIONS
+    for order in _CYCLE8_DEPTH_ORDERS
+    for identifier in _CYCLE8_DEPTH_IDS
+    for placement in _CYCLE8_DEPTH_PLACEMENTS
+    for fragment in _CYCLE8_DEPTH_FRAGMENTS
+    for field in _CYCLE8_DEPTH_FIELDS
+)
+
+
+def _cycle8_noop_pointer_descriptor(
+    *,
+    field: str,
+    slot: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+) -> dict[str, Any]:
+    """Build the cycle-8 matrix descriptor of the cycle-7 verifier.
+
+    A tool schema reaches ``localHolder`` through ``const``, ``default`` or
+    ``examples``, and ``localHolder`` declares an ``$id`` that joins to the
+    descriptor base. The inner ``$ref`` then targets ``private``, which lives
+    only in the tool schema (``local``), only in the descriptor (``outer``),
+    in both (``both``) or in neither (``none``).
+    """
+
+    target = {"type": "object", "properties": {"n": {"$ref": fragment}}}
+    holder: dict[str, Any] = {"$id": identifier, "type": "object"}
+    if slot == "examples":
+        holder["examples"] = [{"novel": 0}, {"payload": target}]
+        pointer = _cycle7_repair_pointer(
+            "$defs", "localHolder", "examples", "1", "payload"
+        )
+    else:
+        holder[slot] = {"payload": target}
+        pointer = _cycle7_repair_pointer("$defs", "localHolder", slot, "payload")
+    body: dict[str, Any] = {
+        "$id": _CYCLE7_REPAIR_ROOT,
+        "type": "object",
+        "$defs": {"localHolder": holder},
+        "$ref": pointer,
+    }
+    if placement in ("local", "both"):
+        body["$defs"]["private"] = {"type": "integer"}
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"][0][field] = body
+    if placement in ("outer", "both"):
+        document["$defs"] = {"private": {"type": "string"}}
+    return document
+
+
+def _cycle8_anchor_descriptor(
+    *,
+    field: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+) -> dict[str, Any]:
+    """A tool schema whose root ``$ref`` is the ``#hold`` anchor.
+
+    ``holder`` declares an ``$id`` that joins to the descriptor base and an
+    ``$anchor``. Its inner ``$ref`` targets ``private``, which lives only in
+    the tool schema root (``root``), only in ``holder`` (``holder``), in both
+    (``both``) or in neither (unused by this matrix).
+    """
+    holder: dict[str, Any] = {
+        "$id": identifier,
+        "$anchor": "hold",
+        "type": "object",
+        "properties": {"n": {"$ref": fragment}},
+    }
+    if placement in ("holder", "both"):
+        holder["$defs"] = {"private": {"type": "integer"}}
+    body: dict[str, Any] = {
+        "$id": _CYCLE7_REPAIR_ROOT,
+        "type": "object",
+        "$ref": "#hold",
+        "$defs": {"holder": holder},
+    }
+    if placement in ("root", "both"):
+        body["$defs"]["private"] = {"type": "integer"}
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"][0][field] = body
+    return document
+
+
+def _cycle8_repeated_id_bodies(
+    *,
+    placement: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Two schema trees that both declare the nested ``$id`` ``h.json``.
+
+    The first tree reaches its ``h`` through a root ``$ref``; the inner ``$ref``
+    targets ``t``, which lives only in the first (``first``) or only in the
+    second (``second``) tree.
+    """
+    inner_first: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+        "properties": {"n": {"$ref": "#/$defs/t"}},
+    }
+    if placement == "first":
+        inner_first["$defs"] = {"t": {"type": "integer"}}
+    inner_second: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+    }
+    if placement == "second":
+        inner_second["$defs"] = {"t": {"type": "integer"}}
+    first: dict[str, Any] = {
+        "type": "object",
+        "properties": {"a": {"$ref": "#/$defs/h"}},
+        "$defs": {"h": inner_first},
+    }
+    second: dict[str, Any] = {
+        "type": "object",
+        "$defs": {"h": inner_second},
+    }
+    return first, second
+
+
+def _cycle8_bridge_document(
+    direction: str,
+    field: str,
+    target: str,
+) -> dict[str, Any]:
+    """Descriptor and tool schema each own a distinct definition.
+
+    ``descriptor_to_tool``: the descriptor root carries a ``$ref`` whose
+    pointer enters ``tools``, the only place the target exists; ``target``
+    selects a pointer onto a tool node or onto the tool schema root.
+    ``tool_to_descriptor``: the tool schema ``$ref`` points at a definition
+    that lives only on the descriptor root.
+    """
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["type"] = "object"
+    body: dict[str, Any] = {
+        "type": "object",
+        "properties": {"n": {"$ref": "#/$defs/x"}},
+    }
+    document["tools"][0][field] = body
+    # ``x`` lives only on the descriptor root, exactly the bridge of the
+    # prereview probe G1/G2/G3: the tool reference resolves only when the
+    # descriptor resolver leaks into the tool tree.
+    document["$defs"] = {"x": {"type": "integer"}}
+    if direction == "descriptor_to_tool":
+        pointer = (
+            f"#/tools/0/{field}"
+            if target == "root"
+            else f"#/tools/0/{field}/properties/n"
+        )
+        document["$defs"]["d"] = {"$ref": pointer}
+    return document
+
+
+def _cycle8_uri_collision_document(field: str, mode: str) -> dict[str, Any]:
+    """An ``$id``-less tool schema whose nested ``$id`` spells the synthetic URI."""
+    holder: dict[str, Any] = {
+        "$id": f"urn:ocor:embedded-tool:0:{field}",
+        "type": "object",
+        "properties": {"n": {"$ref": "#/$defs/t"}},
+    }
+    if mode == "resolvable":
+        holder["$defs"] = {"t": {"type": "integer"}}
+    body: dict[str, Any] = {
+        "type": "object",
+        "properties": {"a": {"$ref": "#/$defs/h"}},
+        "$defs": {"h": holder},
+    }
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"][0][field] = body
+    return document
+
+
+def _cycle8_deep_holder() -> dict[str, Any]:
+    """The holder for the deep/lateral anchor matrix."""
+    return {
+        "$anchor": "deep",
+        "type": "object",
+        "properties": {"n": {"$ref": "#/$defs/x"}},
+    }
+
+
+def _cycle8_depth_members(
+    position: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+) -> tuple[dict[str, Any], dict[str, Any], object]:
+    """Build the keyword members, the definitions and the probe instance."""
+    holder: dict[str, Any] = {
+        "$id": identifier,
+        "$anchor": "hold",
+        "type": "object",
+        "properties": {"n": {"$ref": fragment}},
+    }
+    if placement in ("holder", "both"):
+        holder["$defs"] = {"private": {"type": "integer"}}
+    definitions: dict[str, Any] = {"holder": holder}
+    if placement in ("root", "both"):
+        definitions["private"] = {"type": "integer"}
+    if position == "root":
+        members = {"properties": {"a": {"$ref": "#hold"}}}
+        sample: object = {"a": {"n": 11}}
+    elif position == "properties":
+        members = {
+            "properties": {"w": {"type": "object", "properties": {"a": {"$ref": "#hold"}}}}
+        }
+        sample = {"w": {"a": {"n": 11}}}
+    elif position == "properties_nested":
+        members = {
+            "properties": {
+                "w": {
+                    "type": "object",
+                    "properties": {
+                        "inner": {
+                            "type": "object",
+                            "properties": {"a": {"$ref": "#hold"}},
+                        }
+                    },
+                }
+            }
+        }
+        sample = {"w": {"inner": {"a": {"n": 11}}}}
+    elif position == "allOf":
+        members = {"allOf": [{"$ref": "#hold"}]}
+        sample = {"n": 11}
+    else:
+        members = {
+            "properties": {"w": {"type": "array", "items": {"$ref": "#hold"}}}
+        }
+        sample = {"w": [{"n": 11}]}
+    return members, definitions, sample
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("fragment", ("#/$defs/private", "#/$defs/pri%76ate"))
+def test_cycle8_noop_id_local_target_resolves_through_instance_data(
+    field: str,
+    slot: str,
+    identifier: str,
+    fragment: str,
+) -> None:
+    """The inner ``$ref`` resolves the tool schema's own ``private``.
+
+    The no-op ``$id`` does not detach the embedded resource, so the local
+    definition wins and the library evaluator selects the integer, accepting
+    ``{"n": 11}`` and refusing ``{"n": "bad"}``.
+    """
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    document = _cycle8_noop_pointer_descriptor(
+        field=field,
+        slot=slot,
+        identifier=identifier,
+        placement="local",
+        fragment=fragment,
+    )
+    body = document["tools"][0][field]
+    local_registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    evaluator = Draft202012Validator(
+        body,
+        registry=local_registry,
+        _resolver=local_registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    assert evaluator.is_valid({"n": 11})
+    assert not evaluator.is_valid({"n": "bad"})
+    _validate(document)
+
+
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+def test_cycle8_noop_id_missing_target_is_rejected_for_the_right_reason(
+    slot: str,
+    identifier: str,
+) -> None:
+    """A target present in neither resource fails with the resolution reason."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(
+            _cycle8_noop_pointer_descriptor(
+                field="inputSchema",
+                slot=slot,
+                identifier=identifier,
+                placement="none",
+                fragment="#/$defs/private",
+            )
+        )
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("identifier", _CYCLE8_ANCHOR_IDS)
+@pytest.mark.parametrize("placement", ("root", "holder", "both"))
+@pytest.mark.parametrize("fragment", _CYCLE8_ANCHOR_FRAGMENTS)
+def test_cycle8_anchor_ref_follows_the_referencing_crawl(
+    field: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+) -> None:
+    """The anchor path keeps the crawl the library triggers, pointer included."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle8_anchor_descriptor(
+        field=field,
+        identifier=identifier,
+        placement=placement,
+        fragment=fragment,
+    )
+    body = document["tools"][0][field]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    validator = Draft202012Validator(
+        body,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    if placement == "root":
+        with pytest.raises(_WrappedReferencingError):
+            validator.is_valid({"n": 11})
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+    else:
+        assert validator.is_valid({"n": 11})
+        assert not validator.is_valid({"n": "bad"})
+        _validate(document)
+
+
+@pytest.mark.parametrize("member_order", ("a_first", "b_first"))
+@pytest.mark.parametrize("defs_order", ("defs_first", "props_first"))
+def test_cycle8_pointer_and_anchor_paths_are_each_resolved(
+    defs_order: str,
+    member_order: str,
+) -> None:
+    """P1: every path a reference reaches resolves, in any member order.
+
+    The same ``$id``-less holder is reached by a JSON Pointer and by an
+    anchor. The pointer path keeps the tree registry (the pointer does not
+    start a subresource), where ``#/$defs/x`` does not resolve; the anchor
+    path keeps the crawl state referencing 0.37.0 returns, where the holder
+    owns the base URI and the fragment resolves. The library rejects the
+    pointer path (``_WrappedReferencingError``), so the profile must reject
+    the descriptor with the typed resolution error, and neither the order
+    of the ``$defs`` member nor the order of the two properties may change
+    the outcome (the pre-fix profile accepted ``b`` before ``a`` with
+    ``$defs`` last, because the first context to reach the holder won).
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    holder: dict[str, Any] = {
+        "$id": "#",
+        "$anchor": "hold",
+        "type": "object",
+        "properties": {"n": {"$ref": "#/$defs/x"}},
+        "$defs": {"x": {"type": "integer"}},
+    }
+    body: dict[str, Any] = {"type": "object"}
+    pointer_member = ("a", {"$ref": "#/$defs/h"})
+    anchor_member = ("b", {"$ref": "#hold"})
+    members = (
+        [pointer_member, anchor_member]
+        if member_order == "a_first"
+        else [anchor_member, pointer_member]
+    )
+    properties = dict(members)
+    if defs_order == "defs_first":
+        body["$defs"] = {"h": holder}
+        body["properties"] = properties
+    else:
+        body["properties"] = properties
+        body["$defs"] = {"h": holder}
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"][0]["inputSchema"] = body
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    validator = Draft202012Validator(
+        body,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    with pytest.raises(_WrappedReferencingError):
+        validator.is_valid({"a": {"n": 1}})
+    assert validator.is_valid({"b": {"n": 1}})
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+@pytest.mark.parametrize("arrangement", ("two_tools", "in_out"))
+@pytest.mark.parametrize("placement", ("first", "second"))
+def test_cycle8_repeated_nested_id_resolves_in_the_current_tree(
+    arrangement: str,
+    placement: str,
+) -> None:
+    """Two trees sharing one nested ``$id`` stay separate resources."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    first, second = _cycle8_repeated_id_bodies(placement=placement)
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    if arrangement == "two_tools":
+        document["tools"] = [
+            {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+            {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+        ]
+    else:
+        document["tools"] = [
+            {"name": "t0", "inputSchema": first, "outputSchema": second},
+        ]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(first),
+    )
+    validator = Draft202012Validator(
+        first,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    if placement == "first":
+        assert validator.is_valid({"a": {"n": 11}})
+        assert not validator.is_valid({"a": {"n": "bad"}})
+        _validate(document)
+    else:
+        with pytest.raises(_WrappedReferencingError):
+            list(validator.iter_errors({"a": {"n": 11}}))
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+
+
+@pytest.mark.parametrize("placement", ("first", "second"))
+def test_cycle8_repeated_root_id_resolves_in_the_current_tree(
+    placement: str,
+) -> None:
+    """Two tool roots declaring the same ``$id`` stay separate resources."""
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    first: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+        "properties": {"a": {"$ref": "#/$defs/t"}},
+    }
+    second: dict[str, Any] = {
+        "$id": _CYCLE8_REPEAT_URI,
+        "type": "object",
+    }
+    if placement == "first":
+        first["$defs"] = {"t": {"type": "integer"}}
+    else:
+        second["$defs"] = {"t": {"type": "integer"}}
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["tools"] = [
+        {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+        {"name": "t1", "inputSchema": second, "outputSchema": {"type": "object"}},
+    ]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(first),
+    )
+    validator = Draft202012Validator(
+        first,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    if placement == "first":
+        assert validator.is_valid({"a": 11})
+        assert not validator.is_valid({"a": "bad"})
+        _validate(document)
+    else:
+        with pytest.raises(_WrappedReferencingError):
+            list(validator.iter_errors({"a": 11}))
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+
+
+@pytest.mark.parametrize("field", _CYCLE8_URI_COLLISION_FIELDS)
+@pytest.mark.parametrize("mode", _CYCLE8_URI_COLLISION_MODES)
+def test_cycle8_synthetic_uri_avoids_declared_id_collisions(
+    field: str,
+    mode: str,
+) -> None:
+    """A declared ``$id`` that spells the candidate base URI is not a crash.
+
+    P4 of the prereview: ``_synthetic_tool_uri`` reads every declared
+    ``$id`` and picks a URI that collides with none, so the tool schema
+    keeps an autonomous base. The inner reference resolves in the nested
+    resource when its target exists and fails with the resolution reason
+    otherwise; referencing 0.37.0 on the schema alone gives the same
+    outcome for both.
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle8_uri_collision_document(field=field, mode=mode)
+    body = document["tools"][0][field]
+    registry = Registry().with_resource(
+        "urn:ocor:probe:0",
+        DRAFT202012.create_resource(body),
+    )
+    validator = Draft202012Validator(
+        body,
+        registry=registry,
+        _resolver=registry.resolver("urn:ocor:probe:0"),
+    )
+    if mode == "resolvable":
+        assert validator.is_valid({"a": {"n": 11}})
+        assert not validator.is_valid({"a": {"n": "bad"}})
+        _validate(document)
+    else:
+        with pytest.raises(_WrappedReferencingError):
+            validator.is_valid({"a": {"n": 11}})
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+
+
+@pytest.mark.parametrize("defs_order", ("wrap_first", "x_first"))
+def test_cycle8_deep_lateral_anchor_resolves_in_any_defs_order(
+    defs_order: str,
+) -> None:
+    """A deep anchor target resolves its own pointer in any ``$defs`` order.
+
+    P3 of the prereview: depth and member order do not change the outcome.
+    The anchor ``deep`` sits two levels under the root, inside the same
+    resource, and the referenced definition ``x`` lives beside the wrapper.
+    """
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    holder = _cycle8_deep_holder()
+    definitions = {
+        "wrap": {"type": "object", "$defs": {"h": holder}},
+        "x": {"type": "integer"},
+    }
+    if defs_order == "x_first":
+        definitions = dict(reversed(list(definitions.items())))
+    body: dict[str, Any] = {
+        "$id": _CYCLE7_REPAIR_ROOT,
+        "type": "object",
+        "properties": {"a": {"$ref": "#deep"}},
+        "$defs": definitions,
+    }
+    document = _bare_descriptor()
+    document["tools"][0]["inputSchema"] = body
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    validator = Draft202012Validator(
+        body,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    assert validator.is_valid({"a": {"n": 11}})
+    assert not validator.is_valid({"a": {"n": "bad"}})
+    _validate(document)
+
+
+@pytest.mark.parametrize("member_order", ("pointer_first", "anchor_first"))
+def test_cycle8_deep_pointer_and_anchor_paths_keep_the_library_outcome(
+    member_order: str,
+) -> None:
+    """A deep pointer path and an anchor path reach the same holder.
+
+    The pointer path keeps the tree registry, where ``#/$defs/x`` does not
+    resolve; the anchor path would keep the crawl state. The library
+    rejects the descriptor because the pointer path exists, and the
+    profile must too, in any member order (P3 of the prereview).
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    holder = _cycle8_deep_holder()
+    holder["$id"] = "#"
+    holder["$defs"] = {"x": {"type": "integer"}}
+    pointer_member = ("p", {"$ref": "#/$defs/wrap/h"})
+    anchor_member = ("a", {"$ref": "#deep"})
+    members = (
+        [pointer_member, anchor_member]
+        if member_order == "pointer_first"
+        else [anchor_member, pointer_member]
+    )
+    body: dict[str, Any] = {
+        "$id": _CYCLE7_REPAIR_ROOT,
+        "type": "object",
+        "properties": dict(members),
+        "$defs": {"wrap": {"type": "object", "$defs": {"h": holder}}},
+    }
+    document = _bare_descriptor()
+    document["tools"][0]["inputSchema"] = body
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    validator = Draft202012Validator(
+        body,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    with pytest.raises(_WrappedReferencingError):
+        list(validator.iter_errors({"p": {"n": 11}, "a": {"n": 11}}))
+    with pytest.raises(profile.McpProfileError, match="does not resolve"):
+        _validate(document)
+
+
+@pytest.mark.parametrize(
+    ("position", "order", "identifier", "placement", "fragment", "field"),
+    _CYCLE8_DEPTH_CASES,
+    ids=[
+        f"{position}-{order}-{identifier}-{placement}-{fragment}-{field}"
+        for position, order, identifier, placement, fragment, field in _CYCLE8_DEPTH_CASES
+    ],
+)
+def test_cycle8_depth_and_order_differential_matches_the_library(
+    position: str,
+    order: str,
+    identifier: str,
+    placement: str,
+    fragment: str,
+    field: str,
+) -> None:
+    """Generated differential: anchor depth and member order never diverge.
+
+    P3 of the prereview OCOR-DEV-REM-0063-d2e922ecb7c3-pre. The ``#hold``
+    entry point sits at the root, one level down, two levels down, inside
+    ``allOf`` or inside ``items``, with ``$defs`` before or after the
+    keyword that carries it; the holder declares each no-op ``$id`` and
+    ``private`` lives in the root, in the holder or in both. referencing
+    0.37.0 resolves or rejects the schema alone, and the profile must
+    follow it in every case. RED on the pre-fix head: 80 cases accepted by
+    the library are rejected by the profile.
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    members, definitions, sample = _cycle8_depth_members(
+        position=position,
+        identifier=identifier,
+        placement=placement,
+        fragment=fragment,
+    )
+    body: dict[str, Any] = {"$id": _CYCLE7_REPAIR_ROOT, "type": "object"}
+    if order == "defs_first":
+        body["$defs"] = definitions
+        body.update(members)
+    else:
+        body.update(members)
+        body["$defs"] = definitions
+    document = _bare_descriptor()
+    document["tools"][0][field] = body
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(body),
+    )
+    validator = Draft202012Validator(
+        body,
+        registry=registry,
+        _resolver=registry.resolver(_CYCLE7_REPAIR_ROOT),
+    )
+    try:
+        list(validator.iter_errors(sample))
+        oracle_resolves = True
+    except _WrappedReferencingError:
+        oracle_resolves = False
+    try:
+        _validate(document)
+    except profile.McpProfileError as exc:
+        assert not oracle_resolves, (
+            position,
+            order,
+            identifier,
+            placement,
+            fragment,
+            field,
+            exc,
+        )
+        assert "does not resolve" in str(exc)
+    else:
+        assert oracle_resolves, (
+            position,
+            order,
+            identifier,
+            placement,
+            fragment,
+            field,
+        )
+
+
+@pytest.mark.parametrize("bad_id", _CYCLE8_NON_STRING_IDS)
+@pytest.mark.parametrize(
+    "where",
+    ("descriptor_root", "descriptor_defs", "tool_root", "tool_defs"),
+)
+def test_cycle8_non_string_schema_id_is_typed(
+    bad_id: object,
+    where: str,
+) -> None:
+    """P3: a non-string ``$id`` at a schema position is a typed rejection.
+
+    The pinned crawl raises on a non-string ``$id`` and the profile must
+    translate it to ``MCP schema resource index is not resolvable``; a raw
+    library exception must never escape the module, and the failure must
+    not silently treat the identifier as absent. The ``descriptor_defs``
+    placement plants the bad ``$id`` under the descriptor ``$defs``:
+    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15) refuses every
+    descriptor with top-level ``$defs`` before resolution, so that
+    placement now expects the typed top-level refusal (old expectation:
+    ``resource index is not resolvable``). The ``descriptor_root``
+    placement is no longer a schema position: the descriptor is not a
+    schema tree, so its root ``$id`` is not inspected and the descriptor
+    is accepted (old expectation: typed ``resource index is not
+    resolvable``).
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _bare_descriptor()
+    if where == "descriptor_root":
+        document["$id"] = bad_id
+        _validate(document)
+        return
+    elif where == "descriptor_defs":
+        document["$id"] = _CYCLE7_REPAIR_ROOT
+        document["$defs"] = {"bad": {"$id": bad_id, "type": "object"}}
+        match = r"top-level \$defs"
+    elif where == "tool_root":
+        document["tools"][0]["inputSchema"] = {
+            "$id": bad_id,
+            "type": "object",
+        }
+        match = "resource index is not resolvable"
+    else:
+        document["tools"][0]["inputSchema"] = {
+            "type": "object",
+            "$defs": {"bad": {"$id": bad_id, "type": "object"}},
+        }
+        match = "resource index is not resolvable"
+    with pytest.raises(profile.McpProfileError, match=match):
+        _validate(document)
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("fragment", ("#/$defs/private", "#/$defs/pri%76ate"))
+def test_cycle8_noop_id_outer_target_is_refused_as_top_level_defs(
+    field: str,
+    slot: str,
+    identifier: str,
+    fragment: str,
+) -> None:
+    """The ``outer`` placement is refused as top-level ``$defs``, before any fallback.
+
+    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15): the descriptor must
+    not declare top-level ``$defs``, so the placement where ``private``
+    lives only in the descriptor is refused with the typed top-level error
+    (old expectation: the resolution reason ``does not resolve``). A miss
+    in the tool schema can never leak into another tree.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+        _validate(
+            _cycle8_noop_pointer_descriptor(
+                field=field,
+                slot=slot,
+                identifier=identifier,
+                placement="outer",
+                fragment=fragment,
+            )
+        )
+
+
+@pytest.mark.parametrize("field", ("inputSchema", "outputSchema"))
+@pytest.mark.parametrize("slot", ("const", "default", "examples"))
+@pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
+@pytest.mark.parametrize("fragment", ("#/$defs/private", "#/$defs/pri%76ate"))
+def test_cycle8_noop_id_two_targets_are_refused_as_top_level_defs(
+    field: str,
+    slot: str,
+    identifier: str,
+    fragment: str,
+) -> None:
+    """The ``both`` placement is refused as top-level ``$defs``.
+
+    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15): a descriptor that
+    declares top-level ``$defs`` is refused, so the former acceptance —
+    the tool schema's own ``private`` winning over the descriptor copy —
+    becomes the typed top-level refusal (old expectation: accepted).
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+        _validate(
+            _cycle8_noop_pointer_descriptor(
+                field=field,
+                slot=slot,
+                identifier=identifier,
+                placement="both",
+                fragment=fragment,
+            )
+        )
+
+
+@pytest.mark.parametrize("placement", ("first", "second"))
+def test_cycle8_repeated_nested_descriptor_defs_are_refused_as_top_level_defs(
+    placement: str,
+) -> None:
+    """Descriptor ``$defs`` with the repeated ``$id`` are refused, not ignored.
+
+    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15): a descriptor with
+    top-level ``$defs`` is refused before resolution, so both placements
+    now expect the typed top-level refusal (old expectation: acceptance
+    for ``first``, ``does not resolve`` for ``second``). The resource
+    independence demonstrated by the library oracle is unchanged.
+    """
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    first, second = _cycle8_repeated_id_bodies(placement=placement)
+    first.pop("properties", None)
+    document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    document["$defs"] = {"h": second["$defs"]["h"]}
+    document["tools"] = [
+        {"name": "t0", "inputSchema": first, "outputSchema": {"type": "object"}},
+    ]
+    registry = Registry().with_resource(
+        _CYCLE7_REPAIR_ROOT,
+        DRAFT202012.create_resource(first),
+    )
+    entered = registry.resolver(_CYCLE7_REPAIR_ROOT).lookup("#/$defs/h")
+    if placement == "first":
+        target = entered.resolver.lookup("#/$defs/t").contents
+        Draft202012Validator.check_schema(target)
+    else:
+        with pytest.raises(Exception):
+            entered.resolver.lookup("#/$defs/t")
+    with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+        _validate(document)
+
+
+@pytest.mark.parametrize("direction", _CYCLE8_BRIDGE_DIRECTIONS)
+@pytest.mark.parametrize("target", _CYCLE8_BRIDGE_TARGETS)
+@pytest.mark.parametrize("field", _CYCLE8_BRIDGE_FIELDS)
+def test_cycle8_descriptor_tool_bridge_is_rejected_in_both_directions(
+    direction: str,
+    field: str,
+    target: str,
+) -> None:
+    """No ``$ref`` crosses the boundary between descriptor and tool schema.
+
+    MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the descriptor and every tool
+    schema are autonomous resources; a descriptor ``$ref`` whose pointer
+    enters a tool node does not resolve, and a tool ``$ref`` never sees
+    descriptor definitions. MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE
+    (2026-11-15): the descriptor planted by this test declares top-level
+    ``$defs``, so the profile now refuses it with the typed top-level
+    error before resolution (old expectation: ``does not resolve``). The
+    library oracle still rejects both directions on the resource taken
+    alone.
+    """
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    document = _cycle8_bridge_document(
+        direction=direction,
+        field=field,
+        target=target,
+    )
+    if direction == "descriptor_to_tool":
+        pointer = (
+            f"#/tools/0/{field}"
+            if target == "root"
+            else f"#/tools/0/{field}/properties/n"
+        )
+        pruned = {key: value for key, value in document.items() if key != "tools"}
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(pruned),
+        )
+        with pytest.raises(Unresolvable):
+            registry.resolver(_CYCLE7_REPAIR_ROOT).lookup(pointer)
+    else:
+        body = document["tools"][0][field]
+        registry = Registry().with_resource(
+            _CYCLE7_REPAIR_ROOT,
+            DRAFT202012.create_resource(body),
+        )
+        with pytest.raises(Unresolvable):
+            registry.resolver(_CYCLE7_REPAIR_ROOT).lookup("#/$defs/x")
+    with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+        _validate(document)
+
+
 def test_cycle8_generated_descriptor_has_no_top_level_defs_and_passes_the_profile() -> None:
     """The generated descriptor passes the profile and declares no top-level ``$defs``."""
     document, _ = _descriptor()
