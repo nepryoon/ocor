@@ -9318,3 +9318,13 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - Il validatore del piano non è stato modificato dopo `d215c7d2c1dcbbae1cbaddf829e36d1de9625ba7`: le tre riqualifiche di 0005, 0050 e 0082 restano a quel commit. I manifest non sono stati riscritti.
 - Questa voce sta sul branch di remediation. Non è uno state sync da `origin/main`. La PR #616 non va mergiata. Non integrare #595, #599 o #614. Non avviare OCOR-DEV-REM-0060 né l'unità del punto 5 prima di `GO_FOR_EVIDENCE_SEAL`.
 - Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO. Nessun nuovo DEC.
+
+## 2026-11-16T10:14:04Z — OCOR-DEV-REM-0063 repair cycle 8 awaiting verification
+
+- Decisione `REM-0063-CICLI-8-9-GROK` (2026-11-16): l'implementatore del ciclo 8 è Grok Build, grok-4.7, xAI, effort xhigh. DeepSeek resta implementatore fino a `a3965ed45cd41435226fd338c3da7697e4e846bf`. Il verifier finale è Codex, OpenAI.
+- Codice `53c2e3d50f7d3d74677dde695dd89bdd079961f0`: ripristino dei tre match di rifiuto tipizzati. Nessuna modifica di produzione in questo completamento.
+- PRE-CAMPAIGN-GATE su `3b88cb0a223eee6ad01960561e22c1c44b9e8a6a`: 51 PASS, 6 NOT_EXECUTED, 0 FAIL, 104.355 s. `git diff --check` exit 2 sulla riga vuota della fixture pinnata `schema.json:3963`, non dichiarato verde, disposition `OPEN_PO_DECISION_REQUIRED`. Nessun nuovo DEC.
+- Campagna qualificante `3b88cb0a223e-1794819587`, FOUR_LANE, 7497 test, 0 skip, 1685.581 s, unione esatta, residui host vuoti. Pull residui prima dell'avvio: 100 su soglia 95, attesa 0. Reset host PASS.
+- Controllo distinto `3b88cb0a223e-1794823495`, FOUR_LANE, 410 test, 0 skip, 353.723 s. Pull residui: 43 alle 09:28Z, attesa 2105 s, poi 100 alle 10:04Z, soglia 50.
+- Riqualifica 0005+0050+0082: 214 passed in 4.91 s. `test_ocor_dev_rem_0047.py`: 25 passed in 6.19 s. Entrambi su `3b88cb0a`.
+- Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO. Non integrare. Non avviare il verifier da questo processo.
