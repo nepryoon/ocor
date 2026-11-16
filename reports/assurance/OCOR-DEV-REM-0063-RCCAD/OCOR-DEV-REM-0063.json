@@ -28,7 +28,7 @@
   "artifact_digests": {
     "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.log": "555e432366b81ca4c61881c03adad82818289b9419fceb3800d73a6d2965e7c1",
     "reports/assurance/OCOR-DEV-REM-0063-RCCAD/execution-commit-inputs.log": "40468c28c79589396a5a066900dee24932210a8fa31c7f73f1883d31b6cd9f31",
-    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/green.log": "555e432366b81ca4c61881c03adad82818289b9419fceb3800d73a6d2965e7c1",
+    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/green.log": "99e730191cb1c00b52ba3e9e80f1af9f61341cefb55afad91b663faa1bb5437e",
     "reports/assurance/OCOR-DEV-REM-0063-RCCAD/pre-campaign.log": "630be898815d61d9b1d456e865678e1793026cc925f6ace068d27602c1ca9908",
     "reports/assurance/OCOR-DEV-REM-0063-RCCAD/red.log": "c32c7bf5ff7db9b3bd044e4aeba03f8c0cc9e34440a72e67fb284f6ee879b0e4"
   },
@@ -180,7 +180,7 @@
       "committed_sha256": "555e432366b81ca4c61881c03adad82818289b9419fceb3800d73a6d2965e7c1",
       "exit_code": 0,
       "failed": 0,
-      "note": "raw_sha256 carries the digest of the committed green.log. The three raw run logs are preserved content-addressed outside the repository: ~/.ocor-codex/rem-0063/preserved/cycle8-p1p2-restored/green-run1.raw.log (bd8e10fadca4...), green-run2.raw.log (6f6028b3a15f...) and green-run3.raw.log (96435261084c...). The green.log artifact was regenerated on the cycle-8 P1P2 test-restoration head a3965ed45cd41435226fd338c3da7697e4e846bf (1671 passed, three runs, no skips); the previous bytes remain verifiable in git history and the digest above now carries the regenerated artifact.",
+      "note": "raw_sha256 555e432366b81ca4c61881c03adad82818289b9419fceb3800d73a6d2965e7c1 is the green.log blob at 53c2e3d50f7d3d74677dde695dd89bdd079961f0 before the match-restoration append, and the unchanged bytes of OCOR-DEV-REM-0063.log. It is not the digest of green.log after that append. The three raw run logs remain at ~/.ocor-codex/rem-0063/preserved/cycle8-p1p2-restored/green-run1.raw.log (bd8e10fadca4...), green-run2.raw.log (6f6028b3a15f...) and green-run3.raw.log (96435261084c...). The green.log artifact was regenerated on a3965ed45cd41435226fd338c3da7697e4e846bf; those bytes stayed 555e4323... until the append.",
       "passed": 1170,
       "raw_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/edfe829/green.run1.raw",
       "raw_preserved_sha256": "bd8e10fadca47c70af2062209019e41761d955eedf17bccb6ece6e8df9e801ff",
@@ -203,15 +203,27 @@
       "committed_sha256": "555e432366b81ca4c61881c03adad82818289b9419fceb3800d73a6d2965e7c1",
       "exit_code": 0,
       "failed": 0,
-      "note": "committed_sha256 carries the digest of the committed green.log (identical bytes in OCOR-DEV-REM-0063.log). The three raw run logs are preserved content-addressed outside the repository: ~/.ocor-codex/rem-0063/preserved/cycle8-p1p2-restored/green-run1.raw.log (bd8e10fadca4...), green-run2.raw.log (6f6028b3a15f...) and green-run3.raw.log (96435261084c...).",
+      "note": "committed_sha256 and raw_sha256 are the green.log bytes at 53c2e3d50f7d3d74677dde695dd89bdd079961f0 before the match-restoration append. Those bytes are still OCOR-DEV-REM-0063.log. The current green.log artifact appends the three 53c2e3d5 runs and its digest is 99e730191cb1c00b52ba3e9e80f1af9f61341cefb55afad91b663faa1bb5437e. The three raw logs of this command stay at ~/.ocor-codex/rem-0063/preserved/cycle8-p1p2-restored/green-run1.raw.log (bd8e10fadca4...), green-run2.raw.log (6f6028b3a15f...) and green-run3.raw.log (96435261084c...).",
       "passed": 1671,
       "raw_sha256": "555e432366b81ca4c61881c03adad82818289b9419fceb3800d73a6d2965e7c1",
       "skipped": 0,
       "status": "PASS"
+    },
+    {
+      "command": "pytest of ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py at 53c2e3d50f7d3d74677dde695dd89bdd079961f0 after restoring the three typed refusal matches, three consecutive runs: 1671 passed each, no skips. Preserved logs: cycle8-grok-match/green-1.log, green-2.log, green-3.log.",
+      "committed_sha256": "99e730191cb1c00b52ba3e9e80f1af9f61341cefb55afad91b663faa1bb5437e",
+      "exit_code": 0,
+      "failed": 0,
+      "note": "committed_sha256 and raw_sha256 are the digest of the appended green.log (section GREEN MATCH-RESTORATION RUNS OF 53c2e3d5). The three raw logs stay at /home/luca/.ocor-codex/rem-0063/preserved/cycle8-grok-match/ (green-1.log 050703a50e2c85686a691cfcafccefac832118de4f437b2aed6f74ceaeceed5e, green-2.log a767a94cbace65c4d56f14a6a858828671d15af5e890ea548b3f1f9ed9a81d9c, green-3.log a0fc169da78a1c53f2da462808264f54c55b3754c5705819162d0e0055fa3342). Trailing whitespace from pytest progress lines was stripped in the committed append.",
+      "passed": 1671,
+      "raw_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/cycle8-grok-match/",
+      "raw_sha256": "99e730191cb1c00b52ba3e9e80f1af9f61341cefb55afad91b663faa1bb5437e",
+      "skipped": 0,
+      "status": "PASS"
     }
   ],
-  "commit": "ff6c6f586f7b5af00c981b7e91341c4b9aec1582",
-  "commit_role": "Cycle-8 code, the restored test corpus and the RED/GREEN evidence are a3965ed45cd41435226fd338c3da7697e4e846bf. The record is bound to ff6c6f586f7b5af00c981b7e91341c4b9aec1582, which adds on top of a3965ed45cd41435226fd338c3da7697e4e846bf the record re-anchoring (inputs, cell scan, role-coherence scan, execution-commit check) and the planning validator self-hash settle for the validator changed in this cycle. Every input digest matches ff6c6f586f7b5af00c981b7e91341c4b9aec1582; inputs/ is unchanged. The qualifying serial campaign f72a324e25ed-1794759063 qualified the pre-repair head f72a324e25ed72fd58f688bf365058bc40555f11 and must be re-run on the post-prereview head, together with the distinct check, before verification.",
+  "commit": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
+  "commit_role": "Cycle-8 code head after restoring the typed refusal matches. The evidence anchor that cites this commit is the following commit.",
   "created_at": "2026-11-13T23:11:16Z",
   "environment": {
     "arch": "x86_64",
@@ -376,45 +388,72 @@
   },
   "execution_commit_digest_check": {
     "checked_artifacts": 5,
-    "checked_inputs": 38,
-    "checked_records": 4,
-    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit ff6c6f586f7b5af00c981b7e91341c4b9aec1582 --record reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json ; ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 3de8493e07b60f42e35836899dd3f9e8d65498a0 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json",
+    "checked_inputs": 16,
+    "checked_records": 1,
+    "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 53c2e3d50f7d3d74677dde695dd89bdd079961f0 --record reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json",
     "exit_code": 0,
     "findings": 0,
-    "head_at_check": "ff6c6f586f7b5af00c981b7e91341c4b9aec1582",
-    "note": "The unit record is checked at the binding head ff6c6f586f7b5af00c981b7e91341c4b9aec1582, which carries the record-anchoring and planning self-hash settle on top of the cycle-8 code head a3965ed45cd41435226fd338c3da7697e4e846bf; the three regression requalifications keep their declared commit 3de8493e07b60f42e35836899dd3f9e8d65498a0 and are checked at that commit. Both invocations PASS with zero findings; the combined stdout is committed as reports/assurance/OCOR-DEV-REM-0063-RCCAD/execution-commit-inputs.log with its sha256 in artifact_digests.",
-    "requalifications": {
-      "checked_artifacts": 0,
-      "checked_inputs": 22,
-      "checked_records": 3,
-      "execution_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
+    "head_at_check": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
+    "note": "PASS on the working tree at 53c2e3d50f7d3d74677dde695dd89bdd079961f0 before the evidence commit that records this check. The checker does not hash the record. The in-repository execution-commit-inputs.log stays the historical ff6c6f586f7b5af00c981b7e91341c4b9aec1582 invocation: that file shows rc_unit=1 because it captured the log digest settle, and its file sha256 40468c28c79589396a5a066900dee24932210a8fa31c7f73f1883d31b6cd9f31 still matches artifact_digests. This invocation is not written into that log, because replacing the log would change its digest. The regression requalification records are not part of this invocation; they still declare 3de8493e07b60f42e35836899dd3f9e8d65498a0 and are re-run on this head. payload is the checker stdout.",
+    "payload": {
+      "checked_artifacts": 5,
+      "checked_inputs": 16,
+      "checked_records": 1,
+      "execution_commit": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
       "findings": [],
-      "head": "ff6c6f586f7b5af00c981b7e91341c4b9aec1582",
+      "head": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
       "records": [
         {
-          "declared_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
-          "inputs_checked": 10,
-          "path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json"
-        },
-        {
-          "declared_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
-          "inputs_checked": 8,
-          "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json"
-        },
-        {
-          "declared_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
-          "inputs_checked": 4,
-          "path": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json"
+          "declared_commit": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
+          "inputs_checked": 16,
+          "path": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json"
         }
       ],
       "status": "PASS"
+    },
+    "status": "PASS",
+    "superseded_ff6c6f58": {
+      "checked_artifacts": 5,
+      "checked_inputs": 38,
+      "checked_records": 4,
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit ff6c6f586f7b5af00c981b7e91341c4b9aec1582 --record reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json ; ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 3de8493e07b60f42e35836899dd3f9e8d65498a0 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json",
+      "exit_code": 0,
+      "findings": 0,
+      "head_at_check": "ff6c6f586f7b5af00c981b7e91341c4b9aec1582",
+      "note": "The unit record is checked at the binding head ff6c6f586f7b5af00c981b7e91341c4b9aec1582, which carries the record-anchoring and planning self-hash settle on top of the cycle-8 code head a3965ed45cd41435226fd338c3da7697e4e846bf; the three regression requalifications keep their declared commit 3de8493e07b60f42e35836899dd3f9e8d65498a0 and are checked at that commit. Both invocations PASS with zero findings; the combined stdout is committed as reports/assurance/OCOR-DEV-REM-0063-RCCAD/execution-commit-inputs.log with its sha256 in artifact_digests.",
+      "requalifications": {
+        "checked_artifacts": 0,
+        "checked_inputs": 22,
+        "checked_records": 3,
+        "execution_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
+        "findings": [],
+        "head": "ff6c6f586f7b5af00c981b7e91341c4b9aec1582",
+        "records": [
+          {
+            "declared_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
+            "inputs_checked": 10,
+            "path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json"
+          },
+          {
+            "declared_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
+            "inputs_checked": 8,
+            "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json"
+          },
+          {
+            "declared_commit": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
+            "inputs_checked": 4,
+            "path": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json"
+          }
+        ],
+        "status": "PASS"
+      }
     }
   },
   "implementer": {
     "agent": "Grok Build",
     "model": "grok-4.7",
     "provider": "xAI",
-    "scope": "OCOR-DEV-REM-0063 original cycle and repair cycles 1, 2, 3, 4, 5 and 6. Implementer Grok Build, grok-4.7, xAI. Cycle 7 is Codex CLI, deepseek-flash, DeepSeek, effort max. Cycle 8 is Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The verifier is not xAI, not Google, not DeepSeek and not Anthropic."
+    "scope": "OCOR-DEV-REM-0063 original cycle and repair cycles 1, 2, 3, 4, 5 and 6: Grok Build, grok-4.7, xAI. Cycle 7: Codex CLI, deepseek-flash, DeepSeek, effort max. Cycle 8: Codex CLI, deepseek-v4-pro, DeepSeek, effort max, through a3965ed45cd41435226fd338c3da7697e4e846bf; completion of cycle 8 from that head: Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). The final verifier is Codex, OpenAI, a different vendor from xAI, DeepSeek and Anthropic."
   },
   "input_robustness_self_check": {
     "applied_sections": [
@@ -1478,7 +1517,7 @@
     "ocor-runtime/tests/fixtures/mcp/2026-07-28/changelog.mdx": "b327e576f4c96b34e92f338f8ffefc35e13d0e953ab76bdb3aab342d104c8e53",
     "ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json": "edbb197ed0f92e90d658866e23cf76f107df0caac5ce25c2b9e64e1ca9a6314a",
     "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py": "305ffc90c9ec090f5ed05bd2d2f7109811ffbf3c095ad2c487d592d0c7d60701",
-    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py": "8554cbe17c52493086040802d5d5da323c1ba88ccc2ecc0414d7ff2130c9a8f1",
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py": "0c6d7fd1262e7d3109b58d5dfd026ddfd29395c88e38d2d94fbc2a4272403d3d",
     "reports/planning/OCOR_PLAN_RUN_STATE.json": "044c160af59bc256172a73e44b0a73b744584a9ab51630cdb97c712fe92ca368",
     "reports/tests/test_check_execution_commit_inputs.py": "286b458aa06cc40d58165d0b64c035b47ca4f2d0042cb487940f61d6e067237f",
     "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json": "efaedb5495e35bf5e292f3c10c4b0acdcd05314d46519778b77820472f396b3e",
@@ -1655,7 +1694,7 @@
       {
         "disposition": "FIXED",
         "finding": "P1",
-        "row": "test_expectation_changes now enumerates one-by-one all 21 existing tests whose body still differs from 66b92cdb137353c1d36792e1b6163941fe5a7e01, each with old_expectation, new_expectation and the authorizing clause (a)/(b)/(c) of the two governed decisions (19 added in this round; test_cycle8_descriptor_tool_bridge_is_rejected_in_both_directions and test_cycle8_non_string_schema_id_is_typed were already listed). 14 further tests are restored verbatim to their 66b92cd bodies and appended to restored_verbatim (24 total with the ten of the previous round). An AST function-by-function comparison of 66b92cd..HEAD over the test module shows no test function whose body changed outside this enumeration. RED and GREEN regenerated on the final restored module."
+        "row": "test_expectation_changes now enumerates one-by-one all 21 existing tests whose body still differs from 66b92cdb137353c1d36792e1b6163941fe5a7e01, each with old_expectation, new_expectation and the authorizing clause (a)/(b)/(c) of the two governed decisions (19 added in this round; test_cycle8_descriptor_tool_bridge_is_rejected_in_both_directions and test_cycle8_non_string_schema_id_is_typed were already listed). 14 further tests are restored verbatim to their 66b92cd bodies and appended to restored_verbatim (24 total with the ten of the previous round). An AST function-by-function comparison of 66b92cd..HEAD over the test module shows no test function whose body changed outside this enumeration. RED and GREEN regenerated on the final restored module. Commit 53c2e3d50f7d3d74677dde695dd89bdd079961f0 then restores the typed match on test_cycle6_hash_id_does_not_hide_a_non_schema_current_resource, test_cycle7_empty_pointer_uses_the_effective_resource and test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison; three task-suite runs on that tree passed 1671, 1671 and 1671 with no skips."
       },
       {
         "disposition": "FIXED",
@@ -1673,10 +1712,11 @@
         "row": "Invariant: the explicit gate `git diff --check <base>..<head>` exits 2 because the pinned byte-exact official fixture ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json ends with a blank line at EOF (schema.json:3963: new blank line at EOF.); the real gate outcome is recorded, never declared green. A fix would change a pinned digest and needs a governed disposition (decision request); no test, gate, timer, digest or fixture was changed in this cycle."
       }
     ],
-    "outcome_sha256": null,
+    "outcome_sha256": "bc1f74ed9a8359a94faed41005e9bb8151d5f53b883be98ac5c752893991cc8f",
     "pre_campaign_gate_head": "ff6c6f586f7b5af00c981b7e91341c4b9aec1582",
     "repair_commits": [
-      "a3965ed45cd41435226fd338c3da7697e4e846bf"
+      "a3965ed45cd41435226fd338c3da7697e4e846bf",
+      "53c2e3d50f7d3d74677dde695dd89bdd079961f0"
     ],
     "request_id": "OCOR-DEV-REM-0063-23e92ef60dd8-pre",
     "result": "BLOCKING_FINDINGS",
@@ -1689,7 +1729,7 @@
       "provider": "xAI",
       "reserve": true
     },
-    "second_review": "The cycle-8 second preventive review OCOR-DEV-REM-0063-23e92ef60dd8-pre reviewed head 23e92ef60dd86d531a70682dd1632bc62d08f9e0 (code a3965ed45cd41435226fd338c3da7697e4e846bf) and returned BLOCKING_FINDINGS (P1-P2 blocking, P3-P4 advisory). This record closes P1 and P2 (the P1P2 test-restoration commit restores the 14 authorized verbatim bodies and enumerates the 21 expectation changes one-by-one), re-anchors P3 on the new head and keeps P4 OPEN_PO_DECISION_REQUIRED (VF-002, pinned byte-exact official fixture). A new preventive review on the cycle-8 P1P2-restoration evidence head is requested through prereview_request.json and is PENDING; the loop launches the reviewer (IMPLEMENTATORE-SENZA-AGENTI (2026-11-15)). A new qualifying campaign and distinct check are required on that head after the review."
+    "second_review": "OCOR-DEV-REM-0063-23e92ef60dd8-pre reviewed head 23e92ef60dd86d531a70682dd1632bc62d08f9e0 (code 3de8493e07b60f42e35836899dd3f9e8d65498a0) and returned BLOCKING_FINDINGS (P1 and P2 blocking, P3 and P4 advisory). Outcome file sha256 bc1f74ed9a8359a94faed41005e9bb8151d5f53b883be98ac5c752893991cc8f. Reviewer: Cursor CLI, cursor-grok-4.6-xhigh, xAI, reserve. P1 and P2 are corrected at a3965ed45cd41435226fd338c3da7697e4e846bf (14 verbatim bodies restored, 21 expectation changes listed one by one) and at 53c2e3d50f7d3d74677dde695dd89bdd079961f0 (three refusal matches restored to the typed profile reason, so a different McpProfileError cannot pass). P3 stays a record re-anchor on the production head a3965ed45cd41435226fd338c3da7697e4e846bf; 53c2e3d5 changes only tests. P4 stays OPEN_PO_DECISION_REQUIRED: git diff --check exits 2 on the pinned fixture blank line and is not declared green. PRE-CAMPAIGN-REVIEW (2026-10-26) point 3: no further preventive review after this correction. The qualifying campaign and the distinct check run on this code head."
   },
   "preventive_review_history": [
     {
@@ -2727,8 +2767,8 @@
   },
   "repair_cycle_8": {
     "campaign_requalification": {
-      "head": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
-      "reason": "The cycle-8 code changed after the campaign f72a324e25ed-1794759063 and the distinct check f72a324e25ed-1794763318 (preventive-review findings P1-P3 of OCOR-DEV-REM-0063-e2efce6f3dfa-pre), and the test corpus was then restored per MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15) point 3 on the head 3de8493e07b60f42e35836899dd3f9e8d65498a0. The regression-only requalifications of OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 were re-run on that head (214 passed, records updated, drift validator PASS); the qualifying campaign and the distinct check must be re-run on the post-prereview head.",
+      "head": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
+      "reason": "Preventive review OCOR-DEV-REM-0063-23e92ef60dd8-pre returned BLOCKING_FINDINGS. The corrections are a3965ed45cd41435226fd338c3da7697e4e846bf and 53c2e3d50f7d3d74677dde695dd89bdd079961f0. PRE-CAMPAIGN-REVIEW (2026-10-26) point 3 does not ask for another review. The qualifying campaign, the distinct check and the regression requalifications of OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 run on 53c2e3d50f7d3d74677dde695dd89bdd079961f0 and are not transferred from earlier heads.",
       "regression_requalifications_rerun": {
         "head": "3de8493e07b60f42e35836899dd3f9e8d65498a0",
         "log_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/cycle8-generator-restored/regression_rem0063.log",
@@ -2737,10 +2777,10 @@
         "status": "PASS"
       },
       "required": true,
-      "status": "PENDING_PREREVIEW"
+      "status": "PENDING_CAMPAIGN"
     },
-    "code_commit": "a3965ed45cd41435226fd338c3da7697e4e846bf",
-    "decision": "REM-0063-CYCLE7-NO-GO (2026-11-15) point 4, cycle 8",
+    "code_commit": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
+    "decision": "REM-0063-CYCLE7-NO-GO (2026-11-15) point 4, cycle 8; MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15); MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15); REM-0063-CICLI-8-9-GROK (2026-11-16)",
     "decision_commit": "c515db74eed0f10e7a08f3434898cc47bad2efab",
     "decision_sha256": "f642f1ae719c4645827db2b19f09e7e2f578bfa8f63c2a7aedeb02010508066f",
     "distinct_check": {
@@ -2801,34 +2841,37 @@
       }
     },
     "green": {
-      "commit": "a3965ed45cd41435226fd338c3da7697e4e846bf",
+      "commit": "53c2e3d50f7d3d74677dde695dd89bdd079961f0",
+      "committed_log": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/green.log",
+      "committed_log_sha256": "99e730191cb1c00b52ba3e9e80f1af9f61341cefb55afad91b663faa1bb5437e",
       "deselected": 0,
       "failed": 0,
       "passed": 1671,
+      "raw_preserved": "/home/luca/.ocor-codex/rem-0063/preserved/cycle8-grok-match/",
       "runs": [
         {
-          "duration_seconds": 4.73,
-          "log_sha256": "bd8e10fadca47c70af2062209019e41761d955eedf17bccb6ece6e8df9e801ff",
+          "duration_seconds": 4.61,
+          "log_sha256": "050703a50e2c85686a691cfcafccefac832118de4f437b2aed6f74ceaeceed5e",
           "run": 1,
           "status": "PASS",
           "tests": 1671
         },
         {
-          "duration_seconds": 5.19,
-          "log_sha256": "6f6028b3a15f9f4082e39f5f97e2e34f037566fd257b279375c1fb6740faeab5",
+          "duration_seconds": 4.86,
+          "log_sha256": "a767a94cbace65c4d56f14a6a858828671d15af5e890ea548b3f1f9ed9a81d9c",
           "run": 2,
           "status": "PASS",
           "tests": 1671
         },
         {
-          "duration_seconds": 4.65,
-          "log_sha256": "96435261084c01eb68259afe30c27dc0c58b92c5d2b7256ea03e93514a048d73",
+          "duration_seconds": 4.4,
+          "log_sha256": "a0fc169da78a1c53f2da462808264f54c55b3754c5705819162d0e0055fa3342",
           "run": 3,
           "status": "PASS",
           "tests": 1671
         }
       ],
-      "superseded_runs_note": "The GREEN recorded at 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f (1146 passed each) and at edfe829322d57875c2bd0685a50f9710b4636726 (1170 passed each) ran on the reduced corpus whose deletion was not authorized; MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15) point 3 restores the corpus, so those runs are superseded by the three-run GREEN above on the restored-test head 3de8493e07b60f42e35836899dd3f9e8d65498a0. The reduced-corpus GREEN at 021226e3bb8706c60eda5608345bcbb5e9dc4252 (939 passed each) is superseded for the same reason. The GREEN of the restored-corpus head 3de8493e07b60f42e35836899dd3f9e8d65498a0 (1671 passed, three runs) is superseded by the GREEN above on the P1P2 test-restoration head a3965ed45cd41435226fd338c3da7697e4e846bf, where the 14 authorized verbatim bodies are restored; the three raw logs of that superseded run remain preserved at ~/.ocor-codex/rem-0063/preserved/cycle8-generator-restored/."
+      "superseded_runs_note": "The three runs at a3965ed45cd41435226fd338c3da7697e4e846bf (1671 passed) predate the typed-match restoration. They remain preserved. The runs above are the qualifying task-suite runs of 53c2e3d50f7d3d74677dde695dd89bdd079961f0."
     },
     "oracle": {
       "differential_cases": 112,
@@ -2846,7 +2889,7 @@
       "version": "0.37.0"
     },
     "p8_tool_name_surrogate_note": "Prereview P8 (advisory): call_tool admits a lone surrogate in tool_name, returned as-is in the frozen result. The module fixes only 'non-empty string' for tool_name, the return does not admit executing a tool, the self-check row declares the class for argument strings only, and the file is unchanged in cycle 8. It is outside the cycle-8 perimeter (REM-0063-CYCLE7-NO-GO point 4): a fix here would exceed the mandate and needs a decision. Noted, not changed.",
-    "preventive_review": "OCOR-DEV-REM-0063-e2efce6f3dfa-pre: BLOCKING_FINDINGS on the repair head 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f (P1-P3 blocking, P4-P5 advisory). P1, P2 and P3 are fixed in code at edfe829322d57875c2bd0685a50f9710b4636726 with the differential cases and the typed negatives described in the dispositions; P4 requires a governed disposition (pinned fixture digest) and stays recorded, not fixed; P5 is fixed (comment renamed to Cycle-8 and the path inventory re-anchored at the new head). A new preventive review was requested through prereview_request.json on the cycle-8 prereview-fix evidence head: PENDING. The corpus restoration changed the test module and the record, so a new preventive review was requested through prereview_request.json on the restored-test evidence head: PENDING.",
+    "preventive_review": "OCOR-DEV-REM-0063-23e92ef60dd8-pre reviewed head 23e92ef60dd86d531a70682dd1632bc62d08f9e0 (code 3de8493e07b60f42e35836899dd3f9e8d65498a0) and returned BLOCKING_FINDINGS (P1 and P2 blocking, P3 and P4 advisory). Outcome file sha256 bc1f74ed9a8359a94faed41005e9bb8151d5f53b883be98ac5c752893991cc8f. Reviewer: Cursor CLI, cursor-grok-4.6-xhigh, xAI, reserve. P1 and P2 are corrected at a3965ed45cd41435226fd338c3da7697e4e846bf (14 verbatim bodies restored, 21 expectation changes listed one by one) and at 53c2e3d50f7d3d74677dde695dd89bdd079961f0 (three refusal matches restored to the typed profile reason, so a different McpProfileError cannot pass). P3 stays a record re-anchor on the production head a3965ed45cd41435226fd338c3da7697e4e846bf; 53c2e3d5 changes only tests. P4 stays OPEN_PO_DECISION_REQUIRED: git diff --check exits 2 on the pinned fixture blank line and is not declared green. PRE-CAMPAIGN-REVIEW (2026-10-26) point 3: no further preventive review after this correction. The qualifying campaign and the distinct check run on this code head.",
     "prior_campaigns_not_transferred": [
       "0c8bf777f363-1794742597"
     ],
@@ -2909,7 +2952,7 @@
       "scope": "cycle8 tests on 07eb4fd before the production edit"
     },
     "stability": {
-      "full_requalification_note": "The full-suite run recorded above qualified the pre-repair head f72a324e25ed72fd58f688bf365058bc40555f11; it must be re-run on 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f after the new preventive review. The full-suite run at f72a324e25ed remains the only full-suite observation and must be re-run after the preventive review, on the restored-test head, together with the distinct check and the requalifications, per campaign_requalification.",
+      "full_requalification_note": "The full-suite run f72a324e25ed-1794759063 qualified f72a324e25ed72fd58f688bf365058bc40555f11 only. It does not qualify 53c2e3d50f7d3d74677dde695dd89bdd079961f0. The qualifying campaign and the distinct check are still to run on that code head.",
       "full_suite_runs": 1,
       "governing_cap": {
         "decision": "LOCAL-FULL-SUITE-CAP-90 (2026-10-26)",
@@ -3118,19 +3161,19 @@
         },
         {
           "motive": "(c) fixture relocation, same refusal",
-          "new_expectation": "the non-schema sibling sits on the tool schema root for every location; refusal match 'JSON Schema'",
+          "new_expectation": "the non-schema sibling sits on the tool schema root for every location; refusal match stays 'target is not a JSON Schema'",
           "old_expectation": "the $defs location used the descriptor as the resolution root; refusal match 'target is not a JSON Schema'",
           "test": "test_cycle6_hash_id_does_not_hide_a_non_schema_current_resource"
         },
         {
           "motive": "(a)/(b) the observable outcome changes as authorized by MCP-TOOL-SCHEMA-AUTONOMO point 3",
-          "new_expectation": "typed refusal 'not a JSON Schema': the poisoned sibling lives in the same autonomous tool schema and the whole-schema check refuses it",
+          "new_expectation": "typed whole-schema refusal match 'MCP tool <index> inputSchema is not a JSON Schema'; the library oracle still shows that '#' selects the nested resource",
           "old_expectation": "ACCEPTANCE: the outer poison sat on the descriptor and stayed invisible to the tool resource",
           "test": "test_cycle7_empty_pointer_after_crossing_resource_ignores_outer_poison"
         },
         {
           "motive": "(a)/(b) the observable outcome changes as authorized by MCP-TOOL-SCHEMA-AUTONOMO point 3",
-          "new_expectation": "every location maps into the tool schema; the poison is refused by the whole-schema check even when '#' lands on the valid holder",
+          "new_expectation": "every location maps into the tool schema; when '#' lands on the valid holder the poisoned root is refused with match 'MCP tool <index> <field> is not a JSON Schema'",
           "old_expectation": "for $defs the tree was the descriptor; the poison was accepted when '#' landed on the valid holder",
           "test": "test_cycle7_empty_pointer_uses_the_effective_resource"
         },
@@ -3217,7 +3260,13 @@
         "agent": "Codex CLI",
         "model": "deepseek-v4-pro",
         "provider": "DeepSeek",
-        "scope": "OCOR-DEV-REM-0063 repair cycle 8. Implementer Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The preventive reviewer of this cycle is Claude Code, claude-fable-5-2, Anthropic. The final verifier is Codex, OpenAI, in a separate context."
+        "scope": "OCOR-DEV-REM-0063 repair cycle 8 through a3965ed45cd41435226fd338c3da7697e4e846bf. Implementer Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The preventive reviewer of this cycle was the loop reserve Cursor CLI, cursor-grok-4.6-xhigh, xAI. The final verifier is Codex, OpenAI, in a separate context."
+      },
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 repair cycle 8 completion from a3965ed45cd41435226fd338c3da7697e4e846bf to 53c2e3d50f7d3d74677dde695dd89bdd079961f0. Implementer Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the cycle. The preventive review already returned by the loop is OCOR-DEV-REM-0063-23e92ef60dd8-pre; PRE-CAMPAIGN-REVIEW (2026-10-26) point 3 does not require another review after the correction. The final verifier is Codex, OpenAI."
       }
     ],
     "preventive_review_history": [
