@@ -254,32 +254,33 @@ def validate_mcp_descriptor(
     against its ``Tool`` definition. ``inputSchema`` and ``outputSchema`` are JSON
     Schema 2020-12 schemas (``Draft202012Validator.check_schema``) and each is an
     autonomous resource: its ``$ref`` targets resolve only inside that schema,
-    never on the descriptor or another tool (MCP-TOOL-SCHEMA-AUTONOMO
-    2026-11-15). The descriptor is its own tree, whose ``$defs`` are checked
-    for the same rules. Every ``$ref`` is a same-document fragment, resolved
-    entirely by referencing 0.37.0 with draft 2020-12 on the current resource
-    and base URI; a fragment that does not resolve there is refused. The
-    fragment is percent-decoded as UTF-8, then classified. A decoded empty
-    fragment is the empty JSON Pointer: it identifies the current resource. A
-    decoded fragment that starts with ``/`` is a JSON Pointer, and any other
-    decoded fragment is a plain-name anchor (``$anchor`` or ``$dynamicAnchor``).
-    ``~`` escapes are validated before substitution. A trailing empty fragment
-    on ``$id`` is stripped before joining, matching referencing 0.37.0
-    ``Resource.id``; an ``$id`` of ``#``, an empty ``$id``, or any ``$id`` that
-    joins to the same URI does not start another resource. Two different
-    objects declaring one plain name inside one resource are rejected; an
-    anchor of another tree cannot collide. The value a reference lands on
-    must itself be a 2020-12 schema. Each schema node reached by a reference
-    is checked with the context of every path that reaches it, and every
-    ``$ref`` is resolved in every context that reaches its node, so the
+    never on the descriptor or another tool (MCP-TOOL-SCHEMA-AUTONOMO and
+    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE, 2026-11-15). The schema, dialect,
+    keyword and ``$ref`` checks apply only to ``inputSchema`` and
+    ``outputSchema``, each on its own; the descriptor is not a schema tree,
+    and a descriptor with top-level ``$defs`` is refused. Every ``$ref`` is a
+    same-document fragment, resolved entirely by referencing 0.37.0 with
+    draft 2020-12 on the current resource and base URI; a fragment that does
+    not resolve there is refused: there is no fallback onto the descriptor,
+    another tool or an external document. The fragment is percent-decoded as
+    UTF-8, then classified. A decoded empty fragment is the empty JSON
+    Pointer: it identifies the current resource. A decoded fragment that
+    starts with ``/`` is a JSON Pointer, and any other decoded fragment is a
+    plain-name anchor (``$anchor`` or ``$dynamicAnchor``). ``~`` escapes are
+    validated before substitution. A trailing empty fragment on ``$id`` is
+    stripped before joining, matching referencing 0.37.0 ``Resource.id``; an
+    ``$id`` of ``#``, an empty ``$id``, or any ``$id`` that joins to the same
+    URI does not start another resource. Two different objects declaring one
+    plain name inside one resource are rejected. The value a reference lands
+    on must itself be a 2020-12 schema. Each schema node reached by a
+    reference is checked with the context of every path that reaches it, and
+    every ``$ref`` is resolved in every context that reaches its node, so the
     outcome never depends on member order. Dialect, local-reference and
     resolution rules also apply to a schema reached through instance data
     such as ``const`` or ``default``, whose ``$id`` changes the base URI of
-    the references inside it exactly as the pinned library descends. The
-    descriptor tree is the document without the tool schemas, so the tree
-    boundary holds in both directions. A fixture that is
-    not an object, or whose ``$defs`` or ``Tool`` entry is not an object, is
-    rejected before the library is called.
+    the references inside it exactly as the pinned library descends. A
+    fixture that is not an object, or whose ``$defs`` or ``Tool`` entry is
+    not an object, is rejected before the library is called.
     """
 
     if not isinstance(document, Mapping):
@@ -304,19 +305,18 @@ def validate_mcp_descriptor(
         names.append(str(tool["name"]))
     if names != sorted(names) or len(names) != len(set(names)):
         raise McpProfileError("MCP tools are not in deterministic name order")
+    if "$defs" in document:
+        raise McpProfileError("MCP descriptor must not declare top-level $defs")
     _walk_json(document, depth=1, nodes=[0])
     # Every schema-position node is resolved before any keyword check, and
     # every ``$ref`` is resolved in every context that reaches its node, so
     # the outcome never depends on the order of members or visits. A
-    # reference path that does not resolve rejects the descriptor here.
-    document_tree, tool_trees = _build_schema_trees(document)
-    roots: list[tuple[Any, _ResolutionContext]] = [
-        (document_tree.root, _root_context(document_tree)),
-    ]
-    for _index, _field, tree in tool_trees:
-        roots.append((tree.root, _root_context(tree)))
-    order, ref_states = _resolve_graph(roots)
-    _check_reached_schemas(order, ref_states)
+    # reference path that does not resolve rejects the descriptor here. Each
+    # tool schema is checked on its own tree: no state is shared between
+    # trees, and the descriptor has no resolution tree.
+    for _index, _field, tree in _build_schema_trees(document):
+        order, ref_states = _resolve_graph([(tree.root, _root_context(tree))])
+        _check_reached_schemas(order, ref_states)
     for tool in tools:
         if not isinstance(tool, Mapping):
             raise McpProfileError("MCP tool must be an object")
@@ -659,26 +659,20 @@ def _synthetic_tool_uri(
 
 def _build_schema_trees(
     document: Mapping[str, Any],
-) -> tuple[_SchemaTree, tuple[tuple[int, str, _SchemaTree], ...]]:
-    """Index one autonomous tree per schema resource root.
+) -> tuple[tuple[int, str, _SchemaTree], ...]:
+    """Index one autonomous tree per tool schema field.
 
     MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): each ``inputSchema`` and each
     ``outputSchema`` is an autonomous JSON Schema 2020-12 resource. Its base
     URI is its ``$id`` when present, otherwise a fixed URI that is distinct
     for every tool and field and coincides with no ``$id`` of the document
     (``_synthetic_tool_uri`` picks the URI after reading every declared
-    ``$id``). The descriptor is its own tree, and the boundary holds in both
-    directions: the descriptor tree is built from the document without the
-    ``tools`` array, so a descriptor-level ``$ref`` whose pointer enters a
-    tool schema does not resolve there, while no registry or anchor index
-    is shared between trees and a lookup can never reach another tree's
-    resource.
+    ``$id``). The descriptor is not a schema tree: no registry or anchor
+    index is shared between trees and a lookup can never reach another
+    tree's resource or the descriptor.
     """
 
     declared_ids = _collect_declared_ids(document)
-    document_uri = _resource_uri(document, "")
-    pruned = {key: value for key, value in document.items() if key != "tools"}
-    document_tree = _schema_tree(pruned, document_uri)
     tool_trees: list[tuple[int, str, _SchemaTree]] = []
     tools = document.get("tools")
     if isinstance(tools, Sequence) and not isinstance(tools, (str, bytes)):
@@ -695,7 +689,7 @@ def _build_schema_trees(
                 else:
                     root_uri = _synthetic_tool_uri(index, field, declared_ids)
                 tool_trees.append((index, field, _schema_tree(schema, root_uri)))
-    return document_tree, tuple(tool_trees)
+    return tuple(tool_trees)
 
 
 def _schema_tree(root: Mapping[str, Any], root_uri: str) -> _SchemaTree:
@@ -941,9 +935,9 @@ def _resolve_graph(
     because a reference path can reach a node whose own static ``$ref``
     seeds further reference paths. Reference-path resolutions are never
     suppressed and raise at once. Trees never share state: every path
-    starts from its tree's root context and the descriptor tree is built
-    without the tool schemas, so a node of one tree is reached only with
-    contexts of that tree.
+    starts from its tree's root context, the descriptor has no resolution
+    tree, and each tool schema is checked on its own, so a node of one tree
+    is reached only with contexts of that tree.
     """
 
     static_order: list[tuple[Any, _ResolutionContext, int]] = []

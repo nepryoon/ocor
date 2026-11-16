@@ -12520,3 +12520,471 @@ FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_non_strin
 FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_non_string_schema_id_is_typed[tool_root-bad_id4]
 102 failed, 134 passed, 934 deselected in 3.92s
 RED RC 1 END 2026-11-15T20:54:11Z
+===== CYCLE-8 GENERATOR DECISION RED (pre-fix head 66b92cdb137353c1d36792e1b6163941fe5a7e01) START 2026-11-16T00:32:35Z
+..F..F.........F........................................................ [  7%]
+........................................................................ [ 15%]
+...........................................F............................ [ 23%]
+........................................................................ [ 30%]
+..................FFFFFFF............................................... [ 38%]
+........................................................................ [ 46%]
+........................................................................ [ 53%]
+........................................................................ [ 61%]
+........................................................................ [ 69%]
+........................................................................ [ 76%]
+........................................................................ [ 84%]
+........................................................................ [ 92%]
+......................................................................FF [ 99%]
+.FF                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_generated_tools_match_the_official_tool_schema_and_resolve_refs _____
+
+    def test_generated_tools_match_the_official_tool_schema_and_resolve_refs() -> None:
+        """(a) every generated tool is a Tool of revision 2026-07-28; $ref resolve in-document."""
+        document, _ = _descriptor(_with_contracts(_contract("urn:ocor:contract:arrive-vessel")))
+>       _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:144:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:318: in validate_mcp_descriptor
+    order, ref_states = _resolve_graph(roots)
+                        ^^^^^^^^^^^^^^^^^^^^^
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1045: in _resolve_graph
+    raise error
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:987: in seed_static
+    target, target_context = _resolve_reference(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/urn.ocor.type.vessel'
+context = _ResolutionContext(tree=_SchemaTree(root_uri='urn:ocor:embedded-tool:1:outputSchema', root={'properties': {'vessel': {...ed resource)>), base_uri='urn:ocor:embedded-tool:1:outputSchema', resource_uri='urn:ocor:embedded-tool:1:outputSchema')
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``.
+
+        The lookup runs only on the resolver of the current tree. A fragment
+        that does not resolve there is refused: there is no fallback onto the
+        descriptor or another tool schema.
+        """
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+        resolved = _lookup_reference(context.resolver, library_reference)
+        if resolved is None:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1092: McpProfileError
+___________ test_input_schema_cannot_overwrite_governed_context_ref ____________
+
+    def test_input_schema_cannot_overwrite_governed_context_ref() -> None:
+        """ADD v1.3 line 382: the projected input schema drops a top-level overwrite."""
+        documents = _with_contracts(
+            _contract(
+                "urn:ocor:contract:context-overwrite",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "governed_context_ref": {"type": "string"},
+                    },
+                    "required": ["name", "governed_context_ref"],
+                },
+            )
+        )
+        document, _ = _descriptor(documents)
+        tool = next(item for item in document["tools"] if item["name"] == "context-overwrite")
+        assert "governed_context_ref" not in tool["inputSchema"].get("properties", {})
+        assert tool["inputSchema"].get("required") == ["name"]
+>       _validate(document)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:201:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:318: in validate_mcp_descriptor
+    order, ref_states = _resolve_graph(roots)
+                        ^^^^^^^^^^^^^^^^^^^^^
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1045: in _resolve_graph
+    raise error
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:987: in seed_static
+    target, target_context = _resolve_reference(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/urn.ocor.type.vessel'
+context = _ResolutionContext(tree=_SchemaTree(root_uri='urn:ocor:embedded-tool:1:outputSchema', root={'properties': {'vessel': {...ed resource)>), base_uri='urn:ocor:embedded-tool:1:outputSchema', resource_uri='urn:ocor:embedded-tool:1:outputSchema')
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``.
+
+        The lookup runs only on the resolver of the current tree. A fragment
+        that does not resolve there is refused: there is no fallback onto the
+        descriptor or another tool schema.
+        """
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+        resolved = _lookup_reference(context.resolver, library_reference)
+        if resolved is None:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1092: McpProfileError
+_____________ test_external_dangling_and_foreign_dialect_refs_fail _____________
+
+    def test_external_dangling_and_foreign_dialect_refs_fail() -> None:
+        document, _ = _descriptor()
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        external = copy.deepcopy(document)
+        external["tools"][0]["inputSchema"]["properties"]["name"] = {"$ref": "https://example.invalid/schema.json"}
+        dangling = copy.deepcopy(document)
+        dangling["tools"][0]["inputSchema"]["properties"]["name"] = {"$ref": "#/$defs/missing"}
+        foreign = copy.deepcopy(document)
+        foreign["tools"][0]["inputSchema"]["$schema"] = "https://json-schema.org/draft/2019-09/schema"
+        for candidate in (external, dangling, foreign):
+            with pytest.raises(profile.McpProfileError):
+                _validate(candidate)
+        accepted = copy.deepcopy(document)
+        accepted["tools"][0]["inputSchema"]["$schema"] = DRAFT_2020
+>       _validate(accepted)
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:263:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:95: in _validate
+    profile.validate_mcp_descriptor(document, _official_schema(), expected_revision=expected_revision)
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:318: in validate_mcp_descriptor
+    order, ref_states = _resolve_graph(roots)
+                        ^^^^^^^^^^^^^^^^^^^^^
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1045: in _resolve_graph
+    raise error
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:987: in seed_static
+    target, target_context = _resolve_reference(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+reference = '#/$defs/urn.ocor.type.vessel'
+context = _ResolutionContext(tree=_SchemaTree(root_uri='urn:ocor:embedded-tool:0:outputSchema', root={'properties': {'vessel': {...ed resource)>), base_uri='urn:ocor:embedded-tool:0:outputSchema', resource_uri='urn:ocor:embedded-tool:0:outputSchema')
+
+    def _resolve_reference(
+        reference: object,
+        context: _ResolutionContext,
+    ) -> tuple[object, _ResolutionContext]:
+        """Resolve one same-document fragment with the pinned ``referencing``.
+
+        The lookup runs only on the resolver of the current tree. A fragment
+        that does not resolve there is refused: there is no fallback onto the
+        descriptor or another tool schema.
+        """
+
+        if not isinstance(reference, str) or not reference.startswith("#"):
+            raise McpProfileError("MCP $ref must be a same-document fragment")
+        decoded = _decode_uri_fragment(reference[1:])
+        if decoded and not decoded.startswith("/"):
+            _reject_ambiguous_anchor(context.resource_uri, decoded, context.anchors)
+            library_reference = "#" + decoded
+        elif decoded:
+            raw_tokens = decoded[1:].split("/")
+            tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+            _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
+            # ``referencing`` percent-decodes a JSON Pointer once. Re-encode the
+            # already decoded fragment so a literal ``%`` is not decoded twice,
+            # while the leading separator stays visible to ``Resolver.lookup``.
+            library_reference = "#" + quote(decoded, safe="/~")
+        else:
+            library_reference = "#"
+        resolved = _lookup_reference(context.resolver, library_reference)
+        if resolved is None:
+>           raise McpProfileError("MCP $ref does not resolve in the descriptor")
+E           ocor_runtime.c1.mcp_profile.McpProfileError: MCP $ref does not resolve in the descriptor
+
+ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:1092: McpProfileError
+_____ test_an_unreferenced_non_schema_definition_is_not_a_resolved_target ______
+
+    def test_an_unreferenced_non_schema_definition_is_not_a_resolved_target() -> None:
+        """A descriptor with top-level ``$defs`` is refused, even for one unused entry.
+
+        MCP-TOOL-SCHEMA-AUTONOMO: the descriptor is not a schema tree. The old
+        expectation (an unused non-schema definition stays data) moved into the
+        tool schema, where the whole-schema 2020-12 check refuses it.
+        """
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _bare_descriptor()
+        document["$defs"] = {"unused": 7}
+>       with pytest.raises(profile.McpProfileError, match="top-level \\$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:957: Failed
+_ test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition[inputSchema] _
+
+field = 'inputSchema'
+
+    @pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+    def test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition(field: str) -> None:
+        """A tool-schema ref to descriptor ``$defs`` is refused: schemas are autonomous.
+
+        MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the descriptor has no resolution
+        tree and a descriptor that declares top-level ``$defs`` is a typed
+        refusal, so the old acceptance is the new refusal.
+        """
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        schema = {
+            "type": "object",
+            "$defs": {"other": {"type": "string"}},
+            "properties": {"x": {"$ref": "#/$defs/part"}},
+        }
+        document = _cycle4_embedded_tool(schema, field=field)
+        document["$defs"] = {"part": {"type": "integer"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'top-level \\$defs'
+E         Actual message: 'MCP $ref does not resolve in the descriptor'
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:1615: AssertionError
+_ test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition[outputSchema] _
+
+field = 'outputSchema'
+
+    @pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+    def test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition(field: str) -> None:
+        """A tool-schema ref to descriptor ``$defs`` is refused: schemas are autonomous.
+
+        MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the descriptor has no resolution
+        tree and a descriptor that declares top-level ``$defs`` is a typed
+        refusal, so the old acceptance is the new refusal.
+        """
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        schema = {
+            "type": "object",
+            "$defs": {"other": {"type": "string"}},
+            "properties": {"x": {"$ref": "#/$defs/part"}},
+        }
+        document = _cycle4_embedded_tool(schema, field=field)
+        document["$defs"] = {"part": {"type": "integer"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'top-level \\$defs'
+E         Actual message: 'MCP $ref does not resolve in the descriptor'
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:1615: AssertionError
+_ test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous[inputSchema] _
+
+field = 'inputSchema'
+
+    @pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+    def test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous(field: str) -> None:
+        """The removed document/tool ambiguity check is superseded by the typed refusal."""
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        schema = {
+            "type": "object",
+            "$defs": {"part": {"type": "string"}},
+            "properties": {"x": {"$ref": "#/$defs/part"}},
+        }
+        document = _cycle4_embedded_tool(schema, field=field)
+        document["$defs"] = {"part": {"type": "integer"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:1630: Failed
+_ test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous[outputSchema] _
+
+field = 'outputSchema'
+
+    @pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+    def test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous(field: str) -> None:
+        """The removed document/tool ambiguity check is superseded by the typed refusal."""
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        schema = {
+            "type": "object",
+            "$defs": {"part": {"type": "string"}},
+            "properties": {"x": {"$ref": "#/$defs/part"}},
+        }
+        document = _cycle4_embedded_tool(schema, field=field)
+        document["$defs"] = {"part": {"type": "integer"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:1630: Failed
+_ test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous[inputSchema] _
+
+field = 'inputSchema'
+
+    @pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+    def test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous(field: str) -> None:
+        """Descriptor ``$defs`` beside a tool anchor are refused as top-level defs."""
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        schema = {
+            "type": "object",
+            "$defs": {"two": {"$anchor": "part", "type": "string"}},
+            "properties": {"x": {"$ref": "#part"}},
+        }
+        document = _cycle4_embedded_tool(schema, field=field)
+        document["$defs"] = {"one": {"$anchor": "part", "type": "integer"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:1645: Failed
+_ test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous[outputSchema] _
+
+field = 'outputSchema'
+
+    @pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+    def test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous(field: str) -> None:
+        """Descriptor ``$defs`` beside a tool anchor are refused as top-level defs."""
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        schema = {
+            "type": "object",
+            "$defs": {"two": {"$anchor": "part", "type": "string"}},
+            "properties": {"x": {"$ref": "#part"}},
+        }
+        document = _cycle4_embedded_tool(schema, field=field)
+        document["$defs"] = {"one": {"$anchor": "part", "type": "integer"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE McpProfileError
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:1645: Failed
+__________ test_cycle4_a_document_ref_does_not_use_a_tool_only_anchor __________
+
+    def test_cycle4_a_document_ref_does_not_use_a_tool_only_anchor() -> None:
+        """A descriptor-side ``$defs`` holder is refused with the typed top-level error."""
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document = _cycle4_embedded_tool(
+            {
+                "type": "object",
+                "properties": {"x": {"type": "string"}},
+            }
+        )
+        document["$defs"] = {"holder": {"$ref": "#part"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'top-level \\$defs'
+E         Actual message: 'MCP $ref does not resolve in the descriptor'
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:1659: AssertionError
+_ test_cycle8_generated_descriptor_has_no_top_level_defs_and_passes_the_profile _
+
+    def test_cycle8_generated_descriptor_has_no_top_level_defs_and_passes_the_profile() -> None:
+        """The generated descriptor passes the profile and declares no top-level ``$defs``."""
+        document, _ = _descriptor()
+>       assert "$defs" not in document
+E       AssertionError: assert '$defs' not in {'$defs': {'urn.ocor.type.asset': {'additionalProperties': False, 'properties': {}, 'title': 'urn:ocor:type:asset', 't...e9fb1d6a929385e5881fe09adf193912ad64e981da', 'mappingVersion': '1', 'ontologyRelease': 'urn:ocor:package:fleet@1.2.0'}}
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3437: AssertionError
+_______ test_cycle8_each_generated_tool_schema_is_standalone_and_closed ________
+
+    def test_cycle8_each_generated_tool_schema_is_standalone_and_closed() -> None:
+        """Every tool schema is valid alone, refs resolve alone, defs are the closure."""
+        from jsonschema import Draft202012Validator
+        from referencing import Registry
+        from referencing.jsonschema import DRAFT202012
+
+        document, _ = _descriptor()
+        for tool in document["tools"]:
+            for field in ("inputSchema", "outputSchema"):
+                schema = tool.get(field)
+                if not isinstance(schema, Mapping):
+                    continue
+                Draft202012Validator.check_schema(schema)
+                names: set[str] = set()
+                _cycle8_ref_names(schema, names)
+>               assert set(schema.get("$defs", {})) == names
+E               AssertionError: assert set() == {'urn.ocor.type.vessel'}
+E
+E                 Extra items in the right set:
+E                 'urn.ocor.type.vessel'
+E                 Use -v to get more diff
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3456: AssertionError
+_______ test_cycle8_a_definition_name_clash_is_a_typed_generation_error ________
+
+    def test_cycle8_a_definition_name_clash_is_a_typed_generation_error() -> None:
+        """A contract ``$defs`` clashing with an included type fails with C1Error."""
+        documents = _with_contracts(
+            _contract(
+                "urn:ocor:contract:clash",
+                input_schema={
+                    "type": "object",
+                    "properties": {"vessel": {"$ref": "urn:ocor:type:vessel"}},
+                    "$defs": {"urn.ocor.type.vessel": {"type": "string"}},
+                },
+            )
+        )
+        fleet = _fleet()
+>       with pytest.raises(C1Error, match="MCP definition name clash"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE C1Error
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3488: Failed
+___________ test_cycle8_a_descriptor_with_top_level_defs_is_refused ____________
+
+    def test_cycle8_a_descriptor_with_top_level_defs_is_refused() -> None:
+        """A descriptor that declares top-level ``$defs`` is a typed refusal."""
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        document, _ = _descriptor()
+        tampered = dict(document)
+        tampered["$defs"] = {"anything": {"type": "integer"}}
+>       with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'top-level \\$defs'
+E         Actual message: 'MCP $ref does not resolve in the descriptor'
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py:3500: AssertionError
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_generated_tools_match_the_official_tool_schema_and_resolve_refs
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_input_schema_cannot_overwrite_governed_context_ref
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_external_dangling_and_foreign_dialect_refs_fail
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_an_unreferenced_non_schema_definition_is_not_a_resolved_target
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition[inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_document_pointer_still_resolves_beside_a_local_definition[outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous[inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_pointer_in_both_the_tool_schema_and_the_document_is_ambiguous[outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous[inputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_tool_schema_anchor_duplicated_on_the_document_is_ambiguous[outputSchema]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle4_a_document_ref_does_not_use_a_tool_only_anchor
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_generated_descriptor_has_no_top_level_defs_and_passes_the_profile
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_each_generated_tool_schema_is_standalone_and_closed
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_a_definition_name_clash_is_a_typed_generation_error
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_a_descriptor_with_top_level_defs_is_refused
+15 failed, 924 passed in 3.41s
+RED RC 1 END 2026-11-16T00:32:35Z

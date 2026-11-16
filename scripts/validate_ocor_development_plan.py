@@ -1800,6 +1800,7 @@ def main() -> int:
         # official schema fixture, correspondence table and regression-only
         # requalifications of every latest evidence record that pins this validator.
         "docs/development_plan/OCOR_MCP_2026-07-28_PROFILE.md",
+        "ocor-runtime/src/ocor_runtime/c1/codegen.py",
         "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
         "ocor-runtime/src/ocor_runtime/c2/mcp_boundary.py",
         "ocor-runtime/src/ocor_runtime/c8/mcp_call.py",

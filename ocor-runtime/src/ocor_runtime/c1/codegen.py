@@ -228,9 +228,93 @@ def _asyncapi(model: _Model) -> bytes:
     })
 
 
+def _mcp_ref(type_id: str) -> str:
+    return f"#/$defs/{component_name(type_id)}"
+
+
+def _mcp_reached_names(schema: Any, names: set[str]) -> None:
+    """Collect the ``#/$defs/<name>`` targets a rendered schema uses.
+
+    Every position is walked, instance data included: the generator rewrites
+    every ``$ref`` it meets through the same callback, so a reference inside
+    ``const``, ``default`` or ``examples`` is a real target of the tool
+    schema and must resolve after the definitions are attached.
+    """
+
+    if isinstance(schema, Mapping):
+        for key, value in schema.items():
+            if key == "$ref" and isinstance(value, str):
+                if value.startswith("#/$defs/"):
+                    names.add(value[len("#/$defs/") :])
+            else:
+                _mcp_reached_names(value, names)
+        return
+    if isinstance(schema, (list, tuple)):
+        for item in schema:
+            _mcp_reached_names(item, names)
+
+
+def _mcp_attach_definitions(
+    schema: Any,
+    type_schemas: Mapping[str, Any],
+    *,
+    path: str,
+) -> Any:
+    """Attach to one tool schema its own ``$defs`` closure, no descriptor defs.
+
+    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15): each generated
+    ``inputSchema`` and ``outputSchema`` is autonomous and carries every
+    type definition it uses, transitively, and only those, with ``$ref``
+    staying in the ``#/$defs/<Name>`` form. The descriptor has no top-level
+    ``$defs``. A contract schema that already declares a ``$defs`` entry
+    with the same name as a type to include and a different content is a
+    typed generation error. The merged ``$defs`` map is sorted so the
+    output stays deterministic.
+    """
+
+    if not isinstance(schema, Mapping):
+        return schema
+    names: set[str] = set()
+    _mcp_reached_names(schema, names)
+    needed: dict[str, Any] = {}
+    pending = [name for name in names if name in type_schemas]
+    while pending:
+        name = pending.pop()
+        if name in needed:
+            continue
+        definition = type_schemas[name]
+        needed[name] = definition
+        inner: set[str] = set()
+        _mcp_reached_names(definition, inner)
+        pending.extend(name for name in inner if name in type_schemas)
+    local_defs = schema.get("$defs")
+    if local_defs is not None and not isinstance(local_defs, Mapping):
+        return schema
+    if isinstance(local_defs, Mapping):
+        for name in needed:
+            if name in local_defs and local_defs[name] != needed[name]:
+                raise C1Error(
+                    (
+                        C1Diagnostic(
+                            DiagnosticCode.TYPE_ERROR,
+                            path,
+                            f"MCP definition name clash for {name}",
+                        ),
+                    )
+                )
+    merged = dict(schema)
+    defs: dict[str, Any] = (
+        dict(local_defs) if isinstance(local_defs, Mapping) else {}
+    )
+    for name in needed:
+        defs[name] = needed[name]
+    if defs:
+        merged["$defs"] = {name: defs[name] for name in sorted(defs)}
+    return merged
+
+
 def _mcp(model: _Model) -> bytes:
-    def ref(type_id: str) -> str:
-        return f"#/$defs/{component_name(type_id)}"
+    type_schemas = model.type_schemas(_mcp_ref)
 
     tools = []
     seen: set[str] = set()
@@ -240,22 +324,28 @@ def _mcp(model: _Model) -> bytes:
         if name in seen:
             raise C1Error((C1Diagnostic(DiagnosticCode.TYPE_ERROR, "mcp-descriptor", f"duplicate MCP tool name {name}"),))
         seen.add(name)
+        path = f"mcp-descriptor/{name}"
         try:
-            input_schema = without_context_overwrite(model.contract_schema(contract["input_schema"], ref))
+            projected = without_context_overwrite(
+                model.contract_schema(contract["input_schema"], _mcp_ref)
+            )
         except McpProfileError as exc:
-            raise C1Error((C1Diagnostic(DiagnosticCode.TYPE_ERROR, f"mcp-descriptor/{name}", str(exc)),)) from exc
+            raise C1Error((C1Diagnostic(DiagnosticCode.TYPE_ERROR, path, str(exc)),)) from exc
         tools.append({
             "name": name,
             "description": f"{contract['kind']} {contract['contract_id']}@{contract['version']}",
-            "inputSchema": input_schema,
-            "outputSchema": model.contract_schema(contract["output_schema"], ref),
+            "inputSchema": _mcp_attach_definitions(projected, type_schemas, path=path),
+            "outputSchema": _mcp_attach_definitions(
+                model.contract_schema(contract["output_schema"], _mcp_ref),
+                type_schemas,
+                path=path,
+            ),
             "annotations": {"readOnlyHint": contract["effect_class"] == "READ_ONLY",
                             "riskClass": contract["risk_class"]},
         })
     return _json({
         "x-ocor-mcp-protocol-revision": MCP_PROTOCOL_REVISION,
         "x-ocor-release": model.ids,
-        "$defs": model.type_schemas(ref),
         "tools": tools,
     })
 
