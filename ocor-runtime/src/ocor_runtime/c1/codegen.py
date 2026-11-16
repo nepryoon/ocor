@@ -12,11 +12,17 @@ NFR-020 (:151): every artefact carries ``ontologyRelease``, ``irDigest``,
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import re
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
+from urllib.parse import urljoin
+
+from referencing import Registry
+from referencing.exceptions import Unresolvable
+from referencing.jsonschema import DRAFT202012
 
 from .ir import ARTIFACT_MEDIA_TYPES, malformed_core_rejected, parse_core, require_core_shape
 from .mcp_profile import McpProfileError, without_context_overwrite
@@ -232,26 +238,318 @@ def _mcp_ref(type_id: str) -> str:
     return f"#/$defs/{component_name(type_id)}"
 
 
-def _mcp_reached_names(schema: Any, names: set[str]) -> None:
-    """Collect the ``#/$defs/<name>`` targets a rendered schema uses.
+# The profile refuses a schema past these bounds. The generator fails closed
+# at the same limits so render cannot emit a descriptor the profile rejects
+# only for size.
+_MCP_MAX_SCHEMA_DEPTH = 32
+_MCP_MAX_SCHEMA_NODES = 4096
+_MCP_DEFS_PREFIX = "#/$defs/"
+_MCP_INSTANCE_KEYS = ("const", "default", "examples", "enum")
 
-    Every position is walked, instance data included: the generator rewrites
-    every ``$ref`` it meets through the same callback, so a reference inside
-    ``const``, ``default`` or ``examples`` is a real target of the tool
-    schema and must resolve after the definitions are attached.
+
+def _mcp_error(code: DiagnosticCode, path: str, message: str) -> C1Error:
+    text = " ".join(message.split())
+    if len(text) > 500:
+        text = text[:500]
+    if not text:
+        text = "MCP generation failed"
+    return C1Error((C1Diagnostic(code, path, text),))
+
+
+def _mcp_bounds(path: str, depth: int, nodes: int) -> None:
+    if depth > _MCP_MAX_SCHEMA_DEPTH or nodes > _MCP_MAX_SCHEMA_NODES:
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema exceeds the revision bounds")
+
+
+def _mcp_declared_id(node: object) -> str | None:
+    """Identifier of a schema object, using the profile's ``$id`` rule.
+
+    A trailing empty fragment is removed before the join, as referencing
+    0.37.0 does. ``#`` and an empty string are not identifiers. A non-string
+    ``$id`` is ignored here; the library crawl rejects it in the post-check.
     """
 
-    if isinstance(schema, Mapping):
-        for key, value in schema.items():
-            if key == "$ref" and isinstance(value, str):
-                if value.startswith("#/$defs/"):
-                    names.add(value[len("#/$defs/") :])
-            else:
-                _mcp_reached_names(value, names)
+    if not isinstance(node, Mapping):
+        return None
+    value = node.get("$id")
+    if not isinstance(value, str) or not value:
+        return None
+    stripped = value.rstrip("#")
+    if not stripped:
+        return None
+    return stripped
+
+
+def _mcp_resource_uri(node: object, base_uri: str, path: str) -> str:
+    identifier = _mcp_declared_id(node)
+    if identifier is None:
+        return base_uri
+    try:
+        return urljoin(base_uri, identifier)
+    except ValueError as exc:
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $id is not a valid URI reference") from exc
+
+
+def _mcp_changes_resource(node: object, base_uri: str, path: str) -> bool:
+    return _mcp_resource_uri(node, base_uri, path) != base_uri
+
+
+def _mcp_children(node: Mapping[str, Any], path: str) -> list[Any]:
+    try:
+        return list(DRAFT202012.subresources_of(node))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not resolvable") from exc
+
+
+def _mcp_defs_name(ref: str) -> str | None:
+    """Return the ``#/$defs/<name>`` component, never a deeper pointer."""
+
+    if not ref.startswith(_MCP_DEFS_PREFIX):
+        return None
+    name = ref[len(_MCP_DEFS_PREFIX):]
+    if not name or "/" in name:
+        return None
+    return name
+
+
+def _mcp_take_ref(node: Mapping[str, Any], names: set[str], raw: set[str]) -> None:
+    ref = node.get("$ref")
+    if not isinstance(ref, str):
         return
-    if isinstance(schema, (list, tuple)):
-        for item in schema:
-            _mcp_reached_names(item, names)
+    raw.add(ref)
+    parsed = _mcp_defs_name(ref)
+    if parsed is not None:
+        names.add(parsed)
+
+
+def _mcp_walk_json_refs(value: object, names: set[str], raw: set[str]) -> None:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if key == "$ref" and isinstance(item, str):
+                raw.add(item)
+                parsed = _mcp_defs_name(item)
+                if parsed is not None:
+                    names.add(parsed)
+            else:
+                _mcp_walk_json_refs(item, names, raw)
+        return
+    if isinstance(value, list):
+        for item in value:
+            _mcp_walk_json_refs(item, names, raw)
+
+
+def _mcp_take_instance(node: Mapping[str, Any], names: set[str], raw: set[str]) -> None:
+    for key in _MCP_INSTANCE_KEYS:
+        if key in node:
+            _mcp_walk_json_refs(node[key], names, raw)
+
+
+def _mcp_fragment_refs(
+    node: object,
+    resource_uri: str,
+    path: str,
+    names: set[str],
+    raw: set[str],
+    *,
+    nodes: list[int],
+    depth: int,
+) -> None:
+    """Collect references that resolve in ``resource_uri``.
+
+    Descent follows referencing 0.37.0 subresources and stops where an
+    ``$id`` joins to a different URI. ``const``, ``default``, ``examples``
+    and ``enum`` stay on this resource: the generator rewrites every
+    ``$ref``, including those in instance data.
+    """
+
+    if not isinstance(node, Mapping):
+        return
+    nodes[0] += 1
+    _mcp_bounds(path, depth, nodes[0])
+    _mcp_take_ref(node, names, raw)
+    _mcp_take_instance(node, names, raw)
+    for child in _mcp_children(node, path):
+        if isinstance(child, Mapping) and _mcp_changes_resource(child, resource_uri, path):
+            continue
+        _mcp_fragment_refs(child, resource_uri, path, names, raw, nodes=nodes, depth=depth + 1)
+
+
+def _mcp_seed_refs(
+    node: Mapping[str, Any],
+    resource_uri: str,
+    path: str,
+    names: set[str],
+    raw: set[str],
+    *,
+    nodes: list[int],
+    depth: int,
+) -> None:
+    """References of one resource, excluding that resource's own ``$defs``.
+
+    A local definition, and a reference that appears only inside it, is not
+    reachable until some other node of the resource selects its name.
+    """
+
+    nodes[0] += 1
+    _mcp_bounds(path, depth, nodes[0])
+    defs = node.get("$defs")
+    if defs is not None and not isinstance(defs, Mapping):
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $defs must be an object")
+    _mcp_take_ref(node, names, raw)
+    _mcp_take_instance(node, names, raw)
+    skip = {id(value) for value in defs.values()} if isinstance(defs, Mapping) else set()
+    for child in _mcp_children(node, path):
+        if id(child) in skip or not isinstance(child, Mapping):
+            continue
+        if _mcp_changes_resource(child, resource_uri, path):
+            continue
+        _mcp_fragment_refs(child, resource_uri, path, names, raw, nodes=nodes, depth=depth + 1)
+
+
+def _mcp_iter_resources(
+    root: Mapping[str, Any],
+    base_uri: str,
+    path: str,
+) -> list[tuple[str, dict[str, Any]]]:
+    found: list[tuple[str, dict[str, Any]]] = []
+    nodes = 0
+
+    def visit(node: object, uri: str, depth: int, *, is_root: bool) -> None:
+        nonlocal nodes
+        if not isinstance(node, Mapping):
+            return
+        nodes += 1
+        _mcp_bounds(path, depth, nodes)
+        current = uri
+        if is_root or _mcp_changes_resource(node, uri, path):
+            current = uri if is_root else _mcp_resource_uri(node, uri, path)
+            if not isinstance(node, dict):
+                raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not an object")
+            found.append((current, node))
+        for child in _mcp_children(node, path):
+            visit(child, current, depth + 1, is_root=False)
+
+    visit(root, base_uri, 1, is_root=True)
+    return found
+
+
+def _mcp_record_user_defs(root: Mapping[str, Any], path: str) -> dict[int, dict[str, Any]]:
+    """Snapshot each resource's ``$defs`` before the closure replaces them."""
+
+    recorded: dict[int, dict[str, Any]] = {}
+    nodes = 0
+
+    def visit(node: object, depth: int) -> None:
+        nonlocal nodes
+        if not isinstance(node, Mapping):
+            return
+        nodes += 1
+        _mcp_bounds(path, depth, nodes)
+        defs = node.get("$defs")
+        if isinstance(defs, Mapping) and isinstance(node, dict):
+            recorded[id(node)] = dict(defs)
+        for child in _mcp_children(node, path):
+            visit(child, depth + 1)
+
+    visit(root, 1)
+    return recorded
+
+
+def _mcp_select_body(
+    resource: dict[str, Any],
+    name: str,
+    user_defs: Mapping[str, Any],
+    type_schemas: Mapping[str, Any],
+    placed: dict[tuple[int, str], Any],
+    path: str,
+) -> Any:
+    key = (id(resource), name)
+    if key in placed:
+        return placed[key]
+    user_body = user_defs[name] if name in user_defs else None
+    typed = type_schemas[name] if name in type_schemas else None
+    if user_body is not None and typed is not None and user_body != typed:
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, f"MCP definition name clash for {name}")
+    if user_body is not None:
+        source: Any = user_body
+    elif typed is not None:
+        source = typed
+    else:
+        current = resource.get("$defs")
+        if isinstance(current, Mapping) and name in current:
+            source = current[name]
+        else:
+            raise _mcp_error(DiagnosticCode.UNRESOLVED_REFERENCE, path, f"unresolved MCP definition {name}")
+    body = copy.deepcopy(source)
+    placed[key] = body
+    return body
+
+
+def _mcp_close_resource(
+    resource: dict[str, Any],
+    resource_uri: str,
+    user_defs: Mapping[str, Any],
+    type_schemas: Mapping[str, Any],
+    placed: dict[tuple[int, str], Any],
+    path: str,
+) -> bool:
+    names: set[str] = set()
+    raw: set[str] = set()
+    nodes = [0]
+    _mcp_seed_refs(resource, resource_uri, path, names, raw, nodes=nodes, depth=1)
+    resolved: dict[str, Any] = {}
+    pending = set(names)
+    while pending:
+        _mcp_bounds(path, 1, len(resolved) + len(pending))
+        name = pending.pop()
+        if name in resolved:
+            continue
+        body = _mcp_select_body(resource, name, user_defs, type_schemas, placed, path)
+        resolved[name] = body
+        if isinstance(body, Mapping) and not _mcp_changes_resource(body, resource_uri, path):
+            inner_names: set[str] = set()
+            inner_raw: set[str] = set()
+            _mcp_fragment_refs(body, resource_uri, path, inner_names, inner_raw, nodes=nodes, depth=1)
+            pending.update(name for name in inner_names if name not in resolved)
+    if not resolved:
+        if "$defs" in resource:
+            resource.pop("$defs")
+            return True
+        return False
+    new_defs = {name: resolved[name] for name in sorted(resolved)}
+    if resource.get("$defs") != new_defs:
+        resource["$defs"] = new_defs
+        return True
+    return False
+
+
+def _mcp_post_check(tree: Mapping[str, Any], base_uri: str, path: str) -> None:
+    """Reject a schema whose ``$ref`` does not resolve in referencing 0.37.0."""
+
+    try:
+        registry = Registry().with_resource(base_uri, DRAFT202012.create_resource(tree)).crawl()
+    except (Unresolvable, AttributeError, TypeError, ValueError) as exc:
+        raise _mcp_error(DiagnosticCode.UNRESOLVED_REFERENCE, path, "unresolved MCP definition") from exc
+    for uri, resource in registry.items():
+        contents = resource.contents
+        if not isinstance(contents, Mapping):
+            continue
+        names: set[str] = set()
+        raw: set[str] = set()
+        _mcp_fragment_refs(contents, uri, path, names, raw, nodes=[0], depth=1)
+        resolver = registry.resolver(uri)
+        for ref in sorted(raw):
+            if not isinstance(ref, str) or not ref.startswith("#"):
+                raise _mcp_error(DiagnosticCode.UNRESOLVED_REFERENCE, path, "unresolved MCP definition")
+            try:
+                resolver.lookup(ref)
+            except Unresolvable as exc:
+                detail = ref if len(ref) <= 420 else ref[:420]
+                raise _mcp_error(
+                    DiagnosticCode.UNRESOLVED_REFERENCE,
+                    path,
+                    f"unresolved MCP definition {detail}",
+                ) from exc
 
 
 def _mcp_attach_definitions(
@@ -259,70 +557,99 @@ def _mcp_attach_definitions(
     type_schemas: Mapping[str, Any],
     *,
     path: str,
+    base_uri: str,
 ) -> Any:
-    """Attach to one tool schema its own ``$defs`` closure, no descriptor defs.
+    """Place each reachable ``#/$defs`` closure on the resource that uses it.
 
-    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15): each generated
-    ``inputSchema`` and ``outputSchema`` is autonomous and carries every
-    type definition it uses, transitively, and only those, with ``$ref``
-    staying in the ``#/$defs/<Name>`` form. The descriptor has no top-level
-    ``$defs``. A contract schema that already declares a ``$defs`` entry
-    with the same name as a type to include and a different content is a
-    typed generation error. The merged ``$defs`` map is sorted so the
-    output stays deterministic.
+    MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15), repaired for the
+    per-resource class in VF-001 of cycle 8. A nested ``$id`` that joins to
+    a new URI is its own JSON Schema resource and receives only the closure
+    of the references that resolve there. Unreferenced local definitions are
+    omitted. A definition body that does not change the URI contributes its
+    references to the enclosing resource. The descriptor still has no
+    top-level ``$defs``. A name that clashes with a different type schema,
+    or a reference with no definition, is a typed generation error. The
+    emitted schema is checked with referencing 0.37.0 before it is returned.
     """
 
     if not isinstance(schema, Mapping):
         return schema
-    names: set[str] = set()
-    _mcp_reached_names(schema, names)
-    needed: dict[str, Any] = {}
-    pending = [name for name in names if name in type_schemas]
-    while pending:
-        name = pending.pop()
-        if name in needed:
-            continue
-        definition = type_schemas[name]
-        needed[name] = definition
-        inner: set[str] = set()
-        _mcp_reached_names(definition, inner)
-        pending.extend(name for name in inner if name in type_schemas)
-    local_defs = schema.get("$defs")
-    if local_defs is not None and not isinstance(local_defs, Mapping):
-        return schema
-    if isinstance(local_defs, Mapping):
-        for name in needed:
-            if name in local_defs and local_defs[name] != needed[name]:
-                raise C1Error(
-                    (
-                        C1Diagnostic(
-                            DiagnosticCode.TYPE_ERROR,
-                            path,
-                            f"MCP definition name clash for {name}",
-                        ),
-                    )
-                )
-    merged = dict(schema)
-    defs: dict[str, Any] = (
-        dict(local_defs) if isinstance(local_defs, Mapping) else {}
-    )
-    for name in needed:
-        defs[name] = needed[name]
-    if defs:
-        merged["$defs"] = {name: defs[name] for name in sorted(defs)}
-    return merged
+    copied = copy.deepcopy(schema)
+    if not isinstance(copied, dict):
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not an object")
+    user_defs = _mcp_record_user_defs(copied, path)
+    placed: dict[tuple[int, str], Any] = {}
+    for _pass in range(_MCP_MAX_SCHEMA_NODES):
+        changed = False
+        for uri, resource in _mcp_iter_resources(copied, base_uri, path):
+            if _mcp_close_resource(
+                resource,
+                uri,
+                user_defs.get(id(resource), {}),
+                type_schemas,
+                placed,
+                path,
+            ):
+                changed = True
+        if not changed:
+            _mcp_post_check(copied, base_uri, path)
+            return copied
+    raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema exceeds the revision bounds")
+
+
+def _mcp_collect_ids(node: object, found: set[str], path: str, depth: int, nodes: list[int]) -> None:
+    nodes[0] += 1
+    _mcp_bounds(path, depth, nodes[0])
+    if isinstance(node, Mapping):
+        declared = node.get("$id")
+        if isinstance(declared, str):
+            found.add(declared)
+        for value in node.values():
+            _mcp_collect_ids(value, found, path, depth + 1, nodes)
+        return
+    if isinstance(node, list):
+        for item in node:
+            _mcp_collect_ids(item, found, path, depth + 1, nodes)
+
+
+def _mcp_synthetic_uri(index: int, field: str, declared_ids: set[str]) -> str:
+    """Match the profile's embedded base, skipping any declared ``$id``."""
+
+    candidate = f"urn:ocor:embedded-tool:{index}:{field}"
+    suffix = 2
+    while candidate in declared_ids:
+        candidate = f"urn:ocor:embedded-tool:{index}:{field}:{suffix}"
+        suffix += 1
+        if suffix > _MCP_MAX_SCHEMA_NODES:
+            raise _mcp_error(
+                DiagnosticCode.TYPE_ERROR,
+                "mcp-descriptor",
+                "MCP schema exceeds the revision bounds",
+            )
+    return candidate
+
+
+def _mcp_base_uri(schema: object, index: int, field: str, declared_ids: set[str]) -> str:
+    """The profile's base: a root ``$id`` when present, otherwise a synthetic URI."""
+
+    declared = _mcp_declared_id(schema)
+    if declared is not None:
+        return declared
+    return _mcp_synthetic_uri(index, field, declared_ids)
 
 
 def _mcp(model: _Model) -> bytes:
     type_schemas = model.type_schemas(_mcp_ref)
 
-    tools = []
+    prepared: list[dict[str, Any]] = []
     seen: set[str] = set()
     ordered = sorted(model.requests(), key=lambda c: (local_name(str(c["contract_id"])), str(c["contract_id"])))
     for contract in ordered:
         name = local_name(str(contract["contract_id"]))
         if name in seen:
-            raise C1Error((C1Diagnostic(DiagnosticCode.TYPE_ERROR, "mcp-descriptor", f"duplicate MCP tool name {name}"),))
+            raise C1Error((C1Diagnostic(
+                DiagnosticCode.TYPE_ERROR, "mcp-descriptor", f"duplicate MCP tool name {name}",
+            ),))
         seen.add(name)
         path = f"mcp-descriptor/{name}"
         try:
@@ -331,18 +658,33 @@ def _mcp(model: _Model) -> bytes:
             )
         except McpProfileError as exc:
             raise C1Error((C1Diagnostic(DiagnosticCode.TYPE_ERROR, path, str(exc)),)) from exc
-        tools.append({
+        prepared.append({
             "name": name,
             "description": f"{contract['kind']} {contract['contract_id']}@{contract['version']}",
-            "inputSchema": _mcp_attach_definitions(projected, type_schemas, path=path),
-            "outputSchema": _mcp_attach_definitions(
-                model.contract_schema(contract["output_schema"], _mcp_ref),
+            "inputSchema": projected,
+            "outputSchema": model.contract_schema(contract["output_schema"], _mcp_ref),
+            "annotations": {
+                "readOnlyHint": contract["effect_class"] == "READ_ONLY",
+                "riskClass": contract["risk_class"],
+            },
+            "_path": path,
+        })
+    declared_ids: set[str] = set()
+    id_nodes = [0]
+    for tool in prepared:
+        _mcp_collect_ids(tool["inputSchema"], declared_ids, "mcp-descriptor", 1, id_nodes)
+        _mcp_collect_ids(tool["outputSchema"], declared_ids, "mcp-descriptor", 1, id_nodes)
+    tools = []
+    for index, tool in enumerate(prepared):
+        path = str(tool.pop("_path"))
+        for field in ("inputSchema", "outputSchema"):
+            tool[field] = _mcp_attach_definitions(
+                tool[field],
                 type_schemas,
                 path=path,
-            ),
-            "annotations": {"readOnlyHint": contract["effect_class"] == "READ_ONLY",
-                            "riskClass": contract["risk_class"]},
-        })
+                base_uri=_mcp_base_uri(tool[field], index, field, declared_ids),
+            )
+        tools.append(tool)
     return _json({
         "x-ocor-mcp-protocol-revision": MCP_PROTOCOL_REVISION,
         "x-ocor-release": model.ids,
