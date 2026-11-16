@@ -34,144 +34,154 @@ Cycle 8 prereview-fix code is `edfe829322d57875c2bd0685a50f9710b4636726`, closin
 
 ## Cycle 10 contract
 
-Phase A, second contract review. Production remains byte-identical to
-`f485dc964e47bde83842ecd5ba2627d8342612f9`. This derived contract implements
-**REM-0063-CICLO-10-CONTRATTO (2026-11-16)**, points 1–3; it closes no production
-finding. Codex (`gpt-6.1-sol`, OpenAI, effort `max`) owns cycle 10. Earlier
-implementers remain Grok Build (`grok-4.7`, xAI) and Codex CLI
-(`deepseek-flash`, `deepseek-v4-pro`, DeepSeek). The assigned contract reviewer
-is Claude Code (`claude-fable-5-2`, Anthropic, effort `max`), launched by the loop.
+Phase A, completed after the second and final contract review. Production remains
+byte-identical to `f485dc964e47bde83842ecd5ba2627d8342612f9`. This derived contract
+implements **REM-0063-CICLO-10-CONTRATTO (2026-11-16)**, points 1–3; it closes no
+production finding. Codex (`gpt-6.1-sol`, OpenAI, effort `max`) owns cycle 10.
+Earlier implementers are Grok Build (`grok-4.7`, xAI) and Codex CLI
+(`deepseek-flash`, `deepseek-v4-pro`, DeepSeek). The assigned contract and preventive
+reviewer is Claude Code (`claude-fable-5-2`, Anthropic, effort `max`). Final verifier:
+Claude Code (`claude-opus-5-5`, Anthropic, effort `max`), assigned by
+**VERIFIER-CLAUDE-REM0063 (2026-11-16)**. The PO declares the same-provider,
+different-model limit between reviewer and verifier. No implementer is Anthropic.
 
 ### Producer and consumer obligations
 
 Every emitted `inputSchema` and `outputSchema` is an autonomous JSON Schema
-2020-12 resource: its registry contains that schema and its contained resources
-only. Its base is its declared `$id`, otherwise the fixed URI for its tool and
-field. No lookup falls back to the descriptor, another field, another tool or
-network retrieval. Sources: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, points 1–2.
-An empty URI fragment is normalised by the library's registry rules; the schema
-bytes and reference spelling are never rewritten for the oracle.
+2020-12 resource. Its registry contains only that schema and its contained
+resources. The base is its declared `$id`, otherwise its fixed tool/field URI;
+the precise treatment of empty/no-op root IDs is open question Q5 below.
+No lookup falls back to the descriptor, another schema or network retrieval.
+The oracle never rewrites schema bytes or reference spellings. Sources:
+**MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, points 1–2.
 
 The generator includes all and only transitively reachable IR definitions in
-each resource's `$defs`, with `#/$defs/<Name>` references. Unreachable user
-`$defs` are omitted. A same-name/different-content definition is a typed error.
-The descriptor has no top-level `$defs`; the profile rejects that form.
-Input generation preserves `without_context_overwrite`. Repeated generation
-is byte-identical. Sources: **MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**,
-points 1–3. Existing generator refusal of two distinct resource roots claiming
-one URI remains `C1Error`/`DUPLICATE_RESOURCE` (`codegen.py::_mcp_iter_resources`);
-it is stricter than the profile's library-selected resource winner. This is an
-existing restriction, not a new acceptance rule. Both sibling orders and repeated
-ancestor/descendant IDs are covered. **SELF-CHECK-ORACOLO (2026-11-14)**, point 2,
-permits a documented stricter rule; no new restriction is introduced here.
+each resource's `$defs`, using `#/$defs/<Name>`. Unreachable user definitions are
+omitted; a same-name/different-content definition is a typed error. No top-level
+`$defs` is emitted or accepted by the profile. `without_context_overwrite` and
+byte-identical repeated generation remain mandatory. Sources:
+**MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**, points 1–3.
+The existing producer restriction on distinct resource roots claiming one URI
+remains `C1Error`/`DUPLICATE_RESOURCE`; it is stricter than the library-selected
+winner. Both orders and repeated ancestor/descendant IDs are covered.
 
-Successful public generation must return bytes which pass the public profile,
-`Draft202012Validator.check_schema`, and unmodified `referencing` 0.37.0 on each
-schema alone. An unresolvable closure is `C1Error`/`UNRESOLVED_REFERENCE` before
-artefacts are returned. A fixed no-ID base colliding with a declared `$id` is
-refused by both producer (`C1Error`/`TYPE_ERROR`) and consumer (`McpProfileError`),
-without suffix selection. This applies to both fields and origins. Sources:
-**REM-0063-CICLO-10-CONTRATTO**, point 2; **REM-0063-CYCLE10-ORACLE-CONFLICT
-(2026-11-16)**, A1 and B1, including B1's producer/consumer agreement.
+Every emitted descriptor must pass the public profile. Each final schema used
+alone must pass `Draft202012Validator.check_schema` and resolve its references
+with unmodified `referencing` 0.37.0. An unresolvable closure causes
+`C1Error`/`UNRESOLVED_REFERENCE` before artefacts are returned. A fixed base
+colliding with a declared ID inside that schema causes `C1Error`/`TYPE_ERROR`
+or `McpProfileError`, without suffix selection. The collision scope outside
+that schema is Q6. Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2;
+**REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**, A1+B1.
 
-The profile validates each tool against the pinned official `Tool` definition,
-then schema, dialect, keyword and reference rules on each schema alone. A missing
-or non-schema target is a typed refusal; ambiguous anchors retain the stricter
-rule already documented in `mcp_profile.py::_reject_ambiguous_anchor`. Canonical
-array-index restrictions remain unchanged. Percent-encoded anchors and an encoded
-leading slash follow the unchanged libraries, without helper substitutions:
-**REM-0063-CYCLE10-ORACLE-CONFLICT**, A1. Existing tests are preserved in phase A;
-only its enumerated realignments may occur in phase B.
+The profile validates every tool against the pinned official `Tool` definition,
+then checks each schema's dialect, keywords and resolved targets. Missing or
+non-schema targets cause typed refusal. Existing ambiguous-anchor and canonical
+array-index restrictions remain. Percent-encoded anchors and the encoded leading
+slash follow the original libraries, without helper substitutions (A1 above).
+The omitted early encoded-slash test is Q4; no existing test changes in phase A.
 
-The current module restricts references to fragments. Whether an URI naming a
-contained resource also counts as internal is **open question Q3**, not decided
-here. Matrix cells for that spelling retain the current refusal conditionally;
-their library resolution outcome is recorded separately. No retrieval is ever
-allowed. Sources of the question: **MCP-TOOL-SCHEMA-AUTONOMO**, points 1–2;
-**REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2; the current module's stricter rule.
+Only reference spellings starting with `#` are accepted, even when an URI naming
+a contained resource resolves without network access. The generator emits only
+the prescribed local pointers and refuses a final schema requiring forbidden
+spellings. The library outcome and this additional refusal are recorded separately.
+Source: **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1.
 
-Final bounds are 4096 JSON values and depth 32, measured on the final descriptor
-after closure; root counts as one, keys do not count, scalars/arrays/objects do.
-At 4097 or depth 33 the generator raises `C1Error`, and the profile raises
-`McpProfileError`; direct and transitive type growth counts. No bounds change.
-Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2 and VF-002; **REM-0063-CYCLE7-NO-GO**,
-point 2. Tests check boundary reasons as well as typed errors.
+Bounds apply after the complete definition closure: 4096 JSON values and depth
+32; the root counts as one, keys do not count. At 4097 or depth 33, generator and
+profile refuse with their typed errors. Direct and transitive type growth counts.
+Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2 and VF-002;
+**REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2. No bound changes.
 
-Profile and generator separately compute resource/base identities and closure.
-Agreement is proved through both public paths across the products below, with
-one independent library oracle, exact expected closure trees, accepted/rejected
-instance twins and repeated render bytes. Neither expected targets nor expected
-answers use a production helper. Sharing a production helper remains optional
-within the authorised scope (**REM-0063-CICLO-10-CONTRATTO**, point 2).
+Resource/base/closure computations currently exist in both producer and profile.
+Their agreement must be proved across both public paths below: independent
+library resolution, exact closure trees, positive/negative instance twins and
+identical repeated render bytes. No expected answer uses a production helper.
+Sharing a production helper is optional within the authorised scope
+(**REM-0063-CICLO-10-CONTRATTO**, point 2).
 
 ### Deterministic case matrix
 
-| Dimension | Values |
+| Dimension | Values and explicit representatives |
 | --- | --- |
 | Field | `inputSchema`, `outputSchema` |
-| Root | no ID, absolute ID, relative ID; trailing/empty fragment in oracle controls |
-| Outer ID and inner ID, independently | absent, empty, `#`, same relative, same absolute, new relative, new absolute, repeated URI |
-| Reference | `#`, pointer, anchor, percent segment/leading slash/anchor, contained-resource URI; child/parent/root-only target, missing anchor |
-| Target | present, missing, invalid schema; duplicate anchor; foreign field/tool/descriptor |
-| Position | `properties`, `$defs`, `allOf`, `const`, `default`, `examples` |
-| Duplicate order | holder first, shadow first; ancestor/descendant repeated IDs |
-| Origin | delivered; public compiler and generator |
-| Closure | direct enum, transitive struct → enum; unused sibling absent/present |
-| Tokens and bounds | `~0`, `~1`, malformed escape, percent non-ASCII, index 2/02; 4096/4097, depth 32/33 |
+| Root | absent, absolute; `root.json`, `./root.json`, `../up/root.json`, `relative/root.json`, `rel/dir/`; fragment-only roots in library controls pending Q5 |
+| Independent outer/inner IDs | absent, empty, `#`, root-relative, root-absolute, new relative/absolute, repeated URI; exact literal root repetition in the added product |
+| Reference | `#`, pointer, anchor, percent segment/leading slash/anchor, contained-resource URI; parent/root/child/missing targets |
+| Target | present, missing, invalid schema, non-schema; duplicate anchor; foreign field/tool/descriptor |
+| Position | `properties`, `$defs`, `allOf`, `const`, `default`, `examples`; `not`, `items` in the added product |
+| Duplicate order | both sibling orders and ancestor/descendant repetition |
+| Origin/closure | delivered; public compiler/generator; direct/transitive types; unused sibling absent/present |
+| Tokens/bounds | `~0`, `~1`, malformed escape, non-ASCII percent segments, array 2/02; 4096/4097 nodes, depth 32/33 |
+| Fixed base | tool indices 0/1, both fields/origins, collision/noncollision, ID with/without final `#` |
 
-The original 5790 cells remain: delivered product 5184, generated product 576,
-boundaries/collision 30. New products: two-level delivered 18432 (2×3×8×8×6×8),
-two-level generated 4608 (2×3×8×8×6×2), sibling orders 288, form/target state 216,
-foreign-target isolation 108, anchor ambiguity 48, token product 144,
-both-origin collisions 4, library-state controls 24, positive root-fragment twins 12,
-and generated duplicate orders 72. Total: **29746** cases.
-Every listed product is fully enumerated without sampling. The following are
-the complete exclusions and aliases; they are not omitted cells disguised as PASS:
+The unchanged first 29746 cells remain: original delivered/generated 5184/576,
+bounds/collision 30, two-level delivered/generated 18432/4608, sibling orders 288,
+form/target state 216, isolation 108, ambiguous anchor 48, tokens 144,
+both-origin collisions 4, library-state controls 24, root-fragment twins 12,
+generated duplicate orders 72. Additions: root-class delivered **9216**
+(2×6×2×6×8×8), public generation **1152** (2×6×2×6×8), data-target validity 18,
+indexed fixed-base collision/twin 32, preserved anchor-context instances 16.
+Total: **40180** cells in 23 test functions. Each product is fully enumerated,
+without sampling. They are factored products, not a claim to execute their full
+mutual cross-product. Their restrictions are:
 
-- G1: OaC permits IR-symbol references, not arbitrary raw fragment spellings.
-  Generated-origin reference spellings other than the generated pointer are
-  excluded (4608 cells in the original theoretical product). Delivered products
-  exercise those spellings, target states, isolation and token grammar.
-- G2: a `$defs/target` with no incoming OaC reference is unreachable and omitted.
-  Generated tests assert its absence; delivered cells explicitly select it.
-- G3: the two-level generated product varies direct/transitive reachability;
-  unused-sibling variation stays in the original generated product. Sibling
-  insertion order has separate delivered and generated products; the generator
-  retains its typed duplicate-URI refusal, without choosing a library winner.
-- I1: same-relative/absolute representatives with no corresponding declared
-  root use `#`; repeated-URI values intentionally alias the absolute child URI.
-  The independent product includes both equal ancestor/descendant IDs and
-  same-resource children below new resources. Fixed-base collisions are separate
-  products for **both** origins, not excluded from generator agreement.
-- V1: cyclic `allOf/$ref:'#'` may not terminate instance validation. These cells
-  assert schema validity and library resolution only; instance execution is
-  explicitly `NOT_EXECUTED` on `RecursionError`, never called a passing instance.
-  All nonrecursive entry probes evaluate `entry` with the same resolver/base.
+- G1: generated OaC references are IR symbols. Arbitrary fragment spellings,
+  pointer grammar, foreign targets and malformed schema targets belong to the
+  delivered products; they are not generated-source cells.
+- G2: an OaC definition without an incoming reference is omitted. Generated
+  `$defs` target cells assert omission, not resolution of an unreachable node.
+- G3: the original generated product varies unused siblings; its two-level
+  extension varies direct/transitive reachability instead. Duplicate sibling
+  orders have separate generated and delivered products. The added root-class
+  generator product uses direct types; transitivity remains in the unchanged
+  4608-cell product.
+- I1: the old same-relative/absolute aliases are preserved in their original
+  products. They do not represent literal relative-root repetition. The added
+  product crosses each of the six explicit root spellings with exact literal
+  repetition and five other nested-ID modes, under same-resource/new-absolute
+  ancestors, in both origins. No root-class exclusion is hidden in an alias.
+- F1: the original two-level product uses eight literal references. Encoded
+  forms, invalid targets and URI spellings use separate products; root-class
+  additions cross encoded-pointer forms with the extra root/ID classes.
+  Form/target-state uses an absolute root/holder; isolation, token grammar and
+  ambiguous-anchor products use their original no-root-ID construction.
+- F2: `not` and `items` represent single-schema keywords; other single-schema,
+  map/list keywords and `enum` data are not multiplied into these products.
+  They follow the same pinned `Resource.subresources` and pointer machinery;
+  no coverage of every keyword Cartesian combination is claimed. Invalid
+  resolved schemas under `const/default/examples` are tested separately:
+  the root passes `check_schema`, but the selected target must fail it.
+- V1: cyclic `allOf/$ref:'#'` may not terminate instance validation. Their
+  schema validity/resolution checks remain; recursive instance execution is
+  `NOT_EXECUTED`, never a passing instance. Nonrecursive entry probes really run.
+- Q5/Q6: unresolved root-base/cross-tree collision semantics are questions,
+  not chosen outcomes. New public collision rows cover only the already-decided
+  same-schema rule, including index 1 and final-empty-fragment identity.
 
-The oracle uses only `Resource.subresources`, `Resolver.in_subresource` and
-`Resolver.lookup` for traversal/resolution. Its visited state includes the library
-registry's resources, uncrawled set and anchors: an anchor-induced crawl cannot
-reuse a stale answer. `Draft202012Validator` really reaches `entry`, with the
-same base and unmodified schema. Generated cells also compare the entire emitted
-closure, every other emitted field, positive `ACTIVE` and negative `WRONG`
-instances where a target is emitted. Ordinary instance-validation errors are
-not resolution errors; no missing target is accepted on their basis.
+The static matrix oracle uses `Resource.subresources`, `Resolver.in_subresource`
+and `Resolver.lookup` on the original resource, preserving registry crawl state.
+It checks `entry` with the same resolver/base. Its domain is the factored products,
+not all valid schemas: a static-context failure may be irrelevant when an anchor
+path reaches that node with a different library resolver. The existing profile
+rule and cycle-8 tests for those paths remain unchanged. The added 16-cell public
+characterisation uses real positive/negative `Draft202012Validator` instances,
+without the stricter static oracle. No original matrix assertion is weakened.
 
 ### Decisions, questions and stopping conditions
 
-Q1/Q2 are decided by **REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**: A1+B1.
-Their original RED remains historical; newly enumerated RED outcomes are recorded
-by reason and family. No phase-A change to a pre-cycle-10 test, fixture or oracle is
-permitted. Phase B applies only the realignments expressly listed in that decision.
+Q1/Q2: A1+B1 of **REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)** are decided.
+Q3: option 1 of **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)** is decided.
+Q4/Q5/Q6 are collected in **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**:
+the omitted encoded-slash test, empty/no-op root bases, cross-tree collision scope.
+These questions arose from the second review; its blocking root-class coverage
+is integrated without a third contract review. Production and complete campaigns
+remain suspended on the dependent interpretations; existing tests stay unchanged.
 
-Q3 is **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI**, raised after the first contract
-review identified a conflict between the module restriction and the wording of
-the standalone-resource decisions. Its disposition is required before dependent
-production changes or a full campaign. Neither the first nor second contract
-review can choose that normative interpretation.
-
-The fixed official fixture remains byte-identical. **REM-0063-PINNED-FIXTURE-DIFF-CHECK
-(2026-11-16)** adopts option 1: its whitespace check remains `NOT_GREEN` with
-an explicitly recorded exception, never PASS; other files keep the same check.
-No production repair or full campaign has started. Claim fence unchanged:
-E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.
+The official fixture remains byte-identical. **REM-0063-PINNED-FIXTURE-DIFF-CHECK
+(2026-11-16)**, option 1, leaves its whitespace check `NOT_GREEN` with a recorded
+exception; every other file retains the check. No production repair or full
+campaign has started. Phase B remains one repair against the entire matrix,
+followed by GREEN, preventive review, local gate, campaign, distinct check and
+final verification. Fence unchanged: E1=0, E2=0, Verified=0,
+runtime NOT_ESTABLISHED, PoC and Production NO-GO.

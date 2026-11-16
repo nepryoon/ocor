@@ -5873,3 +5873,218 @@ def test_cycle10_generated_two_level_exact_closure(field: str, root: str, outer_
         bad: Any = "WRONG" if reach == "direct" else {property_id: "WRONG"}
         assert validator.is_valid(good)
         assert not validator.is_valid(bad)
+
+
+# Second contract-review dispositions, phase A only. Earlier tests, fixtures and
+# oracles remain byte-identical. The six root spellings represent distinct
+# behaviour classes of referencing 0.37.0, not interchangeable URI aliases.
+_CYCLE10_EDGE_ROOTS = (
+    "root.json", "./root.json", "../up/root.json", "relative/root.json",
+    "rel/dir/", _CYCLE10_ROOT_URI,
+)
+_CYCLE10_EDGE_IDS = ("absent", "root-literal", "fragment", "basename", "relative", "absolute")
+_CYCLE10_EDGE_POSITIONS = (*_CYCLE10_POSITIONS, "not", "items")
+_CYCLE10_EDGE_REFS = (
+    "#", "#/$defs/child", "#child", "#/$defs/root", "#root",
+    "#/%24defs/child", "#%2F$defs/child", "#/$defs/missing",
+)
+
+
+def _cycle10_edge_place(node: dict[str, Any], position: str, target: dict[str, Any]) -> str:
+    if position in ("not", "items"):
+        node[position] = target
+        return position
+    return _cycle10_place(node, position, target)
+
+
+def _cycle10_edge_schema(root_id: str, outer: str, identifier: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    schema: dict[str, Any] = {"$id": root_id, "type": "object"}
+    inner: dict[str, Any] = {"type": "object"}
+    declared = {
+        "absent": None, "root-literal": root_id, "fragment": "#",
+        "basename": "root.json", "relative": "sub/branch.json",
+        "absolute": _CYCLE10_CHILD_URI,
+    }[identifier]
+    if declared is not None:
+        inner["$id"] = declared
+    holder: dict[str, Any] = {"type": "object", "$defs": {"inner": inner}}
+    if outer == "new-absolute":
+        holder["$id"] = "https://cycle10.invalid/outer.json"
+    schema["$defs"] = {"holder": holder, "root": {"$anchor": "root", "type": "object"}}
+    return schema, inner
+
+
+@pytest.mark.parametrize("field,root_id,outer,identifier,position,reference", _cycle10_cross(
+    _CYCLE10_FIELDS, _CYCLE10_EDGE_ROOTS, ("same-resource", "new-absolute"),
+    _CYCLE10_EDGE_IDS, _CYCLE10_EDGE_POSITIONS, _CYCLE10_EDGE_REFS,
+))
+def test_cycle10_relative_root_behaviour_classes(
+    field: str, root_id: str, outer: str, identifier: str, position: str, reference: str,
+) -> None:
+    """P1: literal root repetition, stable/dot/directory roots and two levels.
+
+    Targets and outcomes come only from the pinned libraries on the original
+    resource. Single-schema keywords supplement map/list and data positions.
+    """
+    schema, inner = _cycle10_edge_schema(root_id, outer, identifier)
+    inner["$defs"] = {"child": {"$anchor": "child", "type": "object"}}
+    pointer = "#/$defs/holder/$defs/inner/" + _cycle10_edge_place(inner, position, {"$ref": reference})
+    schema["properties"] = {"entry": {"$ref": pointer}}
+    accepted, trace = _cycle10_standalone_oracle(schema, field)
+    try:
+        _cycle10_profile_expectation(schema, field, accepted)
+    except (AssertionError, ValueError) as exc:
+        raise AssertionError(("root behaviour class", root_id, outer, identifier, position, reference, trace)) from exc
+
+
+@pytest.mark.parametrize("field,root_id,outer,identifier,position", _cycle10_cross(
+    _CYCLE10_FIELDS, _CYCLE10_EDGE_ROOTS, ("same-resource", "new-absolute"),
+    _CYCLE10_EDGE_IDS, _CYCLE10_EDGE_POSITIONS,
+))
+def test_cycle10_generated_relative_root_behaviour_classes(
+    field: str, root_id: str, outer: str, identifier: str, position: str,
+) -> None:
+    """Both public origins cover the same relative-root and nested-ID classes."""
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    schema, inner = _cycle10_edge_schema(root_id, outer, identifier)
+    # The two root definitions here are test scaffolding, with no incoming OaC
+    # reference; only the inner path is live in the generated source schema.
+    schema["properties"] = {"outer": schema.pop("$defs")["holder"]}
+    inner = schema["properties"]["outer"].pop("$defs")["inner"]
+    schema["properties"]["outer"]["properties"] = {"inner": inner}
+    local = _cycle10_edge_place(inner, position, {"$ref": _CYCLE10_STATUS})
+    if _cycle10_repeated_resource_boundary(schema, field):
+        with pytest.raises(C1Error) as caught:
+            _cycle10_generated(field, schema)
+        assert caught.value.diagnostics[0].code == DiagnosticCode.DUPLICATE_RESOURCE
+        return
+    expected = copy.deepcopy(schema)
+    expected_inner = expected["properties"]["outer"]["properties"]["inner"]
+    _cycle10_edge_place(expected_inner, position, {"$ref": "#/$defs/" + _CYCLE10_TYPE_NAME})
+    pointer = "#/properties/outer/properties/inner/" + local
+    if position == "$defs":
+        expected_inner.pop("$defs")
+        probes: tuple[str, ...] = ()
+    else:
+        base = _cycle10_base(expected, field)
+        resolver = Registry().with_resource(base, DRAFT202012.create_resource(expected)).resolver(base)
+        try:
+            owner = resolver.lookup(pointer).resolver.lookup("#").contents
+        except Unresolvable:
+            with pytest.raises(C1Error) as caught:
+                _cycle10_generated(field, schema)
+            assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
+            return
+        assert isinstance(owner, dict)
+        owner.setdefault("$defs", {})[_CYCLE10_TYPE_NAME] = {
+            "title": _CYCLE10_STATUS, "type": "string", "enum": ["ACTIVE", "LAID_UP"],
+        }
+        probes = (pointer,)
+    accepted, trace = _cycle10_standalone_oracle(expected, field, probes=probes)
+    if not accepted:
+        with pytest.raises(C1Error) as caught:
+            _cycle10_generated(field, schema)
+        assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE, trace
+        return
+    descriptor, body, _ = _cycle10_generated(field, schema)
+    assert body == expected
+    _validate(descriptor)
+    for index, tool in enumerate(descriptor["tools"]):
+        for emitted_field in _CYCLE10_FIELDS:
+            okay, actual_trace = _cycle10_standalone_oracle(tool[emitted_field], emitted_field, index=index)
+            assert okay, actual_trace
+    if position != "$defs":
+        base = _cycle10_base(body, field)
+        resolver = Registry().with_resource(base, DRAFT202012.create_resource(body)).resolver(base)
+        selected = resolver.lookup(pointer)
+        validator = Draft202012Validator(selected.contents, _resolver=selected.resolver)
+        assert validator.is_valid("ACTIVE")
+        assert not validator.is_valid("WRONG")
+
+
+@pytest.mark.parametrize("field,position,state", _cycle10_cross(
+    _CYCLE10_FIELDS, ("const", "default", "examples"), ("valid", "invalid-schema", "non-schema"),
+))
+def test_cycle10_resolved_data_target_is_checked_as_a_schema(field: str, position: str, state: str) -> None:
+    """P4: check_schema(root) alone cannot validate a target under instance data."""
+    from jsonschema import Draft202012Validator
+
+    target: Any = {"type": "object"} if state == "valid" else {"type": 17} if state == "invalid-schema" else 17
+    schema: dict[str, Any] = {"type": "object"}
+    if position == "examples":
+        schema[position] = [{"target": target}]
+        pointer = "#/examples/0/target"
+    else:
+        schema[position] = {"target": target}
+        pointer = "#/" + position + "/target"
+    schema["properties"] = {"entry": {"$ref": pointer}}
+    Draft202012Validator.check_schema(schema)
+    accepted, trace = _cycle10_standalone_oracle(schema, field)
+    assert accepted == (state == "valid"), trace
+    _cycle10_profile_expectation(schema, field, accepted)
+
+
+@pytest.mark.parametrize("field,index,fragment,origin,collision", _cycle10_cross(
+    _CYCLE10_FIELDS, (0, 1), ("", "#"), _CYCLE10_ORIGINS, (False, True),
+))
+def test_cycle10_fixed_base_at_multiple_tool_indices(
+    field: str, index: int, fragment: str, origin: str, collision: bool,
+) -> None:
+    """P5: local collision includes the empty-fragment spelling, at both indices.
+
+    Cross-tree collision scope and root empty-ID semantics remain open questions;
+    these rows assert only the already-decided local collision rule B1.
+    """
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    uri = f"urn:ocor:embedded-tool:{index}:{field}" if collision else "https://cycle10.invalid/non-collision.json"
+    schema: dict[str, Any] = {"type": "object", "properties": {"child": {"$id": uri + fragment, "type": "object"}}}
+    if origin == "delivered":
+        document = _cycle10_delivered(schema, field)
+        if index:
+            document["tools"].insert(0, {"name": "aaa-prefix", "inputSchema": {"type": "object"}})
+        if collision:
+            with pytest.raises(McpProfileError, match=r"(colli|URI)"):
+                _validate(document)
+        else:
+            _validate(document)
+        return
+    documents = copy.deepcopy(_fleet().oac_documents())
+    if index:
+        documents["module.yaml"]["definitions"].append(_contract("urn:ocor:contract:aaa-prefix"))
+    if collision:
+        with pytest.raises(C1Error) as caught:
+            _cycle10_generated(field, schema, documents=documents)
+        assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+    else:
+        descriptor, _, _ = _cycle10_generated(field, schema, documents=documents)
+        assert descriptor["tools"][index]["name"] == "cycle10"
+        _validate(descriptor)
+
+
+@pytest.mark.parametrize("field,identifier,fragment", _cycle10_cross(
+    _CYCLE10_FIELDS, ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"),
+    ("#/$defs/private", "#/$defs/pri%76ate"),
+))
+def test_cycle10_preserves_existing_anchor_lookup_context(field: str, identifier: str, fragment: str) -> None:
+    """P3: the instance-path library oracle preserves the existing crawl state.
+
+    The broad static matrix oracle has a deliberately narrower domain. It must
+    not replace the existing public anchor-context tests or their expectations.
+    """
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    document = _cycle8_anchor_descriptor(field=field, identifier=identifier, placement="holder", fragment=fragment)
+    body = document["tools"][0][field]
+    registry = Registry().with_resource(body["$id"], DRAFT202012.create_resource(body))
+    resolver = registry.resolver(body["$id"])
+    validator = Draft202012Validator(body, _resolver=resolver)
+    assert validator.is_valid({"n": 11})
+    assert not validator.is_valid({"n": "bad"})
+    _validate(document)
