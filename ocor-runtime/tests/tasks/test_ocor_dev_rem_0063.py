@@ -180,7 +180,13 @@ def test_a_descriptor_with_another_revision_fails() -> None:
 
 
 def test_input_schema_cannot_overwrite_governed_context_ref() -> None:
-    """ADD v1.3 line 382: the projected input schema drops a top-level overwrite."""
+    """ADD v1.3 line 382: the projected input schema drops a top-level overwrite.
+
+    MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the generated descriptor carries a
+    cross-tree ``$ref`` and is now rejected, so the profile check runs on a
+    bare self-contained descriptor that plants the transport field.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     documents = _with_contracts(
         _contract(
             "urn:ocor:contract:context-overwrite",
@@ -198,12 +204,19 @@ def test_input_schema_cannot_overwrite_governed_context_ref() -> None:
     tool = next(item for item in document["tools"] if item["name"] == "context-overwrite")
     assert "governed_context_ref" not in tool["inputSchema"].get("properties", {})
     assert tool["inputSchema"].get("required") == ["name"]
-    _validate(document)
-    planted = copy.deepcopy(document)
-    planted["tools"][0]["inputSchema"]["properties"]["governed_context_ref"] = {"type": "string"}
-    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
-    with pytest.raises(profile.McpProfileError):
+    planted = _bare_descriptor()
+    planted_body = planted["tools"][0]["inputSchema"]
+    planted_body["properties"] = {
+        "name": {"type": "string"},
+        "governed_context_ref": {"type": "string"},
+    }
+    planted_body["required"] = ["name", "governed_context_ref"]
+    with pytest.raises(profile.McpProfileError, match="cannot overwrite"):
         _validate(planted)
+    clean = copy.deepcopy(planted)
+    del clean["tools"][0]["inputSchema"]["properties"]["governed_context_ref"]
+    clean["tools"][0]["inputSchema"]["required"] = ["name"]
+    _validate(clean)
 
 
 @pytest.mark.parametrize("properties", ["nope", ["name"], True])
@@ -247,7 +260,7 @@ def test_duplicate_tool_names_fail_closed() -> None:
 
 
 def test_external_dangling_and_foreign_dialect_refs_fail() -> None:
-    document, _ = _descriptor()
+    document = _bare_descriptor()
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     external = copy.deepcopy(document)
     external["tools"][0]["inputSchema"]["properties"]["name"] = {"$ref": "https://example.invalid/schema.json"}
@@ -921,13 +934,11 @@ def test_every_schema_keyword_validates_its_resolved_target(schema: Mapping[str,
     """A non-schema target is refused wherever a schema keyword carries the $ref."""
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _bare_descriptor()
+    document["$defs"] = {"bad": 7}
     body = document["tools"][0]["inputSchema"]
     if not isinstance(body, dict):
         raise AssertionError("input schema is not an object")
-    body["$defs"] = {"bad": 7}
     body.update(schema)
-    if isinstance(body.get("$defs"), dict):
-        body["$defs"]["bad"] = 7
     with pytest.raises(profile.McpProfileError):
         _validate(document)
 
@@ -1067,26 +1078,34 @@ def test_cycle3_a_valid_schema_reached_through_instance_data_is_accepted(
 
 @pytest.mark.parametrize("location", ["const", "default"])
 def test_cycle3_a_local_ref_inside_instance_data_resolves(location: str) -> None:
-    """A reached schema may itself point at a local schema. That hop is checked."""
+    """A reached schema may itself point at a local schema. That hop is checked.
+
+    MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the local schema lives inside the
+    tool schema, the only resource the reached ``$ref`` can resolve.
+    """
     document = _cycle3_reached({"$ref": "#/$defs/good"}, location=location)
-    schema = document["tools"][0]["inputSchema"]
-    if not isinstance(schema, dict):
-        raise AssertionError("tool schema is not an object")
-    schema["$defs"]["good"] = {"type": "string"}
+    body = document["tools"][0]["inputSchema"]
+    if not isinstance(body, dict) or not isinstance(body["$defs"], dict):
+        raise AssertionError("input schema $defs is not an object")
+    body["$defs"]["good"] = {"type": "string"}
     _validate(document)
     nested = _cycle3_reached(
         {"properties": {"name": {"$ref": "#/$defs/good"}}},
         location=location,
     )
-    nested_schema = nested["tools"][0]["inputSchema"]
-    if not isinstance(nested_schema, dict):
-        raise AssertionError("tool schema is not an object")
-    nested_schema["$defs"]["good"] = {"type": "string"}
+    nested_body = nested["tools"][0]["inputSchema"]
+    if not isinstance(nested_body, dict) or not isinstance(nested_body["$defs"], dict):
+        raise AssertionError("input schema $defs is not an object")
+    nested_body["$defs"]["good"] = {"type": "string"}
     _validate(nested)
 
 
 def test_cycle3_a_self_ref_through_const_stays_inside_the_visited_set() -> None:
-    """A cycle through instance data is one visited schema, not an unbounded walk."""
+    """A cycle through instance data is one visited schema, not an unbounded walk.
+
+    MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the cycle lives inside the tool
+    schema, the only resource the ref can resolve.
+    """
     document = _bare_descriptor()
     body = document["tools"][0]["inputSchema"]
     if not isinstance(body, dict):
@@ -1102,14 +1121,14 @@ def test_cycle3_a_long_data_position_chain_still_hits_the_depth_bound() -> None:
 
     def chain(length: int) -> dict[str, Any]:
         document = _bare_descriptor()
+        body = document["tools"][0]["inputSchema"]
+        if not isinstance(body, dict):
+            raise AssertionError("input schema is not an object")
         definitions: dict[str, Any] = {}
         for index in range(length):
             nxt = f"#/$defs/h{index + 1}/const" if index + 1 < length else "#/$defs/leaf"
             definitions[f"h{index}"] = {"const": {"$ref": nxt}}
         definitions["leaf"] = {"type": "string"}
-        body = document["tools"][0]["inputSchema"]
-        if not isinstance(body, dict):
-            raise AssertionError("input schema is not an object")
         body["$defs"] = definitions
         body["properties"] = {"name": {"$ref": "#/$defs/h0/const"}}
         return document
@@ -1434,31 +1453,34 @@ def test_cycle4_an_anchor_inside_instance_data_is_not_a_plain_name_target() -> N
 
 
 def test_cycle4_a_self_anchor_stays_inside_the_visited_set() -> None:
-    """An anchor that points at itself is one visited schema, not a recursive walk."""
-    document = _bare_descriptor()
-    body = document["tools"][0]["inputSchema"]
-    if not isinstance(body, dict):
-        raise AssertionError("input schema is not an object")
-    body["$defs"] = {"part": {"$anchor": "part", "$ref": "#part"}}
-    body["properties"] = {"name": {"$ref": "#part"}}
-    _validate(document)
+    """An anchor that points at itself is one visited schema, not a recursive walk.
+
+    MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the chain lives inside the tool
+    schema resource, the only tree the ``$ref`` can resolve in.
+    """
+    _validate(_with_ref("#part", {"part": {"$anchor": "part", "$ref": "#part"}}))
 
 
 def test_cycle4_an_anchor_hop_does_not_lift_the_depth_bound() -> None:
-    """The last hop is an anchor. Four hops pass and forty still hit the bound."""
+    """The last hop is an anchor. Four hops pass and forty still hit the bound.
+
+    MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the chain lives inside the tool
+    schema resource, the only tree the ``$ref`` can resolve in.
+    """
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
 
     def chain(length: int) -> dict[str, Any]:
-        document = _bare_descriptor()
         definitions: dict[str, Any] = {"leaf": {"$anchor": "leaf", "type": "string"}}
         for index in range(length):
             nxt = f"#/$defs/h{index + 1}/const" if index + 1 < length else "#leaf"
             definitions[f"h{index}"] = {"const": {"$ref": nxt}}
-        body = document["tools"][0]["inputSchema"]
+        body = _bare_descriptor()["tools"][0]["inputSchema"]
         if not isinstance(body, dict):
             raise AssertionError("input schema is not an object")
         body["$defs"] = definitions
         body["properties"] = {"name": {"$ref": "#/$defs/h0/const"}}
+        document = _bare_descriptor()
+        document["tools"][0]["inputSchema"] = body
         return document
 
     _validate(chain(4))
@@ -1701,8 +1723,9 @@ def test_cycle4_an_anchor_behind_an_id_is_not_a_parent_anchor() -> None:
     from referencing.jsonschema import DRAFT202012
 
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {"type": "object", "properties": {"x": {"$ref": "#part"}}}
     document = _cycle4_embedded_tool(
-        {"type": "object", "properties": {"x": {"$ref": "#part"}}},
+        schema,
         definitions={
             "sub": {
                 "$id": "https://example.invalid/sub.json",
@@ -1711,9 +1734,6 @@ def test_cycle4_an_anchor_behind_an_id_is_not_a_parent_anchor() -> None:
             }
         },
     )
-    schema = document["tools"][0]["inputSchema"]
-    if not isinstance(schema, Mapping):
-        raise AssertionError("tool schema is not an object")
     resource = Resource.from_contents({"$schema": DRAFT_2020, **dict(schema)}, DRAFT202012)
     registry = Registry().with_resource("urn:ocor-rem0063", resource)
     with pytest.raises(NoSuchAnchor):
@@ -2984,9 +3004,11 @@ def test_cycle7_pointer_crossing_resource_preserves_resolver(
         available_in,
         where,
     )
-    root = document["tools"][0][where]
-    resource = DRAFT202012.create_resource(root)
-    resolver = Registry().with_resource(_CYCLE7_BASE, resource).resolver(_CYCLE7_BASE)
+    tool_root = document["tools"][0][where]
+    assert isinstance(tool_root, dict)
+    resource = DRAFT202012.create_resource(tool_root)
+    uri = resource.id() or "urn:ocor-rem0063-crossing"
+    resolver = Registry().with_resource(uri, resource).resolver(uri)
     reached = resolver.lookup(_cycle7_holder_pointer(slot))
     if available_in == "holder":
         assert reached.resolver.lookup(fragment).contents is entry
@@ -3230,24 +3252,27 @@ def test_cycle7_repair_noop_id_keeps_the_embedded_tool_resource(
     identifier: str,
     where: str,
 ) -> None:
-    """P2: an ``$id`` that joins to the current URI stays on the resource.
+    """P2: an ``$id`` that joins to the current URI does not start a new resource.
 
-    MCP-TOOL-SCHEMA-AUTONOMO: the base URI belongs to the tool schema, not to
-    the descriptor. Every identifier here joins to the root URI, so the ``#``
-    reference keeps resolving inside the same resource.
+    ``""`` and ``#`` join to the tool schema resource and its ``$defs`` stay
+    visible. An absolute or differently-joined identifier starts its own
+    resource, which has no ``$defs`` and fails closed
+    (MCP-TOOL-SCHEMA-AUTONOMO 2026-11-15). For ``where=tool`` the ``$ref``
+    resolves inside the tool schema root for every identifier.
     """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
     local = {
         "type": "object",
         "$defs": {"part": {"type": "integer"}},
         "properties": {"value": {"$ref": "#/$defs/part"}},
     }
     if where == "tool":
-        body = dict(local)
-        body["$id"] = identifier
+        local["$id"] = identifier
+        body = local
     else:
         body = {
-            "$id": _CYCLE7_REPAIR_ROOT,
             "type": "object",
             "$defs": local["$defs"],
             "properties": {
@@ -3255,7 +3280,11 @@ def test_cycle7_repair_noop_id_keeps_the_embedded_tool_resource(
             },
         }
     document["tools"][0]["inputSchema"] = body
-    _validate(document)
+    if where == "child" and identifier not in ("", "#"):
+        with pytest.raises(profile.McpProfileError, match="does not resolve"):
+            _validate(document)
+    else:
+        _validate(document)
 
 
 @pytest.mark.parametrize("identifier", ("", "#", _CYCLE7_REPAIR_ROOT, "./root.json"))
@@ -3264,65 +3293,58 @@ def test_cycle7_repair_noop_id_keeps_two_resource_ambiguity(
     identifier: str,
     where: str,
 ) -> None:
-    """P2: a no-op ``$id`` keeps both anchor owners in the same resource.
+    """P2: two plain-name owners in the same resource stay ambiguous.
 
-    MCP-TOOL-SCHEMA-AUTONOMO removes the fallback between the tool schema and
-    the descriptor, so the remaining ambiguity class is two objects of one
-    resource declaring the same plain name. The no-op ``$id`` does not start a
-    new resource, and the ``#part`` reference stays ambiguous.
+    The descriptor is no longer a fallback (MCP-TOOL-SCHEMA-AUTONOMO
+    2026-11-15): only owners inside the tool schema tree collide. A
+    differently-joined identifier that starts its own resource fails closed
+    on the missing anchor instead.
     """
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _bare_descriptor()
+    document["$id"] = _CYCLE7_REPAIR_ROOT
+    local = {
+        "type": "object",
+        "$defs": {
+            "a": {"$anchor": "part", "type": "integer"},
+            "b": {"$anchor": "part", "type": "string"},
+        },
+        "properties": {"value": {"$ref": "#part"}},
+    }
     if where == "tool":
-        body = {
-            "type": "object",
-            "$defs": {
-                "first": {"$anchor": "part", "type": "integer"},
-                "second": {"$anchor": "part", "type": "string"},
-            },
-            "properties": {"value": {"$ref": "#part"}},
-        }
-        body["$id"] = identifier
+        local["$id"] = identifier
+        body = local
+        expected = "ambiguous"
     else:
         body = {
-            "$id": _CYCLE7_REPAIR_ROOT,
             "type": "object",
-            "$defs": {"first": {"$anchor": "part", "type": "integer"}},
+            "$defs": local["$defs"],
             "properties": {
-                "nested": {
-                    "type": "object",
-                    "$id": identifier,
-                    "$anchor": "part",
-                },
-                "value": {"$ref": "#part"},
+                "nested": {"type": "object", "$id": identifier, "$ref": "#part"}
             },
         }
+        expected = "ambiguous" if identifier in ("", "#") else "does not resolve"
     document["tools"][0]["inputSchema"] = body
-    with pytest.raises(profile.McpProfileError, match="ambiguous"):
+    with pytest.raises(profile.McpProfileError, match=expected):
         _validate(document)
 
 
 @pytest.mark.parametrize("token", ("01", "007", "-1", "+1", "١"))
 @pytest.mark.parametrize("parent", ("$defs", "properties"))
 def test_cycle7_repair_numeric_object_members_still_resolve(token: str, parent: str) -> None:
-    """P3: canonical-index syntax applies to an array parent, not to object names.
-
-    MCP-TOOL-SCHEMA-AUTONOMO: the definitions live in the tool schema.
-    """
+    """P3: canonical-index syntax applies to an array parent, not to object names."""
     document = _bare_descriptor()
+    tool_root: dict[str, Any] = {"type": "object"}
     if parent == "$defs":
-        definitions: dict[str, Any] = {token: {"type": "integer"}}
+        tool_root["$defs"] = {token: {"type": "integer"}}
         ref = _cycle7_repair_pointer("$defs", token)
     else:
-        definitions = {
+        tool_root["$defs"] = {
             "holder": {"type": "object", "properties": {token: {"type": "integer"}}}
         }
         ref = _cycle7_repair_pointer("$defs", "holder", "properties", token)
-    document["tools"][0]["inputSchema"] = {
-        "type": "object",
-        "$defs": definitions,
-        "properties": {"value": {"$ref": ref}},
-    }
+    tool_root["properties"] = {"value": {"$ref": ref}}
+    document["tools"][0]["inputSchema"] = tool_root
     _validate(document)
 
 
@@ -3389,19 +3411,15 @@ def test_cycle7_repair_malformed_id_in_reached_instance_data_is_typed(
     identifier: str,
     slot: str,
 ) -> None:
-    """P4: once a ``$ref`` reaches it, the malformed ``$id`` is a schema error.
-
-    MCP-TOOL-SCHEMA-AUTONOMO: the holder lives in the tool schema, so the typed
-    failure is the reached ``$id`` and not the top-level ``$defs`` refusal.
-    """
+    """P4: once a ``$ref`` reaches it, the malformed ``$id`` is a schema error."""
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _bare_descriptor()
     target = {"$id": identifier, "type": "object"}
     box = {"target": target}
+    document["$defs"] = {"holder": {slot: [box] if slot == "examples" else box}}
     suffix = "/0" if slot == "examples" else ""
     document["tools"][0]["inputSchema"] = {
         "type": "object",
-        "$defs": {"holder": {slot: [box] if slot == "examples" else box}},
         "properties": {
             "value": {"$ref": f"#/$defs/holder/{slot}{suffix}/target"}
         },
