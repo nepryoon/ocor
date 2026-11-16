@@ -1,11 +1,11 @@
 {
   "assumptions": [
-    "Il ciclo 10 \u00e8 autorizzato da REM-0063-CICLO-10-CONTRATTO (2026-11-16).",
-    "La fase A modifica solo contratto, test nuovi e record; produzione e test esistenti invariati.",
-    "REM-0063-CYCLE10-ORACLE-CONFLICT \u00e8 aperta: nessuna fase B prima della disposition."
+    "Nessuna modifica di produzione nel ciclo 10 finora; la fase A completa solo contratto e test nuovi.",
+    "A1+B1 sono decise; la nuova interpretazione degli URI interni richiede una disposition separata.",
+    "La seconda revisione del contratto \u00e8 l\u2019ultima prevista; dopo incorporarne i bloccanti non si chiede una terza revisione del contratto."
   ],
   "base_sha": "f485dc964e47bde83842ecd5ba2627d8342612f9",
-  "baseline_commit": "52ca63413393c375a35e265aaec94bc6382a1112",
+  "baseline_commit": "32a4938e72fc93cc4f6167cc104ba940d2ef7599",
   "branch": "governed/ocor-dev-rem-0063-mcp-profile",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0064-conformance-register-entries",
@@ -55,25 +55,34 @@
   },
   "commands": [
     {
-      "command": "ocor-runtime/.venv/bin/python -m pytest ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py -k cycle10 -q --tb=line --junitxml=<preserved output>/matrix.xml",
-      "executed_at_commit": "f92d038780f823ed6b9488326a1f7a1e3591b12b",
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+        "-m",
+        "pytest",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py",
+        "-k",
+        "cycle10",
+        "-q",
+        "--tb=line",
+        "--junitxml=/home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2/matrix.xml"
+      ],
+      "executed_at_commit": "9c17abe66db6521b96a357f8ac82877736e6fb4d",
       "exit_code": 1,
-      "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a/matrix.raw.log",
-      "raw_output_sha256": "76180bb83b0f58913772a8e5d61210f42a4f2a8f1dad33592a42f2cbca06672f",
+      "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2/matrix.raw.log",
+      "raw_output_sha256": "8ed13844bf6f62fc620a77ece920f7e4b167c82fe4cf7b3da8612df93cf0e707",
       "result": "RED_EXPECTED_NOT_QUALIFYING"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0063 ciclo 10, fase A: contratto e RED in revisione, quesiti normativi aperti",
+  "current_task": "OCOR-DEV-REM-0063 ciclo 10, fase A: seconda revisione del contratto e quesito sugli URI interni",
   "evidence_paths": [],
-  "exact_next_action": "Riprendere OCOR-DEV-REM-0063 dal branch governed/ocor-dev-rem-0063-mcp-profile, HEAD 5dae37f94a80b182c1a3ec1d01f298c5d025921f, dopo la revisione del contratto OCOR-DEV-REM-0063-5dae37f94a80-pre. Il contratto e la matrice RED della fase A sono al commit f92d038780f823ed6b9488326a1f7a1e3591b12b. Prima di qualsiasi modifica sotto ocor-runtime/src occorre anche la disposition di REM-0063-CYCLE10-ORACLE-CONFLICT (PR #650, quesiti A e B). Se la revisione ha BLOCKING_FINDINGS, completare soltanto contratto e test nuovi e chiedere la seconda revisione del contratto, al massimo due in totale. Poi attuare soltanto le decisioni ricevute. Nessuna campagna, sigillo o merge del candidato in questa fase; REM-0063-PINNED-FIXTURE-DIFF-CHECK (PR #649) resta aperta con byte fissati e NOT_GREEN. Restano fermi REM-0065, REM-0066, REM-0061, REM-0060 e i task G6 durante i cicli eccezionali. Claim invariati.",
+  "exact_next_action": "Riprendere OCOR-DEV-REM-0063 dal branch governed/ocor-dev-rem-0063-mcp-profile, HEAD 8ac669c8b1474d09363fbed3ef42aba16f8b19a8, codice/test del contratto 9c17abe66db6521b96a357f8ac82877736e6fb4d, dopo la seconda e ultima revisione del contratto OCOR-DEV-REM-0063-8ac669c8b147-pre. Incorporare i bloccanti residui di questa seconda revisione nel contratto e nei nuovi test, senza chiedere una terza revisione del contratto. Prima del codice dipendente sotto ocor-runtime/src e prima di ogni campagna completa occorre la disposition di REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (PR #652). A1+B1 di REM-0063-CYCLE10-ORACLE-CONFLICT sono decise: la fase B applicher\u00e0 soltanto i riallineamenti enumerati. La fixture resta byte-identica e git diff --check su quel solo file resta NOT_GREEN con eccezione ricevuta. Poi una sola riparazione di fase B contro la matrice intera, GREEN, revisione preventiva della riparazione, gate locale, campagna, controllo distinto e verifica come deciso. Nessuna campagna o chiusura di finding nella fase A. Restano fermi gli altri WIP durante i cicli eccezionali. Claim invariati.",
   "full_campaign": {
     "qualifying": false,
-    "reason": "Fase A prima della riparazione di produzione; campagne storiche nei commit precedenti e nel record dell\u2019unit\u00e0, non trasferite.",
-    "status": "NOT_EXECUTED"
+    "status": "NOT_EXECUTED_PHASE_A"
   },
-  "head_sha": "5dae37f94a80b182c1a3ec1d01f298c5d025921f",
-  "head_sha_role": "Checkpoint pubblicato della fase A, non un candidato qualificato o sigillato",
+  "head_sha": "8ac669c8b1474d09363fbed3ef42aba16f8b19a8",
+  "head_sha_role": "Checkpoint pubblicato per la seconda revisione del contratto, non candidato qualificato",
   "historical_seal_hashes": {
     "requalified": {
       "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json": {
@@ -111,59 +120,145 @@
     "verdict": "NO_GO"
   },
   "latest_ci_evidence": {
-    "bad_checks": [],
-    "head_sha": "3d19546cb686a013ed10c2e312160c45f78ce995",
-    "merge_commit": "31ca1a64ec228965047ab310d8f84533aa0348b3",
-    "note": "required check-runs on the seal head, all success, zero reruns; enable-auto-merge skipped; conditional-infrastructure-0049 also success and is not one of the 13 required contexts",
-    "observed_at": "2026-11-14T13:56:16Z",
-    "pr": 631,
-    "required_checks": [
-      "contract",
-      "unit",
-      "integration-postgresql",
-      "backend-compatibility-not-ba-evidence",
-      "evidence",
-      "mandatory-gates",
-      "rccad-methodology",
-      "delivery-activation",
-      "validation-closure",
-      "supply-chain",
-      "type-and-lint-gate",
-      "tooling-policy",
-      "fgm-contract-readiness-not-runtime-evidence"
-    ],
-    "reruns": 0,
-    "run_ids": [
-      "43598530122",
-      "43598530129",
-      "43598530156",
-      "43598530195",
-      "43598530196",
-      "43598530213"
-    ],
-    "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
+    "head_sha": "debfe5d6e9fb0a430975bb7d98fa0130a539144b",
+    "merge_commit": "32a4938e72fc93cc4f6167cc104ba940d2ef7599",
+    "observation_sha256": "fbcdfb438b58013137bf1fe28af46e63ccb1240fadbe95588d52d73d36338874",
+    "pr": 651,
+    "required_checks": "13 success sull\u2019HEAD esatto; enable-auto-merge skipped non bloccante",
+    "scope": "State sync precedente, nessuna qualifica di REM-0063"
   },
   "local_gate_results": {
-    "evidence_drift": "75 task, 241 input, zero deriva",
-    "input_digest_check": "PASS, 17 input e 5 artefatti",
+    "cell_scan": {
+      "cells": 444,
+      "collected": 1030,
+      "command": [
+        "ocor-runtime/.venv/bin/python",
+        "/home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py",
+        "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json",
+        "9c17abe66db6521b96a357f8ac82877736e6fb4d",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063"
+      ],
+      "counts": {
+        "FIXED": 78,
+        "N/A": 216,
+        "PASS": 150
+      },
+      "errors": 0,
+      "head": "9c17abe66db6521b96a357f8ac82877736e6fb4d",
+      "rows": 74,
+      "scope": "Historical production table completeness only; phase A does not claim a production audit.",
+      "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "sha256": "5920525eb82de3d5ae54ad4830f113a287c7c9c3ec19394da1536b3f7b317d56",
+      "status": "PASS_COMPLETENESS_ONLY",
+      "tests_cited": 106
+    },
+    "execution_input_check": {
+      "artifacts": 5,
+      "command": [
+        "ocor-runtime/.venv/bin/python",
+        "scripts/check_execution_commit_inputs.py",
+        "--execution-commit",
+        "9c17abe66db6521b96a357f8ac82877736e6fb4d",
+        "--record",
+        "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json"
+      ],
+      "head": "9c17abe66db6521b96a357f8ac82877736e6fb4d",
+      "inputs": 17,
+      "section": "AUTOCONTROLLO-DIGEST-COMMIT (2026-11-11)",
+      "sha256": "269acf2a7d2ab4909c011aa8506640ea4b1ec92461c25e21449359ca7193374a",
+      "status": "PASS"
+    },
+    "existing_evidence_drift": "75 tasks, 241 inputs, zero drift",
+    "external_artifact_check": {
+      "artifacts": {
+        "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2/historical-red-family-counts.json": "0757690d5bf5287030a180425e90ae0723ef58fabfdeffbf41b319a299da40ab",
+        "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2/matrix.raw.log": "8ed13844bf6f62fc620a77ece920f7e4b167c82fe4cf7b3da8612df93cf0e707",
+        "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2/matrix.xml": "c1acffcf1bdde04697e8af773a6247c954f6587e95369d1da22abf37aa2d7e9b",
+        "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2/red-family-counts.json": "6856852e6e1147bd303ecfabaddef8840120ab4dee0425485bd96f0754896bca"
+      },
+      "checked_external_artifacts": 4,
+      "command": "python3 mechanical comparison of each recorded external RED/JUnit/family-count digest with the preserved file; phase-A record finalisation command",
+      "errors": [],
+      "execution_commit": "9c17abe66db6521b96a357f8ac82877736e6fb4d",
+      "output_sha256": "790d614aacdcbda71fbf2f77b4be296eec2e246558c7760f80cd07e732be65b8",
+      "status": "PASS"
+    },
+    "full_pre_campaign_gate": "NOT_EXECUTED_PHASE_A_RED",
     "language": "PASS",
+    "mypy": "PASS; 155 source files",
     "normative_checksums": "8/8 PASS",
-    "phase_A_plan": "37 PASS, 2 NOT_EXECUTED opzionali",
-    "plan_against_origin_main": "FAIL per divergenze ereditate; nessun merge di allineamento della fase A",
+    "oracle_controls": {
+      "cases": 36,
+      "sha256": "e63152c6eb7a0a89ff63ee37542b595b9492521bca71bdf001238b5aaeebdd07",
+      "status": "PASS"
+    },
+    "pinned_toolchain_preflight": {
+      "initial_default_path_attempt": "FAIL: unpinned host executables; corrected by selecting the existing lock-matched tools, no lock or installation change.",
+      "sha256": "953e812bb5cb99ea0cc010c0b31d52ef582bc13f06fbc02c4a23e51cdc9ca6c7",
+      "status": "PASS"
+    },
+    "presentation_check": {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "4b277f76b743466f6f96245b5666d536d14a6a94..HEAD"
+      ],
+      "exception_decision": "REM-0063-PINNED-FIXTURE-DIFF-CHECK (2026-11-16), option 1",
+      "exit_code": 2,
+      "head": "9c17abe66db6521b96a357f8ac82877736e6fb4d",
+      "scope": "The sole output is the pinned fixture schema.json:3963 final blank line; no file is omitted from this command.",
+      "sha256": "672486ad1e421b2e90cb5d7173d3c3432ffda0d7d17f919b08b13bd03d3f891c",
+      "status": "NOT_GREEN_EXCEPTION_RECORDED"
+    },
     "rccad": "PASS_LOCAL_PRECHECK",
-    "role_coherence": "18 campi, zero errori; il numero riflette i campi scalari delle tre identit\u00e0 e dei due commit confrontati",
+    "role_coherence_scan": {
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2/scan_roles.py",
+      "compared_fields": 28,
+      "errors": [],
+      "excluded_verifier_providers": [
+        "Anthropic",
+        "DeepSeek",
+        "Google",
+        "OpenAI",
+        "xAI"
+      ],
+      "head": "9c17abe66db6521b96a357f8ac82877736e6fb4d",
+      "implementer_providers": [
+        "DeepSeek",
+        "OpenAI",
+        "xAI"
+      ],
+      "phase": "A_SECOND_CONTRACT_REVIEW_ONLY",
+      "production_review_not_performed": true,
+      "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "sha256": "886a9539f2bc8ec45376f62d12982dfa3100f5ebddf4b1d468540770a8633bdb",
+      "status": "PASS"
+    },
     "ruff": "PASS",
-    "scope": "Controlli della fase A, senza suite completa",
-    "self_check_cell_scan": "74 righe, 444 celle, 106 test citati, zero errori; sola completezza della tabella storica",
-    "verify": "14 PASS"
+    "scope_plan_phase_A": {
+      "base": "f485dc964e47bde83842ecd5ba2627d8342612f9",
+      "counts": {
+        "NOT_EXECUTED": 2,
+        "PASS": 37
+      },
+      "generated_outputs": "The two generated planning outputs were preserved as a patch and restored, outside phase-A scope.",
+      "sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    "token_isolation_and_duplicate_controls": {
+      "cases": 324,
+      "sha256": "e8c4b0b3b91665f9e63c268714c880d1cfb872f784f960f15429b39d37358169",
+      "status": "PASS"
+    },
+    "verify_harness": "14 PASS, 0 FAIL, 0 NOT_EXECUTED"
   },
-  "next_task": "Riprendere OCOR-DEV-REM-0063 dal branch governed/ocor-dev-rem-0063-mcp-profile, HEAD 5dae37f94a80b182c1a3ec1d01f298c5d025921f, dopo la revisione del contratto OCOR-DEV-REM-0063-5dae37f94a80-pre. Il contratto e la matrice RED della fase A sono al commit f92d038780f823ed6b9488326a1f7a1e3591b12b. Prima di qualsiasi modifica sotto ocor-runtime/src occorre anche la disposition di REM-0063-CYCLE10-ORACLE-CONFLICT (PR #650, quesiti A e B). Se la revisione ha BLOCKING_FINDINGS, completare soltanto contratto e test nuovi e chiedere la seconda revisione del contratto, al massimo due in totale. Poi attuare soltanto le decisioni ricevute. Nessuna campagna, sigillo o merge del candidato in questa fase; REM-0063-PINNED-FIXTURE-DIFF-CHECK (PR #649) resta aperta con byte fissati e NOT_GREEN. Restano fermi REM-0065, REM-0066, REM-0061, REM-0060 e i task G6 durante i cicli eccezionali. Claim invariati.",
-  "phase": "PHASE_A_CONTRACT_REVIEW_PENDING_PO_QUESTIONS",
+  "next_task": "Riprendere OCOR-DEV-REM-0063 dal branch governed/ocor-dev-rem-0063-mcp-profile, HEAD 8ac669c8b1474d09363fbed3ef42aba16f8b19a8, codice/test del contratto 9c17abe66db6521b96a357f8ac82877736e6fb4d, dopo la seconda e ultima revisione del contratto OCOR-DEV-REM-0063-8ac669c8b147-pre. Incorporare i bloccanti residui di questa seconda revisione nel contratto e nei nuovi test, senza chiedere una terza revisione del contratto. Prima del codice dipendente sotto ocor-runtime/src e prima di ogni campagna completa occorre la disposition di REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (PR #652). A1+B1 di REM-0063-CYCLE10-ORACLE-CONFLICT sono decise: la fase B applicher\u00e0 soltanto i riallineamenti enumerati. La fixture resta byte-identica e git diff --check su quel solo file resta NOT_GREEN con eccezione ricevuta. Poi una sola riparazione di fase B contro la matrice intera, GREEN, revisione preventiva della riparazione, gate locale, campagna, controllo distinto e verifica come deciso. Nessuna campagna o chiusura di finding nella fase A. Restano fermi gli altri WIP durante i cicli eccezionali. Claim invariati.",
+  "phase": "PHASE_A_SECOND_CONTRACT_REVIEW_PENDING_PO_QUESTION",
   "po_decisions_pending": [
     "AGENTIC-RISK-MAP-PARTIAL-GAPS",
     "REM-0066-GUARD-ADMISSION",
-    "REM-0063-CYCLE10-ORACLE-CONFLICT",
-    "REM-0063-PINNED-FIXTURE-DIFF-CHECK"
+    "REM-0063-CYCLE10-INTERNAL-RESOURCE-URI"
   ],
   "previous_exact_next_action": "OCOR-DEV-REM-0066 e bloccato da REM-0066-GUARD-ADMISSION, commit d57732f5345636ff9ca2e819e037f345af26679c, sha256 56f50622954689e1913c73fc0d3bac5c111cb9d19b740b67799bef96c2a1d476, PR 647 bozza, non si integra. La riqualifica regression-only di OCOR-DEV-0005, OCOR-DEV-0050 e OCOR-DEV-0082 e sul branch governed/ocor-dev-rem-0066-state-only-ci all'HEAD b7895ab1ec31ad289ff113e1224c26425a35bb5f, esecuzione d87ae539d3f4456e1c2e40e912345e837348561c: drift PASS, 75 task, 241 input, 0 drift. PRE-CAMPAIGN-GATE su quell'HEAD e FAIL sul solo passo validation-closure-guards: 7 failed, 572 passed, 1 skipped. Non modificare i test del guard, non scrivere prereview_request.json e non avviare la suite completa finche la richiesta e aperta. Non avviare il ciclo 7 di OCOR-DEV-REM-0063 finche REM-0063-CYCLE7-NO-GO e aperta: commit c515db74eed0f10e7a08f3434898cc47bad2efab, sha256 f642f1ae719c4645827db2b19f09e7e2f578bfa8f63c2a7aedeb02010508066f, PR 645 bozza, non si integra. La prossima unita eseguibile e OCOR-DEV-REM-0065 sul branch governed/ocor-dev-rem-0065-agentic-risk-map all'HEAD 583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c. Non avviare OCOR-DEV-REM-0060, non adottare la PR 599, non aprire l'unita del punto 5, non integrare la PR 595. La PR 628 non si riapre. La PR 640 resta lavoro concorrente sul README. Claim invariati.",
   "previous_full_campaign": {
@@ -352,7 +447,7 @@
     "preventive_review_dispositions": "P1 FIXED (RED 555bb32, GREEN 91ba110): memory_admission reads MemTotal and MemAvailable each exactly once as ASCII digits with the kB unit (anything else is the recorded SERIAL); read_memory_admission decodes meminfo as strict UTF-8 and records an unreadable or undecodable file as SERIAL in lifecycle_check, execute_campaign and --plan; P2 FIXED (RED 555bb32, GREEN 91ba110): bootstrap_summary refuses NaN and Infinity, a negative or non-numeric provisioning time, a typed status other than PASS or FAIL or inconsistent with the services, and empty service names or states; StartedAt accepts ASCII digits only; the lane bootstrap log is decoded as strict UTF-8 and an undecodable log is a typed FAIL of the lane; P3 FIXED (RED 555bb32, GREEN 91ba110): load_lane_spec takes a JSON object with exactly its five keys, checks element types before hashing and a finite non-bool start (run_lane then writes a typed FAIL result); read_lane_results takes an object with int lane and selected and a boolean po_decision_required; the stored copy in execute_campaign records a corrupted result as unreadable and never masks the typed failure; P4 FIXED (RED 555bb32, GREEN 91ba110): stop_process translates kill and wait failures (TimeoutExpired, OSError); bootstrap_lanes stops every remaining bootstrap, releases and joins every watcher, then raises one typed error naming the failure and every lane that did not stop; supervise_lanes does the same for lanes; lifecycle_check and execute_campaign catch SubprocessError; P5 FIXED (RED 555bb32, GREEN 91ba110): negative tests for every parsing path named and for the whole orchestrator class (weights, JUnit times, tools lock, power supply, stop request, env file), then the command runner (RED c82d696, GREEN de79d98: output decoded as strict UTF-8); input-robustness table rewritten for every parsing path; P6 ACCEPTED_AND_FIXED (RED 555bb32, GREEN 91ba110): a Temporal probe that cannot run or times out is a poll without SERVING counted in probe_errors and no longer ends the watch; the per-lane bootstrap record is FAIL whenever the lane is rejected",
     "requalifications": "4 regression-only .requalified-rem0056 records (non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS): OCOR-DEV-0005 supersedes OCOR-DEV-0005-requalified-rem0055-351bb27eeeb0, OCOR-DEV-0050 supersedes OCOR-DEV-0050-requalified-rem0055-351bb27eeeb0, OCOR-DEV-0082 supersedes OCOR-DEV-0082-requalified-rem0055-351bb27eeeb0, OCOR-DEV-REM-0037 supersedes OCOR-DEV-REM-0037-61654ea20771; surgical MANIFEST insertions; drift validator 0 at the candidate head; sealed records byte-identical; lane weights unchanged"
   },
-  "raw_evidence_location": "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a",
+  "raw_evidence_location": "/home/luca/.ocor-codex/rem-0063/cycle10-phase-a-review2",
   "rem0063_cycle2_start_head": "0384449029efa6e3ddb65de02d5d821990e6e7b6",
   "rem0063_cycle3_evidence": {
     "branch": "governed/ocor-dev-rem-0063-mcp-profile",
@@ -464,10 +559,13 @@
     },
     "preventive_reviewer": {
       "agent": "Claude Code",
+      "assignment": "REM-0063-CICLO-10-CONTRATTO (2026-11-16) points 1 and 3",
       "model": "claude-fable-5-2",
       "provider": "Anthropic",
-      "reserve": false
+      "reserve": false,
+      "status": "SECOND_REQUEST_TO_LOOP_PENDING"
     },
+    "scope": "Seconda revisione del contratto: Codex gpt-6.1-sol, OpenAI, max; produzione invariata.",
     "verifier": "Da assegnare secondo le decisioni vigenti, di fornitore diverso dagli implementatori e dal revisore preventivo; nessuna disponibilit\u00e0 sondata dall\u2019implementatore."
   },
   "rollback_result": "Nessun codice di runtime cambiato in NCP-U12; preservare la storia e, se richiesto, annullare le modifiche di test con un nuovo commit. Nessuna migrazione di dati.",
@@ -576,7 +674,7 @@
           "--base",
           "origin/main",
           "--branch",
-          "governed/state-sync-rem0063-cycle10-phase-a-20261116"
+          "governed/state-sync-rem0063-cycle10-review2-20261116"
         ],
         "exit_code": 0,
         "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
@@ -639,19 +737,19 @@
     "status": "PASS"
   },
   "test_results": {
-    "RED_failures": 1120,
-    "cases": 5790,
-    "duration_seconds": 81.81338331999723,
+    "duration_seconds": 617.8165574630257,
     "errors": 0,
-    "passed": 4670,
+    "failures": 4716,
+    "passed": 25030,
     "qualifying": false,
-    "raw_sha256": "76180bb83b0f58913772a8e5d61210f42a4f2a8f1dad33592a42f2cbca06672f",
-    "skipped": 0
+    "raw_sha256": "8ed13844bf6f62fc620a77ece920f7e4b167c82fe4cf7b3da8612df93cf0e707",
+    "skipped": 0,
+    "task_limit_margin_seconds": 2082.1834425369743,
+    "tests": 29746
   },
   "unresolved_blockers": [
-    "REM-0063-CYCLE10-ORACLE-CONFLICT",
-    "REM-0063-PINNED-FIXTURE-DIFF-CHECK"
+    "REM-0063-CYCLE10-INTERNAL-RESOURCE-URI"
   ],
-  "updated_at": "2026-11-16T18:28:26.583267+00:00",
+  "updated_at": "2026-11-16T20:35:46.764573+00:00",
   "worktree": ".ocor/worktrees/rem-0063"
 }
