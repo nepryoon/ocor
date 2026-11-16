@@ -34,127 +34,144 @@ Cycle 8 prereview-fix code is `edfe829322d57875c2bd0685a50f9710b4636726`, closin
 
 ## Cycle 10 contract
 
-Status: phase A, contract and RED tests; production code is still exactly
-`f485dc964e47bde83842ecd5ba2627d8342612f9`. This section is a derived contract
-for review, under **REM-0063-CICLO-10-CONTRATTO (2026-11-16)**, points 1–3.
-It does not declare either cycle-9 finding closed. Implementer of phase A:
-Codex, `gpt-6.1-sol`, OpenAI, effort `max`. Earlier implementers remain
-Grok Build (`grok-4.7`, xAI), and Codex CLI with `deepseek-flash` and
-`deepseek-v4-pro` (DeepSeek). Claude Code, `claude-fable-5-2`, Anthropic,
-is the assigned contract reviewer; the loop launches that review.
+Phase A, second contract review. Production remains byte-identical to
+`f485dc964e47bde83842ecd5ba2627d8342612f9`. This derived contract implements
+**REM-0063-CICLO-10-CONTRATTO (2026-11-16)**, points 1–3; it closes no production
+finding. Codex (`gpt-6.1-sol`, OpenAI, effort `max`) owns cycle 10. Earlier
+implementers remain Grok Build (`grok-4.7`, xAI) and Codex CLI
+(`deepseek-flash`, `deepseek-v4-pro`, DeepSeek). The assigned contract reviewer
+is Claude Code (`claude-fable-5-2`, Anthropic, effort `max`), launched by the loop.
 
 ### Producer and consumer obligations
 
-Each emitted `inputSchema` and `outputSchema` is an autonomous JSON Schema
-2020-12 resource. Each has its own registry, containing that schema and its
-contained resources only. Its base is its `$id`, when present; otherwise it
-is the fixed URI for that tool and field. No resolution falls back to the
-descriptor, another tool or a fetched document. This follows
-**MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, points 1–2. A no-ID base collision
-with a declared `$id` is a typed refusal, as expressly required by
-**MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**, point 2; question Q2
-below records the conflicting existing test.
+Every emitted `inputSchema` and `outputSchema` is an autonomous JSON Schema
+2020-12 resource: its registry contains that schema and its contained resources
+only. Its base is its declared `$id`, otherwise the fixed URI for its tool and
+field. No lookup falls back to the descriptor, another field, another tool or
+network retrieval. Sources: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, points 1–2.
+An empty URI fragment is normalised by the library's registry rules; the schema
+bytes and reference spelling are never rewritten for the oracle.
 
-The generator closes each resource over the IR types it uses, transitively,
-with references of the form `#/$defs/<Name>`. It includes all and only reachable
-definitions; a conflicting existing definition is a typed generation error.
-There are no descriptor-level `$defs`. Rendering the same release twice yields
-identical bytes, and `without_context_overwrite` still removes the transport
-context field from the input schema. These obligations follow
-**MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE**, points 1 and 3. The raw OaC contract
-uses IR symbol references, which the existing compiler checks before generation.
+The generator includes all and only transitively reachable IR definitions in
+each resource's `$defs`, with `#/$defs/<Name>` references. Unreachable user
+`$defs` are omitted. A same-name/different-content definition is a typed error.
+The descriptor has no top-level `$defs`; the profile rejects that form.
+Input generation preserves `without_context_overwrite`. Repeated generation
+is byte-identical. Sources: **MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**,
+points 1–3. Existing generator refusal of two distinct resource roots claiming
+one URI remains `C1Error`/`DUPLICATE_RESOURCE` (`codegen.py::_mcp_iter_resources`);
+it is stricter than the profile's library-selected resource winner. This is an
+existing restriction, not a new acceptance rule. Both sibling orders and repeated
+ancestor/descendant IDs are covered. **SELF-CHECK-ORACOLO (2026-11-14)**, point 2,
+permits a documented stricter rule; no new restriction is introduced here.
 
-On a successful public render, the actual emitted bytes must pass the public
-profile, `Draft202012Validator.check_schema`, and resolution with unmodified
-`referencing` 0.37.0 on each standalone schema. The oracle must not rewrite
-`$id`, substitute a registry root, decode a reference into a different spelling,
-or borrow a definition from another field. Unresolvable combinations require
-`C1Error` before any artefacts are returned. This is the acceptance rule of
-**REM-0063-CICLO-10-CONTRATTO**, point 2, and VF-001's required fix in
-`OCOR-DEV-REM-0063-f485dc964e47-9`. Question Q1 identifies existing tests whose
-oracles change the reference spelling and therefore need a PO disposition.
+Successful public generation must return bytes which pass the public profile,
+`Draft202012Validator.check_schema`, and unmodified `referencing` 0.37.0 on each
+schema alone. An unresolvable closure is `C1Error`/`UNRESOLVED_REFERENCE` before
+artefacts are returned. A fixed no-ID base colliding with a declared `$id` is
+refused by both producer (`C1Error`/`TYPE_ERROR`) and consumer (`McpProfileError`),
+without suffix selection. This applies to both fields and origins. Sources:
+**REM-0063-CICLO-10-CONTRATTO**, point 2; **REM-0063-CYCLE10-ORACLE-CONFLICT
+(2026-11-16)**, A1 and B1, including B1's producer/consumer agreement.
 
-A delivered descriptor is validated against the pinned official `Tool`
-definition, with schema, dialect, keyword and reference checks on each tool
-schema alone. Failure is `McpProfileError`. The existing local-fragment rule
-rejects a directly named resource URI even if a library could resolve it; a
-missing target or a target that is not a schema is rejected. Bounds remain
-4096 JSON values and depth 32, measured on the **final descriptor after closure**:
-the root counts as one, mapping keys do not count as values, and every scalar,
-sequence and mapping does. The generator must reject at 4097 or depth 33 with
-`C1Error`; it must not return a descriptor the profile rejects for those bounds.
-Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2; its VF-002 required fix;
-**REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2. No limit changes here.
+The profile validates each tool against the pinned official `Tool` definition,
+then schema, dialect, keyword and reference rules on each schema alone. A missing
+or non-schema target is a typed refusal; ambiguous anchors retain the stricter
+rule already documented in `mcp_profile.py::_reject_ambiguous_anchor`. Canonical
+array-index restrictions remain unchanged. Percent-encoded anchors and an encoded
+leading slash follow the unchanged libraries, without helper substitutions:
+**REM-0063-CYCLE10-ORACLE-CONFLICT**, A1. Existing tests are preserved in phase A;
+only its enumerated realignments may occur in phase B.
 
-The profile and generator currently compute resource/base identity separately
-(`_build_schema_trees` and `_mcp_base_uri`, their resource-URI helpers) and
-validate closure through separate paths (`_resolve_graph` and
-`_mcp_post_check`). Phase B must make those paths agree. The agreement proof
-chosen for this contract is the Cartesian public-path test below, using the
-same independent library oracle on delivered and emitted schemas. Whether phase
-B also shares a production helper is an implementation choice within scope;
-the tests never use it to compute an expected answer.
+The current module restricts references to fragments. Whether an URI naming a
+contained resource also counts as internal is **open question Q3**, not decided
+here. Matrix cells for that spelling retain the current refusal conditionally;
+their library resolution outcome is recorded separately. No retrieval is ever
+allowed. Sources of the question: **MCP-TOOL-SCHEMA-AUTONOMO**, points 1–2;
+**REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2; the current module's stricter rule.
 
-### Case matrix
+Final bounds are 4096 JSON values and depth 32, measured on the final descriptor
+after closure; root counts as one, keys do not count, scalars/arrays/objects do.
+At 4097 or depth 33 the generator raises `C1Error`, and the profile raises
+`McpProfileError`; direct and transitive type growth counts. No bounds change.
+Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2 and VF-002; **REM-0063-CYCLE7-NO-GO**,
+point 2. Tests check boundary reasons as well as typed errors.
 
-The product is deterministic; no seed or sampled subset is used. Each cell has
-an acceptance or typed-refusal expectation derived from the standalone library
-result and the expressly stricter profile rules above.
+Profile and generator separately compute resource/base identities and closure.
+Agreement is proved through both public paths across the products below, with
+one independent library oracle, exact expected closure trees, accepted/rejected
+instance twins and repeated render bytes. Neither expected targets nor expected
+answers use a production helper. Sharing a production helper remains optional
+within the authorised scope (**REM-0063-CICLO-10-CONTRATTO**, point 2).
+
+### Deterministic case matrix
 
 | Dimension | Values |
 | --- | --- |
 | Field | `inputSchema`, `outputSchema` |
-| Root base | absent `$id`, absolute `$id`, relative `$id` |
-| Nested ID | absent, empty, `#`, same-resource relative, same-resource absolute, new relative, new absolute, same URI on two distinct nodes |
-| Reference | `#`, JSON Pointer, anchor, percent-encoded pointer segment, percent-encoded leading slash, percent-encoded anchor, nested resource URI, missing target, non-schema target |
-| Position | `properties`, `$defs`, `allOf`, inside `const`, `default`, `examples` |
-| Origin | delivered descriptor, public compiler and generator output |
-| Unreferenced sibling | absent, present |
-| Final bounds | 4096/4097 nodes; depth 32/33; direct and transitive IR-type growth |
+| Root | no ID, absolute ID, relative ID; trailing/empty fragment in oracle controls |
+| Outer ID and inner ID, independently | absent, empty, `#`, same relative, same absolute, new relative, new absolute, repeated URI |
+| Reference | `#`, pointer, anchor, percent segment/leading slash/anchor, contained-resource URI; child/parent/root-only target, missing anchor |
+| Target | present, missing, invalid schema; duplicate anchor; foreign field/tool/descriptor |
+| Position | `properties`, `$defs`, `allOf`, `const`, `default`, `examples` |
+| Duplicate order | holder first, shadow first; ancestor/descendant repeated IDs |
+| Origin | delivered; public compiler and generator |
+| Closure | direct enum, transitive struct → enum; unused sibling absent/present |
+| Tokens and bounds | `~0`, `~1`, malformed escape, percent non-ASCII, index 2/02; 4096/4097, depth 32/33 |
 
-The structural product has 10368 cells. Delivered-schema tests cover all 5184
-cells of that origin. Generated-schema tests cover 576 cells: OaC's symbol
-reference becomes the pointer form. The following are the complete exclusions
-and input aliases, rather than hidden sample choices:
+The original 5790 cells remain: delivered product 5184, generated product 576,
+boundaries/collision 30. New products: two-level delivered 18432 (2×3×8×8×6×8),
+two-level generated 4608 (2×3×8×8×6×2), sibling orders 288, form/target state 216,
+foreign-target isolation 108, anchor ambiguity 48, token product 144,
+both-origin collisions 4, library-state controls 24, positive root-fragment twins 12,
+and generated duplicate orders 72. Total: **29746** cases.
+Every listed product is fully enumerated without sampling. The following are
+the complete exclusions and aliases; they are not omitted cells disguised as PASS:
 
-- G1: the other 4608 generated-origin cells use eight raw reference forms that
-  OaC's existing symbol-table validation cannot express. They are covered by
-  the delivered origin. No compiler admission is bypassed or changed.
-- G2: a generated `$defs/target` with no incoming IR reference is unreachable.
-  It must be omitted; no probe demands that omitted node survive. Delivered
-  cells explicitly reference that position and therefore exercise it.
-- I1: without a root ID, the same-resource-relative representative is `#`.
-  Without an absolute root ID, the same-resource-absolute representative is
-  also `#`. The fixed-base collision is tested separately for both fields.
+- G1: OaC permits IR-symbol references, not arbitrary raw fragment spellings.
+  Generated-origin reference spellings other than the generated pointer are
+  excluded (4608 cells in the original theoretical product). Delivered products
+  exercise those spellings, target states, isolation and token grammar.
+- G2: a `$defs/target` with no incoming OaC reference is unreachable and omitted.
+  Generated tests assert its absence; delivered cells explicitly select it.
+- G3: the two-level generated product varies direct/transitive reachability;
+  unused-sibling variation stays in the original generated product. Sibling
+  insertion order has separate delivered and generated products; the generator
+  retains its typed duplicate-URI refusal, without choosing a library winner.
+- I1: same-relative/absolute representatives with no corresponding declared
+  root use `#`; repeated-URI values intentionally alias the absolute child URI.
+  The independent product includes both equal ancestor/descendant IDs and
+  same-resource children below new resources. Fixed-base collisions are separate
+  products for **both** origins, not excluded from generator agreement.
+- V1: cyclic `allOf/$ref:'#'` may not terminate instance validation. These cells
+  assert schema validity and library resolution only; instance execution is
+  explicitly `NOT_EXECUTED` on `RecursionError`, never called a passing instance.
+  All nonrecursive entry probes evaluate `entry` with the same resolver/base.
 
-Another 30 cases cover final node/depth boundaries, growth from direct and
-transitive types, and the fixed-base collision. Total: 5790 new cases.
-The generator tests require resolvable positives to render, prohibit blanket
-refusal, validate every emitted field, and compare repeated render bytes.
-The profile tests compare its public acceptance with the library's original
-schema outcome. Library-only traversal uses `Resource.subresources`,
-`Resolver.in_subresource` and `Resolver.lookup`, including pointer traversal
-through instance data; it never implements pointer or anchor resolution itself.
+The oracle uses only `Resource.subresources`, `Resolver.in_subresource` and
+`Resolver.lookup` for traversal/resolution. Its visited state includes the library
+registry's resources, uncrawled set and anchors: an anchor-induced crawl cannot
+reuse a stale answer. `Draft202012Validator` really reaches `entry`, with the
+same base and unmodified schema. Generated cells also compare the entire emitted
+closure, every other emitted field, positive `ACTIVE` and negative `WRONG`
+instances where a target is emitted. Ordinary instance-validation errors are
+not resolution errors; no missing target is accepted on their basis.
 
-### Open questions and stopping conditions
+### Decisions, questions and stopping conditions
 
-Q1: existing percent-encoded-anchor and encoded-leading-slash tests accept
-references which the raw standalone libraries reject. Earlier differential
-helpers deliberately substitute `#part` for `#p%61rt`. The cycle-10 rule requires
-the unchanged schema and unchanged libraries. Which existing expectations and
-helper mappings may be realigned is reserved to the PO; phase A changes none.
+Q1/Q2 are decided by **REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**: A1+B1.
+Their original RED remains historical; newly enumerated RED outcomes are recorded
+by reason and family. No phase-A change to a pre-cycle-10 test, fixture or oracle is
+permitted. Phase B applies only the realignments expressly listed in that decision.
 
-Q2: `test_cycle8_synthetic_uri_avoids_declared_id_collisions` expects selection
-of another synthetic URI, while the generator decision's point 2 expressly
-requires refusal on a fixed-base collision. Phase A preserves that existing
-test and adds the prescribed negative; permission to realign the old test is
-reserved to the PO.
+Q3 is **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI**, raised after the first contract
+review identified a conflict between the module restriction and the wording of
+the standalone-resource decisions. Its disposition is required before dependent
+production changes or a full campaign. Neither the first nor second contract
+review can choose that normative interpretation.
 
-These linked questions are collected in **REM-0063-CYCLE10-ORACLE-CONFLICT**,
-under **REM-0063-CICLO-10-CONTRATTO**, point 6, and
-**NORMATIVE-QUESTIONS-EARLY-DR (2026-11-09)**. They prevent phase B, not the
-read-only contract review. The fixture-byte question remains separately open as
-**REM-0063-PINNED-FIXTURE-DIFF-CHECK**; its pinned bytes and `NOT_GREEN`
-classification are preserved (cycle-10 decision, point 5). Neither question
-is silently decided by this derived contract. No production repair or full
-campaign has started. Claims remain unchanged.
+The fixed official fixture remains byte-identical. **REM-0063-PINNED-FIXTURE-DIFF-CHECK
+(2026-11-16)** adopts option 1: its whitespace check remains `NOT_GREEN` with
+an explicitly recorded exception, never PASS; other files keep the same check.
+No production repair or full campaign has started. Claim fence unchanged:
+E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.

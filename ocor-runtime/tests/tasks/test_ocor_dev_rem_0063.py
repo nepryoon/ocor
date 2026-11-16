@@ -5120,7 +5120,9 @@ _CYCLE10_TYPE_NAME = "urn.ocor.type.vessel-status"
 
 def _cycle10_base(schema: Mapping[str, Any], field: str, *, index: int = 0) -> str:
     """Decision MCP-TOOL-SCHEMA-AUTONOMO point 1; no code under test used."""
-    return schema.get("$id") or f"urn:ocor:embedded-tool:{index}:{field}"
+    from urllib.parse import urldefrag
+
+    return urldefrag(schema.get("$id") or f"urn:ocor:embedded-tool:{index}:{field}")[0]
 
 
 def _cycle10_identifier(kind: str, root: str, field: str) -> str | None:
@@ -5203,7 +5205,7 @@ def _cycle10_standalone_oracle(schema: Mapping[str, Any], field: str, *, probes:
     resolver = registry.resolver(_cycle10_base(schema, field, index=index))
     queue = [(resource, resolver)]
     trace: list[str] = []
-    seen: set[tuple[int, str]] = set()
+    seen: set[tuple[object, ...]] = set()
     try:
         Draft202012Validator.check_schema(schema)
         for pointer in probes:
@@ -5211,7 +5213,15 @@ def _cycle10_standalone_oracle(schema: Mapping[str, Any], field: str, *, probes:
             queue.append((DRAFT202012.create_resource(selected.contents), selected.resolver))
         while queue:
             current, context = queue.pop(0)
-            identity = (id(current.contents), context._base_uri)
+            # A lookup can crawl the immutable registry and change its resource
+            # winner. The same node/base with that new registry is a new state.
+            # This observes library state; it never resolves a URI or pointer.
+            identity = (
+                id(current.contents), context._base_uri,
+                tuple(sorted((uri, id(value.contents)) for uri, value in context._registry._resources.items())),
+                tuple(sorted(context._registry._uncrawled)),
+                tuple(sorted((str(key), id(value)) for key, value in context._registry._anchors.items())),
+            )
             if identity in seen:
                 continue
             seen.add(identity)
@@ -5224,9 +5234,16 @@ def _cycle10_standalone_oracle(schema: Mapping[str, Any], field: str, *, probes:
                 queue.append((DRAFT202012.create_resource(selected.contents), selected.resolver))
             for child in current.subresources():
                 queue.append((child, context.in_subresource(child)))
-        # Independent acceptance check on the autonomous schema. The optional
-        # entry is absent so recursive empty-pointer schemas terminate.
-        Draft202012Validator(schema, registry=registry).is_valid({})
+        # The instance reaches entry, unlike the former vacuous {} check.
+        # Use the same fixed base, without adding/changing a schema $id.
+        # Ordinary validation errors are data mismatches, not lookup failures.
+        # A recursive schema remains resolvable; no terminating validation is
+        # claimed for the unguarded allOf/$ref:'#' cell (contract exclusion V1).
+        try:
+            errors = list(Draft202012Validator(schema, _resolver=resolver).iter_errors({"entry": {"ok": True}}))
+            trace.append("validator reached entry; instance errors=" + str(len(errors)))
+        except RecursionError:
+            trace.append("recursive instance evaluation: NOT_EXECUTED; resolution checked")
     except (Unresolvable, SchemaError, AttributeError, TypeError, ValueError) as exc:
         return False, (*trace, type(exc).__name__ + ": " + str(exc))
     return True, tuple(trace)
@@ -5261,7 +5278,10 @@ def test_cycle10_delivered_cartesian_standalone_oracle(field: str, root: str, id
     expected = oracle_accepts and ref != "resource-uri"
     try:
         _validate(_cycle10_delivered(schema, field))
-    except McpProfileError:
+    except McpProfileError as exc:
+        assert str(exc).startswith("MCP ") and any(
+            text in str(exc) for text in ("resolve", "schema", "fragment", "anchor", "URI", "bounds")
+        ), "profile refusal must retain its typed diagnostic reason"
         actual = False
     else:
         actual = True
@@ -5335,9 +5355,8 @@ def test_cycle10_generated_cartesian_standalone_oracle(field: str, root: str, id
     if not oracle_accepts or identifier == "duplicate":
         with pytest.raises(C1Error) as caught:
             _cycle10_generated(field, schema)
-        assert caught.value.diagnostics[0].code in {
-            DiagnosticCode.UNRESOLVED_REFERENCE, DiagnosticCode.DUPLICATE_RESOURCE,
-        }, oracle_trace
+        expected_code = DiagnosticCode.DUPLICATE_RESOURCE if identifier == "duplicate" else DiagnosticCode.UNRESOLVED_REFERENCE
+        assert caught.value.diagnostics[0].code == expected_code, oracle_trace
         return
     descriptor, body, _ = _cycle10_generated(field, schema)
     tools = descriptor["tools"]
@@ -5350,11 +5369,12 @@ def test_cycle10_generated_cartesian_standalone_oracle(field: str, root: str, id
             assert okay, ("generator emitted an unresolvable autonomous schema", field, root, identifier, position, ref, sibling, trace)
     assert "$defs" not in descriptor
     _validate(descriptor)
-    # Closure membership is independently derived from the one IR symbol in
-    # this input, including its use in the instance-data dimensions.
-    text = json.dumps(body, sort_keys=True)
-    assert (_CYCLE10_TYPE_NAME in text) == (position != "$defs")
-    assert "urn.ocor.type.vessel\"" not in text
+    # Compare the entire closure, including the absence of unused user defs.
+    if sibling:
+        expected_body.get("$defs", {}).pop("unused", None)
+        if not expected_body.get("$defs"):
+            expected_body.pop("$defs", None)
+    assert body == expected_body
 
 
 def _cycle10_size(value: object) -> tuple[int, int]:
@@ -5493,3 +5513,363 @@ def test_cycle10_fixed_base_collision_is_a_typed_refusal(field: str) -> None:
     schema = {"type": "object", "$defs": {"collision": {"$id": f"urn:ocor:embedded-tool:0:{field}", "type": "integer"}}}
     with pytest.raises(McpProfileError):
         _validate(_cycle10_delivered(schema, field))
+
+
+# Second contract review: extend the product, not the production code. These
+# additions retain every phase-A cell above; exclusions are listed in README.
+_CYCLE10_LAYER_REFS = ("empty", "child-pointer", "child-anchor", "parent-pointer", "parent-anchor", "root-pointer", "root-anchor", "absent-anchor")
+
+
+def _cycle10_cross(*dimensions: tuple[object, ...]) -> list[tuple[Any, ...]]:
+    from itertools import product
+
+    return list(product(*dimensions))
+
+
+def _cycle10_layers(field: str, root: str, outer_id: str, inner_id: str, position: str, reference: str) -> dict[str, Any]:
+    schema: dict[str, Any] = {"type": "object"}
+    if root != "absent":
+        schema["$id"] = _CYCLE10_ROOT_URI if root == "absolute" else "relative/root.json"
+    outer: dict[str, Any] = {"type": "object", "$defs": {"parent": {"$anchor": "parent", "type": "object"}}}
+    inner: dict[str, Any] = {"type": "object", "$defs": {"child": {"$anchor": "child", "type": "object"}}}
+    for node, kind in ((outer, outer_id), (inner, inner_id)):
+        declared = _cycle10_identifier(kind, root, field)
+        if declared is not None:
+            node["$id"] = declared
+    refs = {
+        "empty": "#", "child-pointer": "#/$defs/child", "child-anchor": "#child",
+        "parent-pointer": "#/$defs/parent", "parent-anchor": "#parent",
+        "root-pointer": "#/$defs/root", "root-anchor": "#root", "absent-anchor": "#absent",
+    }
+    pointer = "#/$defs/holder/$defs/inner/" + _cycle10_place(inner, position, {"$ref": refs[reference]})
+    outer["$defs"]["inner"] = inner
+    schema["$defs"] = {"root": {"$anchor": "root", "type": "object"}, "holder": outer}
+    schema["properties"] = {"entry": {"$ref": pointer}}
+    return schema
+
+
+def _cycle10_layer_products() -> list[tuple[str, ...]]:
+    from itertools import product
+
+    return list(product(_CYCLE10_FIELDS, _CYCLE10_ROOTS, _CYCLE10_IDS, _CYCLE10_IDS, _CYCLE10_POSITIONS, _CYCLE10_LAYER_REFS))
+
+
+def _cycle10_profile_expectation(schema: Mapping[str, Any], field: str, expected: bool, *, reason: str | None = None) -> None:
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    if expected:
+        _validate(_cycle10_delivered(schema, field))
+    else:
+        with pytest.raises(McpProfileError, match=reason or r"MCP (\$ref|schema|input schema)"):
+            _validate(_cycle10_delivered(schema, field))
+
+
+@pytest.mark.parametrize("field,root,outer_id,inner_id,position,reference", _cycle10_layer_products())
+def test_cycle10_two_level_resource_product(field: str, root: str, outer_id: str, inner_id: str, position: str, reference: str) -> None:
+    """Cross both ID dimensions, including ancestor/no-op and repeated URIs."""
+    schema = _cycle10_layers(field, root, outer_id, inner_id, position, reference)
+    accepted, trace = _cycle10_standalone_oracle(schema, field)
+    try:
+        _cycle10_profile_expectation(schema, field, accepted)
+    except (AssertionError, ValueError) as exc:
+        raise AssertionError(("two-level library outcome", trace)) from exc
+
+
+@pytest.mark.parametrize("field,root,position,reference,order", _cycle10_cross(
+    _CYCLE10_FIELDS, _CYCLE10_ROOTS, _CYCLE10_POSITIONS, ("pointer", "anchor", "missing", "non-schema"), ("holder-first", "shadow-first"),
+))
+def test_cycle10_duplicate_sibling_orders(field: str, root: str, position: str, reference: str, order: str) -> None:
+    """Both library insertion orders are exercised, not just the winning one."""
+    schema, _ = _cycle10_schema(field, root, "duplicate", position, reference, False)
+    if order == "shadow-first":
+        schema["$defs"] = dict(reversed(list(schema["$defs"].items())))
+    accepted, _ = _cycle10_standalone_oracle(schema, field)
+    _cycle10_profile_expectation(schema, field, accepted)
+
+
+@pytest.mark.parametrize("field,position,form,state", _cycle10_cross(
+    _CYCLE10_FIELDS, _CYCLE10_POSITIONS,
+    ("pointer", "anchor", "percent-pointer", "percent-anchor", "percent-leading-pointer", "resource-uri"),
+    ("present", "missing", "invalid-schema"),
+))
+def test_cycle10_reference_form_by_target_state(field: str, position: str, form: str, state: str) -> None:
+    """Cross reference spelling and target validity; literals stay unmodified."""
+    schema, _ = _cycle10_schema(field, "absolute", "absolute", position, form, False)
+    holder = schema["$defs"]["holder"]
+    if state == "missing":
+        holder["$defs"].pop("leaf")
+    elif state == "invalid-schema":
+        holder["$defs"]["leaf"]["type"] = 17
+    accepted, _ = _cycle10_standalone_oracle(schema, field)
+    # The current fragment-only restriction is preserved, pending question Q3.
+    _cycle10_profile_expectation(schema, field, accepted and form != "resource-uri")
+
+
+@pytest.mark.parametrize("field,form,location,position", _cycle10_cross(
+    _CYCLE10_FIELDS, ("pointer", "anchor", "percent-pointer"),
+    ("other-field", "other-tool", "descriptor"), _CYCLE10_POSITIONS,
+))
+def test_cycle10_no_cross_schema_fallback(field: str, form: str, location: str, position: str) -> None:
+    """A target in another field, tool or descriptor never enters this registry."""
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    prefix = "#/x-ocor-foreign/" if location == "descriptor" else "#/"
+    reference = {"pointer": prefix + "$defs/foreign", "anchor": "#foreign", "percent-pointer": prefix + "%24defs/foreign"}[form]
+    schema: dict[str, Any] = {"type": "object"}
+    pointer = "#/" + _cycle10_place(schema, position, {"$ref": reference})
+    schema.setdefault("properties", {})["entry"] = {"$ref": pointer}
+    descriptor = _cycle10_delivered(schema, field)
+    foreign = {"type": "object", "$defs": {"foreign": {"$anchor": "foreign", "type": "object"}}}
+    if location == "other-field":
+        descriptor["tools"][0]["outputSchema" if field == "inputSchema" else "inputSchema"] = foreign
+    elif location == "other-tool":
+        descriptor["tools"].append({"name": "foreign", "inputSchema": foreign})
+    else:
+        descriptor["x-ocor-foreign"] = foreign
+    accepted, _ = _cycle10_standalone_oracle(schema, field)
+    assert not accepted
+    with pytest.raises(McpProfileError, match=r"\$ref does not resolve"):
+        _validate(descriptor)
+
+
+@pytest.mark.parametrize("field,order,form,position", _cycle10_cross(
+    _CYCLE10_FIELDS, ("a-first", "b-first"), ("anchor", "percent-anchor"), _CYCLE10_POSITIONS,
+))
+def test_cycle10_ambiguous_anchor_remains_a_profile_refusal(field: str, order: str, form: str, position: str) -> None:
+    """The documented stricter anchor rule is separate from library validity."""
+    defs = {"a": {"$anchor": "leaf", "type": "object"}, "b": {"$anchor": "leaf", "type": "object"}}
+    schema: dict[str, Any] = {"type": "object", "$defs": defs if order == "a-first" else dict(reversed(list(defs.items())))}
+    pointer = "#/" + _cycle10_place(schema, position, {"$ref": "#leaf" if form == "anchor" else "#%6Ceaf"})
+    schema.setdefault("properties", {})["entry"] = {"$ref": pointer}
+    accepted, _ = _cycle10_standalone_oracle(schema, field)
+    assert accepted == (form == "anchor")
+    _cycle10_profile_expectation(schema, field, False, reason=r"(anchor is ambiguous|does not resolve)")
+
+
+@pytest.mark.parametrize("field,position,key,form", _cycle10_cross(
+    _CYCLE10_FIELDS, _CYCLE10_POSITIONS, ("a/b", "a~b", "café", "2"),
+    ("valid", "missing", "malformed-escape"),
+))
+def test_cycle10_pointer_token_product(field: str, position: str, key: str, form: str) -> None:
+    """Token escaping, non-ASCII percent segments and nonzero array indices."""
+    from urllib.parse import quote
+
+    token = quote(key.replace("~", "~0").replace("/", "~1"), safe="~")
+    if form == "missing":
+        token += "-absent"
+    elif form == "malformed-escape":
+        token = "bad~2"
+    schema: dict[str, Any] = {"type": "object", "$defs": {key: {"type": "object"}}}
+    if form == "malformed-escape" and key != "2":
+        # A decoy target exists: the negative must be for token syntax,
+        # not a failure to find an unrelated absent key.
+        schema["$defs"]["bad~2"] = {"type": "object"}
+    if key == "2":
+        schema["x-cycle10-array"] = [0, 1, {"type": "object"}]
+        reference = "#/x-cycle10-array/" + ("2" if form == "valid" else "3" if form == "missing" else "02")
+    else:
+        reference = "#/$defs/" + token
+    pointer = "#/" + _cycle10_place(schema, position, {"$ref": reference})
+    schema.setdefault("properties", {})["entry"] = {"$ref": pointer}
+    accepted, _ = _cycle10_standalone_oracle(schema, field)
+    # Leading-zero array indices are explicitly stricter than referencing.
+    reason = r"(valid JSON Pointer|array index)" if form == "malformed-escape" else None
+    _cycle10_profile_expectation(schema, field, accepted and form == "valid", reason=reason)
+
+
+@pytest.mark.parametrize("field,origin", _cycle10_cross(_CYCLE10_FIELDS, _CYCLE10_ORIGINS))
+def test_cycle10_fixed_base_collision_for_both_public_origins(field: str, origin: str) -> None:
+    """B1 decision: the producer must refuse before returning an invalid tool."""
+    schema = {"type": "object", "properties": {"collision": {"$id": f"urn:ocor:embedded-tool:0:{field}", "type": "integer"}}}
+    if origin == "generated":
+        with pytest.raises(C1Error, match=r"(collision|collides)") as caught:
+            _cycle10_generated(field, schema)
+        assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+    else:
+        _cycle10_profile_expectation(schema, field, False, reason=r"(collision|collides)")
+
+
+@pytest.mark.parametrize("field,root,noop,order", _cycle10_cross(
+    _CYCLE10_FIELDS, ("absent", "absolute-fragment", "empty-fragment"), ("", "#"), ("noop-first", "noop-last"),
+))
+def test_cycle10_oracle_preserves_lookup_state_and_root_fragment(field: str, root: str, noop: str, order: str) -> None:
+    """Library-only control: an anchor lookup changes the registry for a chain."""
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    definitions = {"a": {"$anchor": "a", "$ref": "#/$defs/b"}, "b": {"type": "object"}, "noop": {"$id": noop, "type": "object"}}
+    if order == "noop-first":
+        definitions = {"noop": definitions["noop"], "a": definitions["a"], "b": definitions["b"]}
+    schema: dict[str, Any] = {"type": "object", "$defs": definitions, "properties": {"entry": {"$ref": "#a"}}}
+    if root != "absent":
+        schema["$id"] = _CYCLE10_ROOT_URI + "#" if root == "absolute-fragment" else "#"
+    base = _cycle10_base(schema, field)
+    resolver = Registry().with_resource(base, DRAFT202012.create_resource(schema)).resolver(base)
+    with pytest.raises(Unresolvable):
+        list(Draft202012Validator(schema, _resolver=resolver).iter_errors({"entry": {}}))
+    accepted, trace = _cycle10_standalone_oracle(schema, field)
+    assert not accepted, trace
+
+
+@pytest.mark.parametrize("field,root,reference", _cycle10_cross(
+    _CYCLE10_FIELDS, ("absent", "absolute-fragment", "empty-fragment"), ("#leaf", "#/$defs/leaf"),
+))
+def test_cycle10_oracle_accepts_the_root_fragment_positive_twin(field: str, root: str, reference: str) -> None:
+    """Trailing-fragment controls also have terminating accepted instances."""
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    schema: dict[str, Any] = {"type": "object", "$defs": {"leaf": {"$anchor": "leaf", "type": "object"}}, "properties": {"entry": {"$ref": reference}}}
+    if root != "absent":
+        schema["$id"] = _CYCLE10_ROOT_URI + "#" if root == "absolute-fragment" else "#"
+    base = _cycle10_base(schema, field)
+    resolver = Registry().with_resource(base, DRAFT202012.create_resource(schema)).resolver(base)
+    assert not list(Draft202012Validator(schema, _resolver=resolver).iter_errors({"entry": {}}))
+    accepted, trace = _cycle10_standalone_oracle(schema, field)
+    assert accepted, trace
+
+
+@pytest.mark.parametrize("field,root,position,order", _cycle10_cross(
+    _CYCLE10_FIELDS, _CYCLE10_ROOTS, _CYCLE10_POSITIONS, ("holder-first", "shadow-first"),
+))
+def test_cycle10_generated_duplicate_orders_are_typed_refusals(field: str, root: str, position: str, order: str) -> None:
+    """The producer's existing duplicate-resource rule covers both orders."""
+    holder: dict[str, Any] = {"$id": _CYCLE10_CHILD_URI, "type": "object"}
+    _cycle10_place(holder, position, {"$ref": _CYCLE10_STATUS})
+    siblings = {"holder": holder, "shadow": {"$id": _CYCLE10_CHILD_URI, "type": "object"}}
+    schema: dict[str, Any] = {"type": "object", "properties": siblings if order == "holder-first" else dict(reversed(list(siblings.items())))}
+    if root != "absent":
+        schema["$id"] = _CYCLE10_ROOT_URI if root == "absolute" else "relative/root.json"
+    with pytest.raises(C1Error, match="repeats a resource URI") as caught:
+        _cycle10_generated(field, schema)
+    assert caught.value.diagnostics[0].code == DiagnosticCode.DUPLICATE_RESOURCE
+
+
+def _cycle10_generated_layer_products() -> list[tuple[object, ...]]:
+    from itertools import product
+
+    return list(product(_CYCLE10_FIELDS, _CYCLE10_ROOTS, _CYCLE10_IDS, _CYCLE10_IDS, _CYCLE10_POSITIONS, ("direct", "transitive")))
+
+
+def _cycle10_repeated_resource_boundary(schema: Mapping[str, Any], field: str) -> bool:
+    """Observe the existing producer duplicate rule with library URI contexts."""
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    resource = DRAFT202012.create_resource(schema)
+    base = _cycle10_base(schema, field)
+    resolver = Registry().with_resource(base, resource).resolver(base)
+    claimed = {base: id(schema)}
+    queue = [(resource, resolver)]
+    while queue:
+        current, context = queue.pop()
+        for child in current.subresources():
+            next_context = context.in_subresource(child)
+            uri = next_context._base_uri
+            if uri != context._base_uri:
+                if uri in claimed and claimed[uri] != id(child.contents):
+                    return True
+                claimed[uri] = id(child.contents)
+            queue.append((child, next_context))
+    return False
+
+
+@pytest.mark.parametrize("field,root,outer_id,inner_id,position,reach", _cycle10_generated_layer_products())
+def test_cycle10_generated_two_level_exact_closure(field: str, root: str, outer_id: str, inner_id: str, position: str, reach: str) -> None:
+    """Public producer/consumer agreement, exact closure and instance twins.
+
+    The expected type definitions are a literal encoding of this test's OaC
+    enum and one-property struct. Only referencing selects the resource owner.
+    The original emitted schema, never a normalised copy, is used by both
+    independent libraries and the profile.
+    """
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    enum_definition = {"title": _CYCLE10_STATUS, "type": "string", "enum": ["ACTIVE", "LAID_UP"]}
+    wrapper_id = "urn:ocor:type:cycle10-wrapper"
+    wrapper_name = "urn.ocor.type.cycle10-wrapper"
+    property_id = "urn:ocor:property:cycle10-status"
+    wrapper_definition = {
+        "title": wrapper_id, "type": "object", "additionalProperties": False,
+        "properties": {property_id: {"$ref": "#/$defs/" + _CYCLE10_TYPE_NAME}},
+        "required": [property_id],
+    }
+    documents = copy.deepcopy(_fleet().oac_documents())
+    documents["module.yaml"]["definitions"].append({
+        "construct": "TypeDefinition", "type_id": wrapper_id, "kind": "STRUCT", "version": "1.0.0",
+        "properties": [{"property_id": property_id, "value_type_ref": "enum:" + _CYCLE10_STATUS,
+                        "cardinality": "ONE", "nullable": False, "constraint_refs": []}],
+        "keys": [], "interfaces": [], "security_profile_ref": "urn:ocor:security-profile:restricted",
+    })
+    schema: dict[str, Any] = {"type": "object"}
+    if root != "absent":
+        schema["$id"] = _CYCLE10_ROOT_URI if root == "absolute" else "relative/root.json"
+    outer: dict[str, Any] = {"type": "object"}
+    inner: dict[str, Any] = {"type": "object"}
+    for node, kind in ((outer, outer_id), (inner, inner_id)):
+        declared = _cycle10_identifier(kind, root, field)
+        if declared is not None:
+            node["$id"] = declared
+    symbol = _CYCLE10_STATUS if reach == "direct" else wrapper_id
+    local_path = _cycle10_place(inner, position, {"$ref": symbol})
+    outer["properties"] = {"inner": inner}
+    schema["properties"] = {"outer": outer}
+    if _cycle10_repeated_resource_boundary(schema, field):
+        with pytest.raises(C1Error, match="repeats a resource URI") as caught:
+            _cycle10_generated(field, schema, documents=documents)
+        assert caught.value.diagnostics[0].code == DiagnosticCode.DUPLICATE_RESOURCE
+        return
+    expected = copy.deepcopy(schema)
+    expected_inner = expected["properties"]["outer"]["properties"]["inner"]
+    type_name = _CYCLE10_TYPE_NAME if reach == "direct" else wrapper_name
+    _cycle10_place(expected_inner, position, {"$ref": "#/$defs/" + type_name})
+    pointer = "#/properties/outer/properties/inner/" + local_path
+    if position == "$defs":
+        expected_inner.pop("$defs")
+    else:
+        # No handwritten pointer traversal, base selection, or identity alias.
+        base = _cycle10_base(expected, field)
+        resolver = Registry().with_resource(base, DRAFT202012.create_resource(expected)).resolver(base)
+        try:
+            context = resolver.lookup(pointer).resolver
+            owner = context.lookup("#").contents
+        except Unresolvable:
+            with pytest.raises(C1Error) as caught:
+                _cycle10_generated(field, schema, documents=documents)
+            assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
+            return
+        assert isinstance(owner, dict)
+        owner.setdefault("$defs", {})[_CYCLE10_TYPE_NAME] = copy.deepcopy(enum_definition)
+        if reach == "transitive":
+            owner["$defs"][wrapper_name] = copy.deepcopy(wrapper_definition)
+    probes = () if position == "$defs" else (pointer,)
+    accepted, trace = _cycle10_standalone_oracle(expected, field, probes=probes)
+    if not accepted:
+        with pytest.raises(C1Error) as caught:
+            _cycle10_generated(field, schema, documents=documents)
+        assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE, trace
+        return
+    descriptor, body, _ = _cycle10_generated(field, schema, documents=documents)
+    assert body == expected
+    assert "$defs" not in descriptor
+    _validate(descriptor)
+    for index, tool in enumerate(descriptor["tools"]):
+        for emitted_field in _CYCLE10_FIELDS:
+            actual = tool[emitted_field]
+            okay, actual_trace = _cycle10_standalone_oracle(actual, emitted_field, index=index)
+            assert okay, actual_trace
+    if position != "$defs":
+        base = _cycle10_base(body, field)
+        resolver = Registry().with_resource(base, DRAFT202012.create_resource(body)).resolver(base)
+        selected = resolver.lookup(pointer)
+        validator = Draft202012Validator(selected.contents, _resolver=selected.resolver)
+        good: Any = "ACTIVE" if reach == "direct" else {property_id: "ACTIVE"}
+        bad: Any = "WRONG" if reach == "direct" else {property_id: "WRONG"}
+        assert validator.is_valid(good)
+        assert not validator.is_valid(bad)
