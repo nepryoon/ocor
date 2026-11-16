@@ -1,6 +1,6 @@
 # REM-0063-CYCLE10-INTERNAL-RESOURCE-URI
 
-Stato: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
 Livello: `NORMATIVE`. Unità: `OCOR-DEV-REM-0063`, ciclo 10, fase A.
 Base di produzione: `f485dc964e47bde83842ecd5ba2627d8342612f9`.
 Prima revisione del contratto: `OCOR-DEV-REM-0063-5dae37f94a80-pre`, P6.
@@ -112,3 +112,18 @@ Nessun record sigillato, manifest esistente, gate, timer, tetto, partizione,
 immagine, digest, contratto del dossier o `inputs/` cambia.
 Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED,
 PoC e Production NO-GO.
+
+## Disposition
+
+Decisa dal PO di persona. Opzione 1: spelling limitato ai frammenti,
+rifiuto separato dalla risoluzione delle librerie; nessuna modifica
+dipendente di produzione in questa fase A.
+
+## REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16) — decisione del PO
+
+Decisione del PO, presa di persona il 2026-11-16 (`DECISIONI-AL-PO (2026-11-16)`). Il PO risolve la decision request `REM-0063-CYCLE10-INTERNAL-RESOURCE-URI` (branch `governed/decision-request-rem0063-cycle10-internal-resource-uri`, commit `620f56ba3206affd15679f0394c16c7a4eb0fa33`, file `reports/development/decision_requests/REM-0063-CYCLE10-INTERNAL-RESOURCE-URI.md`, sha256 `98827faf39c35d71dd3570e90baea7faa6c9e1539c2909d94bfb26bb1eb13acb`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa dal PO di persona») e nell'`ITERATION_LOG.md`, come per le altre decisioni del PO.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
