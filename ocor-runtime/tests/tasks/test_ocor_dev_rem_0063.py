@@ -5101,3 +5101,395 @@ def test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference(monkeypatch: pyt
     with pytest.raises(C1Error, match="unresolved MCP definition") as caught:
         _cycle9_attach({"type": "object"})
     assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
+
+
+# Cycle 10 phase A. REM-0063-CICLO-10-CONTRATTO (2026-11-16) points 2-3:
+# append-only contract tests; no production edit or alteration of earlier tests.
+# The oracle consumes the original standalone schema, never a rewritten registry.
+_CYCLE10_FIELDS = ("inputSchema", "outputSchema")
+_CYCLE10_ROOTS = ("absent", "absolute", "relative")
+_CYCLE10_IDS = ("absent", "empty", "fragment", "same-relative", "same-absolute", "relative", "absolute", "duplicate")
+_CYCLE10_POSITIONS = ("properties", "$defs", "allOf", "const", "default", "examples")
+_CYCLE10_REFS = ("empty", "pointer", "anchor", "percent-pointer", "percent-leading-pointer", "percent-anchor", "resource-uri", "missing", "non-schema")
+_CYCLE10_ORIGINS = ("delivered", "generated")
+_CYCLE10_ROOT_URI = "https://cycle10.invalid/root.json"
+_CYCLE10_CHILD_URI = "https://cycle10.invalid/child.json"
+_CYCLE10_STATUS = "urn:ocor:type:vessel-status"
+_CYCLE10_TYPE_NAME = "urn.ocor.type.vessel-status"
+
+
+def _cycle10_base(schema: Mapping[str, Any], field: str, *, index: int = 0) -> str:
+    """Decision MCP-TOOL-SCHEMA-AUTONOMO point 1; no code under test used."""
+    return schema.get("$id") or f"urn:ocor:embedded-tool:{index}:{field}"
+
+
+def _cycle10_identifier(kind: str, root: str, field: str) -> str | None:
+    if kind == "absent":
+        return None
+    if kind == "empty":
+        return ""
+    if kind == "fragment":
+        return "#"
+    if kind == "same-relative":
+        return "#" if root == "absent" else "root.json"
+    if kind == "same-absolute":
+        # No declared absolute root exists in the other two root modes. A
+        # fragment is the no-new-resource representative in those cells.
+        return _CYCLE10_ROOT_URI if root == "absolute" else "#"
+    if kind == "relative":
+        return "sub/branch.json"
+    return _CYCLE10_CHILD_URI
+
+
+def _cycle10_place(holder: dict[str, Any], position: str, target: dict[str, Any]) -> str:
+    if position == "examples":
+        holder[position] = [{"target": target}]
+        return "examples/0/target"
+    if position == "allOf":
+        holder[position] = [target]
+        return "allOf/0"
+    if position in ("properties", "$defs"):
+        holder.setdefault(position, {})["target"] = target
+    else:
+        holder[position] = {"target": target}
+    return position + "/target"
+
+
+def _cycle10_schema(field: str, root: str, identifier: str, position: str, ref: str, sibling: bool) -> tuple[dict[str, Any], str]:
+    """Build inputs by Cartesian dimensions; lookup is left to referencing."""
+    schema: dict[str, Any] = {"type": "object"}
+    if root != "absent":
+        schema["$id"] = _CYCLE10_ROOT_URI if root == "absolute" else "relative/root.json"
+    holder: dict[str, Any] = {
+        "type": "object",
+        "$defs": {"leaf": {"$anchor": "leaf", "type": "object", "properties": {"ok": {"const": True}}}},
+        "x-cycle10-not-schema": 17,
+    }
+    declared = _cycle10_identifier(identifier, root, field)
+    if declared is not None:
+        holder["$id"] = declared
+    reference = {
+        "empty": "#", "pointer": "#/$defs/leaf", "anchor": "#leaf",
+        "percent-pointer": "#/%24defs/leaf", "percent-leading-pointer": "#%2F$defs/leaf", "percent-anchor": "#%6Ceaf",
+        "resource-uri": _CYCLE10_CHILD_URI + "#/$defs/leaf",
+        "missing": "#/$defs/missing", "non-schema": "#/x-cycle10-not-schema",
+    }[ref]
+    pointer = "#/$defs/holder/" + _cycle10_place(holder, position, {"$ref": reference})
+    schema["$defs"] = {"holder": holder}
+    if identifier == "duplicate":
+        schema["$defs"]["shadow"] = {"$id": _CYCLE10_CHILD_URI, "type": "object"}
+    if sibling:
+        schema["$defs"]["unused"] = {"type": "object", "properties": {"unrelated": {"type": "integer"}}}
+    schema["properties"] = {"entry": {"$ref": pointer}}
+    return schema, pointer
+
+
+def _cycle10_standalone_oracle(schema: Mapping[str, Any], field: str, *, probes: tuple[str, ...] = (), index: int = 0) -> tuple[bool, tuple[str, ...]]:
+    """Unmodified DRAFT202012 + Draft202012Validator, without retrieval.
+
+    The library alone follows pointers and changes resolver context. The queue
+    just visits schema children via Resource.subresources and resolved targets.
+    Explicit probes reach schemas inside instance data, which the draft does
+    not crawl. No production helper, pointer parser or $id rewrite is used.
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    resource = DRAFT202012.create_resource(schema)
+    registry = Registry().with_resource(_cycle10_base(schema, field, index=index), resource)
+    resolver = registry.resolver(_cycle10_base(schema, field, index=index))
+    queue = [(resource, resolver)]
+    trace: list[str] = []
+    seen: set[tuple[int, str]] = set()
+    try:
+        Draft202012Validator.check_schema(schema)
+        for pointer in probes:
+            selected = resolver.lookup(pointer)
+            queue.append((DRAFT202012.create_resource(selected.contents), selected.resolver))
+        while queue:
+            current, context = queue.pop(0)
+            identity = (id(current.contents), context._base_uri)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            Draft202012Validator.check_schema(current.contents)
+            if isinstance(current.contents, dict) and "$ref" in current.contents:
+                ref = current.contents["$ref"]
+                selected = context.lookup(ref)
+                trace.append(ref + " -> " + json.dumps(selected.contents, sort_keys=True))
+                Draft202012Validator.check_schema(selected.contents)
+                queue.append((DRAFT202012.create_resource(selected.contents), selected.resolver))
+            for child in current.subresources():
+                queue.append((child, context.in_subresource(child)))
+        # Independent acceptance check on the autonomous schema. The optional
+        # entry is absent so recursive empty-pointer schemas terminate.
+        Draft202012Validator(schema, registry=registry).is_valid({})
+    except (Unresolvable, SchemaError, AttributeError, TypeError, ValueError) as exc:
+        return False, (*trace, type(exc).__name__ + ": " + str(exc))
+    return True, tuple(trace)
+
+
+def _cycle10_delivered(schema: Mapping[str, Any], field: str) -> dict[str, Any]:
+    return {
+        "x-ocor-mcp-protocol-revision": REVISION,
+        "tools": [{"name": "cycle10", "inputSchema": {"type": "object"}, "outputSchema": {"type": "object"}, field: dict(schema)}],
+    }
+
+
+def _cycle10_products(*, generated: bool = False) -> list[tuple[str, str, str, str, str, bool]]:
+    from itertools import product
+
+    # OaC named-contract $ref accepts symbol-table IDs only. Its generated
+    # form is #/$defs/<type>, so the other eight reference forms belong to
+    # the delivered-schema product (README: exclusions G1, G2).
+    refs = ("pointer",) if generated else _CYCLE10_REFS
+    return list(product(_CYCLE10_FIELDS, _CYCLE10_ROOTS, _CYCLE10_IDS, _CYCLE10_POSITIONS, refs, (False, True)))
+
+
+@pytest.mark.parametrize("field,root,identifier,position,ref,sibling", _cycle10_products())
+def test_cycle10_delivered_cartesian_standalone_oracle(field: str, root: str, identifier: str, position: str, ref: str, sibling: bool) -> None:
+    """Cycle-10 contract: original standalone library result controls admission."""
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema, _ = _cycle10_schema(field, root, identifier, position, ref, sibling)
+    oracle_accepts, trace = _cycle10_standalone_oracle(schema, field)
+    # The governed profile's preexisting fragment-only rule is stricter than
+    # JSON Schema URI resolution (module docstring; decision cycle 7 point 2).
+    expected = oracle_accepts and ref != "resource-uri"
+    try:
+        _validate(_cycle10_delivered(schema, field))
+    except McpProfileError:
+        actual = False
+    else:
+        actual = True
+    assert actual == expected, ("standalone oracle disagreement", field, root, identifier, position, ref, sibling, trace)
+
+
+def _cycle10_generated(field: str, schema: Mapping[str, Any], *, documents: Mapping[str, Any] | None = None) -> tuple[dict[str, Any], dict[str, Any], bytes]:
+    """Public compiler().build -> IrArtifactGenerator.render -> profile path."""
+    fleet = _fleet()
+    source = copy.deepcopy(documents) if documents is not None else copy.deepcopy(fleet.oac_documents())
+    contract = _contract("urn:ocor:contract:cycle10", **{"input_schema" if field == "inputSchema" else "output_schema": schema})
+    source["module.yaml"]["definitions"].append(contract)
+    request = fleet.oac_request(documents=source)
+    release = fleet.compiler().build(request)
+    generator = fleet.c1("codegen").IrArtifactGenerator()
+    first = generator.render(release)["urn:ocor:package:fleet:mcp-descriptor"]
+    second = generator.render(release)["urn:ocor:package:fleet:mcp-descriptor"]
+    assert first == second
+    descriptor = json.loads(first)
+    tool = next(item for item in descriptor["tools"] if item["name"] == "cycle10")
+    return descriptor, tool[field], first
+
+
+@pytest.mark.parametrize("field,root,identifier,position,ref,sibling", _cycle10_products(generated=True))
+def test_cycle10_generated_cartesian_standalone_oracle(field: str, root: str, identifier: str, position: str, ref: str, sibling: bool) -> None:
+    """Every emitted field works alone; typed refusal is required if it cannot.
+
+    All render successes are checked by both libraries on their actual bytes.
+    Compiler admission is not bypassed or patched. Duplicate resource roots
+    may be rejected by the existing DUPLICATE_RESOURCE rule.
+    """
+    schema: dict[str, Any] = {"type": "object"}
+    if root != "absent":
+        schema["$id"] = _CYCLE10_ROOT_URI if root == "absolute" else "relative/root.json"
+    holder: dict[str, Any] = {"type": "object"}
+    declared = _cycle10_identifier(identifier, root, field)
+    if declared is not None:
+        holder["$id"] = declared
+    relative_pointer = _cycle10_place(holder, position, {"$ref": _CYCLE10_STATUS})
+    schema["properties"] = {"nested": holder}
+    if identifier == "duplicate":
+        schema["properties"]["shadow"] = {"$id": _CYCLE10_CHILD_URI, "type": "object"}
+    if sibling:
+        # A type absent from the closure: there is no reference to vessel here.
+        schema["$defs"] = {"unused": {"type": "string"}}
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    # Independently construct the prescribed one-type closure. The library
+    # decides whether the holder starts a resource; no generator helper is
+    # imported and the original $id strings are left unchanged.
+    expected_body = copy.deepcopy(schema)
+    expected_holder = expected_body["properties"]["nested"]
+    _cycle10_place(expected_holder, position, {"$ref": "#/$defs/" + _CYCLE10_TYPE_NAME})
+    root_resource = DRAFT202012.create_resource(expected_body)
+    root_uri = _cycle10_base(expected_body, field)
+    root_resolver = Registry().with_resource(root_uri, root_resource).resolver(root_uri)
+    holder_resolver = root_resolver.in_subresource(DRAFT202012.create_resource(expected_holder))
+    owner = expected_body if holder_resolver._base_uri == root_resolver._base_uri else expected_holder
+    if position == "$defs":
+        # No OaC local reference selects this definition: it is unreachable,
+        # and the generator must omit it (generator decision point 1).
+        expected_holder.pop("$defs")
+        probes: tuple[str, ...] = ()
+    else:
+        owner.setdefault("$defs", {})[_CYCLE10_TYPE_NAME] = {
+            "title": _CYCLE10_STATUS, "type": "string", "enum": ["ACTIVE", "LAID_UP"],
+        }
+        probes = ("#/properties/nested/" + relative_pointer,)
+    oracle_accepts, oracle_trace = _cycle10_standalone_oracle(expected_body, field, probes=probes)
+    if not oracle_accepts or identifier == "duplicate":
+        with pytest.raises(C1Error) as caught:
+            _cycle10_generated(field, schema)
+        assert caught.value.diagnostics[0].code in {
+            DiagnosticCode.UNRESOLVED_REFERENCE, DiagnosticCode.DUPLICATE_RESOURCE,
+        }, oracle_trace
+        return
+    descriptor, body, _ = _cycle10_generated(field, schema)
+    tools = descriptor["tools"]
+    for index, tool in enumerate(tools):
+        for current_field in _CYCLE10_FIELDS:
+            if current_field not in tool:
+                continue
+            current_probes = probes if tool["name"] == "cycle10" and current_field == field else ()
+            okay, trace = _cycle10_standalone_oracle(tool[current_field], current_field, probes=current_probes, index=index)
+            assert okay, ("generator emitted an unresolvable autonomous schema", field, root, identifier, position, ref, sibling, trace)
+    assert "$defs" not in descriptor
+    _validate(descriptor)
+    # Closure membership is independently derived from the one IR symbol in
+    # this input, including its use in the instance-data dimensions.
+    text = json.dumps(body, sort_keys=True)
+    assert (_CYCLE10_TYPE_NAME in text) == (position != "$defs")
+    assert "urn.ocor.type.vessel\"" not in text
+
+
+def _cycle10_size(value: object) -> tuple[int, int]:
+    """Independent JSON value count/depth, root = one, keys not values."""
+    children = list(value.values()) if isinstance(value, dict) else value if isinstance(value, list) else []
+    measures = [_cycle10_size(child) for child in children]
+    return 1 + sum(n for n, _ in measures), 1 + max((d for _, d in measures), default=0)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("nodes", (4096, 4097))
+@pytest.mark.parametrize("origin", _CYCLE10_ORIGINS)
+def test_cycle10_final_node_boundary(field: str, nodes: int, origin: str) -> None:
+    """VF-002: count the final JSON including definitions added by closure."""
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema: dict[str, Any] = {"type": "object", "properties": {"status": {"$ref": _CYCLE10_STATUS}}, "examples": []}
+    baseline, _, _ = _cycle10_generated(field, schema)
+    count, _ = _cycle10_size(baseline)
+    schema["examples"] = list(range(nodes - count))
+    if origin == "generated":
+        if nodes > 4096:
+            with pytest.raises(C1Error, match="exceeds the revision bounds"):
+                _cycle10_generated(field, schema)
+            return
+        descriptor, _, _ = _cycle10_generated(field, schema)
+    else:
+        descriptor = copy.deepcopy(baseline)
+        next(tool for tool in descriptor["tools"] if tool["name"] == "cycle10")[field]["examples"] = schema["examples"]
+    assert _cycle10_size(descriptor)[0] == nodes
+    if nodes == 4096:
+        _validate(descriptor)
+    else:
+        with pytest.raises(McpProfileError, match="exceeds the revision bounds"):
+            _validate(descriptor)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("depth", (32, 33))
+@pytest.mark.parametrize("origin", _CYCLE10_ORIGINS)
+def test_cycle10_final_depth_boundary(field: str, depth: int, origin: str) -> None:
+    """Depth is measured on the emitted descriptor, never a pre-closure tree."""
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema: dict[str, Any] = {"type": "object", "properties": {"status": {"$ref": _CYCLE10_STATUS}}, "default": []}
+    # Four JSON values enclose the root schema: descriptor, tools, tool, schema.
+    nested: Any = 0
+    for _ in range(depth - 5):
+        nested = [nested]
+    schema["default"] = nested
+    if origin == "generated":
+        if depth > 32:
+            with pytest.raises(C1Error, match="exceeds the revision bounds"):
+                _cycle10_generated(field, schema)
+            return
+        descriptor, _, _ = _cycle10_generated(field, schema)
+    else:
+        baseline, _, _ = _cycle10_generated(field, {"type": "object"})
+        descriptor = copy.deepcopy(baseline)
+        next(tool for tool in descriptor["tools"] if tool["name"] == "cycle10")[field] = {"type": "object", "default": nested}
+    assert _cycle10_size(descriptor)[1] == depth
+    if depth == 32:
+        _validate(descriptor)
+    else:
+        with pytest.raises(McpProfileError, match="exceeds the revision bounds"):
+            _validate(descriptor)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("nodes", (4096, 4097))
+@pytest.mark.parametrize("type_id", (_CYCLE10_STATUS, "urn:ocor:type:vessel"))
+def test_cycle10_node_growth_from_reachable_types(field: str, nodes: int, type_id: str) -> None:
+    """Direct and transitive IR type closure count towards the final limit."""
+    schema = {"type": "object", "properties": {"value": {"$ref": type_id}}, "examples": []}
+    fleet = _fleet()
+    documents = copy.deepcopy(fleet.oac_documents())
+    definitions = documents["module.yaml"]["definitions"]
+    enum = next(item for item in definitions if item.get("type_id") == _CYCLE10_STATUS)
+    baseline, _, _ = _cycle10_generated(field, schema, documents=documents)
+    base_count = _cycle10_size(baseline)[0]
+    original = list(enum["values"])
+    enum["values"] = [*original, "CYCLE10_EXTRA"]
+    one_more, _, _ = _cycle10_generated(field, schema, documents=documents)
+    copies = _cycle10_size(one_more)[0] - base_count
+    assert copies > 0
+    added, remainder = divmod(nodes - base_count, copies)
+    enum["values"] = [*original, *(f"CYCLE10_{index:04d}" for index in range(added))]
+    schema["examples"] = list(range(remainder))
+    if nodes > 4096:
+        with pytest.raises(C1Error, match="exceeds the revision bounds"):
+            _cycle10_generated(field, schema, documents=documents)
+    else:
+        descriptor, _, _ = _cycle10_generated(field, schema, documents=documents)
+        assert _cycle10_size(descriptor)[0] == nodes
+        _validate(descriptor)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("depth", (32, 33))
+def test_cycle10_depth_growth_from_reachable_types(field: str, depth: int) -> None:
+    """The deepest resource's newly attached $defs can cross the depth limit."""
+    source: dict[str, Any] = {"$id": _CYCLE10_CHILD_URI, "type": "object", "properties": {"status": {"$ref": _CYCLE10_STATUS}}}
+    expected: dict[str, Any] = {
+        "$id": _CYCLE10_CHILD_URI, "type": "object",
+        "properties": {"status": {"$ref": "#/$defs/" + _CYCLE10_TYPE_NAME}},
+        "$defs": {_CYCLE10_TYPE_NAME: {"title": _CYCLE10_STATUS, "type": "string", "enum": ["ACTIVE", "LAID_UP"]}},
+    }
+    while _cycle10_size(expected)[1] + 3 < depth:
+        remaining = depth - _cycle10_size(expected)[1] - 3
+        if remaining >= 2:
+            source = {"type": "object", "properties": {"child": source}}
+            expected = {"type": "object", "properties": {"child": expected}}
+        else:
+            source = {"type": "object", "not": source}
+            expected = {"type": "object", "not": expected}
+    assert _cycle10_size(expected)[1] + 3 == depth
+    if depth > 32:
+        with pytest.raises(C1Error, match="exceeds the revision bounds"):
+            _cycle10_generated(field, source)
+    else:
+        descriptor, body, _ = _cycle10_generated(field, source)
+        assert body == expected
+        assert _cycle10_size(descriptor)[1] == depth
+        _validate(descriptor)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+def test_cycle10_fixed_base_collision_is_a_typed_refusal(field: str) -> None:
+    """Generator decision point 2: the fixed URI cannot match a declared $id.
+
+    Existing cycle-8 suffix-selection assertions are left unchanged in phase
+    A. Their conflict with this prescribed refusal is an open contract question.
+    """
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema = {"type": "object", "$defs": {"collision": {"$id": f"urn:ocor:embedded-tool:0:{field}", "type": "integer"}}}
+    with pytest.raises(McpProfileError):
+        _validate(_cycle10_delivered(schema, field))
