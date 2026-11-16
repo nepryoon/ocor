@@ -60,13 +60,19 @@ def _descriptor(documents: Mapping[str, Any] | None = None) -> tuple[dict[str, A
     return document, raw
 
 
-def _contract(contract_id: str, *, input_schema: Mapping[str, Any] | None = None, kind: str = "MCP_TOOL") -> dict[str, Any]:
+def _contract(
+    contract_id: str,
+    *,
+    input_schema: Mapping[str, Any] | None = None,
+    output_schema: Mapping[str, Any] | None = None,
+    kind: str = "MCP_TOOL",
+) -> dict[str, Any]:
     return {
         "construct": "ContractDefinition",
         "contract_id": contract_id,
         "kind": kind,
         "input_schema": dict(input_schema or {"type": "object", "properties": {"name": {"type": "string"}}}),
-        "output_schema": {"type": "object"},
+        "output_schema": dict(output_schema or {"type": "object"}),
         "error_model": ["CAPABILITY_DENIED"],
         "effect_class": "READ_ONLY",
         "risk_class": "R1",
@@ -4475,3 +4481,308 @@ def test_cycle8_a_descriptor_with_top_level_defs_is_refused() -> None:
     tampered["$defs"] = {"anything": {"type": "integer"}}
     with pytest.raises(profile.McpProfileError, match=r"top-level \$defs"):
         _validate(tampered)
+
+
+# Cycle 9 — VF-001 of OCOR-DEV-REM-0063-875169cae96f-8. Each JSON Schema
+# resource receives the closure of the ``#/$defs`` references that resolve
+# against that resource. A nested ``$id`` does not see the parent closure,
+# and a definition nobody references is not emitted.
+
+
+_CYCLE9_CHILD = "https://verifier.invalid/child.json"
+_CYCLE9_FIELDS = ("inputSchema", "outputSchema")
+_CYCLE9_SLOTS = ("properties", "allOf", "anyOf", "oneOf")
+_CYCLE9_STATUS = "urn:ocor:type:vessel-status"
+_CYCLE9_STATUS_NAME = "urn.ocor.type.vessel-status"
+_CYCLE9_VESSEL = "urn:ocor:type:vessel"
+_CYCLE9_HULL = "urn:ocor:type:hull"
+_CYCLE9_PROPERTY = "urn:ocor:property:vessel-name"
+
+
+def _cycle9_child(ref: str, *, nested_id: str | None) -> dict[str, Any]:
+    child: dict[str, Any] = {
+        "type": "object",
+        "properties": {"status": {"$ref": ref}},
+    }
+    if nested_id is not None:
+        child["$id"] = nested_id
+    return child
+
+
+def _cycle9_schema(slot: str, ref: str, *, nested_id: str | None) -> dict[str, Any]:
+    child = _cycle9_child(ref, nested_id=nested_id)
+    if slot == "properties":
+        return {"type": "object", "properties": {"nested": child}}
+    return {"type": "object", slot: [child]}
+
+
+def _cycle9_instance(slot: str, status: str, *, nested: bool) -> dict[str, Any]:
+    if slot == "properties":
+        return {"nested": {"status": status}}
+    if nested:
+        return {"status": status}
+    return {"status": status}
+
+
+def _cycle9_render(field: str, schema: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    if field == "inputSchema":
+        contract = _contract("urn:ocor:contract:cycle9-closure", input_schema=schema)
+    else:
+        contract = _contract(
+            "urn:ocor:contract:cycle9-closure",
+            input_schema={"type": "object", "properties": {"name": {"type": "string"}}},
+            output_schema=schema,
+        )
+    document, first = _descriptor(_with_contracts(contract))
+    _, second = _descriptor(_with_contracts(contract))
+    assert first == second
+    tool = next(item for item in document["tools"] if item["name"] == "cycle9-closure")
+    body = tool[field]
+    if not isinstance(body, dict):
+        raise AssertionError("rendered tool schema is not an object")
+    return document, body
+
+
+def _cycle9_find(schema: Mapping[str, Any], identifier: str) -> dict[str, Any] | None:
+    found: dict[str, Any] | None = None
+
+    def visit(node: object) -> None:
+        nonlocal found
+        if found is not None:
+            return
+        if isinstance(node, Mapping):
+            if node.get("$id") == identifier and isinstance(node, dict):
+                found = node
+                return
+            for value in node.values():
+                visit(value)
+        elif isinstance(node, list):
+            for item in node:
+                visit(item)
+
+    visit(schema)
+    return found
+
+
+def _cycle9_enum_oracle(schema: Mapping[str, Any], uri: str, instance: Mapping[str, Any], *, bad: Mapping[str, Any]) -> None:
+    """referencing 0.37.0 and Draft202012Validator on one autonomous schema."""
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    resource = DRAFT202012.create_resource(dict(schema))
+    registry = Registry().with_resource(uri, resource)
+    resolved = registry.resolver(uri).lookup(f"#/$defs/{_CYCLE9_STATUS_NAME}")
+    assert resolved.contents["enum"] == ["ACTIVE", "LAID_UP"]
+    validator = Draft202012Validator(dict(schema), registry=registry)
+    assert validator.is_valid(dict(instance))
+    assert not validator.is_valid(dict(bad))
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+@pytest.mark.parametrize("slot", _CYCLE9_SLOTS)
+def test_cycle9_nested_id_closure_is_placed_on_that_resource(field: str, slot: str) -> None:
+    """A nested ``$id`` keeps the closure of the references it alone resolves.
+
+    Oracle: referencing 0.37.0 plus Draft202012Validator on the child
+    resource. Eight cases (2 fields x 4 slots). The parent resource does
+    not receive those definitions. A wrong enum is rejected and the
+    governed value is accepted.
+    """
+    from referencing.exceptions import Unresolvable
+
+    document, body = _cycle9_render(
+        field,
+        _cycle9_schema(slot, _CYCLE9_STATUS, nested_id=_CYCLE9_CHILD),
+    )
+    child = _cycle9_find(body, _CYCLE9_CHILD)
+    assert child is not None
+    assert set(child.get("$defs", {})) == {_CYCLE9_STATUS_NAME}
+    assert _CYCLE9_STATUS_NAME not in body.get("$defs", {})
+    _validate(document)
+    _cycle9_enum_oracle(
+        child,
+        _CYCLE9_CHILD,
+        {"status": "ACTIVE"},
+        bad={"status": "WRONG"},
+    )
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    root_uri = body["$id"] if isinstance(body.get("$id"), str) and body.get("$id") else "urn:ocor:probe:cycle9"
+    root = Registry().with_resource(root_uri, DRAFT202012.create_resource(body))
+    with pytest.raises(Unresolvable):
+        root.resolver(root_uri).lookup(f"#/$defs/{_CYCLE9_STATUS_NAME}")
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+@pytest.mark.parametrize("slot", _CYCLE9_SLOTS)
+def test_cycle9_plain_twin_keeps_the_closure_on_the_root(field: str, slot: str) -> None:
+    """The same schema without a nested ``$id`` keeps the closure on the root.
+
+    Eight twin cases. The profile accepts the descriptor. The wrong enum
+    is rejected on the rendered schema and the governed value is accepted.
+    """
+    schema = _cycle9_schema(slot, _CYCLE9_STATUS, nested_id=None)
+    document, body = _cycle9_render(field, schema)
+    assert set(body.get("$defs", {})) == {_CYCLE9_STATUS_NAME}
+    if slot == "properties":
+        assert "$defs" not in body["properties"]["nested"]
+    else:
+        assert "$defs" not in body[slot][0]
+    _validate(document)
+    good = _cycle9_instance(slot, "ACTIVE", nested=False)
+    bad = _cycle9_instance(slot, "WRONG", nested=False)
+    uri = body["$id"] if isinstance(body.get("$id"), str) and body.get("$id") else "urn:ocor:probe:cycle9-plain"
+    _cycle9_enum_oracle(body, uri, good, bad=bad)
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_nested_vessel_closure_includes_only_the_reachable_types(field: str) -> None:
+    """A vessel reference inside a nested resource carries its own closure."""
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    child_schema = {
+        "$id": _CYCLE9_CHILD,
+        "type": "object",
+        "properties": {"vessel": {"$ref": _CYCLE9_VESSEL}},
+    }
+    document, body = _cycle9_render(
+        field,
+        {"type": "object", "properties": {"nested": child_schema}},
+    )
+    child = _cycle9_find(body, _CYCLE9_CHILD)
+    assert child is not None
+    names = set(child.get("$defs", {}))
+    assert {
+        "urn.ocor.type.vessel",
+        "urn.ocor.type.vessel-status",
+        "urn.ocor.type.hull",
+    } <= names
+    assert names.isdisjoint(body.get("$defs", {}))
+    _validate(document)
+    registry = Registry().with_resource(
+        _CYCLE9_CHILD,
+        DRAFT202012.create_resource(child),
+    )
+    resolver = registry.resolver(_CYCLE9_CHILD)
+    for name in (
+        "urn.ocor.type.vessel",
+        "urn.ocor.type.vessel-status",
+        "urn.ocor.type.hull",
+    ):
+        target = resolver.lookup(f"#/$defs/{name}")
+        assert isinstance(target.contents, dict)
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_root_and_nested_resources_keep_separate_closures(field: str) -> None:
+    """A root reference and a nested reference do not share one closure."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "status": {"$ref": _CYCLE9_STATUS},
+            "nested": {
+                "$id": _CYCLE9_CHILD,
+                "type": "object",
+                "properties": {"hull": {"$ref": _CYCLE9_HULL}},
+            },
+        },
+    }
+    document, body = _cycle9_render(field, schema)
+    child = _cycle9_find(body, _CYCLE9_CHILD)
+    assert child is not None
+    assert set(body.get("$defs", {})) == {_CYCLE9_STATUS_NAME}
+    assert set(child.get("$defs", {})) == {"urn.ocor.type.hull"}
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_an_unreferenced_local_definition_is_not_emitted(field: str) -> None:
+    """A local ``$defs`` entry that no reference reaches is left out.
+
+    The twin without that entry renders the same schema. The profile
+    accepts the descriptor.
+    """
+    unused = {
+        "type": "object",
+        "properties": {"n": {"type": "integer"}},
+        "$defs": {"independent-unreachable": {"type": "string"}},
+    }
+    twin = {"type": "object", "properties": {"n": {"type": "integer"}}}
+    document, body = _cycle9_render(field, unused)
+    _, plain = _cycle9_render(field, twin)
+    assert "independent-unreachable" not in body.get("$defs", {})
+    assert "$defs" not in body
+    assert body == plain
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_a_ref_inside_const_is_closed_on_its_resource(field: str) -> None:
+    """A ``$ref`` inside ``const`` is a target of the resource that holds it.
+
+    ``const`` is not a schema applicator. The reference still names a
+    definition, and that definition is placed on the nested resource, not
+    on the parent. Two cases, one per tool field.
+    """
+    document, body = _cycle9_render(
+        field,
+        {
+            "type": "object",
+            "properties": {
+                "nested": {
+                    "$id": _CYCLE9_CHILD,
+                    "const": {"$ref": _CYCLE9_STATUS},
+                }
+            },
+        },
+    )
+    child = _cycle9_find(body, _CYCLE9_CHILD)
+    assert child is not None
+    assert set(child.get("$defs", {})) == {_CYCLE9_STATUS_NAME}
+    assert _CYCLE9_STATUS_NAME not in body.get("$defs", {})
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_an_id_inside_const_does_not_start_a_resource(field: str) -> None:
+    """An ``$id`` inside ``const`` stays instance data.
+
+    referencing 0.37.0 does not crawl ``const``, so both references stay
+    on the root resource. Two cases, one per tool field.
+    """
+    document, body = _cycle9_render(
+        field,
+        {
+            "type": "object",
+            "properties": {
+                "status": {"$ref": _CYCLE9_STATUS},
+                "sample": {"const": {"$id": _CYCLE9_CHILD, "$ref": _CYCLE9_HULL}},
+            },
+        },
+    )
+    assert set(body.get("$defs", {})) == {_CYCLE9_STATUS_NAME, "urn.ocor.type.hull"}
+    sample = body["properties"]["sample"]["const"]
+    assert sample["$id"] == _CYCLE9_CHILD
+    assert sample["$ref"] == "#/$defs/urn.ocor.type.hull"
+    assert "$defs" not in body["properties"]["sample"]
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", _CYCLE9_FIELDS)
+def test_cycle9_an_unresolvable_definition_is_a_typed_generation_error(field: str) -> None:
+    """A symbol that is not a type is not emitted as a dangling ``$ref``.
+
+    ``urn:ocor:property:vessel-name`` is in the IR symbol table, so the
+    compiler accepts the contract. The generator has no schema for that
+    component and fails closed. Two cases, one per tool field.
+    """
+    schema = {
+        "type": "object",
+        "properties": {"x": {"$ref": _CYCLE9_PROPERTY}},
+    }
+    with pytest.raises(C1Error, match="unresolved MCP definition") as caught:
+        _cycle9_render(field, schema)
+    assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
