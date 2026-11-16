@@ -1,6 +1,6 @@
 # REM-0063-PINNED-FIXTURE-DIFF-CHECK
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -23,3 +23,9 @@ Opzione 1. La fixture è lo schema ufficiale byte per byte. Togliere la riga vuo
 ## Impatto e task bloccati
 
 Nessun task è bloccato. La verifica del ciclo 9 di `OCOR-DEV-REM-0063` prosegue. Non si integra questo branch. Non si modifica `inputs/`. Non si allarga l'allowlist. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Disposition — REM-0063-PINNED-FIXTURE-DIFF-CHECK (2026-11-16)
+
+Opzione 1 adottata, decisa su delega completa del PO, modello claude-opus-5-5, effort high. Eccezione registrata per la sola riga vuota finale della fixture ufficiale: byte e digest invariati; git diff --check resta NOT_GREEN con uscita 2 su quel file e non viene dichiarato PASS. Gli altri file mantengono il controllo. Disposition adottata dopo verifica del file al commit 36291502e41c15e4b1e8e5ad4ecfd7ca126acafd, SHA256 addf624cf7a204cbaaefacb2b52795ba056cae9dcbbf03f1e2f782c1ce15d388. Nessun task bloccato e nessuna chiusura di claim.
+
+La PR della richiesta si chiude come risolta con il riferimento al commit dello state sync; il branch resta conservato. Nessun merge della richiesta.
