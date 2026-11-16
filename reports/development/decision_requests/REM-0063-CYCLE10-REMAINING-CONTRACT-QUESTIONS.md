@@ -219,3 +219,14 @@ dossier, schema, gate, timer, tetto, partizione, immagine, digest o `inputs/`.
 Il flusso residuo resta quello autorizzato per il ciclo 10.
 Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED,
 PoC e Production NO-GO.
+
+## Controllo del formato
+
+Eseguito prima della pubblicazione:
+
+```bash
+grep -cE '^[A-Z]?[0-9]{1,2}\. \*\*' reports/development/decision_requests/REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS.md
+```
+
+Esito: `6`, corrispondente ad A1/A2, B1/B2 e C1/C2, consecutive sotto
+le rispettive sezioni delle opzioni. Nessuna opzione aggiunta o cambiata.
