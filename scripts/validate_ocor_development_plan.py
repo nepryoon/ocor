@@ -1845,8 +1845,8 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
         # OCOR-DEV-REM-0063 cycle 10 campaign head: paths brought by the
-        # product branch and absent from origin/main. Regression-only
-        # requalification follows in the next commit.
+        # product branch and absent from origin/main. The cycle10 names
+        # below are the regression-only requalification of this allowlist.
         "docs/development_plan/OCOR_MCP_2026-07-28_PROFILE.md",
         "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
         "ocor-runtime/src/ocor_runtime/c2/mcp_boundary.py",
@@ -1869,6 +1869,12 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-cycle10.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-cycle10.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-cycle10.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-cycle10.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-cycle10.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-cycle10.log",
         "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-rem0063.json",
         "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-rem0063.log",
         "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-rem0063.json",
