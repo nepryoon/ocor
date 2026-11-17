@@ -73,7 +73,7 @@
       "result": "RED_EXPECTED_NOT_QUALIFYING"
     }
   ],
-  "commit": "66c14f60e440f287a88c5e01a0ab30259e303a26",
+  "commit": "4e481c3e23e9191c05a334f2b36fe12c7ec1a888",
   "commit_role": "Exact committed final phase-A contract/test tree; intentional RED, no production repair or qualifying campaign.",
   "created_at": "2026-11-13T23:11:16Z",
   "cycle_9_candidate_at_start_of_cycle_10": {
@@ -2751,7 +2751,7 @@
     "ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json": "edbb197ed0f92e90d658866e23cf76f107df0caac5ce25c2b9e64e1ca9a6314a",
     "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py": "305ffc90c9ec090f5ed05bd2d2f7109811ffbf3c095ad2c487d592d0c7d60701",
     "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py": "085fb52fab547a87945b4cdbd929b1f0120b8c147174c4b8ca8c700fdd84513a",
-    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/README.md": "9b230f602cf22157e42307a0cba565f8d28c78f7712c98a041f04d068cbcf01b",
+    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/README.md": "391e0919ec24eb53b05b9d3d7bf3b596ad575bdb5b364c0d94f035ec941e4a09",
     "reports/planning/OCOR_PLAN_RUN_STATE.json": "044c160af59bc256172a73e44b0a73b744584a9ab51630cdb97c712fe92ca368",
     "reports/tests/test_check_execution_commit_inputs.py": "286b458aa06cc40d58165d0b64c035b47ca4f2d0042cb487940f61d6e067237f",
     "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json": "efaedb5495e35bf5e292f3c10c4b0acdcd05314d46519778b77820472f396b3e",
@@ -3503,7 +3503,7 @@
       "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
       "NORMATIVE-QUESTIONS-EARLY-DR-PO-CONSTRAINTS (2026-11-09)"
     ],
-    "blocking_decision_request": "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS",
+    "blocking_decision_request": null,
     "contract": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/README.md#cycle-10-contract",
     "contract_review_number_requested": 2,
     "contract_reviewer": {
@@ -3650,6 +3650,22 @@
         ],
         "id": "REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)",
         "note": "Decided by the Product Owner in person; fragment-only spelling is a separate profile restriction. No production implementation in phase A."
+      },
+      {
+        "adopted_options": [
+          "A1",
+          "B1",
+          "C1"
+        ],
+        "id": "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)",
+        "note": "Decided by the Product Owner in person. File sha256 edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8 at 99d93da7a481c44841d9d8003044aed37c026ce6. A2, B2 and C2 are not applied. The existing encoded-slash assertion and the phase-A oracle are not changed in the design commit."
+      },
+      {
+        "adopted_options": [
+          "design before production"
+        ],
+        "id": "REM-0063-CALCOLO-UNICO (2026-11-17)",
+        "note": "Code owner is Grok Build, grok-4.7, xAI, effort xhigh. Phase A remains Codex, gpt-6.1-sol, OpenAI. The design commit does not modify ocor-runtime/src or tests."
       }
     ],
     "existing_test_fixture_oracle_changed": false,
@@ -4663,10 +4679,8 @@
         "summary": "14 PASS, 0 FAIL, 0 NOT_EXECUTED"
       }
     },
-    "next_action": "Read the PO disposition of REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS before dependent phase-B production changes and any full campaign. No third contract review. Preserve all 40180 matrix cells and existing tests pending the enumerated decisions; then the single phase-B repair, GREEN, preventive review, gate, campaign, distinct check and final verification.",
-    "open_questions": [
-      "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS"
-    ],
+    "next_action": "Await the single design review requested from the loop for the Single calculation design at 4e481c3e23e9191c05a334f2b36fe12c7ec1a888. No third contract review. After that review, one implementation commit realises the shared calculation, realigns only the authorised encoded-slash case and the unsealed phase-A oracle to B1, and turns the 40180 matrix cells and the existing tests green. Then preventive review, local gate, campaign, distinct check and final verification by Claude Code claude-opus-5-5. No production edit is in the design commit.",
+    "open_questions": [],
     "pending_decision_request": {
       "branch": "governed/decision-request-rem0063-cycle10-remaining-contract-questions",
       "commit": "99d93da7a481c44841d9d8003044aed37c026ce6",
@@ -4678,9 +4692,15 @@
         "B1",
         "C1"
       ],
-      "sha256": "edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8"
+      "sha256": "edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8",
+      "status": "DECIDED_BY_PO",
+      "adopted_options": [
+        "A1",
+        "B1",
+        "C1"
+      ]
     },
-    "phase": "A_COMPLETE_SECOND_REVIEW_DISPOSITIONS_PENDING_PO",
+    "phase": "DESIGN_PUBLISHED_AWAITING_PREREVIEW",
     "production_code_changed": false,
     "red": {
       "command": [
@@ -4806,7 +4826,15 @@
       "task_limit_margin_seconds": 1906.114645492984
     },
     "started_from": "f485dc964e47bde83842ecd5ba2627d8342612f9",
-    "test_contract_commit": "66c14f60e440f287a88c5e01a0ab30259e303a26"
+    "test_contract_commit": "66c14f60e440f287a88c5e01a0ab30259e303a26",
+    "single_calculation_design": {
+      "commit": "4e481c3e23e9191c05a334f2b36fe12c7ec1a888",
+      "decision": "REM-0063-CALCOLO-UNICO (2026-11-17)",
+      "open_questions_remaining": [],
+      "production_changed": false,
+      "second_review_blocking_unincorporated": [],
+      "tests_changed": false
+    }
   },
   "repair_cycle_2": {
     "campaign_head": "fbe0200c24c07340b67430a3b0a24a3cac65ba82",
@@ -6267,6 +6295,12 @@
         "model": "gpt-6.1-sol",
         "provider": "OpenAI",
         "scope": "Cycle 10 phase A: contract, full Cartesian RED matrix, both contract-review dispositions, normative questions and checkpoint record. gpt-6.1-sol, OpenAI, effort max. No production change."
+      },
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "Cycle 10 from REM-0063-CALCOLO-UNICO (2026-11-17): code owner and author of the Single calculation design at 4e481c3e23e9191c05a334f2b36fe12c7ec1a888. Codex gpt-6.1-sol, OpenAI, remains the phase-A author. No production change in the design commit. Preventive reviewer Claude Code claude-fable-5-2. Final verifier Claude Code claude-opus-5-5, same provider as the reviewer and a different model, as the PO assigned."
       }
     ],
     "preventive_review_history": [
@@ -6392,14 +6426,14 @@
     ],
     "preventive_reviewer": {
       "agent": "Claude Code",
-      "assignment": "REM-0063-CICLO-10-CONTRATTO (2026-11-16), phase-B preventive review",
+      "assignment": "REM-0063-CALCOLO-UNICO (2026-11-17) point 4, single design review",
       "effort": "max",
       "independence_limits": "Anthropic differs from all implementers; the PO assigns final verifier claude-opus-5-5 of the same provider and a different model under VERIFIER-CLAUDE-REM0063 (2026-11-16).",
       "model": "claude-fable-5-2",
       "provider": "Anthropic",
       "request_id": null,
       "reserve": false,
-      "status": "PHASE_B_REVIEW_NOT_REQUESTED"
+      "status": "DESIGN_REVIEW_NOT_YET_REQUESTED"
     },
     "verifier_excluded_providers": [
       "DeepSeek",
