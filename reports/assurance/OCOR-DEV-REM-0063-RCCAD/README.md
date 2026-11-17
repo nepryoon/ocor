@@ -82,7 +82,11 @@ or `McpProfileError`, without suffix selection. A final empty fragment does not
 make a different identity. An equal `$id` in another field, tool or descriptor
 metadata is not a collision of this registry (C1). Sources:
 **REM-0063-CICLO-10-CONTRATTO**, point 2;
-**REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**, A1+B1;
+**REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**, A1+B1
+(request `0531a438f0d68637d8a7221507080a7c672c0847`, sha256
+`35259990c43e2e2def484b7d763bdc691feb25e262e661d9a5323fa06fdeec41`;
+disposition `7320dc93051aff01edcf242a78e790acae9ad60f`, sha256
+`5c68feee5a9dc955eb93532b9348d6b8a3ed710dc4178dbbc0fd91e865bbdcfe`);
 **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)**, C1.
 
 The profile validates every tool against the pinned official `Tool` definition,
@@ -93,14 +97,18 @@ slash follow the original libraries, without helper substitutions (A1 above).
 A1 of **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)** extends that
 realignment to the single omitted case `encoded-slash` of
 `test_percent_encoded_fragments_resolve_before_the_pointer`: same name, inputs
-and 19 cases; only `encoded-slash` expects `McpProfileError`. The implementation
-commit records the old and new expectation. No other existing test changes.
+and 19 cases; only `encoded-slash` expects `McpProfileError`. The old and new
+expectation of every authorized realignment is the table
+`repair_cycle_10.implementation.authorized_realignments` in the assurance
+record. No other existing test changes.
 
 Only reference spellings starting with `#` are accepted, even when an URI naming
 a contained resource resolves without network access. The generator emits only
 the prescribed local pointers and refuses a final schema requiring forbidden
 spellings. The library outcome and this additional refusal are recorded separately.
-Source: **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1.
+Source: **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1,
+request `620f56ba3206affd15679f0394c16c7a4eb0fa33`, sha256
+`98827faf39c35d71dd3570e90baea7faa6c9e1539c2909d94bfb26bb1eb13acb`.
 
 Bounds apply after the complete definition closure: 4096 JSON values and depth
 32; the root counts as one, keys do not count. At 4097 or depth 33, generator and
@@ -189,13 +197,24 @@ without the stricter static oracle. No original matrix assertion is weakened.
 ### Decisions, questions and stopping conditions
 
 Q1/Q2: A1+B1 of **REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)** are decided.
+The request file at `0531a438f0d68637d8a7221507080a7c672c0847` has sha256
+`35259990c43e2e2def484b7d763bdc691feb25e262e661d9a5323fa06fdeec41`. The
+disposition file at `7320dc93051aff01edcf242a78e790acae9ad60f` has sha256
+`5c68feee5a9dc955eb93532b9348d6b8a3ed710dc4178dbbc0fd91e865bbdcfe`.
 Q3: option 1 of **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)** is decided.
+The request file at `620f56ba3206affd15679f0394c16c7a4eb0fa33` has sha256
+`98827faf39c35d71dd3570e90baea7faa6c9e1539c2909d94bfb26bb1eb13acb`. The
+disposition file at `1a369324cd9c722772244afcdd890798d3c62b18` has sha256
+`e1233e6b99ccbf9c9a68c2031b2f4cd4f64bdd31ffcc640a86ddfa555dc8d449`.
 Q4/Q5/Q6, the questions **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**
 collected, are decided by the Product Owner in person on 2026-11-17: A1, B1
 and C1. A2, B2 and C2 are not applied. The file at
 `99d93da7a481c44841d9d8003044aed37c026ce6` has sha256
-`edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8`. No question
-in this contract remains open. The second review's blocking root-class coverage
+`edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8`. One
+contract question remains open: whether a nested resource is resolved by the
+pinned libraries on the tool schema alone. That question is
+`REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`, stated in **Single calculation
+design**. The second review's blocking root-class coverage
 is already in `66c14f60e440f287a88c5e01a0ab30259e303a26`; this design commit
 adds no test. There is no third contract review.
 
@@ -212,9 +231,15 @@ under `~/.ocor-codex/rem-0063/cycle10-implementation/`. An earlier run stopped
 by `--maxfail=20` is not green: 20 failed, 41534 passed, exit 1, raw sha256
 `17a76e58dd4fdf5a4b6a52f2ee1d78609fdd1cb4f1f45a2eefd8d6824b8cf618`
 (`matrix-green.raw.log`). The matrix stays 40180 cells. This task-module run
-is not a qualifying campaign. The next review is the pre-campaign preventive
-review, not another design review. Local gates, the four-lane campaign, the
-distinct check and final verification follow that review. Fence unchanged:
+is not a qualifying campaign. The pre-campaign preventive review
+`OCOR-DEV-REM-0063-cce3ba8ba7ab-pre` has already returned
+`BLOCKING_FINDINGS` (6 blocking, 2 advisory). Reviewer: Claude Code,
+`claude-fable-5-2`, Anthropic, effort max. Outcome-file sha256
+`13effc01c0ba02480b457c2f0fe215910c7f3136211c1423903ab2d18e1c3421`.
+The repairs that do not choose a normative reading are on this head. The
+qualifying campaign waits on `REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`.
+No second pre-campaign review is requested. The full pre-campaign gate is
+not yet run. Fence unchanged:
 E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.
 
 ### Single calculation design
@@ -225,7 +250,7 @@ pre-implementation text of this subsection. Shared functions live in
 No new file under `ocor-runtime/src/`. No dependency or version change.
 Matrix expectations stay the pinned libraries on the original schema bytes.
 
-No contract question remains open. Q4/A1 refuses a percent-encoded plain-name
+One contract question remains open: whether a nested resource is resolved by the pinned libraries on the tool schema alone, or kept as its own fragment root. That question is `REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`. The hand registration in `enter_subschema` and the `PointerToNowhere` retry are not claimed as the library applied as-is; they stay until that decision. Q4/A1 refuses a percent-encoded plain-name
 anchor and the encoded-slash pointer before a successful literal resolve.
 Q5/B1 is `operational_base`: absent, non-string, `""` and an empty
 pre-fragment (`"#"`, `"###"`) use `urn:ocor:embedded-tool:{index}:{field}`;
@@ -258,19 +283,23 @@ resource is not resolvable`), `INVALID_ID` and `COLLISION` and `BOUNDS` to
    passed to `with_resource`. `registry_factory` is the `codegen.Registry`
    global, read at the call inside `_mcp_attach_definitions`. Non-string
    `$id` values in schema position are `NOT_RESOLVABLE` before the resource
-   is built. `Unresolvable` from the probe is `CRAWL`. `AttributeError` on
-   `NoneType.values` or `rstrip` is `NOT_RESOLVABLE`. On the generator only,
-   `NoneType.get` is `CRAWL`. `ValueError` is `INVALID_ID`. An unreferenced
-   `$id` in instance data is not this refusal.
+   is built. `Unresolvable` from the probe is `CRAWL`. `TypeError` from the
+   probe is `NOT_RESOLVABLE`. `AttributeError` on `NoneType.values` or
+   `rstrip` is `NOT_RESOLVABLE`. On the generator only, `NoneType.get` is
+   `CRAWL`. Any other `AttributeError` is not remapped here: a scalar inside
+   `$defs` still reaches the non-schema target check. `ValueError` is
+   `INVALID_ID`. An unreferenced `$id` in instance data is not this refusal.
 4. `enter_subschema(resolver, child) -> tuple[Resolver, bool]`. The boundary
    is `in_subresource` changing the base. A changed base is registered with
    `with_resource` only when the child is a library subresource of the
    resource `lookup("#")` already returns. An `$id` reached only through
    instance data changes the base and stays unregistered, so a later fragment
    fails closed. The caller's registry is not replaced.
-5. `assert_reference_path_bound(schema, resolver) -> None`. A `$ref` path
-   deeper than 32 is `BOUNDS`. This is stricter than `json_bounds` and
-   stricter than the library. The generator calls it from `_mcp_post_check`.
+5. `assert_reference_path_bound(schema, resolver) -> None`. Reference-path
+   depth uses the profile graph's static-first breadth-first bound. A chain
+   of named definitions is not a generator-only limit. Depth above 32 is
+   `BOUNDS`. `json_bounds` remains the JSON value count and JSON depth.
+   `_resolve_graph` and `_mcp_post_check` both call this function.
    Anchor-chain depth tests are unchanged.
 
 Lookup uses the original reference spelling. An encoded fragment whose
@@ -288,13 +317,15 @@ does not build a new root resolver. The resolver `lookup` returns is the one
 an anchor chain continues with.
 
 The generator walks resources with `in_subresource` only. Two different nodes
-that receive one base are `DUPLICATE_RESOURCE`. The closure owner is the
-unpinned `lookup("#").contents`, or the boundary node when that lookup cannot
-retrieve a relative base. A node is a closure root when that owner is the
-node, including a rejoining `"#"`. The earlier rule that treated every base
-change as its own closure root is superseded: a joined URI whose unpinned
-crawl returns an ancestor keeps the reachable references on that ancestor,
-and unreachable `$defs` on the descendant are omitted.
+that receive one base are `DUPLICATE_RESOURCE`. The closure is written on
+the unpinned `lookup("#").contents`, or on the boundary node when that
+lookup cannot retrieve a relative base. References are scanned from the
+boundary as well as from that owner, so a reference that sits on the
+boundary is not dropped when a descendant rejoins the URI. `$defs` are
+placed on the owner. The earlier rule that treated every base change as its
+own closure root is superseded: a joined URI whose unpinned crawl returns
+an ancestor keeps the reachable references on that ancestor, and unreachable
+`$defs` on the descendant are omitted.
 `additionalItems` stays on the current resource unless its base changes, in
 which case the generator reports `MCP schema resource is not crawled`.
 `_mcp_attach_definitions` keeps its signature. `_mcp_ref`, `_mcp_defs_name`,
@@ -308,7 +339,13 @@ deletes `_declared_id`, `_resource_uri`, `_changes_resource`,
 `_collect_node_uris`, `_canonical_resource_contents`, the hand-written
 resolver and `_PROFILE_SPECIFICATION`. The generator deletes `_mcp_bounds`,
 `_mcp_declared_id`, `_mcp_resource_uri`, `_mcp_changes_resource`,
-`_mcp_collect_ids`, `_mcp_synthetic_uri` and `_mcp_base_uri`.
+`_mcp_collect_ids`, `_mcp_synthetic_uri`, `_mcp_base_uri` and
+`_mcp_seed_refs`. The profile `_reject_surrogate` is deleted; lone
+surrogates stay on `json_bounds`. The `c8` helper of the same name is
+unchanged. `_recover_scalar_target` remains: it recovers a scalar pointer
+target after the library lookup has failed, and it is not a second resolver.
+The nested-resource registration and the one `PointerToNowhere` retry stay
+until `REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`.
 
 Rules stricter than the libraries, each with its own typed error:
 
@@ -322,4 +359,4 @@ Rules stricter than the libraries, each with its own typed error:
 8. `without_context_overwrite` on the input schema. Source: **GENERATORE**, point 1.
 9. `json_bounds` is the only value-count limit. Reference-path depth 32 is a separate rule. Source: **REM-0063-CICLO-10-CONTRATTO**, point 2, and **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
 
-`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `operational_base` and `_mcp_attach_definitions` per field, then `json_bounds` on the assembled descriptor. A static failure still refuses the descriptor only when no reference path reaches that node. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.
+`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `json_bounds` and then `operational_base` on each tool schema field before `_mcp_attach_definitions`, then `json_bounds` on the assembled descriptor. A static failure still refuses the descriptor only when no reference path reaches that node. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.

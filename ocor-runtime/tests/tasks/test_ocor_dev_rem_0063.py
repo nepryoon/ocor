@@ -722,9 +722,10 @@ _ENCODED_POINTERS = (
 def test_percent_encoded_fragments_resolve_before_the_pointer(ref: str, definitions: Mapping[str, Any]) -> None:
     """VF-001 and the schema-shaped targets of VF-002.
 
-    REM-0063-CYCLE10-ORACLE-CONFLICT A1: case ``encoded-slash``
+    REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS A1: case ``encoded-slash``
     (``#%2F$defs/a%20b``) is refused. The other 18 cases stay accepted.
     Old expectation for ``encoded-slash``: the profile accepted the reference.
+    ORACLE-CONFLICT A1 does not name this test.
     """
     if ref == "#%2F$defs/a%20b":
         profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
@@ -1842,8 +1843,9 @@ def test_cycle4_an_anchor_under_additional_items_in_the_tool_schema_is_not_index
 # 5. JSON Pointer, plain-name anchor, percent-encoded fragment, external
 #    reference and the ambiguous-anchor rule stay on the paths already green.
 # Oracle: referencing 0.37.0 on the current resource. Draft202012Validator is
-# the acceptance counterproof. Percent-encoded anchors are compared after
-# decoding because that library decodes JSON Pointers and not anchor names.
+# the acceptance counterproof. A percent-encoded anchor spelling is refused:
+# the library does not decode anchor names (ORACLE-CONFLICT A1). It is not
+# compared with the decoded plain name.
 # SELF-CHECK-CLASS-COVERAGE. SELF-CHECK-ORACOLO.
 
 _CYCLE5_ID = "https://example.invalid/independent.json"
@@ -5527,6 +5529,169 @@ def test_cycle10_fixed_base_collision_is_a_typed_refusal(field: str) -> None:
     schema = {"type": "object", "$defs": {"collision": {"$id": f"urn:ocor:embedded-tool:0:{field}", "type": "integer"}}}
     with pytest.raises(McpProfileError):
         _validate(_cycle10_delivered(schema, field))
+
+
+_CYCLE10_CRAWL_TYPE_ERRORS = (
+    {"type": "object", "$anchor": []},
+    {"type": "object", "$anchor": {}},
+    {"type": "object", "$dynamicAnchor": []},
+    {"type": "object", "allOf": 7},
+    {"type": "object", "allOf": None},
+    {"type": "object", "anyOf": True},
+    {"type": "object", "oneOf": 1.5},
+    {"type": "object", "prefixItems": 7},
+    {"type": "object", "properties": {"p": {"$anchor": []}}},
+    {"type": "object", "$defs": {"d": {"allOf": 7}}},
+)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("shape", _CYCLE10_CRAWL_TYPE_ERRORS)
+def test_cycle10_crawl_type_error_is_typed(field: str, shape: Mapping[str, Any]) -> None:
+    """A library TypeError from crawl is the profile's typed refusal.
+
+    The same shape on the direct generator path is a typed ``C1Error``.
+    A null element inside ``allOf`` stays the generator's unresolved
+    definition: that branch is the null-applicator translation, not this class.
+    """
+
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    with pytest.raises(McpProfileError, match="resource index is not resolvable"):
+        _validate(_cycle10_delivered(shape, field))
+    with pytest.raises(C1Error, match="not resolvable") as caught:
+        _cycle9_attach(shape)
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+
+def test_cycle10_null_applicator_stays_an_unresolved_definition() -> None:
+    """``allOf: [null]`` is the existing crawl translation, not a raw TypeError."""
+
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    with pytest.raises(C1Error, match="unresolved MCP definition") as caught:
+        _cycle9_attach({"allOf": [None], "type": "object"})
+    assert caught.value.diagnostics[0].code == DiagnosticCode.UNRESOLVED_REFERENCE
+    with pytest.raises(McpProfileError, match="not a JSON Schema 2020-12 schema"):
+        _validate(_cycle10_delivered({"allOf": [None], "type": "object"}, "inputSchema"))
+
+
+def _cycle10_rejoin_source(inner_id: str | None) -> dict[str, Any]:
+    inner: dict[str, Any] = {"type": "object"}
+    if inner_id is not None:
+        inner["$id"] = inner_id
+    return {
+        "type": "object",
+        "properties": {
+            "holder": {
+                "type": "object",
+                "$id": "https://f.invalid/child.json",
+                "properties": {
+                    "inner": inner,
+                    "probe": {"$ref": _CYCLE10_STATUS},
+                },
+            }
+        },
+    }
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize(
+    ("label", "inner_id"),
+    (("empty", ""), ("fragment", "#"), ("relative-name", "child.json"), ("no-rejoin", None)),
+)
+def test_cycle10_rejoined_resource_closure(field: str, label: str, inner_id: str | None) -> None:
+    """A type reference on the boundary is closed on the library owner.
+
+    When a descendant rejoins the boundary URI, ``$defs`` are written on
+    the object ``lookup("#")`` returns, and the boundary is still scanned.
+    Without that descendant the boundary itself owns the closure.
+    """
+
+    descriptor, body, _raw = _cycle10_generated(field, _cycle10_rejoin_source(inner_id))
+    holder = body["properties"]["holder"]
+    inner = holder["properties"]["inner"]
+    if label == "no-rejoin":
+        assert holder["$defs"][_CYCLE10_TYPE_NAME]["enum"] == ["ACTIVE", "LAID_UP"]
+        assert "$defs" not in inner
+    else:
+        assert inner["$defs"][_CYCLE10_TYPE_NAME]["enum"] == ["ACTIVE", "LAID_UP"]
+        assert "$defs" not in holder
+    assert holder["properties"]["probe"]["$ref"] == "#/$defs/" + _CYCLE10_TYPE_NAME
+    accepted, trace = _cycle10_standalone_oracle(body, field)
+    assert accepted, (label, field, trace)
+    _validate(descriptor)
+
+
+def _cycle10_chain_documents(count: int) -> dict[str, Any]:
+    documents = copy.deepcopy(_fleet().oac_documents())
+    definitions = documents["module.yaml"]["definitions"]
+    for index in range(count):
+        type_id = f"urn:ocor:type:chain-{index:02d}"
+        if index + 1 == count:
+            value_ref = "enum:" + _CYCLE10_STATUS
+        else:
+            value_ref = f"struct:urn:ocor:type:chain-{index + 1:02d}"
+        definitions.append({
+            "construct": "TypeDefinition",
+            "type_id": type_id,
+            "kind": "STRUCT",
+            "version": "1.0.0",
+            "properties": [{
+                "property_id": f"urn:ocor:property:chain-{index:02d}",
+                "value_type_ref": value_ref,
+                "cardinality": "ONE",
+                "nullable": False,
+                "constraint_refs": [],
+            }],
+            "keys": [],
+            "interfaces": [],
+            "security_profile_ref": "urn:ocor:security-profile:restricted",
+        })
+    return documents
+
+
+@pytest.mark.parametrize("count", (16, 20))
+def test_cycle10_type_chain_bound_matches_profile(count: int) -> None:
+    """A chain of named types is not a generator-only depth limit.
+
+    The public renderer emits the chain. The profile accepts that descriptor.
+    Static depth past 32 stays refused by the existing depth-boundary tests.
+    """
+
+    schema = {"type": "object", "properties": {"first": {"$ref": "urn:ocor:type:chain-00"}}}
+    descriptor, body, _raw = _cycle10_generated(
+        "outputSchema", schema, documents=_cycle10_chain_documents(count),
+    )
+    assert len(body["$defs"]) == count + 1
+    _validate(descriptor)
+
+
+def test_cycle10_attached_type_chain_of_forty_matches_profile() -> None:
+    """Direct closure of forty sibling definitions stays inside the shared bound."""
+
+    from ocor_runtime.c1.codegen import _mcp_attach_definitions
+    from ocor_runtime.c1.mcp_profile import operational_base
+
+    types: dict[str, Any] = {}
+    for index in range(39, -1, -1):
+        name = f"t{index:02d}"
+        if index == 39:
+            types[name] = {"type": "string", "title": name}
+        else:
+            types[name] = {
+                "type": "object",
+                "title": name,
+                "properties": {"next": {"$ref": f"#/$defs/t{index + 1:02d}"}},
+            }
+    schema = {"type": "object", "properties": {"first": {"$ref": "#/$defs/t00"}}}
+    base = operational_base(schema, index=0, field="outputSchema")
+    emitted = _mcp_attach_definitions(
+        schema, types, path="mcp-descriptor/probe", base_uri=base,
+    )
+    assert isinstance(emitted, dict)
+    assert len(emitted["$defs"]) == 40
+    _validate(_cycle10_delivered(emitted, "outputSchema"))
 
 
 # Second contract review: extend the product, not the production code. These

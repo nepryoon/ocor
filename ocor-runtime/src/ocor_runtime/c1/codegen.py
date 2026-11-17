@@ -25,6 +25,8 @@ from referencing.jsonschema import DRAFT202012
 
 from .ir import ARTIFACT_MEDIA_TYPES, malformed_core_rejected, parse_core, require_core_shape
 from .mcp_profile import (
+    MAX_SCHEMA_DEPTH,
+    MAX_SCHEMA_NODES,
     McpProfileError,
     SchemaCalculationFailure,
     assert_reference_path_bound,
@@ -246,11 +248,8 @@ def _mcp_ref(type_id: str) -> str:
     return f"#/$defs/{component_name(type_id)}"
 
 
-# The profile refuses a schema past these bounds. The generator fails closed
-# at the same limits so render cannot emit a descriptor the profile rejects
-# only for size.
-_MCP_MAX_SCHEMA_DEPTH = 32
-_MCP_MAX_SCHEMA_NODES = 4096
+# Closure passes share the profile's node ceiling. Depth and the final
+# value count use ``MAX_SCHEMA_DEPTH`` and ``json_bounds``, not a second pair.
 _MCP_DEFS_PREFIX = "#/$defs/"
 _MCP_INSTANCE_KEYS = ("const", "default", "examples", "enum")
 
@@ -432,8 +431,10 @@ def _mcp_fragment_refs(
     resolver so a nested boundary is not judged against the pin.
     """
 
-    if not isinstance(node, Mapping) or depth > _MCP_MAX_SCHEMA_NODES:
+    if not isinstance(node, Mapping):
         return
+    if depth > MAX_SCHEMA_DEPTH:
+        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema exceeds the revision bounds")
     if owner is None:
         owner = node
     _mcp_take_ref(node, names, raw)
@@ -465,14 +466,16 @@ def _mcp_fragment_refs(
         _mcp_fragment_refs(extra, resolver, path, names, raw, depth=depth + 1, owner=owner)
 
 
-def _mcp_seed_refs(
-    node: Mapping[str, Any],
-    resolver: Any,
-    path: str,
-    names: set[str],
-    raw: set[str],
-) -> None:
-    _mcp_fragment_refs(node, resolver, path, names, raw, depth=1)
+class _McpResource:
+    """One library URI, the object that owns its closure, and where refs sit."""
+
+    __slots__ = ("uri", "closure", "resolver", "scans")
+
+    def __init__(self, uri: str, closure: dict[str, Any], resolver: Any, scan: dict[str, Any]) -> None:
+        self.uri = uri
+        self.closure = closure
+        self.resolver = resolver
+        self.scans = [scan]
 
 
 def _mcp_iter_resources(
@@ -480,19 +483,22 @@ def _mcp_iter_resources(
     base_uri: str,
     path: str,
     resolver: Any,
-) -> list[tuple[str, dict[str, Any], Any]]:
+) -> list[_McpResource]:
     """Resource roots, using ``in_subresource`` as the only boundary.
 
     Two different nodes that the library assigns one base are
-    ``DUPLICATE_RESOURCE``. The owner recorded here is the object
-    ``lookup("#")`` returns for that base.
+    ``DUPLICATE_RESOURCE``. ``closure`` is ``lookup("#").contents``: the
+    object the pinned libraries resolve fragments against. ``scans`` starts
+    at the boundary node, which is where a reference can sit when a
+    descendant rejoins that URI. References collected from those scans are
+    written onto ``closure``.
     """
 
-    found: list[tuple[str, dict[str, Any], Any]] = []
+    found: list[_McpResource] = []
     claimed: dict[str, int] = {base_uri: id(root)}
     if not isinstance(root, dict):
         raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not an object")
-    found.append((base_uri, root, resolver))
+    found.append(_McpResource(base_uri, root, resolver, root))
     root_resource = DRAFT202012.create_resource(root)
     queue: list[tuple[Any, Any]] = [(root_resource, resolver)]
     seen: set[tuple[int, str]] = set()
@@ -545,11 +551,15 @@ def _mcp_iter_resources(
                             "MCP schema resource is not an object",
                         )
                     # A joined URI can crawl back to an ancestor already
-                    # queued. Closing that object again, from the joined
-                    # base, drops the closure the ancestor's own resolver
-                    # just placed. Descendants of this node are still walked.
-                    if all(existing is not owner for _queued, existing, _queued_resolver in found):
-                        found.append((uri, owner, nxt))
+                    # queued. The ancestor keeps the closure; this boundary
+                    # is an extra scan so references that sit on it are not
+                    # dropped. A descendant that the library returns as the
+                    # owner is a new closure root, scanned from this boundary.
+                    existing = next((item for item in found if item.closure is owner), None)
+                    if existing is None:
+                        found.append(_McpResource(uri, owner, nxt, contents))
+                    elif all(scan is not contents for scan in existing.scans):
+                        existing.scans.append(contents)
             identity = (id(contents), uri)
             if identity in seen:
                 continue
@@ -614,8 +624,7 @@ def _mcp_select_body(
 
 
 def _mcp_close_resource(
-    resource: dict[str, Any],
-    resolver: Any,
+    resource: _McpResource,
     user_defs: Mapping[str, Any],
     type_schemas: Mapping[str, Any],
     placed: dict[tuple[int, str], Any],
@@ -623,7 +632,11 @@ def _mcp_close_resource(
 ) -> bool:
     names: set[str] = set()
     raw: set[str] = set()
-    _mcp_seed_refs(resource, resolver, path, names, raw)
+    closure = resource.closure
+    for scan in resource.scans:
+        _mcp_fragment_refs(
+            scan, resource.resolver, path, names, raw, depth=1, owner=closure,
+        )
     resolved: dict[str, Any] = {}
     pending = set(names)
     while pending:
@@ -631,26 +644,28 @@ def _mcp_close_resource(
         pending.remove(name)
         if name in resolved:
             continue
-        body = _mcp_select_body(resource, name, user_defs, type_schemas, placed, path)
+        body = _mcp_select_body(closure, name, user_defs, type_schemas, placed, path)
         resolved[name] = body
         if isinstance(body, Mapping):
             try:
-                _entered, changed = enter_subschema(resolver, body)
+                _entered, changed = enter_subschema(resource.resolver, body)
             except (ValueError, AttributeError, TypeError) as exc:
                 raise _mcp_library_error(exc, path) from exc
             if not changed:
                 inner_names: set[str] = set()
                 inner_raw: set[str] = set()
-                _mcp_fragment_refs(body, resolver, path, inner_names, inner_raw, depth=1)
+                _mcp_fragment_refs(
+                    body, resource.resolver, path, inner_names, inner_raw, depth=1, owner=body,
+                )
                 pending.update(item for item in inner_names if item not in resolved)
     if not resolved:
-        if "$defs" in resource:
-            resource.pop("$defs")
+        if "$defs" in closure:
+            closure.pop("$defs")
             return True
         return False
     new_defs = {name: resolved[name] for name in sorted(resolved)}
-    if resource.get("$defs") != new_defs:
-        resource["$defs"] = new_defs
+    if closure.get("$defs") != new_defs:
+        closure["$defs"] = new_defs
         return True
     return False
 
@@ -721,7 +736,7 @@ def _mcp_post_check(
     Crawl already ran on this registry object and its result was discarded.
     A reference that does not start with ``#`` or does not resolve is the
     generator's unresolved-definition error. The reference-path depth bound
-    is the same stricter rule the profile applies.
+    is ``assert_reference_path_bound``, the same function the profile calls.
     """
 
     resolver = registry.resolver(base_uri)
@@ -729,15 +744,18 @@ def _mcp_post_check(
         assert_reference_path_bound(tree, resolver)
     except SchemaCalculationFailure as exc:
         raise _mcp_calculation_error(exc, path) from exc
-    for _uri, resource, resource_resolver in _mcp_iter_resources(tree, base_uri, path, resolver):
+    for resource in _mcp_iter_resources(tree, base_uri, path, resolver):
         names: set[str] = set()
         raw: set[str] = set()
-        _mcp_fragment_refs(resource, resource_resolver, path, names, raw, depth=1)
+        for scan in resource.scans:
+            _mcp_fragment_refs(
+                scan, resource.resolver, path, names, raw, depth=1, owner=resource.closure,
+            )
         for ref in sorted(raw):
             if not isinstance(ref, str) or not ref.startswith("#"):
                 raise _mcp_error(DiagnosticCode.UNRESOLVED_REFERENCE, path, "unresolved MCP definition")
             try:
-                resource_resolver.lookup(ref)
+                resource.resolver.lookup(ref)
             except Unresolvable as exc:
                 detail = ref if len(ref) <= 420 else ref[:420]
                 raise _mcp_error(
@@ -791,13 +809,12 @@ def _mcp_attach_definitions(
     resolver = registry.resolver(base_uri)
     user_defs = _mcp_record_user_defs(copied, path)
     placed: dict[tuple[int, str], Any] = {}
-    for _pass in range(_MCP_MAX_SCHEMA_NODES):
+    for _pass in range(MAX_SCHEMA_NODES):
         changed = False
-        for _uri, resource, resource_resolver in _mcp_iter_resources(copied, base_uri, path, resolver):
+        for resource in _mcp_iter_resources(copied, base_uri, path, resolver):
             if _mcp_close_resource(
                 resource,
-                resource_resolver,
-                user_defs.get(id(resource), {}),
+                user_defs.get(id(resource.closure), {}),
                 type_schemas,
                 placed,
                 path,
@@ -846,6 +863,7 @@ def _mcp(model: _Model) -> bytes:
         path = str(tool.pop("_path"))
         for field in ("inputSchema", "outputSchema"):
             try:
+                json_bounds(tool[field])
                 base_uri = operational_base(tool[field], index=index, field=field)
             except SchemaCalculationFailure as exc:
                 raise _mcp_calculation_error(exc, path) from exc

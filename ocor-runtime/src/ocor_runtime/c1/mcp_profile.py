@@ -170,17 +170,25 @@ def _id_identity(value: str) -> str:
     return value.rstrip("#")
 
 
-def _collect_string_ids(node: object, found: set[str]) -> None:
+def _collect_string_ids(node: object, found: set[str], seen: set[int] | None = None) -> None:
+    if seen is None:
+        seen = set()
+    if isinstance(node, str) or node is None or isinstance(node, (int, float, bool, bytes)):
+        return
+    identity = id(node)
+    if identity in seen:
+        return
+    seen.add(identity)
     if isinstance(node, Mapping):
         declared = node.get("$id")
         if isinstance(declared, str):
             found.add(declared)
         for value in node.values():
-            _collect_string_ids(value, found)
+            _collect_string_ids(value, found, seen)
         return
     if isinstance(node, Sequence) and not isinstance(node, (str, bytes)):
         for item in node:
-            _collect_string_ids(item, found)
+            _collect_string_ids(item, found, seen)
 
 
 def operational_base(schema: object, *, index: int, field: str) -> str:
@@ -240,6 +248,15 @@ def autonomous_registry(
                 "NOT_RESOLVABLE",
                 "MCP schema resource index is not resolvable",
             ) from exc
+        # Other AttributeError values are left to the caller's later schema
+        # check. Mapping every one to NOT_RESOLVABLE would replace the
+        # existing non-schema diagnostic on a tool schema whose ``$defs``
+        # holds a scalar.
+    except TypeError as exc:
+        raise SchemaCalculationFailure(
+            "NOT_RESOLVABLE",
+            "MCP schema resource index is not resolvable",
+        ) from exc
     except ValueError as exc:
         raise SchemaCalculationFailure(
             "INVALID_ID",
@@ -311,64 +328,113 @@ def enter_subschema(resolver: Any, child: object) -> tuple[Any, bool]:
 
 
 def assert_reference_path_bound(schema: object, resolver: Any) -> None:
-    """Refuse a ``$ref`` path deeper than the revision bound.
+    """Refuse a reference path deeper than the revision bound.
 
-    This is stricter than ``json_bounds`` and stricter than the library.
-    A static chain and a reference chain both count. Lookup failures are
-    left to the caller's own unresolved-reference diagnostic.
+    The depth is the profile graph's depth. Static nodes are visited first.
+    Each same-document ``$ref`` seeds its target at that static depth plus
+    one. A node already entered by a reference is not entered again, so a
+    chain of named definitions does not add a generator-only limit. Depth
+    is tested before that visit set. Lookup failures stay the caller's
+    unresolved-reference diagnostic. JSON value count and JSON depth stay
+    in ``json_bounds``. ``_resolve_graph`` calls this function.
     """
 
-    seen: set[tuple[int, str]] = set()
+    # Two visit sets, as in ``_resolve_graph``: a node already seen on the
+    # static walk can still be entered once by a reference. Depth is tested
+    # before the visit set, so a seed past the revision bound is refused
+    # even when its target was already seen. A later hop to a node already
+    # entered by a reference does not add another generator-only limit.
+    visited_static: set[tuple[int, str]] = set()
+    visited_ref: set[tuple[int, str]] = set()
 
-    def walk(node: object, res: Any, depth: int) -> None:
+    def state_of(node: object, res: Any) -> tuple[int, str]:
+        base = getattr(res, "_base_uri", "")
+        return (id(node), base if isinstance(base, str) else "")
+
+    def enter(res: Any, child: Mapping[str, Any]) -> Any:
+        try:
+            entered, _changed = enter_subschema(res, child)
+        except (ValueError, AttributeError, TypeError):
+            return None
+        return entered
+
+    def lookup_target(res: Any, ref: object) -> tuple[object, Any] | None:
+        if not isinstance(ref, str) or not ref.startswith("#"):
+            return None
+        try:
+            resolved = res.lookup(ref)
+        except (Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
+            return None
+        contents = getattr(resolved, "contents", None)
+        if not isinstance(contents, Mapping):
+            return None
+        return contents, resolved.resolver
+
+    static: list[tuple[object, Any, int]] = [(schema, resolver, 1)]
+    seeds: list[tuple[Mapping[str, Any], Any, int]] = []
+    while static:
+        node, res, depth = static.pop(0)
+        if not isinstance(node, Mapping):
+            continue
         if depth > MAX_SCHEMA_DEPTH:
             raise SchemaCalculationFailure("BOUNDS", "MCP schema exceeds the revision bounds")
-        if not isinstance(node, Mapping):
-            return
-        base = getattr(res, "_base_uri", "")
-        key = (id(node), base if isinstance(base, str) else "")
-        if key in seen:
-            return
-        seen.add(key)
-        ref = node.get("$ref")
-        if isinstance(ref, str) and ref.startswith("#"):
-            try:
-                resolved = res.lookup(ref)
-            except (Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
-                resolved = None
-            if resolved is not None and isinstance(resolved.contents, Mapping):
-                walk(resolved.contents, resolved.resolver, depth + 1)
+        state = state_of(node, res)
+        if state in visited_static:
+            continue
+        visited_static.add(state)
+        if isinstance(node.get("$ref"), str):
+            seeds.append((node, res, depth))
         for child in _iter_check_children(node):
             if not isinstance(child, Mapping):
                 continue
-            try:
-                entered, _changed = enter_subschema(res, child)
-            except (ValueError, AttributeError, TypeError):
-                return
-            walk(child, entered, depth + 1)
+            entered = enter(res, child)
+            if entered is None:
+                continue
+            static.append((child, entered, depth + 1))
 
-    walk(schema, resolver, 1)
+    pending: list[tuple[object, Any, int]] = []
+    for node, res, depth in seeds:
+        found = lookup_target(res, node.get("$ref"))
+        if found is not None:
+            pending.append((found[0], found[1], depth + 1))
+    while pending:
+        node, res, depth = pending.pop(0)
+        if not isinstance(node, Mapping):
+            continue
+        if depth > MAX_SCHEMA_DEPTH:
+            raise SchemaCalculationFailure("BOUNDS", "MCP schema exceeds the revision bounds")
+        state = state_of(node, res)
+        if state in visited_ref:
+            continue
+        visited_ref.add(state)
+        found = lookup_target(res, node.get("$ref"))
+        if found is not None:
+            pending.append((found[0], found[1], depth + 1))
+        for child in _iter_check_children(node):
+            if not isinstance(child, Mapping):
+                continue
+            entered = enter(res, child)
+            if entered is None:
+                continue
+            pending.append((child, entered, depth + 1))
 
 
 @dataclass(frozen=True)
 class _SchemaTree:
-    """One autonomous schema tree: the descriptor or one tool schema field.
+    """One autonomous schema tree: one tool schema field.
 
     ``root`` is the original document object the profile checks. The registry
-    contains only this tree's resources, crawled by referencing 0.37.0 with
-    the base URI fixed for the tree, so no lookup can reach a resource of
-    another tree. ``node_uris`` maps every schema-position node to the
-    resource URI the crawl owns it under; static keyword descent uses that
-    mapping, never its own join, as the context of a child node.
+    pins only this tree's root and is not crawled: a separate crawl is an
+    error probe and its result is discarded. No lookup can reach a resource
+    of another tree. Static keyword descent keeps the resolver
+    ``in_subresource`` returned. ``anchors`` is the only index this tree
+    stores; it records every plain-name owner inside one resource.
     """
 
     root_uri: str
     root: Mapping[str, Any]
-    resources: Mapping[str, Resource[Any]]
     registry: Registry[Any]
-    aliases: Mapping[int, object]
     anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]
-    node_uris: Mapping[int, str]
 
 
 @dataclass(frozen=True)
@@ -396,20 +462,8 @@ class _ResolutionContext:
         return cast(Registry[Any], registry)
 
     @property
-    def resources(self) -> Mapping[str, Resource[Any]]:
-        return self.tree.resources
-
-    @property
-    def aliases(self) -> Mapping[int, object]:
-        return self.tree.aliases
-
-    @property
     def anchors(self) -> Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]:
         return self.tree.anchors
-
-    @property
-    def node_uris(self) -> Mapping[int, str]:
-        return self.tree.node_uris
 
 
 def without_context_overwrite(schema: Mapping[str, Any]) -> dict[str, Any]:
@@ -467,7 +521,9 @@ def validate_mcp_descriptor(
     another tool or an external document. The fragment is percent-decoded as
     UTF-8, then classified. A decoded empty fragment is the empty JSON
     Pointer: it identifies the current resource. A decoded fragment that
-    starts with ``/`` is a JSON Pointer, and any other decoded fragment is a
+    starts with ``/`` is a JSON Pointer. A fragment whose decoded spelling
+    differs from the original and is not a pointer is refused: the pinned
+    library does not percent-decode anchor names. Any other fragment is a
     plain-name anchor (``$anchor`` or ``$dynamicAnchor``). ``~`` escapes are
     validated before substitution. A trailing empty fragment on ``$id`` is
     stripped before joining, matching referencing 0.37.0 ``Resource.id``; an
@@ -710,11 +766,8 @@ def _schema_tree(root: Mapping[str, Any], root_uri: str) -> _SchemaTree:
     return _SchemaTree(
         root_uri=root_uri,
         root=root,
-        resources={},
         registry=registry,
-        aliases={},
         anchors=anchors,
-        node_uris={},
     )
 
 
@@ -873,6 +926,12 @@ def _resolve_graph(
     tree, and each tool schema is checked on its own, so a node of one tree
     is reached only with contexts of that tree.
     """
+
+    for node, context in roots:
+        try:
+            assert_reference_path_bound(node, context.resolver)
+        except SchemaCalculationFailure as exc:
+            raise _as_profile(exc) from exc
 
     static_order: list[tuple[Any, _ResolutionContext, int]] = []
     static_refs: list[tuple[Any, _ResolutionContext, int]] = []
@@ -1266,6 +1325,3 @@ def _json_pointer_token(raw: str) -> str:
     return raw.replace("~1", "/").replace("~0", "~")
 
 
-def _reject_surrogate(value: str) -> None:
-    if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
-        raise McpProfileError("MCP descriptor contains a lone surrogate")
