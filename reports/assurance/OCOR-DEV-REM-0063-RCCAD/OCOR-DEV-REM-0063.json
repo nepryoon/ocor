@@ -4769,7 +4769,7 @@
         "output_sha256": "969a3a556d95651793908a63b86f670109c3d77c7ae9a8f95d0217240755f2d2",
         "status": "PASS"
       },
-      "full_pre_campaign_gate": "NOT_YET_RUN. The phase-A sentence NOT_EXECUTED_PHASE_A_RED is historical and is not a PASS. Ruff 0.13.1 checked the two changed modules and the task test file after A1, B1 and C1 and passed. The decision is applied. The full pre-campaign gate, the four-lane campaign and the distinct check are not yet run on this head.",
+      "full_pre_campaign_gate": "FAIL. Two official runs of pregate.py on 6c1d5c805fab9fff784db5ddfcd419c92790a597 stopped at mermaid. Both are ProtocolError Network.enable timed out with @mermaid-js/mermaid-cli 11.12.0 and .github/mermaid-puppeteer.json. First gates.json sha256 528d52480746247e3b1fd35449033738850ec8438935a8bd031c81e98dd810de, duration 180.765 s. Second gates.json sha256 8d20cfd3649f569dc3276aefb4df5fe7d0f7886523097cd595fd730e06280522, duration 180.829 s. Twenty-six earlier steps passed on each run. Six later steps stayed NOT_EXECUTED because the runner stops at the first failure. The diagram and the Puppeteer config were not changed. A standalone protocolTimeout 300000 attempt also failed and is not a PASS. This is not a PASS. The four-lane campaign and the distinct check are NOT_EXECUTED. The historical phase-A sentence NOT_EXECUTED_PHASE_A_RED is not this result.",
       "language": {
         "sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
         "status": "PASS"
@@ -4896,9 +4896,9 @@
         "status": "PASS"
       }
     },
-    "next_action": "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17) A1, B1 and C1 is applied on governed/ocor-dev-rem-0063-mcp-profile at 7cc393a55b42e91af34e4cfe0f31beecd35e0fdb. The hand registration and the PointerToNowhere retry are removed. The 39 named cycle-6 cases are realigned. C1 adds 24 static-descent cells and removes none. The task module on this tree passed 41953 tests, 0 failed, 0 skipped, in 842.95 s; raw log sha256 d552bd9b02e89529ee739762c5d123d7e98d7602b528e574f1e9c4c7a007026b. That run is not a qualifying campaign. Next: PRE-CAMPAIGN-GATE on the committed head, then the four-lane qualifying campaign and the distinct check. No second pre-campaign review. No verify request until that campaign and the distinct check pass. After a NO_GO of this cycle there is no cycle 11.",
+    "next_action": "A1, B1 and C1 stay applied. Annotation alignment is 6c1d5c805fab9fff784db5ddfcd419c92790a597 and does not change execution branches. Two official pre-campaign gates on that head failed at mermaid with ProtocolError Network.enable timed out, at 180.765 s and 180.829 s. That is not a PASS. Do not start the four-lane campaign or the distinct check. Do not request a second pre-campaign review or verification. Do not change the diagram, .github/mermaid-puppeteer.json, or the product to obtain a green gate. Retry the official gate only after the local Puppeteer CDP condition changes. After a NO_GO of this cycle there is no cycle 11. Claims unchanged.",
     "open_questions": [],
-    "phase": "NESTED_RESOLUTION_APPLIED_GATE_AND_CAMPAIGN_NOT_RUN",
+    "phase": "NESTED_RESOLUTION_APPLIED_PRE_CAMPAIGN_GATE_FAILED_MERMAID",
     "production_code_changed": true,
     "red": {
       "command": [
@@ -5275,7 +5275,43 @@
         "qualifying_campaign": false,
         "code_commit": "7cc393a55b42e91af34e4cfe0f31beecd35e0fdb"
       },
-      "nested_resolution_code_commit": "7cc393a55b42e91af34e4cfe0f31beecd35e0fdb"
+      "nested_resolution_code_commit": "7cc393a55b42e91af34e4cfe0f31beecd35e0fdb",
+      "nested_resolution_annotation_commit": "6c1d5c805fab9fff784db5ddfcd419c92790a597",
+      "pre_campaign_gates": {
+        "head": "6c1d5c805fab9fff784db5ddfcd419c92790a597",
+        "command": "python3 /home/luca/.ocor-codex/rem-0063/pregate.py",
+        "diagram_changed": false,
+        "puppeteer_config_changed": false,
+        "qualifying_campaign": false,
+        "attempts": [
+          {
+            "started_at": "2026-11-17T08:32:41Z",
+            "status": "FAIL",
+            "failed_step": "mermaid",
+            "exit_code": 1,
+            "duration_seconds": 180.765,
+            "error": "ProtocolError: Network.enable timed out",
+            "steps_passed_before_failure": 26,
+            "not_executed_count": 6,
+            "gates_json_sha256": "528d52480746247e3b1fd35449033738850ec8438935a8bd031c81e98dd810de",
+            "preserved_gates_json": "/home/luca/.ocor-codex/rem-0063/gate/preserved-6c1d5c80-first/gates.json"
+          },
+          {
+            "started_at": "2026-11-17T08:51:55Z",
+            "ended_at": "2026-11-17T08:55:15Z",
+            "status": "FAIL",
+            "failed_step": "mermaid",
+            "exit_code": 1,
+            "duration_seconds": 180.829,
+            "error": "ProtocolError: Network.enable timed out",
+            "steps_passed_before_failure": 26,
+            "not_executed_count": 6,
+            "gates_json_sha256": "8d20cfd3649f569dc3276aefb4df5fe7d0f7886523097cd595fd730e06280522",
+            "preserved_gates_json": "/home/luca/.ocor-codex/rem-0063/gate/preserved-6c1d5c80-second/gates.json",
+            "raw_log_sha256": "b3adbb778420805ae39975fb4ae4b4ac4041d30e97463e14b1dbdbbacdd59503"
+          }
+        ]
+      }
     },
     "decided_remaining_contract_questions": {
       "branch": "governed/decision-request-rem0063-cycle10-remaining-contract-questions",

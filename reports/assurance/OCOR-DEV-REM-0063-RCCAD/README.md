@@ -253,10 +253,16 @@ review `OCOR-DEV-REM-0063-cce3ba8ba7ab-pre` returned `BLOCKING_FINDINGS`
 Anthropic, effort max. Outcome-file sha256
 `13effc01c0ba02480b457c2f0fe215910c7f3136211c1423903ab2d18e1c3421`.
 The repairs that do not choose a normative reading stay on
-`eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a`. This head applies A1, B1 and C1.
-No second pre-campaign review is requested. The full pre-campaign gate and
-the qualifying campaign are not yet run on this head. Fence unchanged:
-E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.
+`eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a`. Nested-resource behaviour is
+`7cc393a55b42e91af34e4cfe0f31beecd35e0fdb`. Annotation alignment with mypy
+2.3.1, with no execution-branch change, is
+`6c1d5c805fab9fff784db5ddfcd419c92790a597`. No second pre-campaign review is
+requested. Two official pre-campaign gates on that annotation head failed at
+mermaid: ProtocolError Network.enable timed out, 180.765 s and 180.829 s,
+CLI `@mermaid-js/mermaid-cli` 11.12.0, config `.github/mermaid-puppeteer.json`.
+The diagram and that config were not changed. Neither run is a PASS. The
+qualifying campaign is not run. Fence unchanged: E1=0, E2=0, Verified=0,
+runtime NOT_ESTABLISHED, PoC and Production NO-GO.
 
 ### Single calculation design
 
