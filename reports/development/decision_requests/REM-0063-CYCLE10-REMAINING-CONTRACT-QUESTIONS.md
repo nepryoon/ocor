@@ -1,6 +1,6 @@
 # REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS
 
-Stato: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
 Livello: `NORMATIVE`. Unità: `OCOR-DEV-REM-0063`, ciclo 10.
 Base di produzione: `f485dc964e47bde83842ecd5ba2627d8342612f9`.
 Contratto esaminato: `8ac669c8b1474d09363fbed3ef42aba16f8b19a8`,
@@ -230,3 +230,20 @@ grep -cE '^[A-Z]?[0-9]{1,2}\. \*\*' reports/development/decision_requests/REM-00
 
 Esito: `6`, corrispondente ad A1/A2, B1/B2 e C1/C2, consecutive sotto
 le rispettive sezioni delle opzioni. Nessuna opzione aggiunta o cambiata.
+
+## Disposition
+
+Decisa dal PO di persona il 2026-11-17. Quesito A, opzione A1; quesito B,
+opzione B1; quesito C, opzione C1. A2, B2 e C2 non sono applicate.
+Il commit di progetto registra queste regole nel contratto e non modifica
+i test esistenti: il riallineamento del solo caso encoded-slash e
+dell'oracolo di fase A non sigillato resta al commit di implementazione.
+
+## REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17) — decisione del PO
+
+Decisione del PO, presa di persona il 2026-11-17 (`DECISIONI-AL-PO (2026-11-16)`). Il PO risolve la decision request `REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS` (branch `governed/decision-request-rem0063-cycle10-remaining-contract-questions`, commit `99d93da7a481c44841d9d8003044aed37c026ce6`, file `reports/development/decision_requests/REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS.md`, sha256 `edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8`) adottando per il quesito A l'**opzione A1**; per il quesito B l'**opzione B1**; per il quesito C l'**opzione C1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa dal PO di persona») e nell'`ITERATION_LOG.md`, come per le altre decisioni del PO.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
