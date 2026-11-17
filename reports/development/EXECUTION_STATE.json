@@ -2,7 +2,7 @@
   "active_iteration": {
     "background_processes_remaining": false,
     "baseline_commit": "4ca86949cd428f6a2f35b02e7fc2cb0fb5bb51b5",
-    "blocking_decision_request": null,
+    "blocking_decision_request": "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION",
     "branch": "governed/ocor-dev-rem-0063-mcp-profile",
     "change_set": "OCOR-DEV-REM-0063",
     "contract_review_number": 2,
@@ -145,10 +145,10 @@
       "status": "PASS",
       "updated_headers_compared": 2
     },
-    "execution_commit": "66c14f60e440f287a88c5e01a0ab30259e303a26",
+    "execution_commit": "eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a",
     "executor": "Grok Build grok-4.7, xAI, effort xhigh",
-    "existing_tests_changed": false,
-    "full_suite": "NOT_EXECUTED_PHASE_A",
+    "existing_tests_changed": true,
+    "full_suite": "NOT_EXECUTED",
     "implementers": [
       {
         "agent": "Grok Build",
@@ -352,8 +352,19 @@
         "summary": "14 PASS, 0 FAIL, 0 NOT_EXECUTED"
       }
     },
-    "next_action": "Riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva del progetto OCOR-DEV-REM-0063-3bad5d6ff394-pre, base f485dc964e47bde83842ecd5ba2627d8342612f9, head 3bad5d6ff3941b9563a90302fada577ce0ab8b07, branch governed/ocor-dev-rem-0063-mcp-profile. Non avviare la suite completa n\u00e9 il codice sotto ocor-runtime/src prima di quell'esito. Poi una sola realizzazione del calcolo condiviso in mcp_profile.py, senza file nuovi sotto ocor-runtime/src; riallineare soltanto il caso encoded-slash di test_percent_encoded_fragments_resolve_before_the_pointer e l'oracolo di fase A non sigillato alla regola B1; conservare tutti i 40180 casi. Quindi GREEN, revisione preventiva prima della campagna, gate locale, campagna, controllo distinto e verifica finale Claude Code claude-opus-5-5 effort max, senza ripiego, dichiarando il limite di indipendenza (stesso fornitore Anthropic del revisore claude-fable-5-2, modello diverso). Nessuna terza revisione del contratto e nessuna seconda revisione del progetto. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Gli altri WIP restano fermi. Claim invariati.",
-    "phase": "DESIGN_PUBLISHED_AWAITING_PREREVIEW",
+    "next_action": "La campagna di qualifica di OCOR-DEV-REM-0063 e la rimozione della registrazione a mano attendono REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (PR #658, branch governed/decision-request-rem0063-cycle10-nested-resource-resolution, commit 99172353fc2ac6b2a56aadf54321339d6ea9a4a4, sha256 66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729). Le riparazioni che non scelgono una lettura sono gi\u00e0 su governed/ocor-dev-rem-0063-mcp-profile, head 5e116f5b1c3f239341051f56b8fdd917fa96129c, commit di codice eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a: chiusura sul proprietario della libreria, TypeError del crawl tipizzato senza sostituire la diagnostica di schema non valido, un solo limite di profondit\u00e0 dei riferimenti. Non avviare la suite completa n\u00e9 la campagna su questo head. Nessuna seconda revisione preventiva e nessuna richiesta di verifica in questa iterazione. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Claim invariati.",
+    "phase": "PRE_CAMPAIGN_REPAIRS_PUBLISHED_CAMPAIGN_WAITING",
+    "pre_campaign_review": {
+      "advisory": 2,
+      "blocking": 6,
+      "outcome_sha256": "13effc01c0ba02480b457c2f0fe215910c7f3136211c1423903ab2d18e1c3421",
+      "record_commit": "5e116f5b1c3f239341051f56b8fdd917fa96129c",
+      "repairs_commit": "eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a",
+      "request_id": "OCOR-DEV-REM-0063-cce3ba8ba7ab-pre",
+      "result": "BLOCKING_FINDINGS",
+      "reviewer": "Claude Code claude-fable-5-2, Anthropic, effort max",
+      "second_review_requested": false
+    },
     "preamble_recheck": {
       "adopted_options": [
         "A1",
@@ -368,7 +379,7 @@
       "preamble_sha256": "34cbb588114a93681d773e89ba5173b7379438eea88e39370e9de551568809bc",
       "result": "DISPOSITION_PRESENT"
     },
-    "production_code_changed": false,
+    "production_code_changed": true,
     "ready_scope_audit_sha256": "fd61d03d4c2924b7fad98688bc060c4516b6690bfa257994f9a2058ddd8c5704",
     "repair_cycle": 10,
     "single_calculation_design": {
@@ -392,8 +403,8 @@
       "tests": 40180
     },
     "unit": "OCOR-DEV-REM-0063",
-    "unit_head": "3bad5d6ff3941b9563a90302fada577ce0ab8b07",
-    "updated_at": "2026-11-17T00:56:23.089108+00:00",
+    "unit_head": "5e116f5b1c3f239341051f56b8fdd917fa96129c",
+    "updated_at": "2026-11-17T04:43:40.116506+00:00",
     "worktree": ".ocor/worktrees/rem-0063"
   },
   "backlog_escalations": {
@@ -9757,6 +9768,42 @@
       "summary": "Quali aspettative applicare al caso percent-encoded omesso, alle basi con identificativo vuoto e alle collisioni tra schemi autonomi?",
       "title": "Confini residui del contratto MCP nel ciclo 10",
       "updated_at": "2026-11-17T00:56:23.089108+00:00"
+    },
+    {
+      "blocked_scope": "Bloccate la campagna di qualifica del ciclo 10 di OCOR-DEV-REM-0063 e la rimozione della registrazione a mano del risolutore annidato. Non \u00e8 bloccata l'intera unit\u00e0: le riparazioni gi\u00e0 pubblicate restano. Gli altri task non dipendono da questa richiesta.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0063"
+      ],
+      "created_at": "2026-11-17T04:43:40.116506+00:00",
+      "decision_level": "NORMATIVE",
+      "evidence": {
+        "branch": "governed/decision-request-rem0063-cycle10-nested-resource-resolution",
+        "commit": "99172353fc2ac6b2a56aadf54321339d6ea9a4a4",
+        "path": "reports/development/decision_requests/REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION.md",
+        "pr": 658,
+        "sha256": "66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729"
+      },
+      "id": "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION",
+      "options": [
+        "A1: oracolo la libreria sullo schema da solo e riallineamento esplicito dei 39 casi",
+        "A2: la risorsa annidata resta la radice dei propri frammenti",
+        "B1: l'oggetto controllato \u00e8 quello restituito dalla libreria",
+        "B2: basta che profilo e libreria accettino, anche se l'oggetto differisce",
+        "C1: aggiungere la dimensione di sola discesa statica senza togliere celle",
+        "C2: non aggiungere la dimensione e non togliere celle"
+      ],
+      "question": "Una risorsa annidata si risolve con le librerie fissate sullo schema dello strumento da solo, oppure resta la radice dei propri frammenti? Se l'accettazione coincide ma l'oggetto controllato differisce, quale oggetto vale? La matrice deve aggiungere i nodi raggiunti solo per discesa statica?",
+      "recommendation": "A1, B1 e C1",
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED",
+      "status_history": [
+        {
+          "at": "2026-11-17T04:43:40.116506+00:00",
+          "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+        }
+      ],
+      "summary": "Il profilo registra a mano una risorsa annidata e ritenta PointerToNowhere. Cos\u00ec accetta schemi che referencing 0.37.0 e Draft202012Validator, sullo schema da solo, non risolvono. Togliere quel comportamento rende rossi 39 casi del ciclo 6 non autorizzati al riallineamento. La chiusura sul proprietario della libreria \u00e8 gi\u00e0 pubblicata e non \u00e8 parte del quesito.",
+      "title": "Risoluzione delle risorse annidate nel ciclo 10 di OCOR-DEV-REM-0063",
+      "updated_at": "2026-11-17T04:43:40.116506+00:00"
     }
   ],
   "checkpoint_consolidation": {
@@ -12067,7 +12114,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva del progetto OCOR-DEV-REM-0063-3bad5d6ff394-pre, base f485dc964e47bde83842ecd5ba2627d8342612f9, head 3bad5d6ff3941b9563a90302fada577ce0ab8b07, branch governed/ocor-dev-rem-0063-mcp-profile. Non avviare la suite completa n\u00e9 il codice sotto ocor-runtime/src prima di quell'esito. Poi una sola realizzazione del calcolo condiviso in mcp_profile.py, senza file nuovi sotto ocor-runtime/src; riallineare soltanto il caso encoded-slash di test_percent_encoded_fragments_resolve_before_the_pointer e l'oracolo di fase A non sigillato alla regola B1; conservare tutti i 40180 casi. Quindi GREEN, revisione preventiva prima della campagna, gate locale, campagna, controllo distinto e verifica finale Claude Code claude-opus-5-5 effort max, senza ripiego, dichiarando il limite di indipendenza (stesso fornitore Anthropic del revisore claude-fable-5-2, modello diverso). Nessuna terza revisione del contratto e nessuna seconda revisione del progetto. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Gli altri WIP restano fermi. Claim invariati.",
+  "next_executable_action": "La campagna di qualifica di OCOR-DEV-REM-0063 e la rimozione della registrazione a mano attendono REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (PR #658, branch governed/decision-request-rem0063-cycle10-nested-resource-resolution, commit 99172353fc2ac6b2a56aadf54321339d6ea9a4a4, sha256 66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729). Le riparazioni che non scelgono una lettura sono gi\u00e0 su governed/ocor-dev-rem-0063-mcp-profile, head 5e116f5b1c3f239341051f56b8fdd917fa96129c, commit di codice eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a: chiusura sul proprietario della libreria, TypeError del crawl tipizzato senza sostituire la diagnostica di schema non valido, un solo limite di profondit\u00e0 dei riferimenti. Non avviare la suite completa n\u00e9 la campagna su questo head. Nessuna seconda revisione preventiva e nessuna richiesta di verifica in questa iterazione. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Claim invariati.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -43253,7 +43300,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
-        "seconds": 0.352
+        "seconds": 0.324
       },
       {
         "command": [
@@ -43262,7 +43309,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
-        "seconds": 0.145
+        "seconds": 0.134
       },
       {
         "command": [
@@ -43271,7 +43318,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
-        "seconds": 0.028
+        "seconds": 0.024
       },
       {
         "command": [
@@ -43280,18 +43327,18 @@
           "mypy"
         ],
         "exit_code": 0,
-        "raw_sha256": "8f4c82c4def5877c120713dbd513bb61a25cdc112c496163dbfb4e922933ea7c",
-        "seconds": 0.141
+        "raw_sha256": "606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130",
+        "seconds": 4.79
       },
       {
         "command": [
-          "ruff",
+          "/home/luca/.local/bin/ruff",
           "check",
           "."
         ],
         "exit_code": 0,
         "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
-        "seconds": 0.01
+        "seconds": 0.034
       },
       {
         "command": [
@@ -43303,7 +43350,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
-        "seconds": 0.126
+        "seconds": 0.088
       },
       {
         "command": [
@@ -43314,7 +43361,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
-        "seconds": 0.977
+        "seconds": 0.922
       },
       {
         "command": [
@@ -43323,11 +43370,11 @@
           "--base",
           "origin/main",
           "--branch",
-          "governed/state-sync-rem0063-cycle10-contract-final-20261116"
+          "governed/state-sync-rem0063-cycle10-nested-resolution-20261117"
         ],
         "exit_code": 0,
-        "raw_sha256": "008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32",
-        "seconds": 0.034
+        "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
+        "seconds": 0.032
       },
       {
         "command": [
@@ -43341,7 +43388,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2",
-        "seconds": 0.029
+        "seconds": 0.027
       },
       {
         "command": [
@@ -43383,7 +43430,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83",
-        "seconds": 0.029
+        "seconds": 0.028
       }
     ],
     "full_suite": "NOT_EXECUTED_STATE_SYNC_ONLY",
@@ -43407,7 +43454,7 @@
     "scope": "OCOR-DEV-REM-0063 cycle 10 design only. No final NO_GO, no cycle 11 and no claim transition.",
     "status": "NOT_BLOCKED"
   },
-  "updated_at": "2026-11-17T00:56:23.089108+00:00",
+  "updated_at": "2026-11-17T04:43:40.116506+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
