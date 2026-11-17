@@ -168,3 +168,18 @@ PoC e Production NO-GO.
 Le sei opzioni sono A1, A2, B1, B2, C1 e C2, ciascuna all'inizio della riga,
 sotto la propria sezione `### Opzioni del quesito`. Nessuna opzione sta in
 un blocco di codice. La raccomandazione scritta è A1, B1 e C1.
+
+## Disposition
+
+Decisa dal PO di persona il 2026-11-17. Quesito A, opzione A1; quesito B,
+opzione B1; quesito C, opzione C1. A2, B2 e C2 non sono applicate.
+Il commit di codice `7cc393a55b42e91af34e4cfe0f31beecd35e0fdb` sul branch
+`governed/ocor-dev-rem-0063-mcp-profile` toglie la registrazione a mano e
+il ritento dopo `PointerToNowhere`, riallinea i 39 casi nominati e aggiunge
+le 24 celle di discesa statica. Il record è
+`5d6bd2662fc8db619d057169f25962d9c76ce4e1`. L'allineamento delle annotazioni
+a mypy 2.3.1, senza cambiare rami di esecuzione, è
+`6c1d5c805fab9fff784db5ddfcd419c92790a597`. Il testo della richiesta sopra
+questa sezione resta quello del commit
+`99172353fc2ac6b2a56aadf54321339d6ea9a4a4`, sha256
+`66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729`.
