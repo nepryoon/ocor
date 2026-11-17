@@ -34,14 +34,18 @@ Cycle 8 prereview-fix code is `edfe829322d57875c2bd0685a50f9710b4636726`, closin
 
 ## Cycle 10 contract
 
-Phase A, completed after the second and final contract review. Production remains
-byte-identical to `f485dc964e47bde83842ecd5ba2627d8342612f9`. This derived contract
-implements **REM-0063-CICLO-10-CONTRATTO (2026-11-16)**, points 1–3; it closes no
-production finding. Codex (`gpt-6.1-sol`, OpenAI, effort `max`) owns cycle 10.
-Earlier implementers are Grok Build (`grok-4.7`, xAI) and Codex CLI
-(`deepseek-flash`, `deepseek-v4-pro`, DeepSeek). The assigned contract and preventive
-reviewer is Claude Code (`claude-fable-5-2`, Anthropic, effort `max`). Final verifier:
-Claude Code (`claude-opus-5-5`, Anthropic, effort `max`), assigned by
+Phase A, completed after the second and final contract review, stays valid.
+Production remains byte-identical to `f485dc964e47bde83842ecd5ba2627d8342612f9`.
+This derived contract implements **REM-0063-CICLO-10-CONTRATTO (2026-11-16)**,
+points 1–3, and the single-calculation design required by
+**REM-0063-CALCOLO-UNICO (2026-11-17)** before any production edit. It closes no
+production finding. Codex (`gpt-6.1-sol`, OpenAI, effort `max`) authored phase A
+and does not own the cycle-10 code. From **REM-0063-CALCOLO-UNICO (2026-11-17)**
+point 1, Grok Build (`grok-4.7`, xAI, effort `xhigh`) owns the code. Earlier
+implementers remain Grok Build (`grok-4.7`, xAI) and Codex CLI (`deepseek-flash`,
+`deepseek-v4-pro`, DeepSeek). The preventive reviewer is Claude Code
+(`claude-fable-5-2`, Anthropic, effort `max`). Final verifier: Claude Code
+(`claude-opus-5-5`, Anthropic, effort `max`), assigned by
 **VERIFIER-CLAUDE-REM0063 (2026-11-16)**. The PO declares the same-provider,
 different-model limit between reviewer and verifier. No implementer is Anthropic.
 
@@ -49,9 +53,9 @@ different-model limit between reviewer and verifier. No implementer is Anthropic
 
 Every emitted `inputSchema` and `outputSchema` is an autonomous JSON Schema
 2020-12 resource. Its registry contains only that schema and its contained
-resources. The base is its declared `$id`, otherwise its fixed tool/field URI;
-the precise treatment of empty/no-op root IDs is open question Q5 below.
-No lookup falls back to the descriptor, another schema or network retrieval.
+resources. The base follows B1 below: a root `$id` with a non-empty
+pre-fragment part, otherwise the fixed tool/field URI. No lookup falls back
+to the descriptor, another schema or network retrieval.
 The oracle never rewrites schema bytes or reference spellings. Sources:
 **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, points 1–2.
 
@@ -69,17 +73,25 @@ Every emitted descriptor must pass the public profile. Each final schema used
 alone must pass `Draft202012Validator.check_schema` and resolve its references
 with unmodified `referencing` 0.37.0. An unresolvable closure causes
 `C1Error`/`UNRESOLVED_REFERENCE` before artefacts are returned. A fixed base
-colliding with a declared ID inside that schema causes `C1Error`/`TYPE_ERROR`
-or `McpProfileError`, without suffix selection. The collision scope outside
-that schema is Q6. Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2;
-**REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**, A1+B1.
+colliding with a declared ID inside that same schema causes `C1Error`/`TYPE_ERROR`
+or `McpProfileError`, without suffix selection. A final empty fragment does not
+make a different identity. An equal `$id` in another field, tool or descriptor
+metadata is not a collision of this registry (C1). Sources:
+**REM-0063-CICLO-10-CONTRATTO**, point 2;
+**REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**, A1+B1;
+**REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)**, C1.
 
 The profile validates every tool against the pinned official `Tool` definition,
 then checks each schema's dialect, keywords and resolved targets. Missing or
 non-schema targets cause typed refusal. Existing ambiguous-anchor and canonical
 array-index restrictions remain. Percent-encoded anchors and the encoded leading
 slash follow the original libraries, without helper substitutions (A1 above).
-The omitted early encoded-slash test is Q4; no existing test changes in phase A.
+A1 of **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)** extends that
+realignment to the single omitted case `encoded-slash` of
+`test_percent_encoded_fragments_resolve_before_the_pointer`: same name, inputs
+and 19 cases; only `encoded-slash` will expect `McpProfileError`. This design
+commit does not change that existing test. The implementation commit does, and
+the record lists the old and new expectation. No other existing test changes.
 
 Only reference spellings starting with `#` are accepted, even when an URI naming
 a contained resource resolves without network access. The generator emits only
@@ -93,19 +105,19 @@ profile refuse with their typed errors. Direct and transitive type growth counts
 Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2 and VF-002;
 **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2. No bound changes.
 
-Resource/base/closure computations currently exist in both producer and profile.
-Their agreement must be proved across both public paths below: independent
-library resolution, exact closure trees, positive/negative instance twins and
-identical repeated render bytes. No expected answer uses a production helper.
-Sharing a production helper is optional within the authorised scope
-(**REM-0063-CICLO-10-CONTRATTO**, point 2).
+Resource, base, reference target, closure placement and bounds are one
+calculation, specified in **Single calculation design** and required by
+**REM-0063-CALCOLO-UNICO (2026-11-17)** point 3. Agreement is still proved on
+both public paths: independent library resolution, exact closure trees,
+positive/negative instance twins and identical repeated render bytes. No
+expected answer uses a production helper, including the shared one.
 
 ### Deterministic case matrix
 
 | Dimension | Values and explicit representatives |
 | --- | --- |
 | Field | `inputSchema`, `outputSchema` |
-| Root | absent, absolute; `root.json`, `./root.json`, `../up/root.json`, `relative/root.json`, `rel/dir/`; fragment-only roots in library controls pending Q5 |
+| Root | absent, absolute; `root.json`, `./root.json`, `../up/root.json`, `relative/root.json`, `rel/dir/`; fragment-only and empty roots use the fixed base under decided B1 |
 | Independent outer/inner IDs | absent, empty, `#`, root-relative, root-absolute, new relative/absolute, repeated URI; exact literal root repetition in the added product |
 | Reference | `#`, pointer, anchor, percent segment/leading slash/anchor, contained-resource URI; parent/root/child/missing targets |
 | Target | present, missing, invalid schema, non-schema; duplicate anchor; foreign field/tool/descriptor |
@@ -155,9 +167,11 @@ mutual cross-product. Their restrictions are:
 - V1: cyclic `allOf/$ref:'#'` may not terminate instance validation. Their
   schema validity/resolution checks remain; recursive instance execution is
   `NOT_EXECUTED`, never a passing instance. Nonrecursive entry probes really run.
-- Q5/Q6: unresolved root-base/cross-tree collision semantics are questions,
-  not chosen outcomes. New public collision rows cover only the already-decided
-  same-schema rule, including index 1 and final-empty-fragment identity.
+- B1/C1: empty and fragment-only roots use the fixed base; collision rows
+  cover only the same schema, including index 1 and final-empty-fragment
+  identity. The phase-A oracle `_cycle10_base` still treats `"#"` as an empty
+  base. The implementation commit aligns that unsealed oracle to B1 and
+  records the difference. No cell is removed.
 
 The static matrix oracle uses `Resource.subresources`, `Resolver.in_subresource`
 and `Resolver.lookup` on the original resource, preserving registry crawl state.
@@ -172,16 +186,146 @@ without the stricter static oracle. No original matrix assertion is weakened.
 
 Q1/Q2: A1+B1 of **REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)** are decided.
 Q3: option 1 of **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)** is decided.
-Q4/Q5/Q6 are collected in **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**:
-the omitted encoded-slash test, empty/no-op root bases, cross-tree collision scope.
-These questions arose from the second review; its blocking root-class coverage
-is integrated without a third contract review. Production and complete campaigns
-remain suspended on the dependent interpretations; existing tests stay unchanged.
+Q4/Q5/Q6, the questions **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**
+collected, are decided by the Product Owner in person on 2026-11-17: A1, B1
+and C1. A2, B2 and C2 are not applied. The file at
+`99d93da7a481c44841d9d8003044aed37c026ce6` has sha256
+`edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8`. No question
+in this contract remains open. The second review's blocking root-class coverage
+is already in `66c14f60e440f287a88c5e01a0ab30259e303a26`; this design commit
+adds no test. There is no third contract review.
 
 The official fixture remains byte-identical. **REM-0063-PINNED-FIXTURE-DIFF-CHECK
 (2026-11-16)**, option 1, leaves its whitespace check `NOT_GREEN` with a recorded
 exception; every other file retains the check. No production repair or full
-campaign has started. Phase B remains one repair against the entire matrix,
-followed by GREEN, preventive review, local gate, campaign, distinct check and
-final verification. Fence unchanged: E1=0, E2=0, Verified=0,
-runtime NOT_ESTABLISHED, PoC and Production NO-GO.
+campaign has started. After the single design review, one implementation turns
+the whole matrix and the existing tests green, then preventive review, local
+gate, campaign, distinct check and final verification. Fence unchanged:
+E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.
+
+### Single calculation design
+
+**REM-0063-CALCOLO-UNICO (2026-11-17)** points 3–4. This commit does not modify
+`ocor-runtime/src/`. The shared functions below will live in
+`ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`, which `codegen.py` already
+imports. No new file under `ocor-runtime/src/`. Duplicate helpers that the
+table retires are deleted in the implementation commit. Matrix expectations
+stay the pinned libraries on the original schema bytes, never a production
+function.
+
+No contract question remains open, so no shared function is left depending on
+an undecided option. Q4/A1 changes only the existing `encoded-slash` assertion
+named above. Q5/B1 is the base rule of `operational_base`: absent, non-string,
+`""` and an identifier with an empty pre-fragment part (`"#"`, `"###"`) use
+`urn:ocor:embedded-tool:{index}:{field}`; every other root `$id` uses that
+pre-fragment part. The schema bytes are not rewritten. Q6/C1 limits the
+fixed-base collision to string `$id` values inside that same schema, and a
+trailing empty fragment is the same identity. A suffix that dodges the
+collision is forbidden.
+
+Shared functions and the errors they surface. Callers map
+`SchemaCalculationFailure` to the public type already used on that path:
+`McpProfileError` in `validate_mcp_descriptor`, `C1Error` in `_mcp`. The public
+message and `DiagnosticCode` stay those the tests already name.
+
+1. `operational_base(schema, *, index, field) -> str`. Errors: `COLLISION`
+   (`McpProfileError` or `C1Error`/`TYPE_ERROR`) when the fixed base equals a
+   `$id` in that schema under C1; `INVALID_ID` (`TYPE_ERROR`, message
+   `MCP $id is not a valid URI reference`) when a declared pre-fragment part
+   is not a URI reference. No suffix.
+2. `json_bounds(document) -> None`. One walk. The root counts as one JSON
+   value; object keys do not count. Depth starts at 1. Error `BOUNDS`
+   (`MCP schema exceeds the revision bounds`, profile; `C1Error`/`TYPE_ERROR`
+   with that message, generator) when the value count exceeds 4096 or the
+   depth exceeds 32. The profile's non-JSON refusals (lone surrogate,
+   non-finite number, non-JSON value) stay on this same walk and are not a
+   second counter. The generator calls it on the schema after `$defs` closure,
+   before the artefact is returned, and the profile calls it on the descriptor
+   it receives.
+3. `autonomous_registry(schema, base_uri) -> Registry`. Built only with
+   `referencing` 0.37.0: `Registry().with_resource(base_uri, DRAFT202012.create_resource(schema)).crawl()`.
+   The root URI entry stays the resource passed to `with_resource`, because
+   the library resolver keeps that root until an `$id` changes the base. That
+   pin does not walk pointers and does not rewrite bytes. Crawl failure is
+   `NOT_RESOLVABLE` (`MCP schema resource index is not resolvable`, or
+   `C1Error`/`UNRESOLVED_REFERENCE` on the generator).
+4. `lookup_original(registry, base_uri, reference) -> Lookup`.
+   `registry.resolver(base_uri).lookup(reference)` on the original spelling.
+   The result carries the library contents and the resolver `lookup` returned,
+   so an anchor chain keeps that resolver. `Unresolvable` is
+   `UNRESOLVED_REFERENCE` (`MCP $ref does not resolve in the descriptor`, or
+   `C1Error`/`UNRESOLVED_REFERENCE`). No decode-and-re-encode step feeds the
+   lookup.
+
+Resource identity for closure placement is the crawled registry, not a second
+`urljoin` walker. `contained_resources` is that registry's entries. Two
+distinct nodes that the library assigns one URI are `DUPLICATE_RESOURCE` on
+the generator only (`C1Error`); the profile keeps the library's last-wins
+result for siblings and does not invent another winner.
+
+| Duplicated today | Disposition |
+| --- | --- |
+| `_declared_id` / `_mcp_declared_id` | Merge into `operational_base`. |
+| `_resource_uri` / `_mcp_resource_uri`, `_changes_resource` / `_mcp_changes_resource` | Delete. Identity comes from the registry. |
+| `_synthetic_tool_uri` / `_mcp_synthetic_uri` (suffix loop) | Delete. Collision refuses. |
+| `_collect_declared_ids` / `_mcp_collect_ids` | Merge into the C1 collision read inside `operational_base`. |
+| `_walk_json` bounds and `_mcp_bounds` | Merge into `json_bounds`. |
+| `_crawl_document_resources`, `_same_uri_resource_ancestors`, `_mcp_iter_resources`, `_mcp_post_check` crawl | Merge into `autonomous_registry`. |
+| `_resolve_reference` rewrite and `_lookup_reference` / post-check `lookup` | Merge into `lookup_original`. |
+| `_iter_schema_children` versus `DRAFT202012.subresources_of` | Resolution uses only the library subresources. |
+| `_mcp_ref`, `_mcp_defs_name`, `_mcp_select_body`, name clash, `without_context_overwrite` | Stay. They emit or select definition bodies; they do not resolve `$ref`. |
+| `_PROFILE_SPECIFICATION` scalar guard | Stays only as the typed translation of the library `AttributeError` on a scalar target. It must not select a different resource. |
+
+Rules stricter than `referencing` 0.37.0 and `Draft202012Validator`. Each runs
+after the library result, refuses something the library would still accept or
+maps a library failure to the typed error, and does not change a successful
+library target.
+
+1. Reference spelling must start with `#`. Other spellings, including a URI
+   that names a contained resource, are refused. Profile:
+   `MCP $ref must be a same-document fragment`. Generator:
+   `C1Error`/`UNRESOLVED_REFERENCE`. Source:
+   **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1.
+2. A resolved target that is not a JSON Schema 2020-12 schema, including a
+   boolean schema only when `check_schema` accepts it, is
+   `MCP $ref target is not a JSON Schema 2020-12 schema`. Source:
+   **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
+3. A `$schema` outside the accepted 2020-12 dialect is
+   `MCP schema dialect must be JSON Schema 2020-12`. `$dynamicRef` and
+   `$recursiveRef` are `MCP $ref resolution does not follow dynamic references`.
+   Source: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
+4. A plain-name anchor owned by more than one node of the same resource is
+   `MCP $ref anchor is ambiguous`. A non-canonical array index, judged from
+   the parent object `lookup_original` returned for the original pointer
+   prefix, is `MCP $ref fragment is not a valid JSON Pointer`. Malformed
+   percent-encoding and a non-UTF-8 fragment keep their current typed
+   messages. These checks do not replace the reference passed to `lookup`.
+   Source: the profile module as already tested; percent-encoded leading
+   slash additionally **REM-0063-CYCLE10-ORACLE-CONFLICT** A1 and Q4/A1.
+5. Fixed-base collision inside the same schema, including a final `#`, is
+   rule `COLLISION` above. No suffix. Source: **ORACLE-CONFLICT** B1 and Q6/C1.
+6. Two generator nodes with one library URI are `DUPLICATE_RESOURCE`. Source:
+   the producer rule already in this contract; stricter than library last-wins.
+7. A descriptor `$defs` above the tool schemas is refused by the profile.
+   The generator emits none. A same-name definition with different content is
+   `C1Error`/`TYPE_ERROR` (`MCP definition name clash`). Source:
+   **MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**, points 1–2.
+8. `without_context_overwrite` remains the profile function the generator
+   already calls. Source: **GENERATORE**, point 1.
+9. Bounds are `json_bounds`, not a second limit. Source:
+   **REM-0063-CICLO-10-CONTRATTO**, point 2, and
+   **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
+
+Call sites. `validate_mcp_descriptor`, for each `inputSchema` and
+`outputSchema`: `operational_base`, `autonomous_registry`, `json_bounds`, then
+the stricter checks, then `lookup_original` for every `$ref`. `_mcp` and
+`_mcp_attach_definitions`: the same base and registry to decide which resource
+receives which `#/$defs/<Name>` closure; `lookup_original` before returning
+bytes; `json_bounds` on the closed schema. The anchor-chain rule is unchanged:
+the static matrix oracle is not this calculation, and a static failure still
+refuses the descriptor only when no reference path reaches that node
+(**REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**, final paragraph).
+
+The implementation commit is the only production edit. It does not add a
+dependency, change a version, or accept a spelling these decisions refuse.
+After a `NO_GO` of this cycle there is no further cycle.
