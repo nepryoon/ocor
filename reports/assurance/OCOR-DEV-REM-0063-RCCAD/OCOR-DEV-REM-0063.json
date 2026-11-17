@@ -3672,7 +3672,7 @@
       "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
       "NORMATIVE-QUESTIONS-EARLY-DR-PO-CONSTRAINTS (2026-11-09)"
     ],
-    "blocking_decision_request": null,
+    "blocking_decision_request": "REM-0063-CYCLE10-LANE-ARGV-LIMIT",
     "contract": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/README.md#cycle-10-contract",
     "contract_review_number_requested": 2,
     "contract_reviewer": {
@@ -4896,9 +4896,9 @@
         "status": "PASS"
       }
     },
-    "next_action": "A1, B1 and C1 stay applied. Annotation alignment is 6c1d5c805fab9fff784db5ddfcd419c92790a597 and does not change execution branches. Two official pre-campaign gates on that head failed at mermaid with ProtocolError Network.enable timed out, at 180.765 s and 180.829 s. That is not a PASS. Do not start the four-lane campaign or the distinct check. Do not request a second pre-campaign review or verification. Do not change the diagram, .github/mermaid-puppeteer.json, or the product to obtain a green gate. Retry the official gate only after the local Puppeteer CDP condition changes. After a NO_GO of this cycle there is no cycle 11. Claims unchanged.",
+    "next_action": "The official pre-campaign gate on 5a1a8aaff6af95470171c1add7f9e85f1ec997a8 is PASS: 51 steps, 0 failures, 6 NOT_EXECUTED, mermaid 4.412 s, gates.json sha256 860c48da950bf65a27573b71875dd55b8db8780c9b510804d13c0047ef7fa54e. The two mermaid failures on 6c1d5c805fab9fff784db5ddfcd419c92790a597 stay FAIL. Four-lane campaign 5a1a8aaff6af-1794907944 is FAIL, exit 1, 227.898 s, lane 1 Errno 7 Argument list too long, 41953 node ids. It is not a PASS. The distinct check was not run. Do not rerun that campaign unchanged and do not rerun the gate until HEAD changes. The repair leaves the files allowed by REM-0063-CALCOLO-UNICO (2026-11-17) point 6. Decision request REM-0063-CYCLE10-LANE-ARGV-LIMIT is open: branch governed/decision-request-rem0063-cycle10-lane-argv, commit 1ffdbaaf23a82753df87c136989c51e23bffe40b, sha256 fa95ed2da8c67ae6d967ace3cc59ad527f554be3e950166e1ad31cf5c96ac4e1, PR 662, not merged. No option is applied. No second pre-campaign review and no verification request. After a NO_GO of this cycle there is no cycle 11. Claims unchanged.",
     "open_questions": [],
-    "phase": "NESTED_RESOLUTION_APPLIED_PRE_CAMPAIGN_GATE_FAILED_MERMAID",
+    "phase": "QUALIFYING_CAMPAIGN_FAILED_ARGV_LIMIT",
     "production_code_changed": true,
     "red": {
       "command": [
@@ -5311,6 +5311,69 @@
             "raw_log_sha256": "b3adbb778420805ae39975fb4ae4b4ac4041d30e97463e14b1dbdbbacdd59503"
           }
         ]
+      },
+      "pre_campaign_gate_on_tip": {
+        "command": "python3 /home/luca/.ocor-codex/rem-0063/pregate.py",
+        "diagram_changed": false,
+        "duration_sum_seconds": 897.239,
+        "ended_at": "2026-11-17T09:30:01Z",
+        "exit_code": 0,
+        "failed_steps": 0,
+        "gates_json_sha256": "860c48da950bf65a27573b71875dd55b8db8780c9b510804d13c0047ef7fa54e",
+        "head": "5a1a8aaff6af95470171c1add7f9e85f1ec997a8",
+        "mermaid_duration_seconds": 4.412,
+        "mermaid_status": "PASS",
+        "not_executed_count": 6,
+        "preserved_gates_json": "/home/luca/.ocor-codex/rem-0063/gate/preserved-5a1a8aaf-pass/gates.json",
+        "preserved_log": "/home/luca/.ocor-codex/rem-0063/gate/run-5a1a8aaf.log",
+        "preserved_log_sha256": "387481316f16219147bb1e479ed82130450c25721010ae809300be220038bec8",
+        "puppeteer_config_changed": false,
+        "qualifying_campaign": false,
+        "rem0063_unit_duration_seconds": 800.021,
+        "rem0063_unit_status": "PASS",
+        "started_at": "2026-11-17T09:15:03Z",
+        "status": "PASS",
+        "steps_passed": 51
+      },
+      "qualifying_campaign_attempt": {
+        "campaign_id": "5a1a8aaff6af-1794907944",
+        "collected": 47779,
+        "collected_sha256": "be9e0ca21a0e0e9ce0c0944180de94d32c9cad41c56d111c0a76318917bbe2fb",
+        "distinct_check": "NOT_EXECUTED",
+        "ended_at": "2026-11-17T09:36:12Z",
+        "error": "lane 1 failed: [Errno 7] Argument list too long",
+        "exit_code": 1,
+        "head": "5a1a8aaff6af95470171c1add7f9e85f1ec997a8",
+        "host_residue": {
+          "containers": [],
+          "networks": [],
+          "root_image": false,
+          "volumes": []
+        },
+        "lane_cases": [
+          41953,
+          972,
+          2423,
+          2431
+        ],
+        "limit_seconds": 5400,
+        "log": "/home/luca/.ocor-codex/rem-0063/cycle10/lanes-5a1a8aaf.log",
+        "log_sha256": "bdd232f8e6226e9afb9c081dbcb07dad1ad680eff37f1f67c18aeb1b22aacdec",
+        "memory_mode": "FOUR_LANE",
+        "mem_available_kib": 59197840,
+        "partition_sha256": "ad0d34b86ba5bbd5225010ad59f5106ce1af83bbfeeddf86c6a3a8c053ddcff0",
+        "power": "MAINS",
+        "pull_remaining_before": "100;w=3600",
+        "qualifying_campaign": false,
+        "qualifying_scope": true,
+        "selection": [
+          "tests/"
+        ],
+        "selection_scope": "FULL_SUITE",
+        "started_at": "2026-11-17T09:32:24Z",
+        "status": "FAIL",
+        "teardown": "lanes 1-4 PASS, sandbox_found true",
+        "total_duration_seconds": 227.898
       }
     },
     "decided_remaining_contract_questions": {
@@ -5409,6 +5472,16 @@
       ],
       "decided_by": "PO in person 2026-11-17",
       "po_decision_note": "decisa dal PO di persona"
+    },
+    "lane_argv_decision_request": {
+      "branch": "governed/decision-request-rem0063-cycle10-lane-argv",
+      "commit": "1ffdbaaf23a82753df87c136989c51e23bffe40b",
+      "id": "REM-0063-CYCLE10-LANE-ARGV-LIMIT",
+      "path": "reports/development/decision_requests/REM-0063-CYCLE10-LANE-ARGV-LIMIT.md",
+      "pr": 662,
+      "recommended_option": "1",
+      "sha256": "fa95ed2da8c67ae6d967ace3cc59ad527f554be3e950166e1ad31cf5c96ac4e1",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   },
   "repair_cycle_2": {

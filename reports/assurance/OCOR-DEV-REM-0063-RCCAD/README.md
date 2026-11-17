@@ -260,8 +260,21 @@ The repairs that do not choose a normative reading stay on
 requested. Two official pre-campaign gates on that annotation head failed at
 mermaid: ProtocolError Network.enable timed out, 180.765 s and 180.829 s,
 CLI `@mermaid-js/mermaid-cli` 11.12.0, config `.github/mermaid-puppeteer.json`.
-The diagram and that config were not changed. Neither run is a PASS. The
-qualifying campaign is not run. Fence unchanged: E1=0, E2=0, Verified=0,
+The diagram and that config were not changed. Neither run is a PASS.
+The official gate on tip `5a1a8aaff6af95470171c1add7f9e85f1ec997a8` is PASS:
+51 steps, 0 failures, 6 NOT_EXECUTED, mermaid 4.412 s, unit step 800.021 s,
+from `2026-11-17T09:15:03Z` to `2026-11-17T09:30:01Z`. `gates.json` sha256
+`860c48da950bf65a27573b71875dd55b8db8780c9b510804d13c0047ef7fa54e`.
+The four-lane campaign `5a1a8aaff6af-1794907944` on that same head is FAIL,
+exit 1, 227.898 s, from `2026-11-17T09:32:24Z` to `2026-11-17T09:36:12Z`.
+Lane 1 stopped before pytest with `Errno 7 Argument list too long`
+(41953 node ids). Collected 47779. Host residue empty. Teardown of the four
+sandboxes PASS. It is not a qualifying result. The distinct check was not run.
+The repair leaves the files allowed for this unit. Decision request
+`REM-0063-CYCLE10-LANE-ARGV-LIMIT` is open (PR 662, commit
+`1ffdbaaf23a82753df87c136989c51e23bffe40b`, sha256
+`fa95ed2da8c67ae6d967ace3cc59ad527f554be3e950166e1ad31cf5c96ac4e1`).
+No option is applied. Fence unchanged: E1=0, E2=0, Verified=0,
 runtime NOT_ESTABLISHED, PoC and Production NO-GO.
 
 ### Single calculation design
