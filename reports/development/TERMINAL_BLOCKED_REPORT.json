@@ -3,9 +3,11 @@
   "baseline_commit": "4ca86949cd428f6a2f35b02e7fc2cb0fb5bb51b5",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "feaa966ce949e36ccdb729ad8cfb89c3080c4e4165ea7733797b15bed9c151a6"
+    "sha256": "1883a0808f480edbc90c012c29031e4b978b441b3ad71932b5472be40d5108e9"
   },
-  "blocking_tasks": [],
+  "blocking_tasks": [
+    "OCOR-DEV-REM-0063"
+  ],
   "claims": {
     "E1": 0,
     "E2": 0,
@@ -64,6 +66,34 @@
       "summary": "Quali aspettative applicare al caso percent-encoded omesso, alle basi con identificativo vuoto e alle collisioni tra schemi autonomi?",
       "title": "Confini residui del contratto MCP nel ciclo 10",
       "updated_at": "2026-11-17T00:56:23.089108+00:00"
+    },
+    {
+      "blocked_scope": "Bloccate la campagna di qualifica del ciclo 10 di OCOR-DEV-REM-0063 e la rimozione della registrazione a mano del risolutore annidato. Non \u00e8 bloccata l'intera unit\u00e0: le riparazioni gi\u00e0 pubblicate restano. Gli altri task non dipendono da questa richiesta.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0063"
+      ],
+      "created_at": "2026-11-17T04:43:40.116506+00:00",
+      "decision_level": "NORMATIVE",
+      "evidence": {
+        "branch": "governed/decision-request-rem0063-cycle10-nested-resource-resolution",
+        "commit": "99172353fc2ac6b2a56aadf54321339d6ea9a4a4",
+        "path": "reports/development/decision_requests/REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION.md",
+        "pr": 658,
+        "sha256": "66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729"
+      },
+      "id": "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION",
+      "options": [
+        "A1: oracolo la libreria sullo schema da solo e riallineamento esplicito dei 39 casi",
+        "A2: la risorsa annidata resta la radice dei propri frammenti",
+        "B1: l'oggetto controllato \u00e8 quello restituito dalla libreria",
+        "B2: basta che profilo e libreria accettino, anche se l'oggetto differisce",
+        "C1: aggiungere la dimensione di sola discesa statica senza togliere celle",
+        "C2: non aggiungere la dimensione e non togliere celle"
+      ],
+      "question": "Una risorsa annidata si risolve con le librerie fissate sullo schema dello strumento da solo, oppure resta la radice dei propri frammenti? Se l'accettazione coincide ma l'oggetto controllato differisce, quale oggetto vale? La matrice deve aggiungere i nodi raggiunti solo per discesa statica?",
+      "recommendation": "A1, B1 e C1",
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED",
+      "summary": "Il profilo registra a mano una risorsa annidata e ritenta PointerToNowhere. Cos\u00ec accetta schemi che referencing 0.37.0 e Draft202012Validator, sullo schema da solo, non risolvono. Togliere quel comportamento rende rossi 39 casi del ciclo 6 non autorizzati al riallineamento. La chiusura sul proprietario della libreria \u00e8 gi\u00e0 pubblicata e non \u00e8 parte del quesito."
     }
   ],
   "direct_ready_disposition": "I quattro task pronti nel solo DAG restano soggetti ai blocker del programma. L'assegnazione corrente e REM-0063-CYCLE7-NO-GO (2026-11-15) punto 5 autorizzano soltanto REM-0063 e i suoi state sync; REM-0065/0066 restano congelati.",
@@ -74,11 +104,11 @@
     "OCOR-DEV-0064"
   ],
   "in_progress_unit": {
-    "execution_commit": "4e481c3e23e9191c05a334f2b36fe12c7ec1a888",
-    "head": "3bad5d6ff3941b9563a90302fada577ce0ab8b07",
-    "note": "Progetto pubblicato. Nessuna modifica di produzione. La revisione del progetto \u00e8 richiesta e non avviata dall'implementatore.",
-    "phase": "DESIGN_PUBLISHED_AWAITING_PREREVIEW",
-    "status": "AWAITING_DESIGN_REVIEW",
+    "execution_commit": "eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a",
+    "head": "5e116f5b1c3f239341051f56b8fdd917fa96129c",
+    "note": "Riparazioni pre-campagna pubblicate. Campagna e rimozione della registrazione a mano in attesa della decisione normativa.",
+    "phase": "PREAMBLE_RECHECK_NESTED_DECISION_ABSENT",
+    "status": "WAITING_ON_PO_NORMATIVE_DECISION",
     "task_id": "OCOR-DEV-REM-0063"
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
@@ -241,30 +271,30 @@
       "summary": "14 PASS, 0 FAIL, 0 NOT_EXECUTED"
     }
   },
-  "minimal_unblock_action": "Nessun blocco normativo residuo su REM-0063. Il loop avvia la revisione OCOR-DEV-REM-0063-3bad5d6ff394-pre; poi una sola implementazione del progetto.",
-  "next_executable_action": "Riprendere OCOR-DEV-REM-0063 dopo la revisione preventiva del progetto OCOR-DEV-REM-0063-3bad5d6ff394-pre, base f485dc964e47bde83842ecd5ba2627d8342612f9, head 3bad5d6ff3941b9563a90302fada577ce0ab8b07, branch governed/ocor-dev-rem-0063-mcp-profile. Non avviare la suite completa n\u00e9 il codice sotto ocor-runtime/src prima di quell'esito. Poi una sola realizzazione del calcolo condiviso in mcp_profile.py, senza file nuovi sotto ocor-runtime/src; riallineare soltanto il caso encoded-slash di test_percent_encoded_fragments_resolve_before_the_pointer e l'oracolo di fase A non sigillato alla regola B1; conservare tutti i 40180 casi. Quindi GREEN, revisione preventiva prima della campagna, gate locale, campagna, controllo distinto e verifica finale Claude Code claude-opus-5-5 effort max, senza ripiego, dichiarando il limite di indipendenza (stesso fornitore Anthropic del revisore claude-fable-5-2, modello diverso). Nessuna terza revisione del contratto e nessuna seconda revisione del progetto. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Gli altri WIP restano fermi. Claim invariati.",
+  "minimal_unblock_action": "Il PO scrive nel preambolo la sezione che decide REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (PR #658, commit 99172353fc2ac6b2a56aadf54321339d6ea9a4a4, sha256 66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729). L'iterazione successiva applica quella sezione e non sceglie un'opzione prima.",
+  "next_executable_action": "PREAMBLE-RECHECK-BEFORE-STOP (2026-11-08): rilettura del preambolo del loop il 2026-11-17T05:40:57.556372+00:00, sha256 34cbb588114a93681d773e89ba5173b7379438eea88e39370e9de551568809bc, nessuna sezione che decide REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (PR #658, branch governed/decision-request-rem0063-cycle10-nested-resource-resolution, commit 99172353fc2ac6b2a56aadf54321339d6ea9a4a4, sha256 66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729). La campagna di qualifica di OCOR-DEV-REM-0063 e la rimozione della registrazione a mano restano in attesa di quella sezione. Le riparazioni gi\u00e0 pubblicate restano su governed/ocor-dev-rem-0063-mcp-profile, head 5e116f5b1c3f239341051f56b8fdd917fa96129c, codice eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a. Nessuna seconda revisione preventiva, nessuna suite completa e nessuna richiesta di verifica. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Alla comparsa della sezione nel preambolo, applicarla nella stessa iterazione. Claim invariati.",
   "preamble_recheck": {
-    "decisions_found": [
-      "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)",
-      "REM-0063-CALCOLO-UNICO (2026-11-17)"
-    ],
-    "observed_at": "2026-11-17T00:56:23.089108+00:00",
+    "checked_request": "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION",
+    "decisions_found": [],
+    "observed_at": "2026-11-17T05:40:57.556372+00:00",
     "preamble_sha256": "34cbb588114a93681d773e89ba5173b7379438eea88e39370e9de551568809bc",
-    "result": "DISPOSITION_PRESENT"
+    "previous_result": "DISPOSITION_PRESENT",
+    "result": "SECTION_ABSENT",
+    "section": "PREAMBLE-RECHECK-BEFORE-STOP (2026-11-08)"
   },
   "previous_report": {
-    "commit": "8cd6f34076fd0b0c8d0eebe5b694c631f24ed32a",
+    "commit": "28c37fdd71c201a121300b2b9fdd49832330731a",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "7f150cde48897878a00641b4ba73eba0ccc26c1dd084d44a33378a7f82e22625"
+    "sha256": "e6b2ac7f492d183eff695df8096c1cdede4fcfb627dc9d6a385dda2291177241"
   },
-  "previous_status": "TERMINAL_BLOCKED",
-  "reason": "Il blocco sulla disposition di REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS \u00e8 rimosso: il PO ha deciso A1, B1 e C1 di persona e ha disposto il progetto del calcolo unico prima del codice.",
-  "recorded_at": "2026-11-17T00:56:23.089108+00:00",
+  "previous_status": "RESOLVED",
+  "reason": "Nessun lavoro eseguibile nel perimetro eccezionale di OCOR-DEV-REM-0063: la campagna di qualifica e la rimozione della registrazione a mano attendono la decisione normativa REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. La rilettura del preambolo non contiene la sezione di decisione. Le riparazioni gi\u00e0 pubblicate restano.",
+  "recorded_at": "2026-11-17T05:40:57.556372+00:00",
   "remaining_backlog_tasks": 9,
-  "resolution": "RESOLVED_BY_PO_DECISION REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17) and REM-0063-CALCOLO-UNICO (2026-11-17). PR #656 closed without merge.",
+  "resolution": "OPEN_PO_NORMATIVE_DECISION_REQUIRED",
   "schema_version": "1.0",
-  "session_resources_created": "Nessun container, volume o rete. Worktree candidato preservato; worktree di decision request e stato registrati nel log.",
-  "status": "RESOLVED",
+  "session_resources_created": "Nessun container, volume o rete. Worktree di state sync nuovo; worktree del task preservato.",
+  "status": "TERMINAL_BLOCKED",
   "suspended_by_programme": [
     "OCOR-DEV-0060",
     "OCOR-DEV-0062",
@@ -275,5 +305,5 @@
     "OCOR-DEV-REM-0043"
   ],
   "terminal_state": "TERMINAL_BLOCKED",
-  "updated_at": "2026-11-16T23:22:37.434572+00:00"
+  "updated_at": "2026-11-17T05:40:57.556372+00:00"
 }
