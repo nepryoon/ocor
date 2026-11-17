@@ -1,0 +1,288 @@
+=== bootstrap 2026-11-13T17:42:15Z HEAD=ca73b1a91ed313f14235bd3e1c6d467929b5632c ===
+{
+  "acquired": [
+    "kafka",
+    "keycloak",
+    "opa",
+    "openbao",
+    "postgresql",
+    "qdrant",
+    "seaweedfs",
+    "spire-agent",
+    "spire-server",
+    "temporal",
+    "temporal-admin-tools",
+    "terminusdb",
+    "typedb"
+  ],
+  "secret_file": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-identity-20261113/.ocor/bootstrap.env",
+  "started": true,
+  "status": "PASS"
+}
+EXIT:0
+DURATION:13
+=== verify-manifest-only 2026-11-13T17:42:28Z HEAD=ca73b1a91ed313f14235bd3e1c6d467929b5632c ===
+{
+  "service_count": 14,
+  "status": "PASS"
+}
+EXIT:0
+DURATION:0
+=== verify-typed-execute 2026-11-13T17:42:28Z HEAD=ca73b1a91ed313f14235bd3e1c6d467929b5632c ===
+{
+  "services": [
+    {
+      "detail": {
+        "info_status": 200,
+        "ok_status": 200,
+        "unauthenticated_access": "FAIL_CLOSED"
+      },
+      "service": "terminusdb",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "lock": {
+          "image": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+          "license": "MPL-2.0",
+          "source": "https://hub.docker.com/r/typedb/typedb",
+          "version": "3.12.3"
+        },
+        "protocol": {
+          "distribution": "TypeDB CE",
+          "grpc_tcp": "READY",
+          "health_status": 204,
+          "unauthenticated_database_access": "FAIL_CLOSED",
+          "version": "3.12.3"
+        },
+        "result": "PASS",
+        "runtime": {
+          "configured_image": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+          "health": "healthy",
+          "ports": {
+            "1729/tcp": "1729",
+            "8000/tcp": "8000"
+          }
+        },
+        "schema_version": "1.0",
+        "service": "typedb"
+      },
+      "service": "typedb",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "absent_dataset_check": "FAIL_CLOSED",
+        "absent_dataset_status": 404,
+        "malformed_request_status": 200,
+        "ping_status": 200
+      },
+      "service": "fuseki",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "errors": [],
+        "services": {
+          "keycloak": {
+            "health": "healthy",
+            "host_ips": [
+              "127.0.0.1"
+            ],
+            "image": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+            "paused": false,
+            "running": true
+          },
+          "opa": {
+            "health": "healthy",
+            "host_ips": [
+              "127.0.0.1"
+            ],
+            "image": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+            "paused": false,
+            "running": true
+          }
+        },
+        "status": "PASS"
+      },
+      "service": "opa-keycloak",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "api": {
+          "auth": {
+            "authorized_system_api": "PASS",
+            "invalid_token": "FAIL_CLOSED"
+          },
+          "health": {
+            "initialized": true,
+            "seal_state": "UNSEALED",
+            "standby": false,
+            "version": "2.6.2"
+          }
+        },
+        "lock": {
+          "image": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+          "license": "MPL-2.0",
+          "source": "https://quay.io/repository/openbao/openbao",
+          "version": "2.6.2"
+        },
+        "result": "PASS",
+        "runtime": {
+          "configured_image": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+          "health": "healthy",
+          "host_binding": "127.0.0.1:8200",
+          "no_new_privileges": true
+        },
+        "schema_version": "1.0",
+        "service": "openbao"
+      },
+      "service": "openbao",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "fault": {},
+        "identity": {},
+        "invalid_token": {},
+        "recovery": {},
+        "result": "PASS",
+        "runtime": {
+          "spire-agent": {
+            "host_ports": 0,
+            "image": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+            "running": true
+          },
+          "spire-server": {
+            "host_ports": 0,
+            "image": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+            "running": true
+          }
+        },
+        "schema_version": "1.0",
+        "service": "spiffe-spire",
+        "trust_domain": "ocor.test",
+        "versions": {
+          "spire-agent": "1.15.3",
+          "spire-server": "1.15.3"
+        }
+      },
+      "service": "spiffe-spire",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "pg_isready": "/var/run/postgresql:5432 - accepting connections",
+        "unauthenticated_access": "FAIL_CLOSED",
+        "wrong_password_exit_code": 2
+      },
+      "service": "postgresql",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "absent_topic_check": "FAIL_CLOSED",
+        "describe_absent_topic_exit_code": 1,
+        "list_topics_exit_code": 0
+      },
+      "service": "kafka",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "absent_collection_check": "FAIL_CLOSED",
+        "absent_collection_status": 404,
+        "root_status": 200,
+        "version": "1.15.1"
+      },
+      "service": "qdrant",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "lock": {
+          "admin_tools_image": "temporalio/admin-tools@sha256:9ef0dc5b063bf4ffd5c1512de72e0e73e225bd2c7006a18ce69bd592a8862a83",
+          "database_image": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+          "license": "MIT",
+          "server_image": "temporalio/server@sha256:acecbab5b0b8ae9cf4012b508866ca97feda3709577bf157b537239f40029049",
+          "version": "1.32.1"
+        },
+        "protocol": {
+          "absent_namespace_lookup": "FAIL_CLOSED",
+          "cluster_health": "SERVING",
+          "frontend_host_tcp": "READY",
+          "server_version": "1.32.1"
+        },
+        "result": "PASS",
+        "runtime": {
+          "admin_tools": {
+            "health": "healthy",
+            "ports": {}
+          },
+          "database": {
+            "health": "healthy",
+            "ports": {}
+          },
+          "server": {
+            "health": "healthy",
+            "ports": {
+              "7233/tcp": "17233"
+            }
+          }
+        },
+        "schema_version": "1.0",
+        "service": "temporal"
+      },
+      "service": "temporal",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "lock": {
+          "image": "chrislusf/seaweedfs@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8",
+          "license": "Apache-2.0",
+          "source": "https://hub.docker.com/r/chrislusf/seaweedfs",
+          "version": "4.51"
+        },
+        "object_lock": {
+          "bucket": "ocor-qualify-object-lock",
+          "bucket_created": false,
+          "bucket_object_lock": "Enabled",
+          "bucket_versioning": "Enabled",
+          "key": "probe-47a4234c6e6e",
+          "retained_version_bypass_delete": "FAIL_CLOSED",
+          "retained_version_delete": "FAIL_CLOSED",
+          "retained_version_intact": true,
+          "retention_mode": "COMPLIANCE"
+        },
+        "protocol": {
+          "health_status": 200,
+          "signed_list_buckets": "PASS",
+          "unsigned_access": "FAIL_CLOSED",
+          "version": "4.51",
+          "wrong_secret_access": "FAIL_CLOSED"
+        },
+        "result": "PASS",
+        "runtime": {
+          "health": "healthy",
+          "ports": {
+            "8333/tcp": "18333"
+          }
+        },
+        "schema_version": "1.0",
+        "service": "seaweedfs"
+      },
+      "service": "seaweedfs",
+      "status": "READY"
+    }
+  ],
+  "status": "PASS"
+}
+EXIT:0
+DURATION:4
+=== pytest-rem0022 2026-11-13T17:42:47Z HEAD=ca73b1a91ed313f14235bd3e1c6d467929b5632c ===
+......................                                                   [100%]
+22 passed in 66.08s (0:01:06)
+EXIT:0
+DURATION:66

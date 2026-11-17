@@ -18,9 +18,11 @@ and the verifier run it locally.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -394,6 +396,80 @@ class NormativeConformanceRegisterTest(unittest.TestCase):
         )
         for entry_id in resolved:
             self.assertIn(entry_id, self.by_id)
+
+
+def _load_probe():
+    path = ROOT / "scripts" / "probe_ncr_claim_identity_mission.py"
+    spec = importlib.util.spec_from_file_location("probe_ncr_claim_identity_mission", path)
+    if spec is None or spec.loader is None:
+        raise AssertionError("probe module did not load")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class ProbeNcrClaimIdentityMissionTest(unittest.TestCase):
+    """Advisory P2 of OCOR-DEV-REM-0064-9b2845f0e0a3-pre: the probe observes git HEAD."""
+
+    def test_main_prints_the_git_head(self) -> None:
+        probe = ROOT / "scripts" / "probe_ncr_claim_identity_mission.py"
+        git = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        run = subprocess.run(
+            ["python3", str(probe)],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(run.returncode, 0, run.stderr)
+        first = run.stdout.splitlines()[0]
+        self.assertEqual(first, "HEAD_OBSERVED " + git.stdout.strip())
+        self.assertIn("\nCONFIRMED\n", run.stdout if run.stdout.endswith("\n") else run.stdout + "\n")
+
+    def test_source_does_not_hardcode_the_reviewed_base_head(self) -> None:
+        text = (ROOT / "scripts" / "probe_ncr_claim_identity_mission.py").read_text(encoding="utf-8")
+        self.assertNotIn("41abc9cc28f1cba91b51401bcbb1bee9acdcd93b", text)
+
+    def test_accept_head_rejects_empty_non_ascii_and_bad_form(self) -> None:
+        accept = _load_probe().accept_head
+        self.assertEqual(accept("a" * 40), "a" * 40)
+        for bad in ("", "a" * 39, "g" * 40, "A" * 40, "à" + ("a" * 39), "a" * 39 + "\n"):
+            with self.subTest(bad=bad):
+                with self.assertRaises(SystemExit) as caught:
+                    accept(bad)
+                self.assertEqual(str(caught.exception), "HEAD_OBSERVED_INVALID")
+
+    def test_read_repository_text_rejects_non_utf8(self) -> None:
+        read = _load_probe().read_repository_text
+        path = ROOT / "reports" / "tests" / "_probe_non_utf8_fixture.tmp"
+        path.write_bytes(b"\xff\xfe not utf-8")
+        try:
+            with self.assertRaises(SystemExit) as caught:
+                read(path)
+            self.assertEqual(str(caught.exception), "TEXT_DECODE_REJECTED")
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_line_text_rejects_bool_and_out_of_range_before_use(self) -> None:
+        line_text = _load_probe().line_text
+        self.assertEqual(line_text(["only"], 1), "only")
+        for bad in (True, False, 0, 2, -1, 1.0):
+            with self.subTest(bad=bad):
+                with self.assertRaises(SystemExit) as caught:
+                    line_text(["only"], bad)
+                self.assertEqual(str(caught.exception), "LINE_INDEX_REJECTED")
+
+    def test_observed_head_rejects_a_directory_without_git(self) -> None:
+        observed_head = _load_probe().observed_head
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(SystemExit) as caught:
+                observed_head(Path(tmp))
+            self.assertEqual(str(caught.exception), "HEAD_OBSERVED_UNAVAILABLE")
 
 
 if __name__ == "__main__":

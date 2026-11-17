@@ -408,6 +408,60 @@ def test_build_timeout_retains_last_step_and_fails_closed(tmp_path):
     assert "downloading pinned archive" in (tmp_path / "reports/tests/ci_fuseki_build.log").read_text()
 
 
+def _retained_build_logs(capsys):
+    import json
+    rows = []
+    for line in capsys.readouterr().out.splitlines():
+        if line.startswith("{"):
+            rows.append(json.loads(line))
+    return [row["retained_log"] for row in rows if "retained_log" in row]
+
+
+@pytest.mark.parametrize("exit_code", [0, 4])
+def test_recipe_build_stdout_keeps_the_complete_log_after_the_file_is_removed(tmp_path, capsys, exit_code):
+    """Lane teardown deletes the repository, which is the only on-disk copy."""
+    import bootstrap_ci_environment as ci
+    from ocor_bootstrap_lib import BootstrapError
+    (tmp_path / "reports/tests").mkdir(parents=True)
+    command = [sys.executable, "-c", f"import sys; print('locked recipe step', flush=True); sys.exit({exit_code})"]
+    log = tmp_path / "reports/tests/ci_fuseki_build.log"
+    if exit_code:
+        with pytest.raises(BootstrapError, match="build failed"):
+            ci.execute_logged(tmp_path, command, "build", 5, "ci_fuseki_build.log")
+    else:
+        ci.execute_logged(tmp_path, command, "build", 5, "ci_fuseki_build.log")
+    original = log.read_text()
+    log.unlink()
+    assert _retained_build_logs(capsys) == [original]
+    assert original == "locked recipe step\n"
+
+
+def test_recipe_build_timeout_stdout_keeps_the_partial_log(tmp_path, capsys):
+    import bootstrap_ci_environment as ci
+    from ocor_bootstrap_lib import BootstrapError
+    (tmp_path / "reports/tests").mkdir(parents=True)
+    command = [sys.executable, "-c", "import time; print('downloading pinned archive', flush=True); time.sleep(10)"]
+    with pytest.raises(BootstrapError, match="timeout after 1s.*build"):
+        ci.execute_logged(tmp_path, command, "build", 1, "ci_fuseki_build.log")
+    assert "downloading pinned archive" in _retained_build_logs(capsys)[-1]
+
+
+def test_recipe_build_refuses_a_symlink_log_and_does_not_read_its_target(tmp_path, capsys):
+    import bootstrap_ci_environment as ci
+    from ocor_bootstrap_lib import BootstrapError
+    target = tmp_path / "secret-target"
+    target.write_text("secret-bytes\n")
+    log = tmp_path / "reports/tests/ci_fuseki_build.log"
+    log.parent.mkdir(parents=True)
+    log.symlink_to(target)
+    command = [sys.executable, "-c", "print('must-not-run')"]
+    with pytest.raises(BootstrapError, match="symlink"):
+        ci.execute_logged(tmp_path, command, "build", 5, "ci_fuseki_build.log")
+    assert "secret-bytes" not in capsys.readouterr().out
+    assert "must-not-run" not in target.read_text()
+    assert target.read_text() == "secret-bytes\n"
+
+
 def test_full_suite_budget_is_90_minutes_and_60_minutes_requires_decision():
     assert GUARD.check_deadline(3599) is False
     assert GUARD.check_deadline(3601) is True

@@ -2188,6 +2188,144 @@
     {
       "blocks": [
         "OCOR-DEV-0060",
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [],
+      "component": "C3",
+      "depends_on": [],
+      "id": "NCR-C3-008",
+      "norm_refs": [
+        {
+          "lines": "284",
+          "note": "ADD v1.3 C3 row: port AdmitClaim",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "342",
+          "note": "ADD v1.3 invariant 10: C3 accepts AdmitClaim only with a valid Decision and Authority ref",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2048",
+          "note": "ADD v1.3 \u00a73.6 invariant 1: admission creates a Canonical Assertion linked by acceptedFromClaim",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "175",
+          "note": "Register v1.1 FR-053, P0, PoC: canonical-state admission workflow",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "176",
+          "note": "Register v1.1 FR-054, P0, PoC: adjudication trace",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U16",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md",
+        "sha256": "bcf636db0f6f1c062ce57045932fe91d6a3754f5bd5be081a8603b665e4bf076"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-053",
+        "FR-054"
+      ],
+      "seed_ref": "",
+      "severity": "HIGH",
+      "severity_basis": "FR-053 and FR-054 are P0 PoC requirements and the missing port is a closed ADD v1.3 element",
+      "statement": "ADD v1.3 assigns C3 the admission handler and the AdmitClaim port (line 284), requires C3 to accept AdmitClaim only with a valid, unexpired Decision and Authority ref consistent with the frozen GatePackage (line 342), and states that admission creates a new Canonical Assertion linked to the source Claim through acceptedFromClaim (line 2048). FR-053 and FR-054 (Register v1.1 lines 175 and 176: P0, PoC) require the admission workflow and the adjudication trace. No symbol under ocor-runtime/src implements AdmitClaim, and LLD v1.1 does not specify it (AdmitClaim count 0).",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "python3 scripts/probe_ncr_claim_identity_mission.py",
+        "outcome": "HEAD_OBSERVED 41abc9cc28f1cba91b51401bcbb1bee9acdcd93b\nAdmitClaim under ocor-runtime/src: ABSENT\nMissionThread or mission_thread under ocor-runtime/src: ABSENT\nLLD AdmitClaim count: 0\nLLD line 246 has MissionThreadView: yes\nADD line 284 has AdmitClaim: yes\nADD line 342 has AdmitClaim: yes\nADD line 2048 has acceptedFromClaim: yes\nADD line 2010 has CandidateMatch: yes\nADD line 2012 has IdentityResolutionDecision: yes\nADD line 2015 has ClusterMembershipAssertion: yes\nADD line 2051 has reversibility: yes\nSHACL lines 37-41 contain CandidateMatch: yes\nSHACL lines 37-41 contain IdentityResolutionDecision: yes\nORCH line 195: AgentRole.FUSION_IDENTITY: (\"FusionIdentityFinding@1\", \"CandidateMatchSet@1\", \"ResolutionProposal@1\"),\nREG line 65 is FR-012: True\nREG line 120 is FR-030: True\nREG line 175 is FR-053: True\nREG line 176 is FR-054: True\nREG line 335 is FR-150: True\nREG line 336 is NFR-055: True\nREG line 411 is FR-166: True\nCONFIRMED"
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+          "lines": "37-41",
+          "note": "PROVENANCE_CLASSES lists CandidateMatch, MatchEvidence, IdentityResolutionDecision, MergeDecision, SplitDecision and ClusterMembershipAssertion as validation names only",
+          "path": "ocor-runtime/src/ocor_runtime/c4/shacl.py"
+        },
+        {
+          "commit": "41abc9cc28f1cba91b51401bcbb1bee9acdcd93b",
+          "lines": "195",
+          "note": "AgentRole.FUSION_IDENTITY output names FusionIdentityFinding@1, CandidateMatchSet@1 and ResolutionProposal@1",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        }
+      ],
+      "component": "C3",
+      "depends_on": [],
+      "id": "NCR-C3-009",
+      "norm_refs": [
+        {
+          "lines": "65",
+          "note": "Register v1.1 FR-012, P0, PoC: fail-safe identity resolution",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "120",
+          "note": "Register v1.1 FR-030, P0, PoC: reversible identity resolution",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "335",
+          "note": "Register v1.1 FR-150, P0, PoC: a Candidate Match does not enter the canonical cluster without an accepted Resolution Assertion",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "336",
+          "note": "Register v1.1 NFR-055, P0, PoC: bitemporal reversible merge, split and adjudication",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "2010-2015",
+          "note": "ADD v1.3 \u00a73.6 rows CandidateMatch, MatchEvidence, IdentityResolutionDecision, MergeDecision, SplitDecision and ClusterMembershipAssertion",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2051",
+          "note": "ADD v1.3 \u00a73.6 invariant 4: identity reversibility",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "NCP-U16",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md",
+        "sha256": "bcf636db0f6f1c062ce57045932fe91d6a3754f5bd5be081a8603b665e4bf076"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-012",
+        "FR-030",
+        "FR-150",
+        "NFR-055"
+      ],
+      "seed_ref": "",
+      "severity": "HIGH",
+      "severity_basis": "FR-012, FR-030, FR-150 and NFR-055 are P0 PoC requirements; ADD v1.3 \u00a73.6 closes the records and the reversibility rule",
+      "statement": "FR-012, FR-030, FR-150 and NFR-055 (Register v1.1 lines 65, 120, 335 and 336: P0, PoC) and ADD v1.3 \u00a73.6 (lines 2010-2015 and 2051) require candidate matches, reversible merge and split decisions, and bitemporal cluster membership. The code contains only the validation class names in ocor_runtime.c4.shacl.PROVENANCE_CLASSES and the Fusion/Identity output names in ocor_runtime.c8.orchestrator. LLD v1.1 specifies neither the records nor the operations. OCOR-DEV-0067 also names FR-150 and is G7, so this entry does not block it.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "python3 scripts/probe_ncr_claim_identity_mission.py",
+        "outcome": "HEAD_OBSERVED 41abc9cc28f1cba91b51401bcbb1bee9acdcd93b\nAdmitClaim under ocor-runtime/src: ABSENT\nMissionThread or mission_thread under ocor-runtime/src: ABSENT\nLLD AdmitClaim count: 0\nLLD line 246 has MissionThreadView: yes\nADD line 284 has AdmitClaim: yes\nADD line 342 has AdmitClaim: yes\nADD line 2048 has acceptedFromClaim: yes\nADD line 2010 has CandidateMatch: yes\nADD line 2012 has IdentityResolutionDecision: yes\nADD line 2015 has ClusterMembershipAssertion: yes\nADD line 2051 has reversibility: yes\nSHACL lines 37-41 contain CandidateMatch: yes\nSHACL lines 37-41 contain IdentityResolutionDecision: yes\nORCH line 195: AgentRole.FUSION_IDENTITY: (\"FusionIdentityFinding@1\", \"CandidateMatchSet@1\", \"ResolutionProposal@1\"),\nREG line 65 is FR-012: True\nREG line 120 is FR-030: True\nREG line 175 is FR-053: True\nREG line 176 is FR-054: True\nREG line 335 is FR-150: True\nREG line 336 is NFR-055: True\nREG line 411 is FR-166: True\nCONFIRMED"
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
         "OCOR-DEV-0065",
         "OCOR-DEV-0066"
       ],
@@ -6676,6 +6814,54 @@
     },
     {
       "blocks": [
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [],
+      "component": "PLAN",
+      "decision_options": [
+        "1. Governed read contract, with no graphical interface: a typed read model served by the gateway, linking mission-thread stages to provenance and the decision trace, verified by a command-line demonstration, an access-control test and trace inspection.",
+        "2. As option 1, plus a minimal operator client in the PoC.",
+        "3. No dedicated unit: the task that verifies the view realises it."
+      ],
+      "decision_reason": "FABLE52-EXTENSION-ASSESSMENT (2026-11-12) point 5: the Product Owner decides the mission-thread view separately; until then the entry blocks only the tasks in blocks",
+      "depends_on": [],
+      "id": "NCR-PLAN-007",
+      "norm_refs": [
+        {
+          "lines": "411",
+          "note": "Register v1.1 FR-166, P0, PoC: governed mission-thread view",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "246",
+          "note": "LLD v1.1 \u00a72.9: MissionThreadView shows trace, release, authority, marking, evidence and state",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md",
+        "sha256": "bcf636db0f6f1c062ce57045932fe91d6a3754f5bd5be081a8603b665e4bf076"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-166"
+      ],
+      "seed_ref": "",
+      "severity": "HIGH",
+      "severity_basis": "FR-166 is a P0 PoC requirement and LLD v1.1 \u00a72.9 names MissionThreadView; the realisation choice is reserved to the Product Owner",
+      "statement": "FR-166 (Register v1.1 line 411: P0, PoC) and LLD v1.1 \u00a72.9 (line 246) require a governed mission-thread view. No symbol under ocor-runtime/src implements MissionThread or mission_thread. The traceability plan assigns the requirement to the FSM task OCOR-DEV-0043, which does not deliver the view. The view stays DECISION_REQUIRED, with no plan_unit, until the Product Owner chooses among the recorded options.",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "python3 scripts/probe_ncr_claim_identity_mission.py",
+        "outcome": "HEAD_OBSERVED 41abc9cc28f1cba91b51401bcbb1bee9acdcd93b\nAdmitClaim under ocor-runtime/src: ABSENT\nMissionThread or mission_thread under ocor-runtime/src: ABSENT\nLLD AdmitClaim count: 0\nLLD line 246 has MissionThreadView: yes\nADD line 284 has AdmitClaim: yes\nADD line 342 has AdmitClaim: yes\nADD line 2048 has acceptedFromClaim: yes\nADD line 2010 has CandidateMatch: yes\nADD line 2012 has IdentityResolutionDecision: yes\nADD line 2015 has ClusterMembershipAssertion: yes\nADD line 2051 has reversibility: yes\nSHACL lines 37-41 contain CandidateMatch: yes\nSHACL lines 37-41 contain IdentityResolutionDecision: yes\nORCH line 195: AgentRole.FUSION_IDENTITY: (\"FusionIdentityFinding@1\", \"CandidateMatchSet@1\", \"ResolutionProposal@1\"),\nREG line 65 is FR-012: True\nREG line 120 is FR-030: True\nREG line 175 is FR-053: True\nREG line 176 is FR-054: True\nREG line 335 is FR-150: True\nREG line 336 is NFR-055: True\nREG line 411 is FR-166: True\nCONFIRMED"
+      }
+    },
+    {
+      "blocks": [
         "OCOR-DEV-0060",
         "OCOR-DEV-0061",
         "OCOR-DEV-0062",
@@ -10415,7 +10601,8 @@
           "NCR-EVIDENCE-001",
           "NCR-EVIDENCE-002",
           "NCR-LEGACY-001",
-          "NCR-PLAN-001"
+          "NCR-PLAN-001",
+          "NCR-C3-008"
         ],
         "current_acceptance_criteria": [
           "Each BA case runs on its selected real component and emits an individual signed result and raw-log hash.",
@@ -11613,7 +11800,7 @@
             "NCR-C7-002",
             "NCR-LEGACY-001"
           ],
-          "last_plan_unit": "NCP-U09",
+          "last_plan_unit": "NCP-U16",
           "other_po_decisions": [
             "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)",
             "OCOR-DEV-0060-BA-RUNTIME-GAPS"
@@ -11624,7 +11811,8 @@
             "NCP-U05",
             "NCP-U07",
             "NCP-U08",
-            "NCP-U09"
+            "NCP-U09",
+            "NCP-U16"
           ]
         }
       },
@@ -12005,7 +12193,10 @@
           "NCR-EVIDENCE-002",
           "NCR-LEGACY-001",
           "NCR-PLAN-001",
-          "NCR-PLAN-005"
+          "NCR-PLAN-005",
+          "NCR-C3-008",
+          "NCR-C3-009",
+          "NCR-PLAN-007"
         ],
         "current_acceptance_criteria": [
           "Every approved transition executes positive, guard-negative and durable-effect checks with exact tuple equality.",
@@ -13528,9 +13719,10 @@
         "status": "PROPOSAL (point 4.f): backlog and OCOR_TRACEABILITY_PLAN.csv change only after the PO decision of point 5",
         "unblocking": {
           "decision_required_entries": [
-            "NCR-LEGACY-001"
+            "NCR-LEGACY-001",
+            "NCR-PLAN-007"
           ],
-          "last_plan_unit": "NCP-U08",
+          "last_plan_unit": "NCP-U16",
           "other_po_decisions": [
             "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)"
           ],
@@ -13540,7 +13732,8 @@
             "NCP-U02",
             "NCP-U04",
             "NCP-U07",
-            "NCP-U08"
+            "NCP-U08",
+            "NCP-U16"
           ]
         }
       },
@@ -14195,7 +14388,8 @@
           "NCR-PLAN-001",
           "NCR-PLAN-003",
           "NCR-PLAN-005",
-          "NCR-TESTS-001"
+          "NCR-TESTS-001",
+          "NCR-C3-009"
         ],
         "current_acceptance_criteria": [
           "The full fixture traverses C1-C8 and memory with correlated, content-addressed evidence and no mocked required boundary.",
@@ -17166,7 +17360,7 @@
             "NCR-C7-002",
             "NCR-C8-006"
           ],
-          "last_plan_unit": "NCP-U12",
+          "last_plan_unit": "NCP-U16",
           "other_po_decisions": [
             "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)",
             "OCOR-DEV-0060-BA-RUNTIME-GAPS"
@@ -17183,7 +17377,8 @@
             "NCP-U09",
             "NCP-U10",
             "NCP-U11",
-            "NCP-U12"
+            "NCP-U12",
+            "NCP-U16"
           ]
         }
       },
@@ -17626,18 +17821,19 @@
     "NCP-U10",
     "NCP-U11",
     "NCP-U12",
-    "NCP-U14"
+    "NCP-U14",
+    "NCP-U16"
   ],
   "plan_summary": {
-    "entries_resolved_by_plan": 74,
-    "estimate_iterations_total": 50,
+    "entries_resolved_by_plan": 76,
+    "estimate_iterations_total": 58,
     "g6_unblocking": {
       "OCOR-DEV-0060": {
         "decision_required_entries": [
           "NCR-C7-002",
           "NCR-LEGACY-001"
         ],
-        "last_plan_unit": "NCP-U09",
+        "last_plan_unit": "NCP-U16",
         "other_po_decisions": [
           "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)",
           "OCOR-DEV-0060-BA-RUNTIME-GAPS"
@@ -17648,7 +17844,8 @@
           "NCP-U05",
           "NCP-U07",
           "NCP-U08",
-          "NCP-U09"
+          "NCP-U09",
+          "NCP-U16"
         ]
       },
       "OCOR-DEV-0061": {
@@ -17677,9 +17874,10 @@
       },
       "OCOR-DEV-0063": {
         "decision_required_entries": [
-          "NCR-LEGACY-001"
+          "NCR-LEGACY-001",
+          "NCR-PLAN-007"
         ],
-        "last_plan_unit": "NCP-U08",
+        "last_plan_unit": "NCP-U16",
         "other_po_decisions": [
           "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)"
         ],
@@ -17689,7 +17887,8 @@
           "NCP-U02",
           "NCP-U04",
           "NCP-U07",
-          "NCP-U08"
+          "NCP-U08",
+          "NCP-U16"
         ]
       },
       "OCOR-DEV-0064": {
@@ -17715,7 +17914,7 @@
           "NCR-C7-002",
           "NCR-C8-006"
         ],
-        "last_plan_unit": "NCP-U12",
+        "last_plan_unit": "NCP-U16",
         "other_po_decisions": [
           "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)",
           "OCOR-DEV-0060-BA-RUNTIME-GAPS"
@@ -17732,7 +17931,8 @@
           "NCP-U09",
           "NCP-U10",
           "NCP-U11",
-          "NCP-U12"
+          "NCP-U12",
+          "NCP-U16"
         ]
       },
       "OCOR-DEV-0066": {
@@ -17782,12 +17982,14 @@
       "NCP-U09",
       "NCP-U10",
       "NCP-U11",
-      "NCP-U12"
+      "NCP-U12",
+      "NCP-U16"
     ],
     "ncp_u14_note": "MATRIX-ERRATUM-NCP-U14 (2026-11-07): NCP-U14 added (NCR-GOVERNANCE-002, MEDIUM, estimate 2, depends on NCP-U12); counts incremented by the unit; high_entry_units and g6_unblocking unchanged (the entry is MEDIUM and blocks no G6 task)",
+    "ncp_u16_note": "FABLE52-EXTENSION-ASSESSMENT (2026-11-12) and FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13): NCP-U16 added (NCR-C3-008 and NCR-C3-009, HIGH, estimate 8, depends on NCP-U12). NCR-PLAN-007 is DECISION_REQUIRED, has no plan_unit, and is not in entries_resolved_by_plan. Counts incremented by the two resolved entries and by the estimate. g6_tasks_unblocked stays empty because other entries still block OCOR-DEV-0060, OCOR-DEV-0063 and OCOR-DEV-0065.",
     "note": "estimates are planning figures, not commitments; each unit follows the full remediation cycle of point 5",
-    "open_entries": 74,
-    "units": 14
+    "open_entries": 76,
+    "units": 15
   },
   "plan_units": {
     "NCP-U01": {
@@ -22551,6 +22753,146 @@
         "NCR-GOVERNANCE-002"
       ],
       "scope": "Governed erratum of the normative traceability matrix (JSON and Markdown) regenerated from the Requirement Register v1.1, with ERRATA file, RED parity test and consumer hashes (MATRIX-ERRATUM-NCP-U14 (2026-11-07) point 2)",
+      "status": "PROPOSED"
+    },
+    "NCP-U16": {
+      "acceptance_criteria": [
+        {
+          "criterion": "The specification names AdmitClaim and its command record with a closed field set. Admission of a claim without a valid, unexpired Decision and Authority ref consistent with the GatePackage is rejected with the normative reason code and writes nothing. Every admission outcome, rejections included, is recorded with adjudicator, rationale and evidence-set version. Nothing else in this criterion is in scope.",
+          "entry": "NCR-C3-008",
+          "norm_refs": [
+            {
+              "lines": "284",
+              "note": "ADD v1.3 C3 row: port AdmitClaim",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "342",
+              "note": "ADD v1.3 invariant 10",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "2048",
+              "note": "ADD v1.3 \u00a73.6 invariant 1",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "175",
+              "note": "Register v1.1 FR-053",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "176",
+              "note": "Register v1.1 FR-054",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-053",
+            "FR-054"
+          ]
+        },
+        {
+          "criterion": "The specification names CandidateMatch, MatchEvidence, IdentityResolutionDecision (with MergeDecision and SplitDecision) and ClusterMembershipAssertion with the closed fields of ADD v1.3 lines 2010-2015. decision outcome is one of MERGE, SPLIT, NO_MATCH and DEFERRED. A fixture with homonyms and contradictory claims keeps separate candidates until adjudication. A merge followed by a split reconstructs both bitemporal views and retires or recomputes every derivation that depended on the merge. A candidate match without an accepted decision produces no membership, link or inference. NO_MATCH binds the considered Source Identity set and the evidence-set digest, is bitemporal, and is reversed only by a new decision. The non-reopening rule is specified now and implemented only after the G7 decision.",
+          "entry": "NCR-C3-009",
+          "norm_refs": [
+            {
+              "lines": "2010-2015",
+              "note": "ADD v1.3 \u00a73.6 identity records",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "2051",
+              "note": "ADD v1.3 \u00a73.6 identity reversibility",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "65",
+              "note": "Register v1.1 FR-012",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "120",
+              "note": "Register v1.1 FR-030",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "335",
+              "note": "Register v1.1 FR-150",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "336",
+              "note": "Register v1.1 NFR-055",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-012",
+            "FR-030",
+            "FR-150",
+            "NFR-055"
+          ]
+        }
+      ],
+      "closed_scope_note": "Resolves only NCR-C3-008 and NCR-C3-009. NCR-PLAN-007 stays DECISION_REQUIRED with no plan_unit. No AdmitClaim or identity implementation in OCOR-DEV-REM-0064; that implementation runs only after NCP-U12 is integrated. ADD, LLD, contracts, schemas, the approved backlog, the Requirement Register, the traceability plan, inputs/ and sealed records stay unchanged.",
+      "consumers_to_inventory": {
+        "docs/development_plan/OCOR_IMPLEMENTATION_BACKLOG.json": "requirement_ids only, read-only: FR-053 blocks OCOR-DEV-0060 and the FR-054 row blocks OCOR-DEV-0063; FR-012 blocks OCOR-DEV-0063; FR-030, FR-150 and NFR-055 block OCOR-DEV-0065; FR-166 blocks OCOR-DEV-0063. OCOR-DEV-0067 is G7 and is not blocked.",
+        "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json": "the three new entries, plan unit NCP-U16, plan_order, plan_summary and blocking_register_entries",
+        "scripts/validate_ocor_development_plan.py": "extension allowlist only; validation behaviour unchanged"
+      },
+      "decision_required_entries_outside_scope": [
+        "NCR-PLAN-007"
+      ],
+      "depends_on_units": [
+        "NCP-U12"
+      ],
+      "estimate_iterations": 8,
+      "existing_tests_to_realign_or_adapt": [],
+      "g6_tasks_contributed": [],
+      "g6_tasks_unblocked": [],
+      "options_for_po": [
+        "1. Governed read contract, with no graphical interface: a typed read model served by the gateway, linking mission-thread stages to provenance and the decision trace, verified by a command-line demonstration, an access-control test and trace inspection.",
+        "2. As option 1, plus a minimal operator client in the PoC.",
+        "3. No dedicated unit: the task that verifies the view realises it."
+      ],
+      "order": 16,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/FABLE52-EXTENSION-ASSESSMENT.md",
+        "sha256": "bcf636db0f6f1c062ce57045932fe91d6a3754f5bd5be081a8603b665e4bf076"
+      },
+      "rationale": "Added by FABLE52-EXTENSION-ASSESSMENT (2026-11-12) point 2 as the claim-admission and identity-resolution unit. FABLE52-EXTENSION-NCP-U15-ID-COLLISION (2026-11-13) point 2 assigns the first free plan-unit id after the NCP-U12 WIP, which is NCP-U16. It runs after NCP-U12 is integrated and before the first G6 task that one of the two OPEN entries blocks. Estimate 8. It does not unblock those tasks while other register entries still block them.",
+      "red_tests": [
+        {
+          "asserts": "A claim submitted without a valid Decision and Authority ref is rejected with the normative reason code and leaves no Canonical Assertion. The negative case fails on the current tree because AdmitClaim does not exist.",
+          "entry": "NCR-C3-008",
+          "fails_on_current_code_because": "The read-only probe at 41abc9cc28f1cba91b51401bcbb1bee9acdcd93b prints AdmitClaim ABSENT, MissionThread ABSENT, LLD AdmitClaim count 0, and only the SHACL class names plus the Fusion/Identity output names. CONFIRMED.",
+          "reproduction": "python3 scripts/probe_ncr_claim_identity_mission.py",
+          "test": "ocor-runtime/tests/tasks/test_ncp_u16_claim_admission_and_identity.py"
+        },
+        {
+          "asserts": "Homonymous contradictory claims stay separate candidates until adjudication; a merge then a split restores both bitemporal views; a candidate match without an accepted decision creates no membership. The negative case fails on the current tree because only SHACL class names and Fusion/Identity output names exist.",
+          "entry": "NCR-C3-009",
+          "fails_on_current_code_because": "The read-only probe at 41abc9cc28f1cba91b51401bcbb1bee9acdcd93b prints AdmitClaim ABSENT, MissionThread ABSENT, LLD AdmitClaim count 0, and only the SHACL class names plus the Fusion/Identity output names. CONFIRMED.",
+          "reproduction": "python3 scripts/probe_ncr_claim_identity_mission.py",
+          "test": "ocor-runtime/tests/tasks/test_ncp_u16_claim_admission_and_identity.py"
+        }
+      ],
+      "requalifications": {
+        "always_regression_only": [
+          "OCOR-DEV-0005",
+          "OCOR-DEV-0050",
+          "OCOR-DEV-0082"
+        ],
+        "method": "regression-only requalifications of the sealed records whose inputs include a file touched (NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)); the allowlist edit touches scripts/validate_ocor_development_plan.py, whose string hash is an input of the current records of 0005, 0050 and 0082",
+        "with_supersession_candidates": {}
+      },
+      "required_backend": "the real ocor-bootstrap stack already used by C3, C4 and C6: PostgreSQL and TerminusDB (C3), Jena/Fuseki (C4 SHACL), and the C6 action-engine services those units already require (PostgreSQL, OPA, Keycloak/SPIFFE). No new service.",
+      "resolves": [
+        "NCR-C3-008",
+        "NCR-C3-009"
+      ],
+      "scope": "Claim admission (AdmitClaim) and identity resolution (candidate match, merge, split, NO_MATCH and DEFERRED), and nothing else. The mission-thread view stays DECISION_REQUIRED. Specification before code, as FABLE52-EXTENSION-ASSESSMENT (2026-11-12) point 3. Plan-unit id NCP-U16 because NCP-U15 is the reason-code unit on the NCP-U12 WIP.",
       "status": "PROPOSED"
     }
   },
