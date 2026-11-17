@@ -5,7 +5,7 @@
     "La seconda revisione del contratto \u00e8 l\u2019ultima prevista; dopo incorporarne i bloccanti non si chiede una terza revisione del contratto."
   ],
   "base_sha": "f485dc964e47bde83842ecd5ba2627d8342612f9",
-  "baseline_commit": "8cd6f34076fd0b0c8d0eebe5b694c631f24ed32a",
+  "baseline_commit": "4ca86949cd428f6a2f35b02e7fc2cb0fb5bb51b5",
   "branch": "governed/ocor-dev-rem-0063-mcp-profile",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0063-mcp-profile",
@@ -14,9 +14,10 @@
     "scope": "Candidate branch only, accessed with git show; not asserted to exist on the state-sync tree."
   },
   "changed_paths": [
-    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py",
-    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json",
-    "reports/assurance/OCOR-DEV-REM-0063-RCCAD/README.md"
+    "reports/development/EXECUTION_STATE.json",
+    "reports/development/ITERATION_LOG.md",
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/TERMINAL_BLOCKED_REPORT.json"
   ],
   "checkpoint_integration": {
     "branch": "governed/state-sync-rem0060-iter9-20261110",
@@ -64,9 +65,178 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0063 ciclo 10, fase A completata: disposition della seconda revisione e quesiti normativi residui",
+  "continuity_confirmation": {
+    "audit_sha256": "c2cdab2da0a436eb620830345792bf610ec3ee14a7b5cb5c305c0a5c007ee456",
+    "candidate_head_unchanged": "76ba26712f10267c29664eadb58c9aaf959e161a",
+    "executor": "Codex gpt-6.1-sol, OpenAI, effort max",
+    "full_suite": "NOT_EXECUTED_STATE_CONFIRMATION_ONLY",
+    "observed_at": "2026-11-17T00:13:40.111576+00:00",
+    "production_code_changed": false,
+    "state_gates": {
+      "claims_unchanged": true,
+      "commands": [
+        {
+          "command": [
+            "sha256sum",
+            "-c",
+            "inputs/normative/SHA256SUMS"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+          "seconds": 0.002
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/verify.py",
+            "--json"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+          "seconds": 0.295
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_evidence_input_drift.py"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
+          "seconds": 0.132
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_language_policy.py"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+          "seconds": 0.024
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "-m",
+            "mypy"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "8f4c82c4def5877c120713dbd513bb61a25cdc112c496163dbfb4e922933ea7c",
+          "seconds": 4.735
+        },
+        {
+          "command": [
+            "ruff",
+            "check",
+            "."
+          ],
+          "exit_code": 0,
+          "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "seconds": 0.028
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_development_plan.py",
+            "--authorized-extension",
+            "--base-ref",
+            "origin/main"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+          "seconds": 0.095
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_rccad.py",
+            "--base-ref",
+            "origin/main"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+          "seconds": 0.96
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_change_scope.py",
+            "--base",
+            "origin/main",
+            "--branch",
+            "governed/state-sync-rem0063-cycle10-block-confirmation-20261117"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32",
+          "seconds": 0.033
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_runtime_evidence.py",
+            "--task",
+            "OCOR-DEV-0005",
+            "--non-skipped",
+            "--manifest",
+            "reports/evidence/G0/MANIFEST.json"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2",
+          "seconds": 0.027
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_runtime_evidence.py",
+            "--task",
+            "OCOR-DEV-0049",
+            "--non-skipped",
+            "--manifest",
+            "reports/evidence/G4/MANIFEST.json"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25",
+          "seconds": 0.03
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_runtime_evidence.py",
+            "--task",
+            "OCOR-DEV-0050",
+            "--non-skipped",
+            "--manifest",
+            "reports/evidence/G5/MANIFEST.json"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
+          "seconds": 0.028
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+            "scripts/validate_runtime_evidence.py",
+            "--task",
+            "OCOR-DEV-0082",
+            "--non-skipped",
+            "--manifest",
+            "reports/evidence/G2/MANIFEST.json"
+          ],
+          "exit_code": 0,
+          "raw_sha256": "66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83",
+          "seconds": 0.029
+        }
+      ],
+      "full_suite": "NOT_EXECUTED_STATE_CONFIRMATION_ONLY",
+      "planning_optional_checks": "2 NOT_EXECUTED, non contati come PASS",
+      "raw_result_sha256": "4efe0731442bb6d5a7c2d9adb79969b86584aabaf1f2f254ebedc7a6611edfdf",
+      "status": "PASS"
+    },
+    "status": "TERMINAL_BLOCKED_CONFIRMED",
+    "tests_rerun": false
+  },
+  "current_task": "OCOR-DEV-REM-0063 ciclo 10: conferma del blocco normativo, candidato invariato",
   "evidence_paths": [],
-  "exact_next_action": "Riprendere OCOR-DEV-REM-0063, ciclo 10, da 76ba26712f10267c29664eadb58c9aaf959e161a sul branch governed/ocor-dev-rem-0063-mcp-profile (codice/test del contratto 66c14f60e440f287a88c5e01a0ab30259e303a26); leggere la disposition di REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS, PR #654. Se assente, non modificare il codice dipendente n\u00e9 avviare campagne e rileggere il preambolo prima di dichiarare il blocco. La seconda revisione del contratto \u00e8 stata trattata: nessuna terza revisione. Dopo la disposition applicare soltanto i riallineamenti enumerati, preservando tutti i 40180 casi; una sola fase B contro la matrice intera, GREEN, revisione preventiva richiesta al processo esterno, gate locale, campagna, controllo distinto e verifica finale assegnata a Claude Code claude-opus-5-5 effort max, senza ripiego. Dichiarare lo stesso fornitore Anthropic del revisore claude-fable-5-2, modello diverso, come autorizzato dal PO. Restano fermi gli altri WIP durante i cicli eccezionali; nessuna modifica a REM-0061/0060/0065/0066. Claim invariati.",
+  "exact_next_action": "ATTESA-PO: REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS, PR #654, commit 99d93da7a481c44841d9d8003044aed37c026ce6. Rileggere la relativa sezione nel preambolo; dopo la disposition riprendere la fase B di OCOR-DEV-REM-0063 ciclo 10 dal checkpoint 76ba26712f10267c29664eadb58c9aaf959e161a, branch governed/ocor-dev-rem-0063-mcp-profile, worktree .ocor/worktrees/rem-0063. Applicare soltanto i riallineamenti autorizzati, preservare tutti i 40180 casi e non chiedere una terza revisione del contratto. Poi una sola riparazione contro la matrice intera, GREEN, revisione preventiva richiesta al processo esterno, gate locale, campagna, controllo distinto e verifica finale Claude Code claude-opus-5-5 effort max senza ripiego. Gli altri WIP restano congelati durante i cicli eccezionali. Claim invariati.",
   "full_campaign": "NOT_EXECUTED_PHASE_A",
   "head_sha": "76ba26712f10267c29664eadb58c9aaf959e161a",
   "head_sha_role": "Checkpoint pubblicato della fase A dopo la seconda revisione, intenzionalmente RED, non candidato qualificato",
@@ -96,12 +266,12 @@
   },
   "independent_verification": "NOT_REQUESTED_PHASE_A",
   "latest_ci_evidence": {
-    "head_sha": "debfe5d6e9fb0a430975bb7d98fa0130a539144b",
-    "merge_commit": "32a4938e72fc93cc4f6167cc104ba940d2ef7599",
-    "observation_sha256": "fbcdfb438b58013137bf1fe28af46e63ccb1240fadbe95588d52d73d36338874",
-    "pr": 651,
+    "head_sha": "2a71324575c6c81487c7eaed6e1e18aeea3ba94e",
+    "merge_commit": "4ca86949cd428f6a2f35b02e7fc2cb0fb5bb51b5",
+    "observation_sha256": "6cddd83e3ac525fd9a160feeb062c123ec30fa4e61d9d82b1c4ebee406da6e77",
+    "pr": 655,
     "required_checks": "13 success sull\u2019HEAD esatto; enable-auto-merge skipped non bloccante",
-    "scope": "State sync precedente, nessuna qualifica di REM-0063"
+    "scope": "State sync della fase A, codice candidato invariato; nessuna qualifica di REM-0063"
   },
   "local_gate_results": {
     "aggregate_guards": {
@@ -262,14 +432,14 @@
       "summary": "14 PASS, 0 FAIL, 0 NOT_EXECUTED"
     }
   },
-  "next_task": "Riprendere OCOR-DEV-REM-0063, ciclo 10, da 76ba26712f10267c29664eadb58c9aaf959e161a sul branch governed/ocor-dev-rem-0063-mcp-profile (codice/test del contratto 66c14f60e440f287a88c5e01a0ab30259e303a26); leggere la disposition di REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS, PR #654. Se assente, non modificare il codice dipendente n\u00e9 avviare campagne e rileggere il preambolo prima di dichiarare il blocco. La seconda revisione del contratto \u00e8 stata trattata: nessuna terza revisione. Dopo la disposition applicare soltanto i riallineamenti enumerati, preservando tutti i 40180 casi; una sola fase B contro la matrice intera, GREEN, revisione preventiva richiesta al processo esterno, gate locale, campagna, controllo distinto e verifica finale assegnata a Claude Code claude-opus-5-5 effort max, senza ripiego. Dichiarare lo stesso fornitore Anthropic del revisore claude-fable-5-2, modello diverso, come autorizzato dal PO. Restano fermi gli altri WIP durante i cicli eccezionali; nessuna modifica a REM-0061/0060/0065/0066. Claim invariati.",
+  "next_task": "ATTESA-PO: REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS, PR #654, commit 99d93da7a481c44841d9d8003044aed37c026ce6. Rileggere la relativa sezione nel preambolo; dopo la disposition riprendere la fase B di OCOR-DEV-REM-0063 ciclo 10 dal checkpoint 76ba26712f10267c29664eadb58c9aaf959e161a, branch governed/ocor-dev-rem-0063-mcp-profile, worktree .ocor/worktrees/rem-0063. Applicare soltanto i riallineamenti autorizzati, preservare tutti i 40180 casi e non chiedere una terza revisione del contratto. Poi una sola riparazione contro la matrice intera, GREEN, revisione preventiva richiesta al processo esterno, gate locale, campagna, controllo distinto e verifica finale Claude Code claude-opus-5-5 effort max senza ripiego. Gli altri WIP restano congelati durante i cicli eccezionali. Claim invariati.",
   "phase": "PHASE_A_COMPLETE_PENDING_PO_CONTRACT_QUESTIONS",
   "po_decisions_pending": [
     "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS"
   ],
   "preamble_recheck": {
     "decision_id": "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS",
-    "observed_at": "2026-11-16T23:21:11.613499+00:00",
+    "observed_at": "2026-11-17T00:13:40.111576+00:00",
     "preamble_sha256": "f261b8c33f0cf033dfe27121873ee3258bee06f0cd01b00fa41b75d9a3484966",
     "result": "NO_DISPOSITION_SECTION_FOUND"
   },
@@ -649,12 +819,12 @@
     "Every lane's private dockerd starts empty and pulls each pinned image from its registry: a four-lane campaign costs about four times the Docker Hub pulls of a serial one, and the unauthenticated limit of this host's address is 100 pulls per hour; a four-lane run right after another pulling run can fail at setup with 429 (the diagnostic attempt of this unit). Counter-measure applied: one pulling campaign per hour; a pull-through cache or seeding the lanes from the host image store (digest-pinned) would remove the risk and is a separate decision."
   ],
   "state_sync_ci": {
-    "base_sha": "8cd6f34076fd0b0c8d0eebe5b694c631f24ed32a",
-    "branch": "governed/state-sync-rem0063-cycle10-contract-final-20261116",
+    "base_sha": "4ca86949cd428f6a2f35b02e7fc2cb0fb5bb51b5",
+    "branch": "governed/state-sync-rem0063-cycle10-block-confirmation-20261117",
     "maximum_wait_seconds": 5400,
     "poll_seconds": 30,
     "required_checks_by_name": true,
-    "source_of_final_receipt": "GitHub PR and loop_status; candidate/test source unchanged by the state sync",
+    "source_of_final_receipt": "GitHub PR and loop_status; only the four state/report files change",
     "status": "PENDING_PUBLICATION"
   },
   "state_sync_local_gates": {
@@ -678,7 +848,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
-        "seconds": 0.352
+        "seconds": 0.295
       },
       {
         "command": [
@@ -687,7 +857,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
-        "seconds": 0.145
+        "seconds": 0.132
       },
       {
         "command": [
@@ -696,7 +866,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
-        "seconds": 0.028
+        "seconds": 0.024
       },
       {
         "command": [
@@ -706,7 +876,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "8f4c82c4def5877c120713dbd513bb61a25cdc112c496163dbfb4e922933ea7c",
-        "seconds": 0.141
+        "seconds": 4.735
       },
       {
         "command": [
@@ -716,7 +886,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
-        "seconds": 0.01
+        "seconds": 0.028
       },
       {
         "command": [
@@ -728,7 +898,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
-        "seconds": 0.126
+        "seconds": 0.095
       },
       {
         "command": [
@@ -739,7 +909,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
-        "seconds": 0.977
+        "seconds": 0.96
       },
       {
         "command": [
@@ -748,11 +918,11 @@
           "--base",
           "origin/main",
           "--branch",
-          "governed/state-sync-rem0063-cycle10-contract-final-20261116"
+          "governed/state-sync-rem0063-cycle10-block-confirmation-20261117"
         ],
         "exit_code": 0,
         "raw_sha256": "008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32",
-        "seconds": 0.034
+        "seconds": 0.033
       },
       {
         "command": [
@@ -766,7 +936,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2",
-        "seconds": 0.029
+        "seconds": 0.027
       },
       {
         "command": [
@@ -811,8 +981,9 @@
         "seconds": 0.029
       }
     ],
-    "full_suite": "NOT_EXECUTED_STATE_SYNC_ONLY",
+    "full_suite": "NOT_EXECUTED_STATE_CONFIRMATION_ONLY",
     "planning_optional_checks": "2 NOT_EXECUTED, non contati come PASS",
+    "raw_result_sha256": "4efe0731442bb6d5a7c2d9adb79969b86584aabaf1f2f254ebedc7a6611edfdf",
     "status": "PASS"
   },
   "test_results": {
@@ -835,6 +1006,6 @@
       "sha256": "edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8"
     }
   ],
-  "updated_at": "2026-11-16T23:22:37.434572+00:00",
+  "updated_at": "2026-11-17T00:13:40.111576+00:00",
   "worktree": ".ocor/worktrees/rem-0063"
 }
