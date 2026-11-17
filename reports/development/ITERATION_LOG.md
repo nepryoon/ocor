@@ -9761,3 +9761,15 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 
 
 - Gate locali di questo state sync, eseguiti prima del commit: `scripts/validate_rccad.py` `PASS_LOCAL_PRECHECK`, sha256 `0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f`. Checksum normativi 8/8, sha256 dell'output `0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34`. Gli altri passi del gate di state sync non sono rieseguiti in questa iterazione e non sono un PASS. Suite completa NOT_EXECUTED: change set di solo stato.
+
+## 2026-11-17T09:00:06.921773+00:00 — OCOR-DEV-REM-0063: secondo gate pre-campagna fallito a mermaid
+
+- Autorità invariata: `REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)`, decisa dal PO di persona. Esecutore: Grok Build, `grok-4.7`, xAI, effort `xhigh`. Nessun agente separato avviato.
+- Il gate ufficiale `pregate.py` è stato rieseguito sullo head `6c1d5c805fab9fff784db5ddfcd419c92790a597`, senza modificare diagramma, `.github/mermaid-puppeteer.json` o il prodotto. Avvio `2026-11-17T08:51:55Z`, fine `2026-11-17T08:55:15Z`. Esito: 26 passi PASS, poi mermaid exit 1, `ProtocolError: Network.enable timed out`, 180.829 s. `gates.json` sha256 `8d20cfd3649f569dc3276aefb4df5fe7d0f7886523097cd595fd730e06280522`. Log sha256 `b3adbb778420805ae39975fb4ae4b4ac4041d30e97463e14b1dbdbbacdd59503`. Sei passi restano `NOT_EXECUTED`. Non è un PASS.
+- Il primo gate sullo stesso head, `2026-11-17T08:32:41Z`, era già fallito allo stesso modo in 180.765 s. `gates.json` sha256 `528d52480746247e3b1fd35449033738850ec8438935a8bd031c81e98dd810de`. Il tentativo isolato con `protocolTimeout` 300000 resta un fallimento e non è un PASS.
+- Swap 7.9/8 GiB in entrambi i tentativi. La RAM disponibile era circa 45 GiB. I processi Chrome dell'utente non sono stati terminati. Nessuna decision request per questo timeout CDP.
+- Il commit `5a1a8aaff6af95470171c1add7f9e85f1ec997a8` sul branch `governed/ocor-dev-rem-0063-mcp-profile` registra i due fallimenti nel record e nel README. Non cambia il comportamento. Non ha un gate proprio. Il codice resta `7cc393a55b42e91af34e4cfe0f31beecd35e0fdb`; le annotazioni restano `6c1d5c805fab9fff784db5ddfcd419c92790a597`.
+- Campagna non avviata. Nessuna seconda revisione preventiva e nessuna richiesta di verifica. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
+- Prossima azione: non rieseguire il gate finché la condizione CDP locale non cambia. Il prossimo gate, solo a condizione cambiata, è `pregate.py` sul tip `5a1a8aaff6af95470171c1add7f9e85f1ec997a8`. Se è verde, campagna a quattro corsie e controllo distinto. PR #661 solo con i 13 check verdi sull'HEAD esatto, senza `--admin`.
+
+- Gate locali di questo state sync, eseguiti prima del commit: `scripts/validate_rccad.py` `PASS_LOCAL_PRECHECK`, sha256 `0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f`. Checksum normativi 8/8, sha256 dell'output `0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34`. Gli altri passi del gate di state sync non sono rieseguiti in questa iterazione e non sono un PASS. Suite completa NOT_EXECUTED: change set di solo stato.
