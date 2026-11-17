@@ -12,8 +12,11 @@ supervision, results and teardown work on the lane count admitted at start.
 """
 from __future__ import annotations
 
+import errno
 import importlib.util
 import json
+import os
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -894,6 +897,95 @@ def test_lane_pytest_command_is_the_sealed_supervisor_command_with_the_explicit_
                             f'--junitxml={tmp_path / "runtime_junit_post_approval.xml"}']
     assert command[8:] == LANE_SELECTION
     assert not any(item.startswith(('--deselect', '-k', '-m', '--lf', '-x')) for item in command[3:])
+
+
+def _argv_probe(tmp_path, monkeypatch):
+    """A pytest module that records the argv it actually receives and exits."""
+    probe = tmp_path / 'probe'
+    probe.mkdir()
+    observed = tmp_path / 'observed.json'
+    marker = tmp_path / 'pytest-ran'
+    (probe / 'pytest.py').write_text(
+        'import json, os, sys\n'
+        'from pathlib import Path\n'
+        'Path(os.environ["LANE_ARGV_OBSERVED"]).write_text(json.dumps(sys.argv), encoding="utf-8")\n'
+        'Path(os.environ["LANE_PYTEST_MARKER"]).write_text("ran", encoding="utf-8")\n'
+        'if "--collect-only" in sys.argv:\n'
+        '    for item in sys.argv:\n'
+        '        if "::" in item:\n'
+        '            print(item)\n',
+        encoding='utf-8')
+    monkeypatch.setenv('LANE_ARGV_OBSERVED', str(observed))
+    monkeypatch.setenv('LANE_PYTEST_MARKER', str(marker))
+    inherited = os.environ.get('PYTHONPATH')
+    monkeypatch.setenv('PYTHONPATH', os.pathsep.join([str(probe)] + ([inherited] if inherited else [])))
+    suite = tmp_path / 'ocor-runtime'
+    suite.mkdir()
+    return suite, CAMPAIGN.pytest_environment(suite), observed, marker
+
+
+def _selection_past_arg_max(output, env, suite, marker):
+    """A node-id list whose sealed pytest and collection commands execve rejects with E2BIG."""
+    count = 20000
+    while count <= 400000:
+        selection = [f'tests/tasks/test_overflow.py::test_{index:06d}_{"n" * 40}' for index in range(count)]
+        commands = [LANES.lane_pytest_command(output, selection),
+                    [sys.executable, '-m', 'pytest', '--collect-only', '-q', '-p', 'no:cacheprovider', *selection]]
+        rejected = True
+        for command in commands:
+            try:
+                subprocess.run(command, cwd=suite, env=env, capture_output=True, text=True, timeout=180, check=False)
+            except OSError as exc:
+                if exc.errno != errno.E2BIG:
+                    raise
+            else:
+                rejected = False
+                assert marker.read_text(encoding='utf-8') == 'ran'
+                marker.unlink()
+        if rejected:
+            return selection
+        count *= 2
+    raise AssertionError('selection still fits in ARG_MAX')
+
+
+def test_a_selection_past_arg_max_is_executed_with_the_same_identifiers_and_a_short_selection_keeps_the_command(tmp_path, monkeypatch):
+    suite, env, observed, marker = _argv_probe(tmp_path, monkeypatch)
+    short_root = tmp_path / 'short'
+    short_root.mkdir()
+    short_spec = lane_spec(short_root)
+    short_output = short_spec.parent
+    assert LANES.lane_process_command(short_output, LANE_SELECTION, env=env, spec_path=short_spec) == LANES.lane_pytest_command(short_output, LANE_SELECTION)
+
+    long_root = tmp_path / 'long'
+    long_root.mkdir()
+    spec = lane_spec(long_root, selection=['tests/tasks/test_overflow.py::test_placeholder'])
+    output = spec.parent
+    selection = _selection_past_arg_max(output, env, suite, marker)
+    spec.write_text(json.dumps({**json.loads(spec.read_text(encoding='utf-8')), 'selection': selection}), encoding='utf-8')
+    observed.unlink(missing_ok=True)
+    marker.unlink(missing_ok=True)
+    command = LANES.lane_process_command(output, selection, env=env, spec_path=spec)
+    completed = subprocess.run(command, cwd=suite, env=env, capture_output=True, text=True, timeout=180, check=False)
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(observed.read_text(encoding='utf-8')) == LANES.lane_pytest_command(output, selection)
+    assert marker.read_text(encoding='utf-8') == 'ran'
+
+
+def test_a_selection_past_arg_max_is_collected_from_the_lane_spec_in_the_same_order(tmp_path, monkeypatch):
+    suite, env, observed, marker = _argv_probe(tmp_path, monkeypatch)
+    collect_root = tmp_path / 'collect'
+    collect_root.mkdir()
+    spec = lane_spec(collect_root, selection=['tests/tasks/test_overflow.py::test_placeholder'])
+    selection = _selection_past_arg_max(spec.parent, env, suite, marker)
+    spec.write_text(json.dumps({**json.loads(spec.read_text(encoding='utf-8')), 'selection': selection}), encoding='utf-8')
+    marker.unlink(missing_ok=True)
+
+    def forbid_direct_collection(*_args, **_kwargs):
+        raise AssertionError('collect_nodeids puts the selection on the process argv')
+
+    monkeypatch.setattr(CAMPAIGN, 'collect_nodeids', forbid_direct_collection)
+    assert LANES.lane_collect_nodeids(suite, selection, spec_path=spec) == selection
+    assert marker.read_text(encoding='utf-8') == 'ran'
 
 
 @pytest.mark.parametrize('change', [

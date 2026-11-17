@@ -37,6 +37,7 @@ import re
 import shlex
 import shutil
 import signal
+import struct
 import subprocess
 import sys
 import tarfile
@@ -44,7 +45,7 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, NamedTuple, Protocol, TypeGuard
@@ -891,6 +892,72 @@ def lane_pytest_command(output: Path, selection: list[str]) -> list[str]:
             f"--cov-report=json:{output / 'runtime_coverage_post_approval.json'}", f"--junitxml={output / LANE_JUNIT}", *selection]
 
 
+def command_vector_fits(argv: list[str], env: Mapping[str, str]) -> bool:
+    """True when this host can execve ``argv`` with ``env``.
+
+    The kernel counts each string's bytes, its NUL and one pointer, plus a
+    second copy of the executable path, and rejects one string of 32 pages
+    or more. ``SC_ARG_MAX`` already includes the environment.
+    """
+    if not argv:
+        return False
+    page = os.sysconf("SC_PAGE_SIZE")
+    limit = os.sysconf("SC_ARG_MAX")
+    pointer = struct.calcsize("P")
+    encoded = [os.fsencode(item) for item in argv]
+    encoded.extend(os.fsencode(f"{key}={value}") for key, value in env.items())
+    if any(len(item) >= 32 * page for item in encoded):
+        return False
+    return sum(len(item) + 1 + pointer for item in encoded) + len(encoded[0]) + 1 <= limit
+
+
+# Reads the selection from the lane spec already written on disk. Pytest then
+# sees the same argv lane_pytest_command would have passed to execve.
+_LANE_PYTEST_LAUNCHER = """\
+import json, runpy, sys
+from pathlib import Path
+spec_path, output = Path(sys.argv[1]), Path(sys.argv[2])
+selection = json.loads(spec_path.read_text(encoding="utf-8"))["selection"]
+sys.argv = [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing",
+            "--cov-report=json:" + str(output / "runtime_coverage_post_approval.json"),
+            "--junitxml=" + str(output / "{junit}"), *selection]
+runpy.run_module("pytest", run_name="__main__")
+""".format(junit=LANE_JUNIT)
+
+_LANE_COLLECT_LAUNCHER = """\
+import json, runpy, sys
+from pathlib import Path
+selection = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["selection"]
+sys.argv = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]
+runpy.run_module("pytest", run_name="__main__")
+"""
+
+
+def lane_process_command(output: Path, selection: list[str], *, env: Mapping[str, str], spec_path: Path) -> list[str]:
+    """The sealed pytest command, or a short launcher when that command does not fit."""
+    direct = lane_pytest_command(output, selection)
+    if command_vector_fits(direct, env):
+        return direct
+    return [sys.executable, "-c", _LANE_PYTEST_LAUNCHER, str(spec_path), str(output)]
+
+
+def _collect_command(selection: list[str]) -> list[str]:
+    return [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]
+
+
+def lane_collect_nodeids(suite: Path, selection: list[str], *, spec_path: Path) -> list[str]:
+    """The sealed collection, or the same collection read from the lane spec when argv does not fit."""
+    env = campaign.pytest_environment(suite)
+    if command_vector_fits(_collect_command(selection), env):
+        return campaign.collect_nodeids(suite, selection)
+    completed = subprocess.run([sys.executable, "-c", _LANE_COLLECT_LAUNCHER, str(spec_path)],
+                               cwd=suite, env=env, capture_output=True, text=True, timeout=600, check=False)
+    nodeids = [line for line in completed.stdout.splitlines() if "::" in line and not line.startswith(" ")]
+    if completed.returncode or not nodeids or len(nodeids) != len(set(nodeids)):
+        raise CampaignError(f"pytest collection failed (exit {completed.returncode}): {completed.stdout[-2000:]}{completed.stderr[-2000:]}")
+    return nodeids
+
+
 def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner = run_command) -> int:
     """Run one lane on its own stack; lane_result.json records PASS or the first failure."""
     repository = (repository or Path(__file__).resolve().parents[1]).resolve()
@@ -933,7 +1000,7 @@ def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner 
             raise CampaignError(f"lane {spec['lane']} bootstrap failed (exit {failed.returncode}): {tail}")
         os.environ.update(lane_service_environment(repository))
         decision_required = clock() or decision_required
-        if campaign.collect_nodeids(suite, selection) != selection:
+        if lane_collect_nodeids(suite, selection, spec_path=spec_path) != selection:
             raise CampaignError(f"lane {spec['lane']} selection does not collect exactly its node IDs")
         initial = campaign.inspect_stack()
         if len(initial) != campaign.MANDATORY_CONTAINERS:
@@ -944,8 +1011,9 @@ def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner 
         history: dict[str, dict[str, Any]] = {}
         lane_start = time.monotonic()
         with (output / "post_remediation_runtime.log").open("w") as log:
-            process = subprocess.Popen(lane_pytest_command(output, selection), cwd=suite, env=campaign.pytest_environment(suite),
-                                       stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            lane_env = campaign.pytest_environment(suite)
+            process = subprocess.Popen(lane_process_command(output, selection, env=lane_env, spec_path=spec_path), cwd=suite,
+                                       env=lane_env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             sampler = kind_observer.start_sampler(process.pid, campaign.qualification_kind_binary(repository))
             while process.poll() is None:
                 campaign.check_stack(initial, campaign.inspect_stack())
