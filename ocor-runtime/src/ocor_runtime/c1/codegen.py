@@ -17,7 +17,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, cast
 
 from referencing import Registry
 from referencing.exceptions import Unresolvable
@@ -407,7 +407,7 @@ def _mcp_library_resource(entered: Any) -> object | None:
     """
 
     try:
-        return entered.lookup("#").contents
+        return cast(object, entered.lookup("#").contents)
     except (Unresolvable, AttributeError, TypeError, ValueError):
         return None
 
@@ -471,7 +471,7 @@ class _McpResource:
 
 
 def _mcp_iter_resources(
-    root: dict[str, Any],
+    root: Mapping[str, Any],
     base_uri: str,
     path: str,
     resolver: Any,

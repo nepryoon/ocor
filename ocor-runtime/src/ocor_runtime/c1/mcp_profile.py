@@ -261,7 +261,7 @@ def autonomous_registry(
             "INVALID_ID",
             "MCP $id is not a valid URI reference",
         ) from exc
-    return registry
+    return cast(Registry[Any], registry)
 
 
 def _resolver_for_subresource(resolver: Any, resource: Resource[Any]) -> tuple[Any, bool]:
@@ -399,7 +399,7 @@ class _SchemaTree:
     root_uri: str
     root: Mapping[str, Any]
     registry: Registry[Any]
-    anchors: Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]
+    anchors: Mapping[tuple[int, str], tuple[Mapping[str, Any], ...]]
 
 
 @dataclass(frozen=True)
@@ -427,7 +427,7 @@ class _ResolutionContext:
         return cast(Registry[Any], registry)
 
     @property
-    def anchors(self) -> Mapping[tuple[str, str], tuple[Mapping[str, Any], ...]]:
+    def anchors(self) -> Mapping[tuple[int, str], tuple[Mapping[str, Any], ...]]:
         return self.tree.anchors
 
 
