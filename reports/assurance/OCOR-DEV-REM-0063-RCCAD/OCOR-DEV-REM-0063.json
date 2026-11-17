@@ -971,22 +971,21 @@
       "SELF-CHECK-ORACOLO (2026-11-14)"
     ],
     "cell_scan": {
-      "cells": 444,
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "cells": 492,
+      "command": "cell_scan_cycle9.py on this record at code commit eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a. Not a review request.",
       "counts": {
-        "FIXED": 78,
-        "N/A": 216,
-        "PASS": 150
+        "FIXED": 87,
+        "N/A": 240,
+        "PASS": 165
       },
       "errors": 0,
-      "errors_corrected": 0,
-      "head": "3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c",
-      "rows": 74,
+      "head": "eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a",
+      "note": "Scan of the repaired table against the code commit. Not a review request. The previous scan is historical_cell_scan_before_pre_campaign_repair.",
+      "rows": 82,
       "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "stdout_sha256": "f5ea2c2ccecd79e0aa14703a3422ef9e10bbeedd1ef0c32a3f31c9781099c689",
-      "table_sha256": "fe21e7ca73b379021df5b8632e98045d7e53c0c23e5f502b939fedfd2690905a",
-      "table_sha256_method": "sha256 of json.dumps(table, indent=2, sort_keys=True) plus a trailing newline",
-      "tests_cited": 106
+      "stdout_sha256": "b26413e82f5309b1e0d4d61cdc91ec6045c302cf84712e896a1ff65dbddcbb9b",
+      "tests_cited": 116,
+      "tests_collected": 5720
     },
     "change_set_rows": {
       "codegen.py": 26,
@@ -995,7 +994,7 @@
       "mcp_profile.py": 40
     },
     "first_application": "inventory realigned after preventive review OCOR-DEV-REM-0063-241a2af5792d-pre; execution commit c28cd9c411c466f38e9671d2774939bb9a910a30. The first table was the d3382f6 repair at 524837d841db. Cycle 2 re-examined _resolve_pointer and added _decode_uri_fragment and _require_schema at 3dd37e29222ae2c85f400f4fc7573def127f6a53. Cycle 3 adds _json_pointer_token and _note_reached_schema and corrects the _require_schema and _array_index cells at aec75cd69010a29fe0997cd3dd15e5c89c639633. Cycle 6 realigns the inventory on 265f6ad2ced262999bd23c35c9dea3fc94caf988: 22 rows for mcp_profile.py, 7, 1 and 1 for the other files, 31 rows, 186 cells. Cycle 7 replaces the manual resolver with referencing 0.37.0 on 0c8bf777f363fffc42234d14b239e4f0b0a8e652: 37 rows for mcp_profile.py, 7, 1 and 1 for the other files, 46 rows, 276 cells. The stale _roots_for_target cell of VF-003 in OCOR-DEV-REM-0063-d70920ea901f-6 is removed together with the function; it is not rewritten and not reintroduced. Cycle 8 fixes the embedded-resource identity across a no-op $id in instance data on 8a4893df052b04f3e357490e1e83c64288bb5603: every tool schema gets its own local registry keyed by the effective base in _build_resolution_index; _enter_tool_schema resolves through that registry at the effective base; _context_after_resolution keeps the current resource and fallback unless the base really changed. Cycle-8 anchor repair on 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f: _profile_id_of returns the raw $id exactly as the pinned draft's id_of; _build_resolution_index builds a local registry for every tool schema with its own $id; _enter_schema_resource keeps the no-op identity check first and resolves a distinct resource through the current resolver's registry; _enter_tool_schema resolves a distinct tool-schema $id through its own local registry; _check_schema_keywords does not re-enter a child already reached through the library crawl. Cycle 8 re-runs the path inventory on a3965ed45cd41435226fd338c3da7697e4e846bf: mcp_profile.py carries 43 module-level names, 40 of them with a row; the two rows _collect_declared_ids and _synthetic_tool_uri are added for the synthetic-tool-URI repair of MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15) and codegen.py carries four rows (_mcp plus the generator helpers _mcp_ref, _mcp_reached_names and _mcp_attach_definitions), change_set_rows.codegen.py 1 -> 4. Cycle 9 re-runs the path inventory on 1284f91e1c4e110706ca654a27d193d60c7f9152. codegen.py lists 37 module-level names. The MCP rows are 23: _mcp, _mcp_ref, and the helpers that place each resource closure. _mcp_reached_names is removed with the root-only closure. mcp_profile.py still lists 43 module-level names and its rows are unchanged. The new codegen rows are _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43.",
-    "inventory_note": "An ast walk lists every module-level function and class. McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and have no row. codegen.py contributes the _mcp row; its other functions do not receive an MCP payload. _walk was removed and replaced by _walk_json and _check_schema_keywords in cycle 7. In this prereview fix the resolution index and the descent machinery were rebuilt around per-tree registries: _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph, _check_reached_schemas and _iter_check_children replace _ResolutionIndex, _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver. Cycle 8 re-run on a3965ed45cd41435226fd338c3da7697e4e846bf: 40 rows for mcp_profile.py (two new rows _collect_declared_ids and _synthetic_tool_uri), 4 for codegen.py (three new generator helpers), 7 for mcp_call.py and 1 for mcp_boundary.py: 52 rows, 312 cells. Cycle 9 re-runs the path inventory on 1284f91e1c4e110706ca654a27d193d60c7f9152. codegen.py lists 37 module-level names. The MCP rows are 23: _mcp, _mcp_ref, and the helpers that place each resource closure. _mcp_reached_names is removed with the root-only closure. mcp_profile.py still lists 43 module-level names and its rows are unchanged. The new codegen rows are _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43.",
+    "inventory_note": "An ast walk lists every module-level function and class. McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and have no row. codegen.py contributes the _mcp row; its other functions do not receive an MCP payload. _walk was removed and replaced by _walk_json and _check_schema_keywords in cycle 7. In this prereview fix the resolution index and the descent machinery were rebuilt around per-tree registries: _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph, _check_reached_schemas and _iter_check_children replace _ResolutionIndex, _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver. Cycle 8 re-run on a3965ed45cd41435226fd338c3da7697e4e846bf: 40 rows for mcp_profile.py (two new rows _collect_declared_ids and _synthetic_tool_uri), 4 for codegen.py (three new generator helpers), 7 for mcp_call.py and 1 for mcp_boundary.py: 52 rows, 312 cells. Cycle 9 re-runs the path inventory on 1284f91e1c4e110706ca654a27d193d60c7f9152. codegen.py lists 37 module-level names. The MCP rows are 23: _mcp, _mcp_ref, and the helpers that place each resource closure. _mcp_reached_names is removed with the root-only closure. mcp_profile.py still lists 43 module-level names and its rows are unchanged. The new codegen rows are _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43. The cycle-9 table was retargeted at the pre-campaign repair. Dead helper names now name the shared function that replaced them. Rows for json_bounds, operational_base, autonomous_registry, enter_subschema, assert_reference_path_bound, _resolver_for_subresource, _lookup_past_registered_boundary and _mcp_unpinned_crawl_owner were added. Hand registration is pending REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION and is not recorded as the library applied as-is. The previous cell scan is historical completeness only.",
     "inventory_search": "Python ast walk of mcp_profile.py at edfe829322d57875c2bd0685a50f9710b4636726 lists 41 module-level names. 38 of them have a row; McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and keep no row, as in previous cycles. The manual resolver was removed in cycle 7 and the two-level descriptor fallback in this prereview fix; _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver are replaced by _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph and _check_reached_schemas, plus _iter_check_children for additionalItems. The cycle-8 inventory re-run on a3965ed45cd41435226fd338c3da7697e4e846bf lists 43 module-level names in mcp_profile.py; 40 have a row and McpProfileError, _SchemaTree and _ResolutionContext keep no row as before. _collect_declared_ids and _synthetic_tool_uri are new rows; codegen.py gains _mcp_ref, _mcp_reached_names and _mcp_attach_definitions beside _mcp. The cycle-9 ast walk of codegen.py at 1284f91e1c4e110706ca654a27d193d60c7f9152 lists _drift, local_name, component_name, pascal, snake, _json, _Model, _json_schema, _openapi, _asyncapi, _mcp_ref, _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_attach_definitions, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri, _mcp, _Proto, _python_sdk, _typescript_sdk, IrArtifactGenerator (37 names). MCP rows: 23. _mcp_reached_names is absent. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43.",
     "role_coherence_scan": {
       "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle9/role_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 1284f91e1c4e110706ca654a27d193d60c7f9152",
@@ -1015,10 +1014,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: the segments are characters already decoded by referencing; this wrapper decodes no bytes.",
-          "types_before_conversions": "FIXED: scalar-target class. DRAFT202012.maybe_in_subresource assumes a mapping and raises AttributeError or TypeError for a scalar target; the wrapper keeps the resolver so the traversal stays in the library and the non-schema target is rejected by _require_schema."
+          "types_before_conversions": "FIXED: Successor _lookup_reference replaces _pointer_maybe_in_subresource. scalar-target class. DRAFT202012.maybe_in_subresource assumes a mapping and raises AttributeError or TypeError for a scalar target; the wrapper keeps the resolver so the traversal stays in the library and the non-schema target is rejected by _require_schema."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_pointer_maybe_in_subresource",
+        "function": "_lookup_reference",
         "paths": "subresource transition at every JSON Pointer segment",
         "rereads_stored_data": true,
         "tests": [
@@ -1034,10 +1033,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: anchor names arrive decoded from the pinned library; this wrapper decodes no bytes.",
-          "types_before_conversions": "PASS: the wrapper delegates to DRAFT202012.anchors_in and the profile checks owner ambiguity after the library lookup."
+          "types_before_conversions": "PASS: Successor _collect_anchor_owners replaces _profile_anchors_in. the wrapper delegates to DRAFT202012.anchors_in and the profile checks owner ambiguity after the library lookup."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_profile_anchors_in",
+        "function": "_collect_anchor_owners",
         "paths": "anchor discovery in the current schema resource",
         "rereads_stored_data": true,
         "tests": [
@@ -1053,10 +1052,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: _declared_id validates the URI text and decodes no bytes here.",
-          "types_before_conversions": "FIXED: resource-identity class. The raw $id feeds the crawl exactly as the pinned draft's id_of, so an anchor lookup keeps the crawl state the library computes; a non-string $id (number, boolean, list, object) fails inside the library crawl and the profile translates it to the typed 'MCP schema resource index is not resolvable' refusal for every schema position, descriptor and tool schemas alike, with no raw exception escaping the module. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl, 48 generated cases, result PASS; negatives: test_cycle8_non_string_schema_id_is_typed, 20 cases."
+          "types_before_conversions": "FIXED: Successor _id_identity replaces _profile_id_of. resource-identity class. The raw $id feeds the crawl exactly as the pinned draft's id_of, so an anchor lookup keeps the crawl state the library computes; a non-string $id (number, boolean, list, object) fails inside the library crawl and the profile translates it to the typed 'MCP schema resource index is not resolvable' refusal for every schema position, descriptor and tool schemas alike, with no raw exception escaping the module. Oracle referencing 0.37.0: test_cycle8_anchor_ref_follows_the_referencing_crawl, 48 generated cases, result PASS; negatives: test_cycle8_non_string_schema_id_is_typed, 20 cases."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_profile_id_of",
+        "function": "_id_identity",
         "paths": "resource identity used by the pinned library crawl",
         "rereads_stored_data": true,
         "tests": [
@@ -1074,10 +1073,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: discovery reads parsed JSON values only; no byte decoding happens.",
-          "types_before_conversions": "FIXED: scalar-schema-position class. Non-mapping schema-position values are not crawled as resources; a reached scalar remains a typed non-schema target."
+          "types_before_conversions": "FIXED: Successor enter_subschema replaces _profile_subresources_of. scalar-schema-position class. Non-mapping schema-position values are not crawled as resources; a reached scalar remains a typed non-schema target. Nested-resource registration and the PointerToNowhere retry remain until REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. They are not the pinned libraries applied to the tool schema alone. Tests test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource and test_cycle6_ref_targets_match_referencing_on_the_effective_resource still expect the registered reading and are not an authorized realignment."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_profile_subresources_of",
+        "function": "enter_subschema",
         "paths": "schema-position subresources accepted by the pinned crawl",
         "rereads_stored_data": true,
         "tests": [
@@ -1186,10 +1185,10 @@
           "finite_numbers": "FIXED: non-finite number class (NaN on the descriptor) raises McpProfileError.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "FIXED: lone-surrogate class (U+D800 through U+DFFF) in a string value is rejected. Depth and node bounds use the same typed error.",
-          "types_before_conversions": "PASS: bytes and a non-JSON node are rejected before recursion."
+          "types_before_conversions": "PASS: Successor json_bounds replaces _walk_json. bytes and a non-JSON node are rejected before recursion."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_walk_json",
+        "function": "json_bounds",
         "paths": "every descriptor node, including strings, numbers and mappings. This walk does not read schema keywords.",
         "rereads_stored_data": true,
         "tests": [
@@ -1204,10 +1203,10 @@
           "finite_numbers": "PASS: this function reads no number.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file",
           "strict_decoding": "FIXED: trailing-empty-fragment class. rstrip('#') removes a trailing empty fragment before the join, matching referencing 0.37.0 Resource.id. '#' and '###' are not identifiers. An empty string stays absent.",
-          "types_before_conversions": "PASS: $id is used only when it is a str. After the strip, an empty result is absent and is not passed to urljoin."
+          "types_before_conversions": "PASS: Successor _id_identity replaces _declared_id. $id is used only when it is a str. After the strip, an empty result is absent and is not passed to urljoin."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_declared_id",
+        "function": "_id_identity",
         "paths": "resource identifier declared by $id",
         "rereads_stored_data": true,
         "tests": [
@@ -1225,10 +1224,10 @@
           "finite_numbers": "PASS: this function reads no number.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file",
           "strict_decoding": "PASS: urljoin is applied once to the stripped identifier. The bare fragment '#' is not passed to urljoin, because an empty base and a non-relative scheme would yield '#'.",
-          "types_before_conversions": "FIXED: same-resource class. An identifier that joins to the current base does not start another resource. A relative identifier with a path segment is joined only when the resource is entered."
+          "types_before_conversions": "FIXED: Successor operational_base replaces _resource_uri. same-resource class. An identifier that joins to the current base does not start another resource. A relative identifier with a path segment is joined only when the resource is entered."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_resource_uri",
+        "function": "operational_base",
         "paths": "effective URI of the current JSON Schema resource",
         "rereads_stored_data": true,
         "tests": [
@@ -1246,10 +1245,10 @@
           "finite_numbers": "PASS: this function reads no number.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file",
           "strict_decoding": "PASS: the comparison is string equality of the joined URI and the current base. The identifier is not decoded a second time.",
-          "types_before_conversions": "PASS: the predicate is true only when the joined URI differs from the current base. An absolute redeclaration of the same URI is the same resource."
+          "types_before_conversions": "PASS: Successor enter_subschema replaces _changes_resource. the predicate is true only when the joined URI differs from the current base. An absolute redeclaration of the same URI is the same resource. Nested-resource registration and the PointerToNowhere retry remain until REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. They are not the pinned libraries applied to the tool schema alone. Tests test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource and test_cycle6_ref_targets_match_referencing_on_the_effective_resource still expect the registered reading and are not an authorized realignment."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_changes_resource",
+        "function": "enter_subschema",
         "paths": "whether a node joins to a URI other than the current base",
         "rereads_stored_data": true,
         "tests": [
@@ -1304,10 +1303,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: only a mapping is passed to the pinned specification; no bytes are decoded.",
-          "types_before_conversions": "FIXED: canonical-copy class. The resource root may be a shallow copy with an absolute $id, every child remains the original document object, and the alias map recovers the original target. A non-mapping cannot reach this function."
+          "types_before_conversions": "FIXED: Successor autonomous_registry replaces _create_resource. canonical-copy class. The resource root may be a shallow copy with an absolute $id, every child remains the original document object, and the alias map recovers the original target. A non-mapping cannot reach this function."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_create_resource",
+        "function": "autonomous_registry",
         "paths": "draft-2020-12 Resource for the document and every embedded $id",
         "rereads_stored_data": true,
         "tests": [
@@ -1363,10 +1362,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes.",
-          "types_before_conversions": "FIXED: crawl-ownership class. Every schema-position node maps to the resource URI the library crawl owns it under and every other node inherits the URI of its enclosing resource, so keyword descent cannot diverge from the library across a no-op $id chain; a repeated object is visited once and the depth and node bounds are enforced during the visit. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "FIXED: Successor enter_subschema replaces _collect_node_uris. crawl-ownership class. Every schema-position node maps to the resource URI the library crawl owns it under and every other node inherits the URI of its enclosing resource, so keyword descent cannot diverge from the library across a no-op $id chain; a repeated object is visited once and the depth and node bounds are enforced during the visit. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit. Nested-resource registration and the PointerToNowhere retry remain until REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. They are not the pinned libraries applied to the tool schema alone. Tests test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource and test_cycle6_ref_targets_match_referencing_on_the_effective_resource still expect the registered reading and are not an authorized realignment."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_collect_node_uris",
+        "function": "enter_subschema",
         "paths": "schema-node to crawl-owned resource URI mapping",
         "rereads_stored_data": true,
         "tests": [
@@ -1392,10 +1391,10 @@
           "finite_numbers": "PASS: depths and visited counts are bounded integers; no float is converted.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: resource identifiers were already decoded by the pinned library; this function only canonicalizes the already-joined resource URI.",
-          "types_before_conversions": "FIXED: discovery-authority class. The pinned crawl, not instance data or a hand-built map, decides the schema resources and their last-wins collisions."
+          "types_before_conversions": "FIXED: Successor autonomous_registry replaces _crawl_document_resources. discovery-authority class. The pinned crawl, not instance data or a hand-built map, decides the schema resources and their last-wins collisions."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_crawl_document_resources",
+        "function": "autonomous_registry",
         "paths": "pinned library crawl for one document or embedded schema resource tree",
         "rereads_stored_data": true,
         "tests": [
@@ -1411,10 +1410,10 @@
           "finite_numbers": "PASS: depths and visited counts are bounded integers; no float is converted.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: the function compares already-joined URI strings and decodes no bytes.",
-          "types_before_conversions": "FIXED: same-URI-class. A descendant whose identifier does not change the base does not replace the resource root that owns the URI."
+          "types_before_conversions": "FIXED: Successor enter_subschema replaces _same_uri_resource_ancestors. same-URI-class. A descendant whose identifier does not change the base does not replace the resource root that owns the URI. Nested-resource registration and the PointerToNowhere retry remain until REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. They are not the pinned libraries applied to the tool schema alone. Tests test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource and test_cycle6_ref_targets_match_referencing_on_the_effective_resource still expect the registered reading and are not an authorized realignment."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_same_uri_resource_ancestors",
+        "function": "enter_subschema",
         "paths": "resource roots that join to an already occupied URI",
         "rereads_stored_data": true,
         "tests": [
@@ -1430,10 +1429,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes; it compares $id strings byte-exactly.",
-          "types_before_conversions": "FIXED: declared-uri class. Only string $id values are collected; a non-string $id is skipped here and is left to the profile walk, which rejects it; the set feeds only the synthetic-URI collision choice, so a malformed declaration cannot change resolution semantics."
+          "types_before_conversions": "FIXED: Successor _collect_string_ids replaces _collect_declared_ids. declared-uri class. Only string $id values are collected; a non-string $id is skipped here and is left to the profile walk, which rejects it; the set feeds only the synthetic-URI collision choice, so a malformed declaration cannot change resolution semantics."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_collect_declared_ids",
+        "function": "_collect_string_ids",
         "paths": "declared $id set for the synthetic tool URI collision check",
         "rereads_stored_data": true,
         "tests": [
@@ -1447,10 +1446,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes; the candidate URI is built from an integer index and a field label from the descriptor walk.",
-          "types_before_conversions": "FIXED: uri-collision class. The candidate urn is bumped while it appears in the declared $id set, so the fixed base never coincides with an $id of the document; a malformed declared id is skipped for the collision check and left to the profile walk. Oracle referencing 0.37.0: the collision matrix resolves in the nested resource, or fails with the resolution reason, exactly as Draft202012Validator does on the schema alone."
+          "types_before_conversions": "FIXED: uri-collision class. operational_base raises COLLISION when the fixed base urn:ocor:embedded-tool:{index}:{field} equals a declared string $id in that same schema. The URN is not bumped and no suffix is selected. REM-0063-CYCLE10-ORACLE-CONFLICT B1 and REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS C1. Oracle test_cycle8_synthetic_uri_avoids_declared_id_collisions: both modes raise McpProfileError matching collid, four cases, fixture unchanged."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_synthetic_tool_uri",
+        "function": "operational_base",
         "paths": "fixed distinct base URI for tool schemas without $id",
         "rereads_stored_data": true,
         "tests": [
@@ -1464,10 +1463,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: the $id is a str or absent; no bytes are decoded.",
-          "types_before_conversions": "FIXED: join-once class. A nested resource gets its already-joined absolute $id in a shallow copy, so Registry.crawl does not join a relative $id twice; children remain the original objects; an absent $id returns the original mapping unchanged."
+          "types_before_conversions": "FIXED: Successor _lookup_reference replaces _canonical_resource_contents. join-once class. A nested resource gets its already-joined absolute $id in a shallow copy, so Registry.crawl does not join a relative $id twice; children remain the original objects; an absent $id returns the original mapping unchanged."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_canonical_resource_contents",
+        "function": "_lookup_reference",
         "paths": "resource root identity before anchors are indexed",
         "rereads_stored_data": true,
         "tests": [
@@ -1600,10 +1599,10 @@
           "finite_numbers": "PASS: this path reads no number and performs no float or integer conversion.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: only an object identity lookup is used; no decoding happens.",
-          "types_before_conversions": "FIXED: canonical-alias class. A canonicalized resource returns the original document object through the alias map; a resource that is not a copy returns its contents; a missing alias falls back to contents."
+          "types_before_conversions": "FIXED: Successor _lookup_reference replaces _resolved_contents. canonical-alias class. A canonicalized resource returns the original document object through the alias map; a resource that is not a copy returns its contents; a missing alias falls back to contents."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_resolved_contents",
+        "function": "_lookup_reference",
         "paths": "document object behind a canonicalized resource wrapper",
         "rereads_stored_data": true,
         "tests": [
@@ -1787,11 +1786,11 @@
           "finite_numbers": "PASS: NaN and the non-finite probe are rejected on the descriptor walk.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "FIXED: lone-surrogate class (U+D800 through U+DFFF) raises McpProfileError.",
-          "types_before_conversions": "PASS: the value is checked only after the walk has established it is a str."
+          "types_before_conversions": "PASS: Successor json_bounds replaces _reject_surrogate. the value is checked only after the walk has established it is a str."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
-        "function": "_reject_surrogate",
-        "paths": "descriptor strings and mapping keys",
+        "function": "json_bounds",
+        "paths": "Lone surrogates are refused by json_bounds. The profile helper _reject_surrogate is deleted. The c8 helper of the same name is a different row.",
         "rereads_stored_data": true,
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_schema_bounds_surrogates_and_non_finite_numbers_fail_closed"
@@ -2023,10 +2022,10 @@
           "finite_numbers": "PASS: depth and node counters are Python integers. A value above 32 or 4096 raises TYPE_ERROR with message MCP schema exceeds the revision bounds before a descriptor is emitted. The cycle-9 schemas stay under those bounds, so this corpus does not exercise the over-bound branch.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "N/A: this function decodes no bytes and does not read schema text or a $ref.",
-          "types_before_conversions": "PASS: both counters are integers maintained by the walk. A schema inside the bounds continues. The cycle-9 corpus stays under the bounds. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "PASS: Successor json_bounds replaces _mcp_bounds. both counters are integers maintained by the walk. A schema inside the bounds continues. The cycle-9 corpus stays under the bounds. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
         },
-        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_bounds",
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "json_bounds",
         "paths": "revision bounds of 32 nested levels and 4096 schema nodes",
         "rereads_stored_data": false,
         "tests": [
@@ -2056,10 +2055,10 @@
           "finite_numbers": "PASS: JSON numbers are not converted. Depth and node counters compared in _mcp_bounds are Python integers bounded by 32 and 4096; the cycle-9 schemas stay under those bounds.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes. A non-ASCII or empty $ref does not reach codegen: the compiler admits only a symbol id. The negative that reaches codegen is urn:ocor:property:vessel-name, refused as unresolved MCP definition.",
-          "types_before_conversions": "PASS: only a string $id is read. A trailing empty fragment is stripped. '#' and an empty string are not identifiers. A non-string $id is ignored here and left to the post-check. The cycle-9 tests use absolute http $id values. The '#' and empty-string branches have no separate generator test at this head. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "PASS: Successor operational_base replaces _mcp_declared_id. only a string $id is read. A trailing empty fragment is stripped. '#' and an empty string are not identifiers. A non-string $id is ignored here and left to the post-check. The cycle-9 tests use absolute http $id values. The '#' and empty-string branches have no separate generator test at this head. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
         },
-        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_declared_id",
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "operational_base",
         "paths": "schema $id used as a resource boundary by the generator",
         "rereads_stored_data": true,
         "tests": [
@@ -2089,10 +2088,10 @@
           "finite_numbers": "PASS: JSON numbers are not converted. Depth and node counters compared in _mcp_bounds are Python integers bounded by 32 and 4096; the cycle-9 schemas stay under those bounds.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes. A non-ASCII or empty $ref does not reach codegen: the compiler admits only a symbol id. The negative that reaches codegen is urn:ocor:property:vessel-name, refused as unresolved MCP definition.",
-          "types_before_conversions": "FIXED: per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "FIXED: Successor _mcp_iter_resources replaces _mcp_resource_uri. per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_resource_uri",
+        "function": "_mcp_iter_resources",
         "paths": "effective URI of a generated schema resource after urljoin",
         "rereads_stored_data": true,
         "tests": [
@@ -2122,10 +2121,10 @@
           "finite_numbers": "PASS: JSON numbers are not converted. Depth and node counters compared in _mcp_bounds are Python integers bounded by 32 and 4096; the cycle-9 schemas stay under those bounds.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes. A non-ASCII or empty $ref does not reach codegen: the compiler admits only a symbol id. The negative that reaches codegen is urn:ocor:property:vessel-name, refused as unresolved MCP definition.",
-          "types_before_conversions": "FIXED: per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "FIXED: Successor _mcp_unpinned_crawl_owner replaces _mcp_changes_resource. per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_changes_resource",
+        "function": "_mcp_unpinned_crawl_owner",
         "paths": "decision that a nested $id starts another schema resource",
         "rereads_stored_data": true,
         "tests": [
@@ -2353,10 +2352,10 @@
           "finite_numbers": "PASS: JSON numbers are not converted. Depth and node counters compared in _mcp_bounds are Python integers bounded by 32 and 4096; the cycle-9 schemas stay under those bounds.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes. A non-ASCII or empty $ref does not reach codegen: the compiler admits only a symbol id. The negative that reaches codegen is urn:ocor:property:vessel-name, refused as unresolved MCP definition.",
-          "types_before_conversions": "FIXED: per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "FIXED: Successor _mcp_fragment_refs replaces _mcp_seed_refs. per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
         },
         "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_seed_refs",
+        "function": "_mcp_fragment_refs",
         "paths": "reachable names seeded outside the resource-root $defs values",
         "rereads_stored_data": true,
         "tests": [
@@ -2569,10 +2568,10 @@
           "finite_numbers": "PASS: JSON numbers are not converted. Depth and node counters compared in _mcp_bounds are Python integers bounded by 32 and 4096; the cycle-9 schemas stay under those bounds.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes. A non-ASCII or empty $ref does not reach codegen: the compiler admits only a symbol id. The negative that reaches codegen is urn:ocor:property:vessel-name, refused as unresolved MCP definition.",
-          "types_before_conversions": "FIXED: per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "FIXED: Successor _collect_string_ids replaces _mcp_collect_ids. per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
         },
-        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_collect_ids",
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_collect_string_ids",
         "paths": "string $id values collected so a synthetic base does not collide with them",
         "rereads_stored_data": true,
         "tests": [
@@ -2602,11 +2601,11 @@
           "finite_numbers": "PASS: JSON numbers are not converted. Depth and node counters compared in _mcp_bounds are Python integers bounded by 32 and 4096; the cycle-9 schemas stay under those bounds.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes. A non-ASCII or empty $ref does not reach codegen: the compiler admits only a symbol id. The negative that reaches codegen is urn:ocor:property:vessel-name, refused as unresolved MCP definition.",
-          "types_before_conversions": "FIXED: per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "FIXED: uri-collision class. operational_base raises COLLISION when the fixed base urn:ocor:embedded-tool:{index}:{field} equals a declared string $id in that same schema. The URN is not bumped and no suffix is selected. REM-0063-CYCLE10-ORACLE-CONFLICT B1 and REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS C1. Oracle test_cycle8_synthetic_uri_avoids_declared_id_collisions: both modes raise McpProfileError matching collid, four cases, fixture unchanged."
         },
-        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_synthetic_uri",
-        "paths": "urn:ocor:embedded-tool:{index}:{field} base, with :2 and :3 collision suffixes",
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "operational_base",
+        "paths": "Fixed urn:ocor:embedded-tool:{index}:{field}. operational_base raises COLLISION and does not select a suffix.",
         "rereads_stored_data": true,
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle9_nested_id_closure_is_placed_on_that_resource",
@@ -2635,10 +2634,10 @@
           "finite_numbers": "PASS: JSON numbers are not converted. Depth and node counters compared in _mcp_bounds are Python integers bounded by 32 and 4096; the cycle-9 schemas stay under those bounds.",
           "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file, so there is no kill or wait to release.",
           "strict_decoding": "PASS: this function decodes no bytes. A non-ASCII or empty $ref does not reach codegen: the compiler admits only a symbol id. The negative that reaches codegen is urn:ocor:property:vessel-name, refused as unresolved MCP definition.",
-          "types_before_conversions": "FIXED: per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
+          "types_before_conversions": "FIXED: Successor operational_base replaces _mcp_base_uri. per-resource closure class. Nested $id under properties, allOf, anyOf and oneOf on inputSchema and outputSchema receives the reachable closure on that resource; an unused local definition is omitted; a symbol that is not a type raises UNRESOLVED_REFERENCE with message unresolved MCP definition; a $ref inside const stays on the enclosing resource; an $id inside const does not start a resource and is a guard that already passed before the fix; positive twins keep the closure on the root. Oracle referencing 0.37.0 and Draft202012Validator. Tests test_cycle9_nested_id_closure_is_placed_on_that_resource (8 cases), test_cycle9_plain_twin_keeps_the_closure_on_the_root (8 cases), test_cycle9_nested_vessel_closure_includes_only_the_reachable_types (2 cases, 3 lookups). Result PASS at 1284f91e1c4e110706ca654a27d193d60c7f9152. Prereview OCOR-DEV-REM-0063-3c1fa6fa53a6-pre is repaired at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. A no-op $id keeps the root closure (test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure, 6 cases). A repeated resource URI is DUPLICATE_RESOURCE (test_cycle9_a_repeated_resource_uri_is_a_typed_generation_error). additionalItems stays on the current resource (test_cycle9_additional_items_ref_is_closed_on_the_current_resource, referencing lookup). An unreferenced nested $defs map is omitted (test_cycle9_an_unreferenced_nested_defs_map_is_not_emitted). A shadowed sibling is refused by the profile (test_cycle9_a_shadowed_duplicate_id_is_refused_by_the_profile). The unresolved diagnostic name is the minimum pending name (test_cycle9_an_unresolved_name_does_not_depend_on_hash_seed, PYTHONHASHSEED 0-3). Typed refusals: test_cycle9_generator_bounds_null_and_bad_defs_fail_closed, test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error, test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference. Oracle referencing 0.37.0. Result PASS. The new tests were not stored as a separate RED commit."
         },
-        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
-        "function": "_mcp_base_uri",
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "operational_base",
         "paths": "root $id when present, otherwise the synthetic tool URI",
         "rereads_stored_data": true,
         "tests": [
@@ -2735,8 +2734,176 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle9_a_resource_that_is_not_a_dict_is_a_typed_error",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle9_a_crawl_failure_is_a_typed_unresolved_reference"
         ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "FIXED: non-finite number class. NaN and infinities are refused on this walk before schema use.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: this walk rejects a lone surrogate and does not percent-decode a fragment.",
+          "types_before_conversions": "FIXED: JSON value and depth class. The root counts as one value and keys do not count. Above 4096 values or depth 32 is BOUNDS. Lone surrogates and non-finite numbers fail on this walk. validate_mcp_descriptor calls it on the descriptor. _mcp calls it on each tool schema field before operational_base and again on the assembled descriptor. The matrix bound rows stay 4096, 4097, depth 32 and depth 33."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "json_bounds",
+        "paths": "One JSON value and depth walk for the descriptor, each tool schema field, and the assembled descriptor.",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_schema_bounds_surrogates_and_non_finite_numbers_fail_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_final_depth_boundary",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_final_node_boundary",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle9_generator_bounds_null_and_bad_defs_fail_closed"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "PASS: the tool index is an integer the caller already holds. No float conversion of schema data.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: a string $id is split with urldefrag. The fixed URN is not percent-decoded.",
+          "types_before_conversions": "FIXED: uri-collision class. operational_base raises COLLISION when the fixed base urn:ocor:embedded-tool:{index}:{field} equals a declared string $id in that same schema. The URN is not bumped and no suffix is selected. REM-0063-CYCLE10-ORACLE-CONFLICT B1 and REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS C1. Oracle test_cycle8_synthetic_uri_avoids_declared_id_collisions: both modes raise McpProfileError matching collid, four cases, fixture unchanged."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "operational_base",
+        "paths": "Fixed urn:ocor:embedded-tool:{index}:{field} when the root $id is absent, non-string, empty or an empty pre-fragment. No suffix.",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_synthetic_uri_avoids_declared_id_collisions",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_fixed_base_collision_is_a_typed_refusal",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_fixed_base_at_multiple_tool_indices"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "PASS: this function reads no external number and performs no float conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: this function does not percent-decode a fragment. Non-string $id values are refused before the resource is built.",
+          "types_before_conversions": "FIXED: crawl-probe class. The returned registry is not crawled and pins only the root. TypeError from the probe is NOT_RESOLVABLE. AttributeError on NoneType.values or rstrip is NOT_RESOLVABLE. Generator-only NoneType.get is CRAWL. Any other AttributeError is not remapped, so a scalar inside $defs still reaches the non-schema target check. ValueError is INVALID_ID. Oracle referencing 0.37.0: test_cycle10_crawl_type_error_is_typed expects the profile message resource index is not resolvable and the generator code TYPE_ERROR. A null applicator stays the existing non-schema or unresolved-definition diagnostic."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "autonomous_registry",
+        "paths": "Uncrawled registry for one tool schema. probe.crawl() is discarded. TypeError from the probe is NOT_RESOLVABLE.",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_crawl_type_error_is_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle8_non_string_schema_id_is_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_null_applicator_stays_an_unresolved_definition"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "PASS: this function reads no external number and performs no float conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: the base comes from the library resolver. This function does not decode a fragment.",
+          "types_before_conversions": "FIXED: resource-boundary class. enter_subschema delegates to in_subresource. A changed base is registered with with_resource only when the child is a library subresource of the resource lookup('#') already returns. An identifier reached only through instance data changes the base and stays unregistered. Nested-resource registration and the PointerToNowhere retry remain until REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. They are not the pinned libraries applied to the tool schema alone. Tests test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource and test_cycle6_ref_targets_match_referencing_on_the_effective_resource still expect the registered reading and are not an authorized realignment."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "enter_subschema",
+        "paths": "Library in_subresource boundary. A changed base is registered only when the child is a subresource of lookup('#').",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_ref_targets_match_referencing_on_the_effective_resource",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle9_an_id_that_joins_the_current_resource_keeps_the_root_closure"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "PASS: depth is an integer maintained by the walk. No float conversion of schema data.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: a same-document fragment is recognised by its leading hash. No percent-decode is added here.",
+          "types_before_conversions": "FIXED: reference-path depth class. Static and reference visits are separate. Depth is tested before the visit skip. Chains of 16, 20 and 40 named definitions are accepted by this function and by validate_mcp_descriptor. A static nest past depth 32 stays refused on both public paths. json_bounds is a different limit and is unchanged. The 40180 matrix cells are not reduced."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "assert_reference_path_bound",
+        "paths": "Static-first reference-path depth shared by the profile and the generator. Depth above 32 is BOUNDS.",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_type_chain_bound_matches_profile",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_attached_type_chain_of_forty_matches_profile",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_final_depth_boundary"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "PASS: this function reads no external number and performs no float conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: the entered base is the library resolver base. This function does not decode a fragment.",
+          "types_before_conversions": "FIXED: registration-pending class. When in_subresource changes the base and the child is a library subresource, this function builds a resolver on registry.with_resource. That registration is not the pinned library applied to the tool schema alone. Nested-resource registration and the PointerToNowhere retry remain until REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. They are not the pinned libraries applied to the tool schema alone. Tests test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource and test_cycle6_ref_targets_match_referencing_on_the_effective_resource still expect the registered reading and are not an authorized realignment."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_resolver_for_subresource",
+        "paths": "Hand registration of a library subresource whose base changed. Pending the nested-resource decision.",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_ref_targets_match_referencing_on_the_effective_resource"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "PASS: this function reads no external number and performs no float conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: the retry uses the original reference spelling. It does not percent-decode an anchor name.",
+          "types_before_conversions": "FIXED: retry-pending class. A PointerToNowhere on a pinned boundary is tried once after that URI is removed from the same registry. The retry is not a new root resolver and is not the pinned library applied to the tool schema alone. Nested-resource registration and the PointerToNowhere retry remain until REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION. They are not the pinned libraries applied to the tool schema alone. Tests test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource and test_cycle6_ref_targets_match_referencing_on_the_effective_resource still expect the registered reading and are not an authorized realignment."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_lookup_past_registered_boundary",
+        "paths": "One PointerToNowhere retry after registry.remove of the pinned base. Pending the nested-resource decision.",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle6_ref_targets_match_referencing_on_the_effective_resource"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a digest, URN comparison against a stored artefact, or another fixed-form boundary identifier.",
+          "complete_normative_records": "N/A: this path does not construct an ADD v1.3 section 1.4 governed-context record.",
+          "finite_numbers": "PASS: this function reads no external number and performs no float conversion.",
+          "processes_and_resources": "N/A: this path starts no process, pipe, connection, transaction or file.",
+          "strict_decoding": "PASS: the owner is the library lookup result. This function does not rewrite a fragment.",
+          "types_before_conversions": "FIXED: closure-owner class. The closure is written on unpinned lookup('#').contents, or on the boundary when that lookup cannot retrieve a relative base. References are scanned from the boundary and from that owner, so a reference on the boundary is not dropped when a descendant rejoins the URI. $defs are placed on the owner. Two different nodes for one base stay DUPLICATE_RESOURCE. Oracle referencing 0.37.0 lookup('#').contents and Draft202012Validator: test_cycle10_rejoined_resource_closure places $defs on the inner owner when a descendant rejoins, and on the holder when it does not. The generated two-level exact closure compares the same owner. The generator-versus-profile owner split is closed by this placement."
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
+        "function": "_mcp_unpinned_crawl_owner",
+        "paths": "Closure owner is unpinned lookup('#').contents. The boundary is scanned as well.",
+        "rereads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_rejoined_resource_closure",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_generated_two_level_exact_closure"
+        ]
       }
-    ]
+    ],
+    "historical_cell_scan_before_pre_campaign_repair": {
+      "cells": 444,
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "counts": {
+        "FIXED": 78,
+        "N/A": 216,
+        "PASS": 150
+      },
+      "errors": 0,
+      "errors_corrected": 0,
+      "head": "3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c",
+      "rows": 74,
+      "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "stdout_sha256": "f5ea2c2ccecd79e0aa14703a3422ef9e10bbeedd1ef0c32a3f31c9781099c689",
+      "table_sha256": "fe21e7ca73b379021df5b8632e98045d7e53c0c23e5f502b939fedfd2690905a",
+      "table_sha256_method": "sha256 of json.dumps(table, indent=2, sort_keys=True) plus a trailing newline",
+      "tests_cited": 106
+    }
   },
   "inputs": {
     "docs/development_plan/OCOR_MCP_2026-07-28_PROFILE.md": "856a033a0f466bec0e0c734eecbc057d1b37a97bf9f0995c73878655f1147f52",
@@ -3668,7 +3835,7 @@
         "note": "Code owner is Grok Build, grok-4.7, xAI, effort xhigh. Phase A remains Codex, gpt-6.1-sol, OpenAI. The design commit does not modify ocor-runtime/src or tests."
       }
     ],
-    "existing_test_fixture_oracle_changed": false,
+    "existing_test_fixture_oracle_changed": true,
     "first_phase_a_checkpoint": {
       "applied_process_sections": [
         "SELF-CHECK-ORACOLO (2026-11-14)",
@@ -4450,12 +4617,13 @@
     },
     "invariants": {
       "existing_function_class_AST_nodes": 228,
-      "existing_function_class_AST_unchanged": true,
+      "existing_function_class_AST_unchanged": false,
       "new_test_functions": 23,
-      "original_test_file_is_byte_prefix": true,
+      "original_test_file_is_byte_prefix": false,
       "pinned_fixture_sha256": "edbb197ed0f92e90d658866e23cf76f107df0caac5ce25c2b9e64e1ca9a6314a",
-      "previous_phase_a_byte_prefix": true,
-      "production_and_inputs_diff": []
+      "previous_phase_a_byte_prefix": false,
+      "production_and_inputs_diff": [],
+      "phase_a_figure_note": "existing_function_class_AST_nodes 228 is the phase-A figure and is not a recount of this head. The three boolean flags above were true at the phase-A checkpoint and are false at the implementation head. The nested first_phase_a_checkpoint copy stays historical. 3bad5d6f starts with f485dc96. This head starts with neither."
     },
     "inventory": {
       "new_test_functions": [
@@ -4589,7 +4757,7 @@
         "output_sha256": "969a3a556d95651793908a63b86f670109c3d77c7ae9a8f95d0217240755f2d2",
         "status": "PASS"
       },
-      "full_pre_campaign_gate": "NOT_EXECUTED_PHASE_A_RED; the recorded rapid subset is not declared a complete qualification gate",
+      "full_pre_campaign_gate": "NOT_YET_RUN. The phase-A sentence NOT_EXECUTED_PHASE_A_RED is historical and is not a PASS. Ruff 0.13.1 checked the two changed modules and the task test file at the repair commit and passed. The full pre-campaign gate, the four-lane campaign and the distinct check wait on REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION.",
       "language": {
         "sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
         "status": "PASS"
@@ -4716,28 +4884,9 @@
         "status": "PASS"
       }
     },
-    "next_action": "Task suite is green (41896 passed, 0 failed, 0 errors, 0 skipped) and is not a qualifying campaign. Resume OCOR-DEV-REM-0063 after the pre-campaign preventive review of this branch head. Then local gates, the four-lane campaign, the distinct check and final verification by Claude Code claude-opus-5-5, effort max. No second design review. No cycle 11. Do not start the full suite or the campaign in the implementation iteration.",
+    "next_action": "The pre-campaign review OCOR-DEV-REM-0063-cce3ba8ba7ab-pre returned BLOCKING_FINDINGS. Repairs that do not choose a normative reading are on eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a. The qualifying campaign and removal of hand registration wait on REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION, pull request 658. Do not start the full suite or the qualifying campaign on this head. No second pre-campaign review. No verify request in this iteration. After a NO_GO of this cycle there is no cycle 11.",
     "open_questions": [],
-    "pending_decision_request": {
-      "branch": "governed/decision-request-rem0063-cycle10-remaining-contract-questions",
-      "commit": "99d93da7a481c44841d9d8003044aed37c026ce6",
-      "id": "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS",
-      "path": "reports/development/decision_requests/REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS.md",
-      "pr": 654,
-      "recommended_options": [
-        "A1",
-        "B1",
-        "C1"
-      ],
-      "sha256": "edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8",
-      "status": "DECIDED_BY_PO",
-      "adopted_options": [
-        "A1",
-        "B1",
-        "C1"
-      ]
-    },
-    "phase": "IMPLEMENTATION_TASK_SUITE_GREEN_AWAITING_PRE_CAMPAIGN_REVIEW",
+    "phase": "PRE_CAMPAIGN_REPAIRS_ON_BRANCH_CAMPAIGN_WAITING_ON_NESTED_RESOURCE_DECISION",
     "production_code_changed": true,
     "red": {
       "command": [
@@ -4873,13 +5022,126 @@
       "tests_changed": false
     },
     "implementation": {
-      "authorized_realignments": "ORACLE-CONFLICT A1 and B1, REMAINING A1 encoded-slash only, and the unsealed phase-A _cycle10_base oracle aligned to B1. No other existing test, fixture, or oracle change.",
+      "authorized_realignments": {
+        "note": "Only these rows change a pre-cycle-10 test or the unsealed phase-A oracle. No other existing test, fixture, or oracle changes. The 39 cycle-6 cases that still expect hand registration are not in this table.",
+        "rows": [
+          {
+            "decision": "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS",
+            "name": "test_percent_encoded_fragments_resolve_before_the_pointer",
+            "new_expectation": "Case encoded-slash #%2F$defs/a%20b raises McpProfileError. The other 18 cases stay accepted. Name and inputs stay.",
+            "old_expectation": "Case encoded-slash was accepted.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "test_cycle4_a_percent_encoded_plain_name_is_decoded_before_classification",
+            "new_expectation": "McpProfileError. The library does not decode the anchor spelling #p%61rt.",
+            "old_expectation": "The profile accepted #p%61rt as #part.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "test_cycle4_a_percent_encoded_slash_stays_a_json_pointer",
+            "new_expectation": "McpProfileError. The library does not treat %2F as a slash.",
+            "old_expectation": "The profile accepted the encoded slash as a JSON Pointer.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "test_cycle4_a_percent_encoded_tool_schema_anchor_is_decoded",
+            "new_expectation": "McpProfileError for both $anchor and $dynamicAnchor.",
+            "old_expectation": "Acceptance after decoding, for $anchor and $dynamicAnchor.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "_CYCLE5_ORACLE_FRAGMENT",
+            "new_expectation": "The map is the identity. #p%61rt stays #p%61rt.",
+            "old_expectation": "#p%61rt was rewritten to #part.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "_cycle5_lookup",
+            "new_expectation": "Docstring only. The lookup does not rewrite the reference. The map it reads is the identity.",
+            "old_expectation": "The docstring said anchor names are decoded, and the map rewritten #p%61rt to #part.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "_cycle5_counterproof",
+            "new_expectation": "The counterproof does not replace #p%61rt with #part.",
+            "old_expectation": "The counterproof compared #p%61rt as #part.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "_CYCLE6_ORACLE_FRAGMENT",
+            "new_expectation": "The map is the identity. The cycle-5 and cycle-6 differential tests stay at 105 and 240 cases.",
+            "old_expectation": "#p%61rt was rewritten to #part.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "_cycle6_lookup",
+            "new_expectation": "The function body is unchanged. It reads _CYCLE6_ORACLE_FRAGMENT, which is now the identity.",
+            "old_expectation": "The function read a map that rewritten #p%61rt to #part.",
+            "option": "A1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-ORACLE-CONFLICT",
+            "name": "test_cycle8_synthetic_uri_avoids_declared_id_collisions",
+            "new_expectation": "Both modes raise McpProfileError matching collid. Name, field, mode and four cases stay. The fixture is unchanged. The separate library-registry assertions in mode resolvable were removed.",
+            "old_expectation": "Mode resolvable was accepted because a suffix avoided the collision. The other mode failed with does not resolve.",
+            "option": "B1"
+          },
+          {
+            "decision": "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS",
+            "name": "_cycle10_base",
+            "new_expectation": "Absent, non-string, empty and an empty pre-fragment use the fixed URI. A non-string $id is not named in the decision text; check_schema rejects it anyway.",
+            "old_expectation": "urldefrag(schema.get('$id') or fixed)[0] made '#' the empty string.",
+            "option": "B1"
+          }
+        ]
+      },
       "decisions": [
         "REM-0063-CICLO-10-CONTRATTO (2026-11-16)",
         "REM-0063-CALCOLO-UNICO (2026-11-17)"
       ],
       "design_review": {
-        "disposition": "Integrated in this implementation. No second design review.",
+        "disposition": "Integrated, with one point left open. No second design review.",
+        "dispositions": [
+          {
+            "disposition": "json_bounds is one function. It runs on the descriptor, on each tool-schema field before closure, and on the assembled descriptor.",
+            "id": "P1",
+            "severity": "blocking"
+          },
+          {
+            "disposition": "autonomous_registry is an uncrawled registry. The crawl is a discarded error probe. The root is not re-pinned.",
+            "id": "P2",
+            "severity": "blocking"
+          },
+          {
+            "disposition": "Closure identity is unpinned lookup('#').contents. The boundary is scanned as well. A duplicate URI stays the producer error.",
+            "id": "P3",
+            "severity": "blocking"
+          },
+          {
+            "disposition": "The stricter-rule list in the README now includes the behaviours the existing tests already fix.",
+            "id": "P4",
+            "severity": "blocking"
+          },
+          {
+            "disposition": "Advisory. Duplicate helpers were removed. The shared functions are the ones named in Single calculation design.",
+            "id": "P5",
+            "severity": "advisory"
+          },
+          {
+            "disposition": "Advisory. Lookup stays the library lookup. _recover_scalar_target only recovers a scalar after that lookup fails. The nested-resource registration and the PointerToNowhere retry remain and are the open decision REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION, not a completed removal of hand registration.",
+            "id": "P6",
+            "severity": "advisory"
+          }
+        ],
         "request_id": "OCOR-DEV-REM-0063-3bad5d6ff394-pre",
         "result": "BLOCKING_FINDINGS"
       },
@@ -4933,7 +5195,120 @@
         "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle10-implementation/matrix-task.raw.log",
         "raw_sha256": "1b5b9de216e6fb52c93e88a990674d0ddf2f8e18ec8d17d457ae4093a550c803",
         "workdir": "ocor-runtime"
+      },
+      "code_commit": "eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a",
+      "repair_regression": {
+        "code_commit": "eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a",
+        "new_repair_and_cycle6_diagnostics": {
+          "deselected": 41809,
+          "duration_seconds": 2.52,
+          "exit_code": 0,
+          "failed": 0,
+          "note": "cycle10 crawl TypeError, null applicator, rejoined closure, type chains of 16 and 20, attached chain of 40, and the two cycle-6 non-schema diagnostics that must stay on the non-schema message.",
+          "passed": 119
+        },
+        "qualifying_campaign": false,
+        "selected_generated_matrix": {
+          "deselected": 30380,
+          "duration_seconds": 662.83,
+          "exit_code": 0,
+          "failed": 0,
+          "filter": "cycle10_generated_two_level or cycle10_generated_relative or cycle10_generated_cartesian or cycle10_delivered_cartesian or cycle4_a_percent or cycle8_synthetic or percent_encoded_fragments or cycle10_null_applicator",
+          "note": "Not the full 40180-cell suite and not a qualifying campaign. The matrix is not reduced.",
+          "passed": 11548,
+          "raw_log_sha256": "84dc47037d3f24df44e1234a044a3a78547e395b5d7cffa3b488885324f4c662"
+        }
       }
+    },
+    "decided_remaining_contract_questions": {
+      "branch": "governed/decision-request-rem0063-cycle10-remaining-contract-questions",
+      "commit": "99d93da7a481c44841d9d8003044aed37c026ce6",
+      "id": "REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS",
+      "path": "reports/development/decision_requests/REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS.md",
+      "pr": 654,
+      "recommended_options": [
+        "A1",
+        "B1",
+        "C1"
+      ],
+      "sha256": "edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8",
+      "status": "DECIDED_BY_PO",
+      "adopted_options": [
+        "A1",
+        "B1",
+        "C1"
+      ]
+    },
+    "pending_decision_request": {
+      "branch": "governed/decision-request-rem0063-cycle10-nested-resource-resolution",
+      "commit": "99172353fc2ac6b2a56aadf54321339d6ea9a4a4",
+      "id": "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION",
+      "path": "reports/development/decision_requests/REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION.md",
+      "pr": 658,
+      "recommended_options": [
+        "A1",
+        "B1",
+        "C1"
+      ],
+      "sha256": "66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729",
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+    },
+    "pre_campaign_review": {
+      "blocking": 6,
+      "advisory": 2,
+      "dispositions": [
+        {
+          "disposition": "Not fixed. Hand registration and the PointerToNowhere retry remain. REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION is open. The 39 cycle-6 cases are not realigned.",
+          "id": "P1",
+          "severity": "blocking"
+        },
+        {
+          "disposition": "Fixed. The closure is written on the library owner and the boundary is scanned. Test test_cycle10_rejoined_resource_closure.",
+          "id": "P2",
+          "severity": "blocking"
+        },
+        {
+          "disposition": "Fixed for TypeError from the crawl, which is NOT_RESOLVABLE. Other AttributeError values are not remapped, so the existing non-schema diagnostic stays. Test test_cycle10_crawl_type_error_is_typed.",
+          "id": "P3",
+          "severity": "blocking"
+        },
+        {
+          "disposition": "Fixed. One bound function is used by the profile and the generator. Chains of 16, 20 and 40 are accepted. Depth 33 stays refused. Limits 32 and 4096 are unchanged.",
+          "id": "P4",
+          "severity": "blocking"
+        },
+        {
+          "disposition": "Fixed. The self-check table names the successor functions. The collision row says COLLISION and does not say the URN is bumped. New rows name the shared paths, their tests and the library oracle where that oracle applies.",
+          "id": "P5",
+          "severity": "blocking"
+        },
+        {
+          "disposition": "Fixed. authorized_realignments is a table of old and new expectations. The phase-A boolean flags are false at this head and the phase-A copy stays historical.",
+          "id": "P6",
+          "severity": "blocking"
+        },
+        {
+          "disposition": "Advisory, evaluated. The unused depth constant is gone. json_bounds runs before operational_base. The fragment walk raises on depth. Empty schema-tree fields are gone. The uncalled profile surrogate helper is gone. The percent-decode docstring matches the library. The pass-cap message is unchanged. _recover_scalar_target stays and is scalar recovery, not a second resolver.",
+          "id": "P7",
+          "severity": "advisory"
+        },
+        {
+          "disposition": "Advisory, evaluated. Implementer effort is filled only from words already in each scope, or recorded as not stated. Decision citations now carry commit and sha256. Design-review dispositions are listed. The full pre-campaign gate is not yet run. The test comments for the authorized realignments name the decision that authorizes them.",
+          "id": "P8",
+          "severity": "advisory"
+        }
+      ],
+      "outcome_sha256": "13effc01c0ba02480b457c2f0fe215910c7f3136211c1423903ab2d18e1c3421",
+      "request_id": "OCOR-DEV-REM-0063-cce3ba8ba7ab-pre",
+      "result": "BLOCKING_FINDINGS",
+      "reviewer": {
+        "agent": "Claude Code",
+        "effort": "max",
+        "model": "claude-fable-5-2",
+        "provider": "Anthropic"
+      },
+      "reviewed_head": "cce3ba8ba7abd90a06296c4cc8a4fc09cb1364bf",
+      "second_review_requested": false
     }
   },
   "repair_cycle_2": {
@@ -6364,43 +6739,50 @@
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "OCOR-DEV-REM-0063 original cycle and repair cycles 1, 2, 3, 4, 5 and 6. Implementer Grok Build, grok-4.7, xAI. Cycle 7 is Codex CLI, deepseek-flash, DeepSeek, effort max. Cycle 8 is Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The verifier is not xAI, not Google, not DeepSeek and not Anthropic."
+        "scope": "OCOR-DEV-REM-0063 original cycle and repair cycles 1, 2, 3, 4, 5 and 6. Implementer Grok Build, grok-4.7, xAI. Cycle 7 is Codex CLI, deepseek-flash, DeepSeek, effort max. Cycle 8 is Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The verifier is not xAI, not Google, not DeepSeek and not Anthropic.",
+        "effort": "not stated for this entry"
       },
       {
         "agent": "Codex CLI",
         "model": "deepseek-flash",
         "provider": "DeepSeek",
-        "scope": "OCOR-DEV-REM-0063 repair cycle 7. Implementer Codex CLI, deepseek-flash, DeepSeek, effort max. The preventive reviewer of this cycle is Claude Code, claude-fable-5-2, Anthropic. The final verifier is Codex, OpenAI, in a separate context."
+        "scope": "OCOR-DEV-REM-0063 repair cycle 7. Implementer Codex CLI, deepseek-flash, DeepSeek, effort max. The preventive reviewer of this cycle is Claude Code, claude-fable-5-2, Anthropic. The final verifier is Codex, OpenAI, in a separate context.",
+        "effort": "max"
       },
       {
         "agent": "Codex CLI",
         "model": "deepseek-v4-pro",
         "provider": "DeepSeek",
-        "scope": "OCOR-DEV-REM-0063 repair cycle 8 through a3965ed45cd41435226fd338c3da7697e4e846bf. Implementer Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The preventive reviewer of this cycle was the loop reserve Cursor CLI, cursor-grok-4.6-xhigh, xAI. The final verifier is Codex, OpenAI, in a separate context."
+        "scope": "OCOR-DEV-REM-0063 repair cycle 8 through a3965ed45cd41435226fd338c3da7697e4e846bf. Implementer Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The preventive reviewer of this cycle was the loop reserve Cursor CLI, cursor-grok-4.6-xhigh, xAI. The final verifier is Codex, OpenAI, in a separate context.",
+        "effort": "max"
       },
       {
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "OCOR-DEV-REM-0063 repair cycle 8 completion from a3965ed45cd41435226fd338c3da7697e4e846bf to 53c2e3d50f7d3d74677dde695dd89bdd079961f0. Implementer Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the cycle. The preventive review already returned by the loop is OCOR-DEV-REM-0063-23e92ef60dd8-pre; PRE-CAMPAIGN-REVIEW (2026-10-26) point 3 does not require another review after the correction. The final verifier is Codex, OpenAI."
+        "scope": "OCOR-DEV-REM-0063 repair cycle 8 completion from a3965ed45cd41435226fd338c3da7697e4e846bf to 53c2e3d50f7d3d74677dde695dd89bdd079961f0. Implementer Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the cycle. The preventive review already returned by the loop is OCOR-DEV-REM-0063-23e92ef60dd8-pre; PRE-CAMPAIGN-REVIEW (2026-10-26) point 3 does not require another review after the correction. The final verifier is Codex, OpenAI.",
+        "effort": "xhigh"
       },
       {
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "OCOR-DEV-REM-0063 repair cycle 9. Implementer Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the task. The preventive review OCOR-DEV-REM-0063-3c1fa6fa53a6-pre returned BLOCKING_FINDINGS and is corrected at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. PRE-CAMPAIGN-REVIEW (2026-10-26) point 3: no further preventive review. The final verifier is Codex, OpenAI."
+        "scope": "OCOR-DEV-REM-0063 repair cycle 9. Implementer Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the task. The preventive review OCOR-DEV-REM-0063-3c1fa6fa53a6-pre returned BLOCKING_FINDINGS and is corrected at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. PRE-CAMPAIGN-REVIEW (2026-10-26) point 3: no further preventive review. The final verifier is Codex, OpenAI.",
+        "effort": "xhigh"
       },
       {
         "agent": "Codex",
         "model": "gpt-6.1-sol",
         "provider": "OpenAI",
-        "scope": "Cycle 10 phase A: contract, full Cartesian RED matrix, both contract-review dispositions, normative questions and checkpoint record. gpt-6.1-sol, OpenAI, effort max. No production change."
+        "scope": "Cycle 10 phase A: contract, full Cartesian RED matrix, both contract-review dispositions, normative questions and checkpoint record. gpt-6.1-sol, OpenAI, effort max. No production change.",
+        "effort": "max"
       },
       {
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "Cycle 10 from REM-0063-CALCOLO-UNICO (2026-11-17): code owner and author of the Single calculation design at 4e481c3e23e9191c05a334f2b36fe12c7ec1a888. Codex gpt-6.1-sol, OpenAI, remains the phase-A author. No production change in the design commit. Preventive reviewer Claude Code claude-fable-5-2. Final verifier Claude Code claude-opus-5-5, same provider as the reviewer and a different model, as the PO assigned."
+        "scope": "Cycle 10 from REM-0063-CALCOLO-UNICO (2026-11-17): code owner and author of the Single calculation design at 4e481c3e23e9191c05a334f2b36fe12c7ec1a888. Codex gpt-6.1-sol, OpenAI, remains the phase-A author. No production change in the design commit. Preventive reviewer Claude Code claude-fable-5-2. Final verifier Claude Code claude-opus-5-5, same provider as the reviewer and a different model, as the PO assigned.",
+        "effort": "not stated in this scope entry"
       },
       {
         "agent": "Grok Build",
@@ -6538,9 +6920,10 @@
       "independence_limits": "Anthropic differs from all implementers; the PO assigns final verifier claude-opus-5-5 of the same provider and a different model under VERIFIER-CLAUDE-REM0063 (2026-11-16).",
       "model": "claude-fable-5-2",
       "provider": "Anthropic",
-      "request_id": null,
+      "request_id": "OCOR-DEV-REM-0063-3bad5d6ff394-pre",
       "reserve": false,
-      "status": "DESIGN_REVIEW_INTEGRATED_PRE_CAMPAIGN_PENDING"
+      "status": "DESIGN_REVIEW_INTEGRATED_PRE_CAMPAIGN_RETURNED_CAMPAIGN_WAITING",
+      "pre_campaign_request_id": "OCOR-DEV-REM-0063-cce3ba8ba7ab-pre"
     },
     "verifier_excluded_providers": [
       "DeepSeek",
