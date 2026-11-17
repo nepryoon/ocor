@@ -35,17 +35,21 @@ Cycle 8 prereview-fix code is `edfe829322d57875c2bd0685a50f9710b4636726`, closin
 ## Cycle 10 contract
 
 Phase A, completed after the second and final contract review, stays valid.
-Production remains byte-identical to `f485dc964e47bde83842ecd5ba2627d8342612f9`.
-This derived contract implements **REM-0063-CICLO-10-CONTRATTO (2026-11-16)**,
-points 1–3, and the single-calculation design required by
-**REM-0063-CALCOLO-UNICO (2026-11-17)** before any production edit. It closes no
-production finding. Codex (`gpt-6.1-sol`, OpenAI, effort `max`) authored phase A
-and does not own the cycle-10 code. From **REM-0063-CALCOLO-UNICO (2026-11-17)**
-point 1, Grok Build (`grok-4.7`, xAI, effort `xhigh`) owns the code. Earlier
-implementers remain Grok Build (`grok-4.7`, xAI) and Codex CLI (`deepseek-flash`,
-`deepseek-v4-pro`, DeepSeek). The preventive reviewer is Claude Code
-(`claude-fable-5-2`, Anthropic, effort `max`). Final verifier: Claude Code
-(`claude-opus-5-5`, Anthropic, effort `max`), assigned by
+The phase-A production tree was byte-identical to
+`f485dc964e47bde83842ecd5ba2627d8342612f9`. The implementation commit is the
+production edit. This derived contract implements
+**REM-0063-CICLO-10-CONTRATTO (2026-11-16)**, points 1–3, and the single
+calculation required by **REM-0063-CALCOLO-UNICO (2026-11-17)**. Codex
+(`gpt-6.1-sol`, OpenAI, effort `max`) authored phase A and does not own the
+cycle-10 code. From **REM-0063-CALCOLO-UNICO (2026-11-17)** point 1, Grok
+Build (`grok-4.7`, xAI, effort `xhigh`) owns the code and wrote this
+implementation. Earlier implementers remain Grok Build (`grok-4.7`, xAI) and
+Codex CLI (`deepseek-flash`, `deepseek-v4-pro`, DeepSeek). The preventive
+reviewer is Claude Code (`claude-fable-5-2`, Anthropic, effort `max`). The
+design review `OCOR-DEV-REM-0063-3bad5d6ff394-pre` returned
+`BLOCKING_FINDINGS`; that review is the only design review, its findings are
+integrated here, and no further design review is requested. Final verifier:
+Claude Code (`claude-opus-5-5`, Anthropic, effort `max`), assigned by
 **VERIFIER-CLAUDE-REM0063 (2026-11-16)**. The PO declares the same-provider,
 different-model limit between reviewer and verifier. No implementer is Anthropic.
 
@@ -89,9 +93,8 @@ slash follow the original libraries, without helper substitutions (A1 above).
 A1 of **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)** extends that
 realignment to the single omitted case `encoded-slash` of
 `test_percent_encoded_fragments_resolve_before_the_pointer`: same name, inputs
-and 19 cases; only `encoded-slash` will expect `McpProfileError`. This design
-commit does not change that existing test. The implementation commit does, and
-the record lists the old and new expectation. No other existing test changes.
+and 19 cases; only `encoded-slash` expects `McpProfileError`. The implementation
+commit records the old and new expectation. No other existing test changes.
 
 Only reference spellings starting with `#` are accepted, even when an URI naming
 a contained resource resolves without network access. The generator emits only
@@ -169,9 +172,10 @@ mutual cross-product. Their restrictions are:
   `NOT_EXECUTED`, never a passing instance. Nonrecursive entry probes really run.
 - B1/C1: empty and fragment-only roots use the fixed base; collision rows
   cover only the same schema, including index 1 and final-empty-fragment
-  identity. The phase-A oracle `_cycle10_base` still treats `"#"` as an empty
-  base. The implementation commit aligns that unsealed oracle to B1 and
-  records the difference. No cell is removed.
+  identity. The unsealed phase-A oracle `_cycle10_base` previously used
+  `urldefrag(schema.get("$id") or fixed)[0]`, so `"#"` became the empty
+  string. The implementation commit aligns it to B1: absent, non-string,
+  `""` and an empty pre-fragment use the fixed URI. No cell is removed.
 
 The static matrix oracle uses `Resource.subresources`, `Resolver.in_subresource`
 and `Resolver.lookup` on the original resource, preserving registry crawl state.
@@ -197,135 +201,125 @@ adds no test. There is no third contract review.
 
 The official fixture remains byte-identical. **REM-0063-PINNED-FIXTURE-DIFF-CHECK
 (2026-11-16)**, option 1, leaves its whitespace check `NOT_GREEN` with a recorded
-exception; every other file retains the check. No production repair or full
-campaign has started. After the single design review, one implementation turns
-the whole matrix and the existing tests green, then preventive review, local
-gate, campaign, distinct check and final verification. Fence unchanged:
+exception; every other file retains the check. The design review is integrated
+in the implementation. The task module on this implementation passed 41896
+tests, with 0 failures, 0 errors and 0 skipped, in 829.49 s (JUnit time
+829.323 s). Raw log sha256
+`1b5b9de216e6fb52c93e88a990674d0ddf2f8e18ec8d17d457ae4093a550c803`; JUnit
+sha256 `5a1f1d541cdd3475a990188f7556c0d3010fc93147fb0bc01b3db4e2a86569ef`.
+Both files are preserved as `matrix-task.raw.log` and `matrix-task.junit.xml`
+under `~/.ocor-codex/rem-0063/cycle10-implementation/`. An earlier run stopped
+by `--maxfail=20` is not green: 20 failed, 41534 passed, exit 1, raw sha256
+`17a76e58dd4fdf5a4b6a52f2ee1d78609fdd1cb4f1f45a2eefd8d6824b8cf618`
+(`matrix-green.raw.log`). The matrix stays 40180 cells. This task-module run
+is not a qualifying campaign. The next review is the pre-campaign preventive
+review, not another design review. Local gates, the four-lane campaign, the
+distinct check and final verification follow that review. Fence unchanged:
 E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.
 
 ### Single calculation design
 
-**REM-0063-CALCOLO-UNICO (2026-11-17)** points 3–4. This commit does not modify
-`ocor-runtime/src/`. The shared functions below will live in
-`ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`, which `codegen.py` already
-imports. No new file under `ocor-runtime/src/`. Duplicate helpers that the
-table retires are deleted in the implementation commit. Matrix expectations
-stay the pinned libraries on the original schema bytes, never a production
-function.
+**REM-0063-CALCOLO-UNICO (2026-11-17)** points 3 and 5, superseding the
+pre-implementation text of this subsection. Shared functions live in
+`ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`. `codegen.py` imports them.
+No new file under `ocor-runtime/src/`. No dependency or version change.
+Matrix expectations stay the pinned libraries on the original schema bytes.
 
-No contract question remains open, so no shared function is left depending on
-an undecided option. Q4/A1 changes only the existing `encoded-slash` assertion
-named above. Q5/B1 is the base rule of `operational_base`: absent, non-string,
-`""` and an identifier with an empty pre-fragment part (`"#"`, `"###"`) use
-`urn:ocor:embedded-tool:{index}:{field}`; every other root `$id` uses that
-pre-fragment part. The schema bytes are not rewritten. Q6/C1 limits the
-fixed-base collision to string `$id` values inside that same schema, and a
-trailing empty fragment is the same identity. A suffix that dodges the
-collision is forbidden.
+No contract question remains open. Q4/A1 refuses a percent-encoded plain-name
+anchor and the encoded-slash pointer before a successful literal resolve.
+Q5/B1 is `operational_base`: absent, non-string, `""` and an empty
+pre-fragment (`"#"`, `"###"`) use `urn:ocor:embedded-tool:{index}:{field}`;
+every other root `$id` uses `urldefrag(...)[0]`. Q6/C1 scans every string
+`$id` in that schema, including `const`, `default`, `examples` and `enum`,
+and only against the fixed base. A trailing empty fragment is the same
+identity. No suffix.
 
-Shared functions and the errors they surface. Callers map
-`SchemaCalculationFailure` to the public type already used on that path:
-`McpProfileError` in `validate_mcp_descriptor`, `C1Error` in `_mcp`. The public
-message and `DiagnosticCode` stay those the tests already name.
+`SchemaCalculationFailure` carries `code` and `message`. The profile maps
+`CRAWL` and `NOT_RESOLVABLE` to `MCP schema resource index is not resolvable`,
+`INVALID_ID` to `MCP $id is not a valid URI reference`, and every other code
+to `message`. The generator maps `CRAWL` to `C1Error`/`UNRESOLVED_REFERENCE`
+(`unresolved MCP definition`), `NOT_RESOLVABLE` to `TYPE_ERROR` (`MCP schema
+resource is not resolvable`), `INVALID_ID` and `COLLISION` and `BOUNDS` to
+`TYPE_ERROR` with the shared message.
 
-1. `operational_base(schema, *, index, field) -> str`. Errors: `COLLISION`
-   (`McpProfileError` or `C1Error`/`TYPE_ERROR`) when the fixed base equals a
-   `$id` in that schema under C1; `INVALID_ID` (`TYPE_ERROR`, message
-   `MCP $id is not a valid URI reference`) when a declared pre-fragment part
-   is not a URI reference. No suffix.
-2. `json_bounds(document) -> None`. One walk. The root counts as one JSON
-   value; object keys do not count. Depth starts at 1. Error `BOUNDS`
-   (`MCP schema exceeds the revision bounds`, profile; `C1Error`/`TYPE_ERROR`
-   with that message, generator) when the value count exceeds 4096 or the
-   depth exceeds 32. The profile's non-JSON refusals (lone surrogate,
-   non-finite number, non-JSON value) stay on this same walk and are not a
-   second counter. The generator calls it on the schema after `$defs` closure,
-   before the artefact is returned, and the profile calls it on the descriptor
-   it receives.
-3. `autonomous_registry(schema, base_uri) -> Registry`. Built only with
-   `referencing` 0.37.0: `Registry().with_resource(base_uri, DRAFT202012.create_resource(schema)).crawl()`.
-   The root URI entry stays the resource passed to `with_resource`, because
-   the library resolver keeps that root until an `$id` changes the base. That
-   pin does not walk pointers and does not rewrite bytes. Crawl failure is
-   `NOT_RESOLVABLE` (`MCP schema resource index is not resolvable`, or
-   `C1Error`/`UNRESOLVED_REFERENCE` on the generator).
-4. `lookup_original(registry, base_uri, reference) -> Lookup`.
-   `registry.resolver(base_uri).lookup(reference)` on the original spelling.
-   The result carries the library contents and the resolver `lookup` returned,
-   so an anchor chain keeps that resolver. `Unresolvable` is
-   `UNRESOLVED_REFERENCE` (`MCP $ref does not resolve in the descriptor`, or
-   `C1Error`/`UNRESOLVED_REFERENCE`). No decode-and-re-encode step feeds the
-   lookup.
+1. `json_bounds(document) -> None`. One walk. The root counts as one JSON
+   value; keys do not count; depth starts at 1. `BOUNDS` above 4096 values
+   or depth 32. Lone surrogates, non-finite numbers and non-JSON values fail
+   on this walk. The profile calls it on the whole descriptor after the
+   existing top-level `$defs` check and before the registry. `_mcp` calls
+   the same function on the final descriptor after every closure and before
+   `_json`. The call inside `_mcp_attach_definitions` is an early exit on
+   that schema, not a second limit.
+2. `operational_base(schema, *, index, field) -> str`. No suffix. `COLLISION`
+   message `MCP schema base collides with a declared $id`.
+3. `autonomous_registry(schema, base_uri, *, registry_factory=Registry, translate_null_applicator=False) -> Registry`.
+   Two registries are built with `registry_factory`. `probe.crawl()` is
+   discarded. The returned registry is never crawled and pins only the root
+   passed to `with_resource`. `registry_factory` is the `codegen.Registry`
+   global, read at the call inside `_mcp_attach_definitions`. Non-string
+   `$id` values in schema position are `NOT_RESOLVABLE` before the resource
+   is built. `Unresolvable` from the probe is `CRAWL`. `AttributeError` on
+   `NoneType.values` or `rstrip` is `NOT_RESOLVABLE`. On the generator only,
+   `NoneType.get` is `CRAWL`. `ValueError` is `INVALID_ID`. An unreferenced
+   `$id` in instance data is not this refusal.
+4. `enter_subschema(resolver, child) -> tuple[Resolver, bool]`. The boundary
+   is `in_subresource` changing the base. A changed base is registered with
+   `with_resource` only when the child is a library subresource of the
+   resource `lookup("#")` already returns. An `$id` reached only through
+   instance data changes the base and stays unregistered, so a later fragment
+   fails closed. The caller's registry is not replaced.
+5. `assert_reference_path_bound(schema, resolver) -> None`. A `$ref` path
+   deeper than 32 is `BOUNDS`. This is stricter than `json_bounds` and
+   stricter than the library. The generator calls it from `_mcp_post_check`.
+   Anchor-chain depth tests are unchanged.
 
-Resource identity for closure placement is the crawled registry, not a second
-`urljoin` walker. `contained_resources` is that registry's entries. Two
-distinct nodes that the library assigns one URI are `DUPLICATE_RESOURCE` on
-the generator only (`C1Error`); the profile keeps the library's last-wins
-result for siblings and does not invent another winner.
+Lookup uses the original reference spelling. An encoded fragment whose
+decoded form does not start with `/` is refused before lookup. A plain-name
+anchor with more than one owner of the same resource, keyed by `id` of the
+resource root, is `MCP $ref anchor is ambiguous`; one node that declares both
+`$anchor` and `$dynamicAnchor` with the same name is one owner. Pointer
+indexes are checked on the decoded tokens; the primary lookup stays the
+original spelling. `AttributeError` from a scalar target is recovered by
+walking the original `#/` pointer on `lookup("#").contents`. A
+`PointerToNowhere` on the resource pinned at the current base is retried
+once after that URI is removed from the same registry, so a descendant whose
+`$id` rejoins the URI is the resource the library crawl returns. The retry
+does not build a new root resolver. The resolver `lookup` returns is the one
+an anchor chain continues with.
 
-| Duplicated today | Disposition |
-| --- | --- |
-| `_declared_id` / `_mcp_declared_id` | Merge into `operational_base`. |
-| `_resource_uri` / `_mcp_resource_uri`, `_changes_resource` / `_mcp_changes_resource` | Delete. Identity comes from the registry. |
-| `_synthetic_tool_uri` / `_mcp_synthetic_uri` (suffix loop) | Delete. Collision refuses. |
-| `_collect_declared_ids` / `_mcp_collect_ids` | Merge into the C1 collision read inside `operational_base`. |
-| `_walk_json` bounds and `_mcp_bounds` | Merge into `json_bounds`. |
-| `_crawl_document_resources`, `_same_uri_resource_ancestors`, `_mcp_iter_resources`, `_mcp_post_check` crawl | Merge into `autonomous_registry`. |
-| `_resolve_reference` rewrite and `_lookup_reference` / post-check `lookup` | Merge into `lookup_original`. |
-| `_iter_schema_children` versus `DRAFT202012.subresources_of` | Resolution uses only the library subresources. |
-| `_mcp_ref`, `_mcp_defs_name`, `_mcp_select_body`, name clash, `without_context_overwrite` | Stay. They emit or select definition bodies; they do not resolve `$ref`. |
-| `_PROFILE_SPECIFICATION` scalar guard | Stays only as the typed translation of the library `AttributeError` on a scalar target. It must not select a different resource. |
+The generator walks resources with `in_subresource` only. Two different nodes
+that receive one base are `DUPLICATE_RESOURCE`. The closure owner is the
+unpinned `lookup("#").contents`, or the boundary node when that lookup cannot
+retrieve a relative base. A node is a closure root when that owner is the
+node, including a rejoining `"#"`. The earlier rule that treated every base
+change as its own closure root is superseded: a joined URI whose unpinned
+crawl returns an ancestor keeps the reachable references on that ancestor,
+and unreachable `$defs` on the descendant are omitted.
+`additionalItems` stays on the current resource unless its base changes, in
+which case the generator reports `MCP schema resource is not crawled`.
+`_mcp_attach_definitions` keeps its signature. `_mcp_ref`, `_mcp_defs_name`,
+`_mcp_select_body`, the name-clash error and `without_context_overwrite` stay.
+There is no cross-schema identifier union and no suffix loop.
 
-Rules stricter than `referencing` 0.37.0 and `Draft202012Validator`. Each runs
-after the library result, refuses something the library would still accept or
-maps a library failure to the typed error, and does not change a successful
-library target.
+Historical rows for the deleted helpers stay in the record. This implementation
+deletes `_declared_id`, `_resource_uri`, `_changes_resource`,
+`_synthetic_tool_uri`, `_collect_declared_ids`, `_walk_json`,
+`_crawl_document_resources`, `_same_uri_resource_ancestors`,
+`_collect_node_uris`, `_canonical_resource_contents`, the hand-written
+resolver and `_PROFILE_SPECIFICATION`. The generator deletes `_mcp_bounds`,
+`_mcp_declared_id`, `_mcp_resource_uri`, `_mcp_changes_resource`,
+`_mcp_collect_ids`, `_mcp_synthetic_uri` and `_mcp_base_uri`.
 
-1. Reference spelling must start with `#`. Other spellings, including a URI
-   that names a contained resource, are refused. Profile:
-   `MCP $ref must be a same-document fragment`. Generator:
-   `C1Error`/`UNRESOLVED_REFERENCE`. Source:
-   **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1.
-2. A resolved target that is not a JSON Schema 2020-12 schema, including a
-   boolean schema only when `check_schema` accepts it, is
-   `MCP $ref target is not a JSON Schema 2020-12 schema`. Source:
-   **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
-3. A `$schema` outside the accepted 2020-12 dialect is
-   `MCP schema dialect must be JSON Schema 2020-12`. `$dynamicRef` and
-   `$recursiveRef` are `MCP $ref resolution does not follow dynamic references`.
-   Source: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
-4. A plain-name anchor owned by more than one node of the same resource is
-   `MCP $ref anchor is ambiguous`. A non-canonical array index, judged from
-   the parent object `lookup_original` returned for the original pointer
-   prefix, is `MCP $ref fragment is not a valid JSON Pointer`. Malformed
-   percent-encoding and a non-UTF-8 fragment keep their current typed
-   messages. These checks do not replace the reference passed to `lookup`.
-   Source: the profile module as already tested; percent-encoded leading
-   slash additionally **REM-0063-CYCLE10-ORACLE-CONFLICT** A1 and Q4/A1.
-5. Fixed-base collision inside the same schema, including a final `#`, is
-   rule `COLLISION` above. No suffix. Source: **ORACLE-CONFLICT** B1 and Q6/C1.
-6. Two generator nodes with one library URI are `DUPLICATE_RESOURCE`. Source:
-   the producer rule already in this contract; stricter than library last-wins.
-7. A descriptor `$defs` above the tool schemas is refused by the profile.
-   The generator emits none. A same-name definition with different content is
-   `C1Error`/`TYPE_ERROR` (`MCP definition name clash`). Source:
-   **MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**, points 1–2.
-8. `without_context_overwrite` remains the profile function the generator
-   already calls. Source: **GENERATORE**, point 1.
-9. Bounds are `json_bounds`, not a second limit. Source:
-   **REM-0063-CICLO-10-CONTRATTO**, point 2, and
-   **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
+Rules stricter than the libraries, each with its own typed error:
 
-Call sites. `validate_mcp_descriptor`, for each `inputSchema` and
-`outputSchema`: `operational_base`, `autonomous_registry`, `json_bounds`, then
-the stricter checks, then `lookup_original` for every `$ref`. `_mcp` and
-`_mcp_attach_definitions`: the same base and registry to decide which resource
-receives which `#/$defs/<Name>` closure; `lookup_original` before returning
-bytes; `json_bounds` on the closed schema. The anchor-chain rule is unchanged:
-the static matrix oracle is not this calculation, and a static failure still
-refuses the descriptor only when no reference path reaches that node
-(**REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**, final paragraph).
+1. A reference must start with `#`. Profile: `MCP $ref must be a same-document fragment`. Generator: `C1Error`/`UNRESOLVED_REFERENCE`. Source: **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1.
+2. A target that is not a JSON Schema is `MCP $ref target is not a JSON Schema`. Source: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
+3. A `$schema` outside draft 2020-12, and `$dynamicRef` / `$recursiveRef`, keep their existing typed refusals. Source: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
+4. Ambiguous anchors and non-canonical array indexes stay profile refusals. Encoded plain-name anchors do not resolve. Source: the tested profile rules, **ORACLE-CONFLICT** A1 and Q4/A1.
+5. Fixed-base collision. Source: **ORACLE-CONFLICT** B1 and Q6/C1.
+6. Generator duplicate URI. Source: the producer rule; stricter than library last-wins.
+7. No descriptor `$defs`. Name clash: `MCP definition name clash`. Source: **MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**.
+8. `without_context_overwrite` on the input schema. Source: **GENERATORE**, point 1.
+9. `json_bounds` is the only value-count limit. Reference-path depth 32 is a separate rule. Source: **REM-0063-CICLO-10-CONTRATTO**, point 2, and **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
 
-The implementation commit is the only production edit. It does not add a
-dependency, change a version, or accept a spelling these decisions refuse.
-After a `NO_GO` of this cycle there is no further cycle.
+`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `operational_base` and `_mcp_attach_definitions` per field, then `json_bounds` on the assembled descriptor. A static failure still refuses the descriptor only when no reference path reaches that node. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.

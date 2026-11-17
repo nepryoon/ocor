@@ -720,7 +720,17 @@ _ENCODED_POINTERS = (
     ids=[case[0] for case in _ENCODED_POINTERS],
 )
 def test_percent_encoded_fragments_resolve_before_the_pointer(ref: str, definitions: Mapping[str, Any]) -> None:
-    """VF-001 and the schema-shaped targets of VF-002. Decode, then resolve."""
+    """VF-001 and the schema-shaped targets of VF-002.
+
+    REM-0063-CYCLE10-ORACLE-CONFLICT A1: case ``encoded-slash``
+    (``#%2F$defs/a%20b``) is refused. The other 18 cases stay accepted.
+    Old expectation for ``encoded-slash``: the profile accepted the reference.
+    """
+    if ref == "#%2F$defs/a%20b":
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        with pytest.raises(profile.McpProfileError):
+            _validate(_with_ref(ref, definitions))
+        return
     _validate(_with_ref(ref, definitions))
 
 
@@ -1396,18 +1406,30 @@ def test_cycle4_an_anchor_shared_by_dynamic_and_plain_keywords_is_ambiguous() ->
 
 
 def test_cycle4_a_percent_encoded_plain_name_is_decoded_before_classification() -> None:
-    """``#p%61rt`` decodes to ``part``. The slash test is what forces this order."""
+    """``#p%61rt`` is refused. The library does not decode anchor names.
+
+    REM-0063-CYCLE10-ORACLE-CONFLICT A1. Old expectation: the profile accepted
+    ``#p%61rt`` as ``#part``.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _cycle4_anchor_document("#p%61rt", {"part": {"$anchor": "part", "type": "integer"}})
-    _validate(document)
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
 
 
 def test_cycle4_a_percent_encoded_slash_stays_a_json_pointer() -> None:
-    """``#%2F`` decodes to ``/``, so the fragment is a pointer, not an anchor."""
+    """``#%2F$defs/part`` is refused. The library does not treat ``%2F`` as ``/``.
+
+    REM-0063-CYCLE10-ORACLE-CONFLICT A1. Old expectation: the profile accepted
+    the reference as a JSON Pointer.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _cycle4_anchor_document(
         "#%2F$defs/part",
         {"part": {"$anchor": "part", "type": "integer"}},
     )
-    _validate(document)
+    with pytest.raises(profile.McpProfileError):
+        _validate(document)
 
 
 def test_cycle4_a_decoded_absent_name_does_not_select_the_undecoded_anchor() -> None:
@@ -1571,13 +1593,19 @@ def test_cycle4_an_anchor_on_the_tool_schema_itself_resolves(field: str) -> None
 
 @pytest.mark.parametrize("keyword", ["$anchor", "$dynamicAnchor"])
 def test_cycle4_a_percent_encoded_tool_schema_anchor_is_decoded(keyword: str) -> None:
-    """``#p%61rt`` is ``part`` inside the tool schema, after decoding."""
+    """``#p%61rt`` inside the tool schema is refused for both anchor keywords.
+
+    REM-0063-CYCLE10-ORACLE-CONFLICT A1. Old expectation: acceptance after
+    decoding, for ``$anchor`` and ``$dynamicAnchor``.
+    """
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     schema = {
         "type": "object",
         "$defs": {"part": {keyword: "part", "type": "integer"}},
         "properties": {"x": {"$ref": "#p%61rt"}},
     }
-    _validate(_cycle4_embedded_tool(schema))
+    with pytest.raises(profile.McpProfileError):
+        _validate(_cycle4_embedded_tool(schema))
 
 
 def test_cycle4_an_absent_tool_schema_anchor_does_not_resolve() -> None:
@@ -1835,7 +1863,7 @@ _CYCLE5_ORACLE_FRAGMENT = {
     "#/$defs/part": "#/$defs/part",
     "#/$defs/p%61rt": "#/$defs/p%61rt",
     "#part": "#part",
-    "#p%61rt": "#part",
+    "#p%61rt": "#p%61rt",
     "#/$defs/a%20b": "#/$defs/a%20b",
     "#/$defs/bad": "#/$defs/bad",
 }
@@ -2006,7 +2034,7 @@ def _cycle5_current_resource(
 
 
 def _cycle5_lookup(resource: Mapping[str, Any], ref: str) -> tuple[Any, BaseException | None]:
-    """Resolve ``ref`` with referencing 0.37.0 on ``resource``. Anchor names are decoded."""
+    """Resolve ``ref`` with referencing 0.37.0. The oracle does not rewrite it."""
     import importlib.metadata
     from referencing import Registry, Resource
     from referencing.jsonschema import DRAFT202012
@@ -2043,9 +2071,8 @@ def _cycle5_library_accepts(contents: Any, error: BaseException | None) -> bool:
 def _cycle5_counterproof(schema: Mapping[str, Any], ref: str) -> None:
     """Draft202012Validator accepts a good instance and rejects a bad one.
 
-    The instance check uses the oracle fragment. referencing 0.37.0 and
-    Draft202012Validator percent-decode JSON Pointers and do not percent-decode
-    plain-name anchors; ``#p%61rt`` is compared as ``#part``.
+    The instance check uses the original reference. REM-0063-CYCLE10-ORACLE-CONFLICT
+    A1: the counterproof does not replace ``#p%61rt`` with ``#part``.
     """
     from jsonschema import Draft202012Validator
 
@@ -2224,7 +2251,7 @@ _CYCLE6_ORACLE_FRAGMENT = {
     "#/$defs/part": "#/$defs/part",
     "#/$defs/p%61rt": "#/$defs/p%61rt",
     "#part": "#part",
-    "#p%61rt": "#part",
+    "#p%61rt": "#p%61rt",
 }
 
 
@@ -3990,41 +4017,17 @@ def test_cycle8_synthetic_uri_avoids_declared_id_collisions(
     field: str,
     mode: str,
 ) -> None:
-    """A declared ``$id`` that spells the candidate base URI is not a crash.
+    """Both modes refuse the fixed base before lookup.
 
-    P4 of the prereview: ``_synthetic_tool_uri`` reads every declared
-    ``$id`` and picks a URI that collides with none, so the tool schema
-    keeps an autonomous base. The inner reference resolves in the nested
-    resource when its target exists and fails with the resolution reason
-    otherwise; referencing 0.37.0 on the schema alone gives the same
-    outcome for both.
+    REM-0063-CYCLE10-ORACLE-CONFLICT B1. The name, the field and mode
+    parameters and the four cases stay. The fixture is unchanged. Old
+    expectation: mode ``resolvable`` was accepted because a suffix avoided
+    the collision, and the other mode failed with ``does not resolve``.
     """
-    from jsonschema import Draft202012Validator
-    from jsonschema.exceptions import _WrappedReferencingError
-    from referencing import Registry
-    from referencing.jsonschema import DRAFT202012
-
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _cycle8_uri_collision_document(field=field, mode=mode)
-    body = document["tools"][0][field]
-    registry = Registry().with_resource(
-        "urn:ocor:probe:0",
-        DRAFT202012.create_resource(body),
-    )
-    validator = Draft202012Validator(
-        body,
-        registry=registry,
-        _resolver=registry.resolver("urn:ocor:probe:0"),
-    )
-    if mode == "resolvable":
-        assert validator.is_valid({"a": {"n": 11}})
-        assert not validator.is_valid({"a": {"n": "bad"}})
+    with pytest.raises(profile.McpProfileError, match=r"collid"):
         _validate(document)
-    else:
-        with pytest.raises(_WrappedReferencingError):
-            validator.is_valid({"a": {"n": 11}})
-        with pytest.raises(profile.McpProfileError, match="does not resolve"):
-            _validate(document)
 
 
 @pytest.mark.parametrize("defs_order", ("wrap_first", "x_first"))
@@ -5119,10 +5122,21 @@ _CYCLE10_TYPE_NAME = "urn.ocor.type.vessel-status"
 
 
 def _cycle10_base(schema: Mapping[str, Any], field: str, *, index: int = 0) -> str:
-    """Decision MCP-TOOL-SCHEMA-AUTONOMO point 1; no code under test used."""
+    """B1 base. No code under test. Absent, non-string, ``""`` and an empty pre-fragment use the fixed URI.
+
+    Old oracle: ``urldefrag(schema.get("$id") or fixed)[0]``, so ``"#"`` became
+    the empty string. New oracle: that identifier uses the fixed URI.
+    """
     from urllib.parse import urldefrag
 
-    return urldefrag(schema.get("$id") or f"urn:ocor:embedded-tool:{index}:{field}")[0]
+    fixed = f"urn:ocor:embedded-tool:{index}:{field}"
+    declared = schema.get("$id")
+    if not isinstance(declared, str) or declared == "":
+        return fixed
+    base = urldefrag(declared)[0]
+    if base == "":
+        return fixed
+    return base
 
 
 def _cycle10_identifier(kind: str, root: str, field: str) -> str | None:
