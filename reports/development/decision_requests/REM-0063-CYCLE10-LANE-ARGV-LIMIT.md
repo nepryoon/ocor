@@ -112,3 +112,11 @@ unità di partizione continuano a stare nell'argv. Nessun nuovo `DEC-*`.
 Nessuna modifica a `inputs/`, ai record sigillati, ai gate o ai claim.
 L'estensione dell'allowlist del validatore del piano per il percorso di
 questa richiesta è un change set a parte e non fa parte di questa pubblicazione.
+
+## Disposition
+
+Decisa dal PO di persona il 2026-11-17. Opzione 1. Le opzioni 2 e 3 non sono applicate.
+Il change set governato, distinto dal branch di produzione `governed/ocor-dev-rem-0063-mcp-profile`, è `governed/rem0063-lane-argv-overflow`, commit `364f853cfe41f2dd5413c78a2b2b0ce665b77b34`, PR #664, merge `49ec6ed27e093142cf63d0343a6b40a509b6a5bf` su `main`. I soli file modificati sono `scripts/run_local_lane_campaign.py` e `reports/tests/test_local_lane_campaign.py`.
+Per una selezione che sta in `ARG_MAX` il comando resta quello che il test sigillato asserisce, identificativi compresi. Per una selezione che non ci sta, la corsia legge la selezione dallo spec già scritto e pytest riceve gli stessi identificativi, gli stessi flag di coverage e lo stesso JUnit. La raccolta che non sta in `ARG_MAX` usa lo stesso spec e lo stesso ordine, dentro lo stesso file di corsia. `scripts/run_qualifying_campaign.py` e `partition_units` non sono modificati.
+La campagna `5a1a8aaff6af-1794907944` resta FAIL diagnostica e non è un PASS. Il gate sullo head `5a1a8aaff6af95470171c1add7f9e85f1ec997a8` non è rieseguito. Il controllo distinto non è eseguito.
+L'estensione dell'allowlist del validatore del piano non fa parte di questa pubblicazione. Il testo della richiesta sopra questa sezione resta quello del commit `1ffdbaaf23a82753df87c136989c51e23bffe40b`, sha256 `fa95ed2da8c67ae6d967ace3cc59ad527f554be3e950166e1ad31cf5c96ac4e1`.
