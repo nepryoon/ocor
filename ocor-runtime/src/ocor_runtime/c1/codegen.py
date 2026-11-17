@@ -398,17 +398,15 @@ def _mcp_uncrawled_schemas(
     return [extra]
 
 
-def _mcp_unpinned_crawl_owner(resolver: Any, child: Mapping[str, Any]) -> object | None:
-    """Object ``lookup("#")`` returns before ``enter_subschema`` pins ``child``.
+def _mcp_library_resource(entered: Any) -> object | None:
+    """Object ``lookup("#")`` returns on the resolver ``enter_subschema`` gave.
 
-    The pin makes a later fragment read the boundary node. Closure ownership
-    follows the registry that does not yet contain that pin. A relative
-    ``$id`` equal to the parent id joins a new URI; the crawl can fill that
-    URI with an ancestor, and the ancestor keeps the closure.
+    That resolver is the library resolver. It is not registered again. A
+    descendant whose ``$id`` rejoins the URI can make ``#`` name an ancestor,
+    and that ancestor keeps the closure.
     """
 
     try:
-        entered = resolver.in_subresource(DRAFT202012.create_resource(child))
         return entered.lookup("#").contents
     except (Unresolvable, AttributeError, TypeError, ValueError):
         return None
@@ -426,9 +424,9 @@ def _mcp_fragment_refs(
 ) -> None:
     """Collect references that stay on the closure ``owner``.
 
-    A child whose base changes is another resource, except when the unpinned
-    crawl still returns this owner. The walk then continues on that unpinned
-    resolver so a nested boundary is not judged against the pin.
+    A child whose base changes is another resource, except when the library
+    ``lookup("#")`` still returns this owner. The walk continues on the
+    resolver ``enter_subschema`` returned.
     """
 
     if not isinstance(node, Mapping):
@@ -449,16 +447,10 @@ def _mcp_fragment_refs(
             entered, changed = enter_subschema(resolver, child)
         except (ValueError, AttributeError, TypeError) as exc:
             raise _mcp_library_error(exc, path) from exc
-        if changed and _mcp_unpinned_crawl_owner(resolver, child) is not owner:
+        if changed and _mcp_library_resource(entered) is not owner:
             continue
-        next_resolver = entered
-        if changed:
-            try:
-                next_resolver = resolver.in_subresource(DRAFT202012.create_resource(child))
-            except (ValueError, AttributeError, TypeError) as exc:
-                raise _mcp_library_error(exc, path) from exc
         _mcp_fragment_refs(
-            child, next_resolver, path, names, raw, depth=depth + 1, owner=owner,
+            child, entered, path, names, raw, depth=depth + 1, owner=owner,
         )
     for extra in _mcp_uncrawled_schemas(node, resolver, path):
         if id(extra) in seen:

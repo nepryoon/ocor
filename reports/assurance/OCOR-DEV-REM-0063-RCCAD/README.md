@@ -137,6 +137,7 @@ expected answer uses a production helper, including the shared one.
 | Origin/closure | delivered; public compiler/generator; direct/transitive types; unused sibling absent/present |
 | Tokens/bounds | `~0`, `~1`, malformed escape, non-ASCII percent segments, array 2/02; 4096/4097 nodes, depth 32/33 |
 | Fixed base | tool indices 0/1, both fields/origins, collision/noncollision, ID with/without final `#` |
+| Static descent (C1) | 24 added cells: field × root absent/absolute/relative × plain, empty-descendant, hash-descendant, fragment. The node is reached only by static descent inside a nested resource. The original 40180 cells stay |
 
 The unchanged first 29746 cells remain: original delivered/generated 5184/576,
 bounds/collision 30, two-level delivered/generated 18432/4608, sibling orders 288,
@@ -145,7 +146,11 @@ both-origin collisions 4, library-state controls 24, root-fragment twins 12,
 generated duplicate orders 72. Additions: root-class delivered **9216**
 (2×6×2×6×8×8), public generation **1152** (2×6×2×6×8), data-target validity 18,
 indexed fixed-base collision/twin 32, preserved anchor-context instances 16.
-Total: **40180** cells in 23 test functions. Each product is fully enumerated,
+The original total stays **40180** cells in 23 test functions. Option C1 of
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)** adds 24 cells in
+`test_cycle10_static_descent_inside_a_nested_resource`. A guard asserts that
+the original delivered product is still 5184 and the generated product is
+still 576. Each product is fully enumerated,
 without sampling. They are factored products, not a claim to execute their full
 mutual cross-product. Their restrictions are:
 
@@ -210,36 +215,47 @@ Q4/Q5/Q6, the questions **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**
 collected, are decided by the Product Owner in person on 2026-11-17: A1, B1
 and C1. A2, B2 and C2 are not applied. The file at
 `99d93da7a481c44841d9d8003044aed37c026ce6` has sha256
-`edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8`. One
-contract question remains open: whether a nested resource is resolved by the
-pinned libraries on the tool schema alone. That question is
-`REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`, stated in **Single calculation
-design**. The second review's blocking root-class coverage
-is already in `66c14f60e440f287a88c5e01a0ab30259e303a26`; this design commit
-adds no test. There is no third contract review.
+`edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8`.
+Nested-resource resolution is decided by the Product Owner in person on
+2026-11-17: A1, B1 and C1 of
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION**. A2, B2 and C2 are not
+applied. The request file at
+`99172353fc2ac6b2a56aadf54321339d6ea9a4a4` has sha256
+`66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729`.
+The target is what `referencing` 0.37.0 and `Draft202012Validator` obtain
+on the tool schema alone. The 39 named cycle-6 cases keep their names and
+inputs and take that expectation. The hand registration and the
+`PointerToNowhere` retry are removed. The 24 static-descent cells are the
+C1 extension. No matrix cell is removed. There is no third contract review
+and no second pre-campaign review.
 
 The official fixture remains byte-identical. **REM-0063-PINNED-FIXTURE-DIFF-CHECK
 (2026-11-16)**, option 1, leaves its whitespace check `NOT_GREEN` with a recorded
 exception; every other file retains the check. The design review is integrated
-in the implementation. The task module on this implementation passed 41896
-tests, with 0 failures, 0 errors and 0 skipped, in 829.49 s (JUnit time
-829.323 s). Raw log sha256
+in the implementation. On the previous head, which still registered a nested
+resource by hand, the task module passed 41896 tests, with 0 failures,
+0 errors and 0 skipped, in 829.49 s (JUnit time 829.323 s). Raw log sha256
 `1b5b9de216e6fb52c93e88a990674d0ddf2f8e18ec8d17d457ae4093a550c803`; JUnit
 sha256 `5a1f1d541cdd3475a990188f7556c0d3010fc93147fb0bc01b3db4e2a86569ef`.
 Both files are preserved as `matrix-task.raw.log` and `matrix-task.junit.xml`
 under `~/.ocor-codex/rem-0063/cycle10-implementation/`. An earlier run stopped
 by `--maxfail=20` is not green: 20 failed, 41534 passed, exit 1, raw sha256
 `17a76e58dd4fdf5a4b6a52f2ee1d78609fdd1cb4f1f45a2eefd8d6824b8cf618`
-(`matrix-green.raw.log`). The matrix stays 40180 cells. This task-module run
-is not a qualifying campaign. The pre-campaign preventive review
-`OCOR-DEV-REM-0063-cce3ba8ba7ab-pre` has already returned
-`BLOCKING_FINDINGS` (6 blocking, 2 advisory). Reviewer: Claude Code,
-`claude-fable-5-2`, Anthropic, effort max. Outcome-file sha256
+(`matrix-green.raw.log`). Those runs kept the hand registration and do not
+qualify this head. On this head the task module passed 41953 tests, with
+0 failures, 0 errors and 0 skipped, in 842.95 s. Raw log sha256
+`d552bd9b02e89529ee739762c5d123d7e98d7602b528e574f1e9c4c7a007026b`, preserved
+as `task-module.raw.log` under `~/.ocor-codex/rem-0063/cycle10-nested/`.
+No JUnit file was emitted for that run. It is not a qualifying campaign.
+The original 40180 cells remain; C1 adds 24. The pre-campaign preventive
+review `OCOR-DEV-REM-0063-cce3ba8ba7ab-pre` returned `BLOCKING_FINDINGS`
+(6 blocking, 2 advisory). Reviewer: Claude Code, `claude-fable-5-2`,
+Anthropic, effort max. Outcome-file sha256
 `13effc01c0ba02480b457c2f0fe215910c7f3136211c1423903ab2d18e1c3421`.
-The repairs that do not choose a normative reading are on this head. The
-qualifying campaign waits on `REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`.
-No second pre-campaign review is requested. The full pre-campaign gate is
-not yet run. Fence unchanged:
+The repairs that do not choose a normative reading stay on
+`eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a`. This head applies A1, B1 and C1.
+No second pre-campaign review is requested. The full pre-campaign gate and
+the qualifying campaign are not yet run on this head. Fence unchanged:
 E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.
 
 ### Single calculation design
@@ -250,7 +266,10 @@ pre-implementation text of this subsection. Shared functions live in
 No new file under `ocor-runtime/src/`. No dependency or version change.
 Matrix expectations stay the pinned libraries on the original schema bytes.
 
-One contract question remains open: whether a nested resource is resolved by the pinned libraries on the tool schema alone, or kept as its own fragment root. That question is `REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`. The hand registration in `enter_subschema` and the `PointerToNowhere` retry are not claimed as the library applied as-is; they stay until that decision. Q4/A1 refuses a percent-encoded plain-name
+Nested-resource resolution is no longer open.
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)** adopts A1, B1
+and C1. The hand registration and the `PointerToNowhere` retry are removed.
+The checked object is the library object for that spelling. Q4/A1 refuses a percent-encoded plain-name
 anchor and the encoded-slash pointer before a successful literal resolve.
 Q5/B1 is `operational_base`: absent, non-string, `""` and an empty
 pre-fragment (`"#"`, `"###"`) use `urn:ocor:embedded-tool:{index}:{field}`;
@@ -290,11 +309,10 @@ resource is not resolvable`), `INVALID_ID` and `COLLISION` and `BOUNDS` to
    `$defs` still reaches the non-schema target check. `ValueError` is
    `INVALID_ID`. An unreferenced `$id` in instance data is not this refusal.
 4. `enter_subschema(resolver, child) -> tuple[Resolver, bool]`. The boundary
-   is `in_subresource` changing the base. A changed base is registered with
-   `with_resource` only when the child is a library subresource of the
-   resource `lookup("#")` already returns. An `$id` reached only through
-   instance data changes the base and stays unregistered, so a later fragment
-   fails closed. The caller's registry is not replaced.
+   is `in_subresource` changing the base. The returned resolver is that
+   library resolver. A changed base is not registered with `with_resource`,
+   and a `PointerToNowhere` is not retried by removing a URI. Source:
+   **REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)**, option A1.
 5. `assert_reference_path_bound(schema, resolver) -> None`. Reference-path
    depth uses the profile graph's static-first breadth-first bound. A chain
    of named definitions is not a generator-only limit. Depth above 32 is
@@ -310,14 +328,16 @@ resource root, is `MCP $ref anchor is ambiguous`; one node that declares both
 indexes are checked on the decoded tokens; the primary lookup stays the
 original spelling. `AttributeError` from a scalar target is recovered by
 walking the original `#/` pointer on `lookup("#").contents`. A
-`PointerToNowhere` on the resource pinned at the current base is retried
-once after that URI is removed from the same registry, so a descendant whose
-`$id` rejoins the URI is the resource the library crawl returns. The retry
-does not build a new root resolver. The resolver `lookup` returns is the one
-an anchor chain continues with.
+`PointerToNowhere` is the library result for that spelling. It is not
+retried. The object the profile checks is the object the library returns
+for that spelling. Equal acceptance of a different object is not agreement.
+Source: options A1 and B1 of
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)**. The resolver
+`lookup` returns is the one an anchor chain continues with.
 
-The generator walks resources with `in_subresource` only. Two different nodes
-that receive one base are `DUPLICATE_RESOURCE`. The closure is written on
+The generator walks with the resolver `enter_subschema` returns. It does not
+enter the child a second time, because that resolver is not pinned. Two
+different nodes that receive one base are `DUPLICATE_RESOURCE`. The closure is written on
 the unpinned `lookup("#").contents`, or on the boundary node when that
 lookup cannot retrieve a relative base. References are scanned from the
 boundary as well as from that owner, so a reference that sits on the
@@ -344,8 +364,11 @@ resolver and `_PROFILE_SPECIFICATION`. The generator deletes `_mcp_bounds`,
 surrogates stay on `json_bounds`. The `c8` helper of the same name is
 unchanged. `_recover_scalar_target` remains: it recovers a scalar pointer
 target after the library lookup has failed, and it is not a second resolver.
-The nested-resource registration and the one `PointerToNowhere` retry stay
-until `REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION`.
+`_registered_subresource` and `_lookup_past_registered_boundary` are
+deleted. The generator replaces `_mcp_unpinned_crawl_owner` with
+`_mcp_library_resource`, which reads `lookup("#")` on the resolver
+`enter_subschema` returned. Source:
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)**, option A1.
 
 Rules stricter than the libraries, each with its own typed error:
 

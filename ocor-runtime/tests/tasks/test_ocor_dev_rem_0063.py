@@ -2403,6 +2403,67 @@ def _cycle6_lookup(
         return None, exc
 
 
+# REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17), options A1 and B1.
+# These identities are the explicit list of the 39 cycle-6 cases whose
+# expectation becomes the pinned libraries on the tool schema alone.
+_CYCLE6_NESTED_REALIGN_IDS = frozenset({"#", _CYCLE6_URI, "./root.json"})
+_CYCLE6_NESTED_REALIGN_REFS = frozenset({"#", "#/$defs/part", "#/$defs/p%61rt"})
+_CYCLE6_NESTED_REALIGN_LOCATIONS = frozenset({"$defs", "nested"})
+
+
+def _cycle6_nested_realignment(location: str, identifier: str, ref: str) -> bool:
+    """True for one of the 39 cases A1 names. Inputs stay the same."""
+    return (
+        location in _CYCLE6_NESTED_REALIGN_LOCATIONS
+        and identifier in _CYCLE6_NESTED_REALIGN_IDS
+        and ref in _CYCLE6_NESTED_REALIGN_REFS
+    )
+
+
+def _cycle6_schema_alone(document: Mapping[str, Any], ref: str) -> tuple[Any, BaseException | None]:
+    """Resolve ``ref`` with referencing 0.37.0 on the tool schema alone.
+
+    The registry pins only that schema at ``operational_base``. No nested
+    ``with_resource`` and no ``PointerToNowhere`` retry. The object returned
+    is the library object for that spelling.
+    """
+    import importlib.metadata
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    from ocor_runtime.c1.mcp_profile import operational_base
+
+    if importlib.metadata.version("referencing") != "0.37.0":
+        raise AssertionError("cycle-6 oracle is referencing 0.37.0")
+    schema = document["tools"][0]["inputSchema"]
+    if not isinstance(schema, dict):
+        raise AssertionError("tool schema is not an object")
+    base = operational_base(schema, index=0, field="inputSchema")
+    resource = DRAFT202012.create_resource(schema)
+    resolver = Registry().with_resource(base, resource).resolver(base)
+    queue: list[tuple[Any, Any]] = [(resource, resolver)]
+    seen: set[tuple[int, object]] = set()
+    while queue:
+        current, context = queue.pop(0)
+        identity = (id(current.contents), getattr(context, "_base_uri", None))
+        if identity in seen:
+            continue
+        seen.add(identity)
+        contents = current.contents
+        if isinstance(contents, dict) and contents.get("$ref") == ref:
+            try:
+                return context.lookup(ref).contents, None
+            except Exception as exc:
+                return None, exc
+        try:
+            children = list(current.subresources())
+        except (AttributeError, TypeError, ValueError):
+            children = []
+        for child in children:
+            queue.append((child, context.in_subresource(child)))
+    return None, LookupError(ref)
+
+
 def _cycle6_library_accepts(contents: Any, error: BaseException | None) -> bool:
     """True when the oracle target exists and Draft 2020-12 accepts it as a schema."""
     if error is not None or not isinstance(contents, dict):
@@ -2434,17 +2495,27 @@ def test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource(
     location: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """``#`` after a no-op ``$id`` is the parent resource referencing keeps.
+    """``#`` after a no-op ``$id`` is the resource the pinned libraries name.
 
-    RED of the nine divergent targets: ``#``, the same absolute URI and
-    ``./root.json``, on inputSchema, outputSchema and ``$defs``. An empty
-    ``$id`` is the member that already agreed and must stay green.
+    On inputSchema and outputSchema, and for an empty ``$id`` under ``$defs``,
+    that resource is still the parent. The three ``$defs`` cases whose
+    identifier is ``#``, the parent URI or ``./root.json`` are the A1 list:
+    the same inputs, and the expectation is referencing 0.37.0 on the tool
+    schema alone, which names the holder.
     """
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document, parent, holder = _cycle6_document(location, identifier, "#")
-    contents, error = _cycle6_lookup(parent, "#")
+    realign = _cycle6_nested_realignment(location, identifier, "#")
+    if realign:
+        contents, error = _cycle6_schema_alone(document, "#")
+        expected = holder
+        unexpected = parent
+    else:
+        contents, error = _cycle6_lookup(parent, "#")
+        expected = parent
+        unexpected = holder
     assert error is None
-    assert contents is parent
+    assert contents is expected
     assert holder is not parent
     seen: list[object] = []
     original = profile._require_schema
@@ -2455,8 +2526,8 @@ def test_cycle6_noop_id_empty_fragment_lands_on_the_parent_resource(
 
     monkeypatch.setattr(profile, "_require_schema", record)
     _validate(document)
-    assert parent in seen, (identifier, location)
-    assert holder not in seen, (identifier, location)
+    assert expected in seen, (identifier, location)
+    assert unexpected not in seen, (identifier, location)
 
 
 @pytest.mark.parametrize("location", ["inputSchema", "outputSchema", "$defs"])
@@ -2555,12 +2626,18 @@ def test_cycle6_ref_targets_match_referencing_on_the_effective_resource(
 
     The landed object is the oracle object by identity. Ruining that object
     must make the profile refuse when the ruin is not also the tool schema.
-    A no-op ``$id`` keeps the parent resource. A non-schema sibling on the
-    descriptor does not. A joined URI that differs keeps the holder.
+    A no-op ``$id`` keeps the parent resource, except the 36 A1 cases under
+    ``$defs`` and ``nested``: those use the libraries on the tool schema
+    alone, so a pointer that the library cannot resolve is refused and ``#``
+    lands on the holder.
     """
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document, parent, holder = _cycle6_document(location, identifier, ref, sibling)
-    contents, error = _cycle6_lookup(parent, ref)
+    realign = _cycle6_nested_realignment(location, identifier, ref)
+    if realign:
+        contents, error = _cycle6_schema_alone(document, ref)
+    else:
+        contents, error = _cycle6_lookup(parent, ref)
     library_ok = _cycle6_library_accepts(contents, error)
     seen: list[object] = []
     original = profile._require_schema
@@ -2586,7 +2663,10 @@ def test_cycle6_ref_targets_match_referencing_on_the_effective_resource(
         )
         assert isinstance(contents, dict)
         assert contents in seen, (location, identifier, ref, sibling)
-        if ref == "#" and _cycle6_same_resource(identifier):
+        if realign and ref == "#":
+            assert contents is holder
+            assert parent not in seen
+        elif ref == "#" and _cycle6_same_resource(identifier):
             assert contents is parent
             assert holder not in seen
         if _cycle6_tool_schema_hides_ruin(location):
@@ -6267,3 +6347,194 @@ def test_cycle10_preserves_existing_anchor_lookup_context(field: str, identifier
     assert validator.is_valid({"n": 11})
     assert not validator.is_valid({"n": "bad"})
     _validate(document)
+
+
+# REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17), option C1.
+# Nodes reached only by static descent inside a nested resource. The original
+# 40180 cells stay. The oracle is referencing 0.37.0 and Draft202012Validator
+# on the original schema bytes, never a production helper.
+
+_CYCLE10_STATIC_ROOTS = ("absent", "absolute", "relative")
+_CYCLE10_STATIC_SHAPES = ("plain", "empty-descendant", "hash-descendant", "fragment")
+
+
+def _cycle10_static_descent_schema(root: str, shape: str) -> dict[str, Any]:
+    """One nested resource whose probe node is not the target of a reference."""
+    if root == "relative":
+        root_id: str | None = "rel/root.json"
+        child_id = "child.json"
+    elif root == "absolute":
+        root_id = "https://nested.invalid/root.json"
+        child_id = "https://nested.invalid/child.json"
+    elif root == "absent":
+        root_id = None
+        child_id = "https://nested.invalid/child.json"
+    else:
+        raise AssertionError(root)
+    holder_shared: dict[str, Any] = {"type": "integer"}
+    inner_shared: dict[str, Any] = {"type": "string"}
+    static: dict[str, Any] = {
+        "type": "object",
+        "properties": {
+            "probe": {"$ref": "#" if shape == "fragment" else "#/$defs/shared"},
+        },
+    }
+    if shape == "empty-descendant":
+        static["properties"]["inner"] = {"$id": "", "type": "object"}
+    elif shape == "hash-descendant":
+        static["properties"]["inner"] = {
+            "$id": "#",
+            "type": "object",
+            "$defs": {"shared": inner_shared},
+        }
+    holder: dict[str, Any] = {
+        "$id": child_id,
+        "type": "object",
+        "$defs": {"shared": holder_shared},
+        "properties": {"static_only": static},
+    }
+    schema: dict[str, Any] = {"type": "object", "properties": {"holder": holder}}
+    if root_id is not None:
+        schema["$id"] = root_id
+    schema["x-cycle10-static"] = {
+        "holder": holder,
+        "holder_shared": holder_shared,
+        "inner_shared": inner_shared,
+        "static": static,
+    }
+    return schema
+
+
+def _cycle10_static_library(schema: Mapping[str, Any], field: str) -> tuple[Any, BaseException | None]:
+    """Lookup the only ``$ref`` with the libraries pinned on this schema alone."""
+    import importlib.metadata
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    from ocor_runtime.c1.mcp_profile import operational_base
+
+    if importlib.metadata.version("referencing") != "0.37.0":
+        raise AssertionError("cycle-10 oracle is referencing 0.37.0")
+    if importlib.metadata.version("jsonschema") != "4.26.0":
+        raise AssertionError("cycle-10 oracle is jsonschema 4.26.0")
+    body = {key: value for key, value in schema.items() if key != "x-cycle10-static"}
+    base = operational_base(body, index=0, field=field)
+    resource = DRAFT202012.create_resource(body)
+    resolver = Registry().with_resource(base, resource).resolver(base)
+    queue: list[tuple[Any, Any]] = [(resource, resolver)]
+    seen: set[tuple[int, object]] = set()
+    found: tuple[Any, BaseException | None] | None = None
+    while queue:
+        current, context = queue.pop(0)
+        identity = (id(current.contents), getattr(context, "_base_uri", None))
+        if identity in seen:
+            continue
+        seen.add(identity)
+        contents = current.contents
+        if isinstance(contents, dict) and isinstance(contents.get("$ref"), str):
+            ref = contents["$ref"]
+            try:
+                found = (context.lookup(ref).contents, None)
+            except Exception as exc:
+                found = (None, exc)
+        try:
+            children = list(current.subresources())
+        except (AttributeError, TypeError, ValueError):
+            children = []
+        for child in children:
+            queue.append((child, context.in_subresource(child)))
+    if found is None:
+        raise AssertionError("static-descent schema has no reference")
+    return found
+
+
+def test_cycle10_static_descent_extension_keeps_the_original_matrix() -> None:
+    """C1 adds cells. It does not remove the original delivered or generated product."""
+    assert len(_cycle10_products()) == 5184
+    assert len(_cycle10_products(generated=True)) == 576
+    assert len(_CYCLE10_STATIC_ROOTS) * len(_CYCLE10_STATIC_SHAPES) * len(_CYCLE10_FIELDS) == 24
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("root", _CYCLE10_STATIC_ROOTS)
+@pytest.mark.parametrize("shape", _CYCLE10_STATIC_SHAPES)
+def test_cycle10_static_descent_inside_a_nested_resource(
+    field: str,
+    root: str,
+    shape: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A statically reached nested node uses the library object for its spelling.
+
+    ``static_only`` is not the target of a reference. ``plain`` has no
+    rejoining descendant. ``empty-descendant`` and ``hash-descendant`` add one.
+    ``relative`` is a relative root. Equal acceptance is not agreement: the
+    profile must check the object the library returns.
+    """
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError
+
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = _cycle10_static_descent_schema(root, shape)
+    marked = schema.pop("x-cycle10-static")
+    holder = marked["holder"]
+    holder_shared = marked["holder_shared"]
+    inner_shared = marked["inner_shared"]
+    static = marked["static"]
+    assert "static_only" not in json.dumps(
+        [value for value in _cycle10_ref_spellings(schema)]
+    )
+    contents, error = _cycle10_static_library(schema, field)
+    if error is None and isinstance(contents, dict):
+        try:
+            Draft202012Validator.check_schema(contents)
+        except (SchemaError, TypeError, ValueError) as exc:
+            contents, error = None, exc
+    library_ok = error is None and isinstance(contents, dict)
+    if root == "relative":
+        # A relative root and a relative nested ``$id`` do not resolve.
+        # referencing 0.37.0 raises Unresolvable for every shape, including
+        # the empty fragment. That is the library result on the schema alone.
+        assert not library_ok
+    elif shape == "plain":
+        assert library_ok and contents is holder_shared
+    elif shape == "empty-descendant":
+        assert not library_ok
+    elif shape == "hash-descendant":
+        assert library_ok and contents is inner_shared and contents is not holder_shared
+    elif shape == "fragment":
+        assert library_ok and contents is holder
+    else:
+        raise AssertionError(shape)
+    seen: list[object] = []
+    original = profile._require_schema
+
+    def record(target: object) -> None:
+        seen.append(target)
+        original(target)
+
+    monkeypatch.setattr(profile, "_require_schema", record)
+    if library_ok:
+        _validate(_cycle10_delivered(schema, field))
+        assert contents in seen
+        if contents is not holder_shared:
+            assert holder_shared not in seen
+        assert static is not contents
+        return
+    with pytest.raises(profile.McpProfileError):
+        _validate(_cycle10_delivered(schema, field))
+
+
+def _cycle10_ref_spellings(node: object) -> list[str]:
+    """Reference spellings only. A static node name must not appear here."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str):
+            found.append(ref)
+        for value in node.values():
+            found.extend(_cycle10_ref_spellings(value))
+    elif isinstance(node, list):
+        for value in node:
+            found.extend(_cycle10_ref_spellings(value))
+    return found

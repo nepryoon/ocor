@@ -22,7 +22,6 @@ from jsonschema.exceptions import SchemaError, UnknownType
 from referencing import Registry, Resource
 from referencing.exceptions import (
     CannotDetermineSpecification,
-    NoSuchResource,
     PointerToNowhere,
     Unresolvable,
 )
@@ -265,54 +264,20 @@ def autonomous_registry(
     return registry
 
 
-def _registered_subresource(resolver: Any, child: object) -> bool:
-    """True when ``child`` is a library subresource of the resource already registered.
-
-    ``lookup("#")`` on an unregistered base crawls and can fail. A schema
-    reached only through instance data is not a subresource of that result, so
-    its ``$id`` changes the base without a registry entry and a later fragment
-    lookup fails closed. A real subresource is registered below so the fragment
-    reads that node instead of the last descendant that rejoins its URI.
-    """
-
-    try:
-        current = resolver.lookup("#").contents
-    except (Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
-        return False
-    if not isinstance(current, Mapping):
-        return False
-    try:
-        contained = DRAFT202012.create_resource(current).subresources()
-    except (AttributeError, TypeError, ValueError):
-        return False
-    return any(sub.contents is child for sub in contained)
-
-
 def _resolver_for_subresource(resolver: Any, resource: Resource[Any]) -> tuple[Any, bool]:
     """Enter one library resource. True when ``in_subresource`` changes the base.
 
-    A changed base is registered only when this resource is a library
-    subresource of the resource ``lookup("#")`` already returns. Fragment
-    lookup then reads this resource, as it does for a root passed to
-    ``with_resource``, and does not crawl over a descendant that rejoins the
-    same URI. The registry the caller still holds is left untouched. An eager
-    crawl stays an error probe, never this lookup registry.
+    The resolver is the one ``referencing`` returns for the schema as it is.
+    A changed base is not registered again, and a ``PointerToNowhere`` is not
+    retried by dropping a URI. A descendant whose ``$id`` rejoins the base
+    stays visible to the library crawl. The caller's registry is untouched.
     """
 
     entered = resolver.in_subresource(resource)
     parent_base = getattr(resolver, "_base_uri", None)
     entered_base = getattr(entered, "_base_uri", None)
-    if entered_base == parent_base or not isinstance(entered_base, str):
-        return entered, False
-    registry = getattr(entered, "_registry", None)
-    if registry is None or not _registered_subresource(resolver, resource.contents):
-        return entered, True
-    bound = type(entered)(
-        base_uri=entered_base,
-        registry=registry.with_resource(entered_base, resource),
-        previous=getattr(entered, "_previous", ()),
-    )
-    return bound, True
+    changed = isinstance(entered_base, str) and entered_base != parent_base
+    return entered, changed
 
 
 def enter_subschema(resolver: Any, child: object) -> tuple[Any, bool]:
@@ -1087,34 +1052,7 @@ class _ScalarTarget:
         self.resolver = resolver
 
 
-def _lookup_past_registered_boundary(resolver: Any, reference: str) -> Any | None:
-    """Retry a pointer that missed the resource ``with_resource`` pinned.
-
-    Pointer lookup does not crawl a URI that is already registered, so the
-    pinned boundary hides a descendant whose ``$id`` rejoins that URI.
-    Dropping only that URI lets the same registry crawl from the resources
-    that remain. The retry is not a new root resolver and does not run again.
-    """
-
-    base = getattr(resolver, "_base_uri", None)
-    registry = getattr(resolver, "_registry", None)
-    previous = getattr(resolver, "_previous", None)
-    if not isinstance(base, str) or registry is None or previous is None:
-        return None
-    try:
-        stripped = registry.remove(base.rstrip("#"))
-    except NoSuchResource:
-        return None
-    rebound = type(resolver)(base_uri=base, registry=stripped, previous=previous)
-    return _lookup_reference(rebound, reference, retry_boundary=False)
-
-
-def _lookup_reference(
-    resolver: Any,
-    reference: str,
-    *,
-    retry_boundary: bool = True,
-) -> Any | None:
+def _lookup_reference(resolver: Any, reference: str) -> Any | None:
     """Look up the original spelling. A scalar target is recovered for the schema check.
 
     ``referencing`` raises ``AttributeError`` when a JSON Pointer lands on a
@@ -1122,8 +1060,8 @@ def _lookup_reference(
     The recovery reads the pointer on the current resource after the library
     lookup has failed; it does not replace the reference the lookup received.
     An intermediate array is not recovered: the library does not return it.
-    A pointer that is absent from a pinned boundary is tried once on the
-    crawled resource that rejoins the same URI.
+    ``PointerToNowhere`` is the library result for that spelling. It is not
+    retried by removing a URI from the registry.
     """
 
     try:
@@ -1133,11 +1071,7 @@ def _lookup_reference(
         if recovered is None:
             return None
         return _ScalarTarget(recovered, resolver)
-    except PointerToNowhere:
-        if not retry_boundary:
-            return None
-        return _lookup_past_registered_boundary(resolver, reference)
-    except (Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
+    except (PointerToNowhere, Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
         return None
 
 
