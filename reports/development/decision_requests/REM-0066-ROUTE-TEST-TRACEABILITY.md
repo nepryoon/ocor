@@ -1,6 +1,6 @@
 # REM-0066-ROUTE-TEST-TRACEABILITY
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -31,3 +31,16 @@ Opzione 1. Il fallimento è una sola voce mancante per un test che l'unità ha g
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta, `OCOR-DEV-REM-0066` è bloccato. Non si modifica l'indice di tracciabilità inversa, non si scrive `prereview_request.json` e non si avvia la suite completa. Il branch `governed/ocor-dev-rem-0066-state-only-ci` resta all'HEAD `6f714e7c5dba194370067453b04be551fe5f6e40`. `OCOR-DEV-REM-0065` non è bloccato da questa richiesta: è la prossima unità eseguibile, all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. `OCOR-DEV-REM-0063` resta bloccato da `REM-0063-CYCLE10-NO-GO`. Il branch di produzione resta `5ffc19bddca6bf0176575191e6bc3f0d4ea717d8`. Le campagne diagnostiche non si rilanciano. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Questa richiesta non cambia codice, test, gate, timer, tetti, partizioni o criteri.
+
+## Disposition
+
+Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Decisione `REM-0066-ROUTE-TEST-TRACEABILITY (2026-11-18)`. Opzione 1 applicata. Le opzioni 2 e 3 non sono applicate.
+
+Sul branch `governed/ocor-dev-rem-0066-state-only-ci`, senza rebase, reset o force-push, il commit `fe913c06a22d6fd48915dff177d6145de69b0a40` aggiunge soltanto la voce di `reports/tests/test_classify_pull_request_ci_route.py` in `reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json`, fra `reports/tests/test_ci_fuseki_archive.py` e `reports/tests/test_evidence_input_drift.py`. Base `subject_task`, requisito `BR-003`, task `OCOR-DEV-0003`, fonte `docs/development_plan/OCOR_IMPLEMENTATION_BACKLOG.json`, rationale come nell'opzione 1. Nessun'altra voce è riscritta. Il test non è modificato. L'indice passa da 154 a 155 voci. Il confronto con il parent `6f714e7c5dba194370067453b04be551fe5f6e40` è un solo file, 16 inserimenti. L'indice non è un input sigillato: il validatore di drift sull'HEAD dà PASS, 75 task, 241 input, 0 drift. Non è stata aggiunta una riqualifica. I record di riqualifica già committati non sono stati riscritti. `inputs/` non è stato modificato.
+
+`reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_006_conforms` sull'HEAD nuovo è PASS. `PRE-CAMPAIGN-GATE` su `fe913c06a22d6fd48915dff177d6145de69b0a40`, base `eaed84dad757ce8a9fdbfda624a719d6d7917a37`, è FAIL. Cinquantuno passi eseguiti, cinquanta PASS, un solo FAIL: `state-only-ci-path`, exit 3, 2,185 s. `gates.json` sha256 `a740d361e324adeecf5cc6dbf25f90ac2e680edb7a0fe2499c84fe358be33ee5`. Fra i PASS ci sono `rem0046-unit`, `reverse-traceability` e `ci-route-classifier`. Il passo `state-only-ci-path` esegue `scripts/run_state_only_ci_path.py`. I comandi precedenti di quel passo sono PASS. Pytest di `reports/tests` con il marcatore `not requires_live_stack` importa `reports/tests/test_schema_conformance.py`, che alla riga 417 esegue `sys.exit(1 if summary["failed"] else 0)`. Il referto del modulo è `TOTAL 98 PASS 97 FAIL 1`. L'unico FAIL è `urn:ocor:schema:action-type-contract:1.0 — negativo semantico: CANONICAL_COMMIT R1 senza Human Gate`, atteso `REJECT`, osservato `ACCEPT`. L'istanza è `action("CANONICAL_COMMIT")` alle righe 278–284: `risk_class` `R1_ANALYZE` e `approval.mode` `NONE`. Il file di test e `inputs/normative/OCOR_Architectural_Design_Document_v1.1.md` sono identici a `origin/main`. Il passo non era stato raggiunto sul gate di `6f714e7c5dba194370067453b04be551fe5f6e40`, fermo a `rem0046-unit`. Questo fallimento non è descritto dall'opzione 1. Non è stata scritta `prereview_request.json`. La suite completa non è stata avviata. `supply-chain-scanner` non è stato eseguito. Sei passi restano `NOT_EXECUTED` perché non sono riproducibili in locale: `mandatory-gates`, `integration-postgresql`, `qualifying-campaign-shards`, `fuseki-actions-cache`, `conditional-0049-aggregator`, `auto-merge`.
+
+La richiesta successiva è `REM-0066-CANONICAL-R1-HUMAN-GATE`, branch `governed/decision-request-rem0066-canonical-r1-human-gate`, commit `32a15467d8cc46626d58c1a3eeed79c998366f95`, sha256 `8c8aa9596430144a15f3470e2ac2e59a6f7b52eeeb0b92614ffdceb63906686b`, bozza, non si integra. Nessuna sua opzione è applicata in questa unità.
+
+Il testo sopra questa sezione, esclusa la riga di stato, resta quello del commit `f68e0640764f8c6a4847ca2a814d04c3d313f128`, sha256 `b22651b7970f8c34df8e3297fa4affbe8da9797cbe9427267c743b463ea6ef78`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
+
