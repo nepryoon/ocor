@@ -81,10 +81,20 @@
       "result": "PASS",
       "result_sha256": "20b15c1ba7739396ab1f4fb72c3de1278853574511b7aea91762e177f6cac346",
       "status": "QUALIFYING_CAMPAIGN_PASS"
+    },
+    {
+      "campaign_id": "d29a42706a92-1794994217",
+      "command": "scripts/run_local_lane_campaign.py --execute four-lane full suite",
+      "distinct_check": "d29a42706a92-1794998022",
+      "executed_at_commit": "d29a42706a927d6b3fa2bbedf69aa7c2601423ab",
+      "exit_code": 0,
+      "result": "PASS",
+      "result_sha256": "dd4819dc89611fc46c588625aeb0399c3ab476f3179d5f5ab45d451ba8934132",
+      "status": "QUALIFYING_CAMPAIGN_PASS"
     }
   ],
-  "commit": "30034095fbe8a76fa483cc09215d22b295f16e15",
-  "commit_role": "Input fingerprints describe commit 30034095fbe8a76fa483cc09215d22b295f16e15. The library probe moved to reports/tests/cycle11_library_probe.py because the language policy rejects a Python file under reports/assurance. scripts/validate_ocor_development_plan.py, reports/planning/OCOR_PLAN_RUN_STATE.json and the assurance README changed in that commit. Campaign 3ae284727c98-1794946686 and distinct check 3ae284727c98-1794950166 stay historical and are not a cycle-11 qualifying execution. The cycle-11 qualifying campaign is NOT_EXECUTED. Production branch governed/ocor-dev-rem-0063-mcp-profile stays at 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Not sealed.",
+  "commit": "d29a42706a927d6b3fa2bbedf69aa7c2601423ab",
+  "commit_role": "Input fingerprints describe commit d29a42706a927d6b3fa2bbedf69aa7c2601423ab, the head of the cycle-11 qualifying campaign d29a42706a92-1794994217 and of the distinct check d29a42706a92-1794998022. The campaign is PASS: FOUR_LANE, 47816 tests, 0 failures, 0 errors, 0 skipped, 3740.468 s, result sha256 dd4819dc89611fc46c588625aeb0399c3ab476f3179d5f5ab45d451ba8934132. The distinct check is PASS: 410 tests, 0 failures, 0 errors, 0 skipped, 382.967 s, result sha256 7cdc47c2176fc88397366e2bed151b60eeb7f3930a12f18c16c87a352bb86f11. Duration is above the 3600 s notification and below the 5100 s decision-request threshold. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. Production branch governed/ocor-dev-rem-0063-mcp-profile stays at 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Not sealed.",
   "historical_commit_before_cycle11_fingerprint": {
     "commit": "3ae284727c9829902e72bea25c2f07373e60d969",
     "commit_role": "Execution commit of the cycle-10 qualifying campaign 3ae284727c98-1794946686 and of the distinct check 3ae284727c98-1794950166. The evidence anchor that cites this commit is the following commit and changes only this assurance record and its logs. Production branch governed/ocor-dev-rem-0063-mcp-profile stays at 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Not sealed."
@@ -7994,6 +8004,63 @@
       }
     },
     "decision": "REM-0063-CYCLE10-NO-GO option 1",
+    "qualifying_execution": {
+      "claims": "E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO",
+      "code_head": "c03073f7dfad399f6e07ae45ac9a8780ee0f8f97",
+      "distinct_check": {
+        "campaign_id": "d29a42706a92-1794998022",
+        "counts": {"errors": 0, "failures": 0, "skipped": 0, "tests": 410},
+        "duration_seconds": 382.967,
+        "executed_at_commit": "d29a42706a927d6b3fa2bbedf69aa7c2601423ab",
+        "exit_code": 0,
+        "mode": "FOUR_LANE",
+        "qualifying_scope": false,
+        "result_sha256": "7cdc47c2176fc88397366e2bed151b60eeb7f3930a12f18c16c87a352bb86f11",
+        "selection": ["tests/tasks/test_ocor_dev_0048.py", "tests/tasks/test_ocor_dev_0005.py", "tests/tasks/test_ocor_dev_0050.py", "tests/tasks/test_ocor_dev_0082.py"],
+        "selection_scope": "EXPLICIT_NON_QUALIFYING",
+        "status": "PASS",
+        "union": {"collected": 410, "duplicated": [], "executed": 410, "missing": [], "unexpected": []}
+      },
+      "gate": {
+        "failed": 0,
+        "gates_json_sha256": "e94fb47ebb9bb4a75af195c0a3b6c9a31ec8ddb831606c5a8e4a42bfb5e84fb0",
+        "head": "d29a42706a927d6b3fa2bbedf69aa7c2601423ab",
+        "not_executed": ["mandatory-gates", "integration-postgresql", "qualifying-campaign-shards", "fuseki-actions-cache", "conditional-0049-aggregator", "auto-merge"],
+        "status": "PASS",
+        "steps": 51,
+        "summed_duration_seconds": 1014.628
+      },
+      "notification": "Duration 3740.468 s is above the 3600 s notification of LOCAL-FULL-SUITE-CAP-90 and below the 5100 s decision-request threshold. The campaign result field po_decision_required is true because that field tracks the 3600 s notification. No decision request was opened.",
+      "pre_campaign_gate_on_69f519890ff9": "FAIL at language-tests. The probe was moved under reports/tests/. That run is not a pass.",
+      "production_branch": "5ffc19bddca6bf0176575191e6bc3f0d4ea717d8",
+      "pull_budget_before_campaign": {"limit": "100;w=3600", "remaining": "100;w=3600", "threshold": 95},
+      "pull_budget_before_distinct": {"limit": "100;w=3600", "remaining": "100;w=3600", "threshold": 50},
+      "qualifying_campaign": {
+        "admission_level": "FOUR_LANE",
+        "campaign_id": "d29a42706a92-1794994217",
+        "collected_sha256": "0bcf5d906f5367085e517fee0676409ca8048b167ffea37c19a598092106d66b",
+        "counts": {"errors": 0, "failures": 0, "skipped": 0, "tests": 47816},
+        "duration_seconds": 3740.468,
+        "executed_at_commit": "d29a42706a927d6b3fa2bbedf69aa7c2601423ab",
+        "exit_code": 0,
+        "host_residue_empty": true,
+        "lanes_run": 4,
+        "limit_seconds": 5400,
+        "result_sha256": "dd4819dc89611fc46c588625aeb0399c3ab476f3179d5f5ab45d451ba8934132",
+        "status": "PASS",
+        "union": {"collected": 47816, "duplicated": [], "executed": 47816, "lanes": [41990, 972, 2423, 2431], "missing": [], "unexpected": []}
+      },
+      "roles": {
+        "implementers": [
+          {"model": "grok-4.7", "process": "Grok Build", "role": "cycle 11 implementer and code owner", "vendor": "xAI"},
+          {"model": "gpt-6.1-sol", "process": "Codex", "role": "phase A", "vendor": "OpenAI"},
+          {"model": "deepseek", "process": "DeepSeek", "role": "cycles 7 and 8", "vendor": "DeepSeek"}
+        ],
+        "preventive_reviewer": {"model": "cursor-grok-4.6-xhigh", "process": "Cursor", "reserve": true, "same_vendor_as_implementer": true, "vendor": "xAI"},
+        "verifier": {"effort": "max", "model": "claude-opus-5-5", "process": "Claude Code", "source": "VERIFIER-CLAUDE-REM0063", "vendor": "Anthropic"}
+      },
+      "sealed_chain_limit": "The step7b records for 0005, 0050 and 0082 are the manifest heads and the runtime validator passes. evidence_manifest walks those three to the historical non-regression record and then applies the unchanged cardinality check. The sealed assurance records of 0062 and 0064 have no record_id and were not rewritten. A full evidence_manifest walk that continues from step7 into reports/assurance/ still stops at that directory boundary."
+    },
     "implementation": {
       "cycle11_library_realignment": {
         "command": "reports/tests/cycle11_library_probe.py",
