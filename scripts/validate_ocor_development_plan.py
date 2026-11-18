@@ -1863,6 +1863,17 @@ def main() -> int:
         "reports/assurance/OCOR-DEV-REM-0063-RCCAD/green.log",
         "reports/assurance/OCOR-DEV-REM-0063-RCCAD/pre-campaign.log",
         "reports/assurance/OCOR-DEV-REM-0063-RCCAD/red.log",
+        # REM-0063-CYCLE10-NO-GO option 1 step 7, applied before the gate:
+        # the cycle-11 library probe and the regression records that pin this
+        # allowlist. The probe is the RIALLINEAMENTO point 4 script.
+        "reports/assurance/OCOR-DEV-REM-0063-RCCAD/cycle11_library_probe.py",
+        "reports/assurance/OCOR-DEV-REM-0063-RCCAD/cycle11_library_probe.out.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-cycle11.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-cycle11.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-cycle11.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-cycle11.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-cycle11.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-cycle11.log",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json",
