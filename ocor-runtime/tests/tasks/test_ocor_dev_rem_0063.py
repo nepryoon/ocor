@@ -6538,3 +6538,290 @@ def _cycle10_ref_spellings(node: object) -> list[str]:
         for value in node:
             found.extend(_cycle10_ref_spellings(value))
     return found
+
+
+# Cycle 11 RED. REM-0063-CYCLE10-NO-GO (2026-11-18) option 1, step 1.
+# These tests fail on 3b4894d181b7 before any edit under ocor-runtime/src.
+# The oracle is referencing 0.37.0 and Draft202012Validator on the tool schema
+# alone. The base is the fixed URI, computed here, never operational_base.
+_CYCLE11_DRAFT07 = "http://json-schema.org/draft-07/schema#"
+_CYCLE11_KEYWORD_CASES = (
+    "root-dialect",
+    "nested-dialect",
+    "resource-dialect",
+    "dynamic-ref",
+    "recursive-ref",
+)
+_CYCLE11_PLANTED = (
+    ("tilde", "#/$defs/x~2y", "x~2y"),
+    ("percent-zz", "#/$defs/%ZZ", "%ZZ"),
+    ("percent-final", "#/$defs/a%", "a%"),
+    ("percent-ff", "#/$defs/%FF", "\ufffd"),
+)
+_CYCLE11_ADDITIONAL = ("anchor", "non-string-id", "unresolvable-ref", "string-id")
+# non-string-id and string-id reach _mcp. anchor and unresolvable-ref are
+# rejected by the contract symbol table in ir.py before _mcp. ir.py is not a
+# file of this option, so those two contents are RED only on the delivered
+# origin. The generated origin covers the two contents that reach _mcp.
+_CYCLE11_GENERATED_ADDITIONAL = ("non-string-id", "string-id")
+_CYCLE11_CONTAINERS = ("root", "nested-non-resource")
+_CYCLE11_SIBLINGS = ("simple", "resource")
+
+
+def _cycle11_fixed_base(field: str, index: int = 0) -> str:
+    """B1 base. No production import. Schemas in this section declare no $id at the root."""
+    return f"urn:ocor:embedded-tool:{index}:{field}"
+
+
+def _cycle11_library_registry(schema: Mapping[str, Any], field: str) -> Any:
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    base = _cycle11_fixed_base(field)
+    resource = DRAFT202012.create_resource(schema)
+    return Registry().with_resource(base, resource)
+
+
+def _cycle11_library_accepts(schema: Mapping[str, Any], field: str = "inputSchema") -> Any:
+    from jsonschema import Draft202012Validator
+
+    Draft202012Validator.check_schema(schema)
+    return _cycle11_library_registry(schema, field)
+
+
+def _cycle11_keyword_schema(case_id: str) -> tuple[dict[str, Any], str]:
+    draft = _CYCLE11_DRAFT07
+    dialect = "MCP schema dialect must be JSON Schema 2020-12"
+    dynamic = "MCP $ref resolution does not follow dynamic references"
+    if case_id == "root-dialect":
+        body = {
+            "type": "object",
+            "$schema": draft,
+            "properties": {"n": {"type": "string"}},
+        }
+        return body, dialect
+    if case_id == "nested-dialect":
+        body = {
+            "type": "object",
+            "properties": {"inner": {"$schema": draft, "type": "string"}},
+        }
+        return body, dialect
+    if case_id == "resource-dialect":
+        body = {
+            "type": "object",
+            "properties": {
+                "child": {
+                    "$id": "https://cycle11.invalid/child.json",
+                    "$schema": draft,
+                    "type": "object",
+                }
+            },
+        }
+        return body, dialect
+    if case_id == "dynamic-ref":
+        return {"type": "object", "$dynamicRef": "#x"}, dynamic
+    if case_id == "recursive-ref":
+        return {"type": "object", "$recursiveRef": "#"}, dynamic
+    raise AssertionError(case_id)
+
+
+def _cycle11_additional_schema(content: str) -> dict[str, Any]:
+    if content == "anchor":
+        return {
+            "type": "object",
+            "$defs": {"a": {"$anchor": "x", "type": "string"}},
+            "additionalItems": {"$anchor": "x", "type": "number"},
+            "properties": {"p": {"$ref": "#x"}},
+        }
+    if content == "non-string-id":
+        return {"type": "object", "additionalItems": {"$id": 1, "type": "string"}}
+    if content == "unresolvable-ref":
+        return {"type": "object", "additionalItems": {"$ref": "#/$defs/missing"}}
+    if content == "string-id":
+        return {
+            "type": "object",
+            "additionalItems": {
+                "$id": "https://cycle11.invalid/extra.json",
+                "type": "string",
+            },
+        }
+    raise AssertionError(content)
+
+
+def _cycle11_deliver(schema: Mapping[str, Any], field: str) -> dict[str, Any]:
+    document = _bare_descriptor()
+    document["tools"][0][field] = dict(schema)
+    return document
+
+
+def _cycle11_generate(schema: Mapping[str, Any], field: str) -> dict[str, Any]:
+    kwargs = {"input_schema": schema} if field == "inputSchema" else {"output_schema": schema}
+    documents = _with_contracts(
+        _contract("urn:ocor:contract:cycle11-red", **kwargs)
+    )
+    document, _raw = _descriptor(documents)
+    return document
+
+
+def _cycle11_def_names(node: object) -> set[str]:
+    found: set[str] = set()
+    if isinstance(node, dict):
+        defs = node.get("$defs")
+        if isinstance(defs, dict):
+            found.update(name for name in defs if isinstance(name, str))
+        for value in node.values():
+            found.update(_cycle11_def_names(value))
+    elif isinstance(node, list):
+        for value in node:
+            found.update(_cycle11_def_names(value))
+    return found
+
+
+def _cycle11_unreachable_schema(container: str, sibling: str) -> dict[str, Any]:
+    if sibling == "simple":
+        body: dict[str, Any] = {"type": "integer"}
+    elif sibling == "resource":
+        body = {"$id": "https://v.invalid/r.json", "type": "string"}
+    else:
+        raise AssertionError(sibling)
+    if container == "root":
+        return {
+            "type": "object",
+            "$defs": {"unused": body},
+            "properties": {"p": {"type": "string"}},
+        }
+    if container == "nested-non-resource":
+        return {
+            "type": "object",
+            "properties": {
+                "h": {
+                    "type": "object",
+                    "$defs": {"unused": body},
+                    "properties": {"s": {"type": "string"}},
+                }
+            },
+        }
+    raise AssertionError(container)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("case_id", _CYCLE11_KEYWORD_CASES)
+def test_cycle11_vf001_generator_refuses_profile_keyword_rules(
+    field: str, case_id: str
+) -> None:
+    """VF-001: an emitted schema must fail the shared profile rule before artifacts return.
+
+    The libraries accept the schema. The delivered twin already fails closed.
+    The generator still returns the descriptor. Rule 3 is dialect 2020-12 and
+    the refusal of ``$dynamicRef`` and ``$recursiveRef``.
+    """
+    schema, message = _cycle11_keyword_schema(case_id)
+    _cycle11_library_accepts(schema, field)
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError) as delivered:
+        _validate(_cycle11_deliver(schema, field))
+    assert message in str(delivered.value)
+    with pytest.raises(C1Error) as generated:
+        _cycle11_generate(schema, field)
+    assert message in str(generated.value)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize(("label", "ref", "key"), _CYCLE11_PLANTED)
+def test_cycle11_vf002_planted_pointer_follows_the_libraries(
+    field: str, label: str, ref: str, key: str
+) -> None:
+    """VF-002: a planted literal key follows referencing, including ``~2`` and loose percent forms.
+
+    ``label`` keeps the parameter in the node id. No stricter rule without a
+    contract source remains. The generated origin cannot carry these ``$ref``
+    spellings: the contract symbol table rejects them before ``_mcp``.
+    """
+    del label
+    from jsonschema import Draft202012Validator
+
+    schema = {
+        "type": "object",
+        "properties": {"p": {"$ref": ref}},
+        "$defs": {key: {"type": "string"}},
+    }
+    registry = _cycle11_library_accepts(schema, field)
+    target = registry.resolver(_cycle11_fixed_base(field)).lookup(ref)
+    assert target.contents == {"type": "string"}
+    validator = Draft202012Validator(schema, registry=registry)
+    assert list(validator.iter_errors({"p": "a"})) == []
+    assert list(validator.iter_errors({"p": 1})) != []
+    try:
+        _validate(_cycle11_deliver(schema, field))
+    except Exception as exc:
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        if isinstance(exc, profile.McpProfileError):
+            pytest.fail(f"profile refused a reference the libraries resolve: {exc}")
+        raise
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("content", _CYCLE11_ADDITIONAL)
+def test_cycle11_vf003_delivered_additional_items_follow_the_libraries(
+    field: str, content: str
+) -> None:
+    """VF-003: ``additionalItems`` is not a 2020-12 keyword, so the profile does not index it."""
+    schema = _cycle11_additional_schema(content)
+    registry = _cycle11_library_accepts(schema, field)
+    if content == "anchor":
+        resolved = registry.resolver(_cycle11_fixed_base(field)).lookup("#x")
+        assert resolved.contents == {"$anchor": "x", "type": "string"}
+    try:
+        _validate(_cycle11_deliver(schema, field))
+    except Exception as exc:
+        profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+        if isinstance(exc, profile.McpProfileError):
+            pytest.fail(
+                f"profile indexed additionalItems ({content}) against the libraries: {exc}"
+            )
+        raise
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+def test_cycle11_vf003_items_remain_indexed(field: str) -> None:
+    """Negative: ``items`` is a real keyword, so an unresolvable ref there stays refused."""
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    schema = {"type": "array", "items": {"$ref": "#/$defs/missing"}}
+    with pytest.raises(profile.McpProfileError):
+        _validate(_cycle11_deliver(schema, field))
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("content", _CYCLE11_GENERATED_ADDITIONAL)
+def test_cycle11_vf003_generated_additional_items_follow_the_libraries(
+    field: str, content: str
+) -> None:
+    """VF-003: the generator uses the same enumeration and emits what the libraries accept."""
+    schema = _cycle11_additional_schema(content)
+    _cycle11_library_accepts(schema, field)
+    try:
+        document = _cycle11_generate(schema, field)
+    except C1Error as exc:
+        pytest.fail(f"generator refused additionalItems {content}: {exc}")
+    _validate(document)
+
+
+def test_cycle11_vf004_oracles_do_not_call_a_production_base() -> None:
+    """VF-004: the 63 oracle helpers must not call ``operational_base`` or import the profile."""
+    forbidden_import = "from ocor_runtime.c1.mcp_profile import operational_base"
+    for helper in (_cycle6_schema_alone, _cycle10_static_library):
+        source = inspect.getsource(helper)
+        assert forbidden_import not in source
+        assert "operational_base(" not in source
+
+
+@pytest.mark.parametrize("container", _CYCLE11_CONTAINERS)
+@pytest.mark.parametrize("sibling", _CYCLE11_SIBLINGS)
+def test_cycle11_vf008_unreachable_user_definition_is_omitted(
+    container: str, sibling: str
+) -> None:
+    """VF-008: an unreachable user definition is omitted, including a resource under a non-resource."""
+    schema = _cycle11_unreachable_schema(container, sibling)
+    document = _cycle11_generate(schema, "inputSchema")
+    emitted = document["tools"][0]["inputSchema"]
+    assert "unused" not in _cycle11_def_names(emitted)
