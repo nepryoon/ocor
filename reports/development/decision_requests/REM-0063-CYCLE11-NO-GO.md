@@ -1,6 +1,6 @@
 # REM-0063-CYCLE11-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Status: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Verdetto: `OCOR-DEV-REM-0063-5defee743612-11`, esito `NO_GO`, sha256 `525aa958f33c28544ce01d6fa83af955c2e126ac74245d593f097159b3040df4`.
 Head verificato: `5defee7436120e9a5f51191113b5995467bacaf2` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`.
@@ -84,3 +84,13 @@ Opzione 1. È l'unica che toglie la causa: il ritorno anticipato che salta la re
 Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`. Gli altri task non sono bloccati da questa richiesta. `OCOR-DEV-REM-0066` resta sullo stato di `REM-0066-ROUTE-TEST-TRACEABILITY`. `OCOR-DEV-REM-0065` resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. `AGENTIC-RISK-MAP-PARTIAL-GAPS` non blocca alcun task.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist del validatore del piano per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione.
+
+## Disposition
+
+Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Decisione `REM-0063-CYCLE11-NO-GO (2026-11-18)`. Opzione 1 adottata. Le opzioni 2 e 3 non sono applicate.
+
+Il primo passo dell'opzione è il test RED, prima di ogni modifica sotto `ocor-runtime/src/`. Commit `480f70240a21019b539ab4b1b847e7dd5d1af833` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`, senza rebase, reset o force-push, a partire da `5defee7436120e9a5f51191113b5995467bacaf2`. Il file cambiato è solo `ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py`. Pytest `-k cycle12`: 153 failed, 10 passed, 41990 deselected, 2,70 s. Il log grezzo è `~/.ocor-codex/rem-0063/preserved/480f70240a21019b539ab4b1b847e7dd5d1af833/red.log.cycle12.raw`, sha256 `69fddef7fc1f90710d053b3f49629524e005be4761ca449e2cb5a239caba1aa1`. I fallimenti sono la ragione dei finding: la regola 4 non rifiuta un indice non canonico accanto a un segmento che il decoder rigoroso rifiuta (144), il profilo rifiuta con `exceeds the revision bounds` le profondità 31 e 32 che `assert_reference_path_bound` accetta, per ancora e puntatore (8), e `codegen.py` chiama ancora `subresources` e `in_subresource` senza che `_check_schema_keywords` chiami `enforce_emitted_schema_rules` (1). I 10 passaggi sono i controlli che il codice attuale già soddisfa: indice canonico `2` accanto a `%ZZ` (4), indice `02` con segmento canonico `k` già rifiutato (2), profondità 33 rifiutata sia dal profilo sia dal limite condiviso (4).
+
+Non sono ancora eseguiti i passi successivi dell'opzione: la modifica di produzione di VF-001, VF-002 e VF-003, il record, le riqualifiche di VF-005, VF-006, VF-007 e VF-009, la revisione preventiva, il gate, la campagna, il controllo distinto e la verifica. VF-008 non si corregge in questo ciclo. Il branch di produzione `governed/ocor-dev-rem-0063-mcp-profile` resta `5ffc19bddca6bf0176575191e6bc3f0d4ea717d8`. Le campagne diagnostiche `5a1a8aaff6af-1794907944`, `8037040f14cc-1794928763` e `3ae284727c98-1794931254` non sono state rilanciate. `inputs/` non è stato modificato. Nessun record sigillato è stato riscritto. La sonda resta in `reports/tests/cycle11_library_probe.py` e `reports/tests/cycle11_library_probe.out.json`.
+
+Il testo sopra questa sezione, esclusa la riga di stato, resta quello del commit `391ff177a5c0e25fbbdbe4840a0d4c14612ae03e`, sha256 `c8ae68e98a1455591761726be8f85575d857faa3a3a20ce6be866e383d89403f`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
