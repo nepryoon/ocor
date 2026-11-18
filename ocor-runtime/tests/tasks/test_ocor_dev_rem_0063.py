@@ -12,9 +12,11 @@ Required backend: none. The official Tool schema is a pinned test fixture.
 
 from __future__ import annotations
 
+import ast
 import copy
 import hashlib
 import importlib
+import re
 import importlib.util
 import inspect
 import json
@@ -6896,3 +6898,237 @@ def test_cycle11_vf008_unreachable_user_definition_is_omitted(
     document = _cycle11_generate(schema, "inputSchema")
     emitted = document["tools"][0]["inputSchema"]
     assert "unused" not in _cycle11_def_names(emitted)
+
+
+# Cycle 12 RED. REM-0063-CYCLE11-NO-GO option 1, steps 1-4. These tests are
+# the new matrix cells. They fail on 5defee743612 before any change under
+# ocor-runtime/src. The libraries are the resolution oracle. Production
+# code is not the oracle, except assert_reference_path_bound, which option 1
+# names as the depth outcome the profile must match.
+_CYCLE12_INDEXES = ("02", "00", "-1", "+2", "%202", "２")
+_CYCLE12_LOOSE = ("%ZZ", "%", "%FF", "%ED%A0%80", "x~2y", "~")
+_CYCLE12_ORDERS = ("index-first", "loose-first")
+_CYCLE12_REF_DEPTHS = (31, 32, 33)
+_CYCLE12_RULE4 = "MCP $ref fragment is not a valid JSON Pointer"
+
+
+def _cycle12_planted_key(segment: str) -> str:
+    """Key spelling ``referencing`` looks up: unquote, then the document key."""
+    from urllib.parse import unquote
+
+    return unquote(segment)
+
+
+def _cycle12_index_payload() -> dict[str, Any]:
+    definitions = {
+        _cycle12_planted_key(segment): {"type": "integer"} for segment in _CYCLE12_LOOSE
+    }
+    definitions["k"] = {"type": "integer"}
+    return {"type": "object", "$defs": definitions}
+
+
+def _cycle12_index_items() -> list[dict[str, Any]]:
+    """Index 0, index 2 and index -1 of a three-item array all hold the payload."""
+    payload = _cycle12_index_payload()
+    return [payload, {"type": "string"}, copy.deepcopy(payload)]
+
+
+def _cycle12_index_schema(index: str, loose: str, order: str) -> dict[str, Any]:
+    """One non-canonical array index beside one loose segment, in either order."""
+    items = _cycle12_index_items()
+    if order == "index-first":
+        reference = f"#/prefixItems/{index}/$defs/{loose}"
+        return {
+            "type": "object",
+            "prefixItems": items,
+            "properties": {"r": {"$ref": reference}},
+        }
+    if order == "loose-first":
+        reference = f"#/$defs/{loose}/prefixItems/{index}"
+        return {
+            "type": "object",
+            "$defs": {
+                _cycle12_planted_key(loose): {"type": "array", "prefixItems": items},
+            },
+            "properties": {"r": {"$ref": reference}},
+        }
+    raise AssertionError(order)
+
+
+def _cycle12_library_target(schema: Mapping[str, Any], field: str) -> object:
+    registry = _cycle11_library_accepts(schema, field)
+    reference = schema["properties"]["r"]["$ref"]
+    assert isinstance(reference, str)
+    resolved = registry.resolver(_cycle11_fixed_base(field)).lookup(reference)
+    return resolved.contents
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("order", _CYCLE12_ORDERS)
+@pytest.mark.parametrize("loose", _CYCLE12_LOOSE)
+@pytest.mark.parametrize("index", _CYCLE12_INDEXES)
+def test_cycle12_vf001_noncanonical_index_is_refused_beside_a_loose_segment(
+    field: str,
+    order: str,
+    loose: str,
+    index: str,
+) -> None:
+    """VF-001: rule 4 refuses the index even when another segment bails the strict decoder.
+
+    ``referencing`` 0.37.0 resolves the pointer. The profile must still refuse
+    it as a non-canonical array index. On 5defee743612 the early return in
+    ``_reject_noncanonical_array_index`` accepts the pointer.
+    """
+    schema = _cycle12_index_schema(index, loose, order)
+    target = _cycle12_library_target(schema, field)
+    assert isinstance(target, dict)
+    if order == "index-first":
+        assert target == {"type": "integer"}
+    else:
+        assert target.get("type") == "object"
+        assert _cycle12_planted_key(loose) in target["$defs"]
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError, match=re.escape(_CYCLE12_RULE4)):
+        _validate(_cycle11_deliver(schema, field))
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("order", _CYCLE12_ORDERS)
+def test_cycle12_vf001_canonical_index_beside_a_loose_segment_stays_accepted(
+    field: str,
+    order: str,
+) -> None:
+    """A pointer whose every array index is canonical is not a rule-4 refusal."""
+    schema = _cycle12_index_schema("2", "%ZZ", order)
+    target = _cycle12_library_target(schema, field)
+    assert isinstance(target, dict)
+    _validate(_cycle11_deliver(schema, field))
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+def test_cycle12_vf001_noncanonical_index_with_a_canonical_segment_is_refused(
+    field: str,
+) -> None:
+    """The same index is already refused when the other segment does not bail the decoder."""
+    schema = _cycle12_index_schema("02", "k", "index-first")
+    # ``k`` is canonical. The strict decoder does not return early, so rule 4
+    # already refuses ``02``. The libraries still resolve the pointer.
+    registry = _cycle11_library_accepts(schema, field)
+    resolved = registry.resolver(_cycle11_fixed_base(field)).lookup("#/prefixItems/02/$defs/k")
+    assert resolved.contents == {"type": "integer"}
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    with pytest.raises(profile.McpProfileError, match=re.escape(_CYCLE12_RULE4)):
+        _validate(_cycle11_deliver(schema, field))
+
+
+def _cycle12_nots(count: int, inner: dict[str, Any]) -> dict[str, Any]:
+    node = inner
+    for _ in range(count):
+        node = {"not": node}
+    return node
+
+
+def _cycle12_depth_schema(form: str, chain: int, *, deep: int = 4) -> dict[str, Any]:
+    """Anchor or pointer to one target, from two static paths of different depth."""
+    if form == "anchor":
+        reference = "#x"
+    elif form == "pointer":
+        reference = "#/$defs/a"
+    else:
+        raise AssertionError(form)
+    target = {
+        "$anchor": "x",
+        "type": "object",
+        "properties": {"c": _cycle12_nots(chain, {"type": "string"})},
+    }
+    return {
+        "type": "object",
+        "$defs": {"a": target},
+        "properties": {"q": {"$ref": reference}},
+        "allOf": [_cycle12_nots(deep, {"$ref": reference})],
+    }
+
+
+def _cycle12_deep_reference(schema: Mapping[str, Any], deep: int) -> str:
+    node: object = schema["allOf"][0]
+    for _ in range(deep):
+        assert isinstance(node, dict)
+        node = node["not"]
+    assert isinstance(node, dict)
+    reference = node["$ref"]
+    assert isinstance(reference, str)
+    return reference
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("form", ("anchor", "pointer"))
+@pytest.mark.parametrize(("ref_depth", "chain"), ((31, 27), (32, 28), (33, 29)))
+def test_cycle12_vf002_reference_path_depth_matches_the_shared_bound(
+    field: str,
+    form: str,
+    ref_depth: int,
+    chain: int,
+) -> None:
+    """VF-002: anchor and pointer follow ``assert_reference_path_bound`` at depth 31, 32 and 33.
+
+    The schema carries two ``$ref`` paths. ``properties.q`` is the shallow one.
+    ``allOf`` nests four ``not`` keywords before the same reference. On
+    5defee743612 the profile's own counter refuses depths the shared function
+    still accepts.
+    """
+    from jsonschema import Draft202012Validator
+
+    deep = 4
+    schema = _cycle12_depth_schema(form, chain, deep=deep)
+    shallow = schema["properties"]["q"]["$ref"]
+    assert _cycle12_deep_reference(schema, deep) == shallow
+    assert schema["allOf"][0] != schema["properties"]["q"]
+    Draft202012Validator.check_schema(schema)
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    registry = _cycle11_library_registry(schema, field)
+    try:
+        profile.assert_reference_path_bound(schema, registry.resolver(_cycle11_fixed_base(field)))
+    except profile.SchemaCalculationFailure as exc:
+        assert "bounds" in str(exc)
+        bound_accepts = False
+    else:
+        bound_accepts = True
+    assert bound_accepts is (ref_depth <= 32), ref_depth
+    if bound_accepts:
+        _validate(_cycle11_deliver(schema, field))
+        return
+    with pytest.raises(profile.McpProfileError, match="exceeds the revision bounds"):
+        _validate(_cycle11_deliver(schema, field))
+
+
+def test_cycle12_vf003_generator_enters_resources_only_through_the_profile() -> None:
+    """VF-003: codegen must not walk resources itself, and rule 3 has one predicate.
+
+    ``contained_subschemas`` and ``enter_subschema`` are the shared entry.
+    ``_check_schema_keywords`` must call ``enforce_emitted_schema_rules``.
+    On 5defee743612 both checks fail.
+    """
+    codegen = (ROOT / "ocor-runtime/src/ocor_runtime/c1/codegen.py").read_text(encoding="utf-8")
+    profile_source = (ROOT / "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py").read_text(
+        encoding="utf-8"
+    )
+    problems: list[str] = []
+    for node in ast.walk(ast.parse(codegen)):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr in {"subresources", "in_subresource"}:
+            problems.append(f"codegen.py:{node.lineno} calls {node.func.attr}")
+    predicate = None
+    for node in ast.walk(ast.parse(profile_source)):
+        if isinstance(node, ast.FunctionDef) and node.name == "_check_schema_keywords":
+            predicate = node
+            break
+    assert predicate is not None
+    calls = [
+        child.func.id
+        for child in ast.walk(predicate)
+        if isinstance(child, ast.Call) and isinstance(child.func, ast.Name)
+    ]
+    if "enforce_emitted_schema_rules" not in calls:
+        problems.append("_check_schema_keywords does not call enforce_emitted_schema_rules")
+    assert problems == []
