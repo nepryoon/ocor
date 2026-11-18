@@ -410,3 +410,28 @@ Rules stricter than the libraries, each with its own typed error:
 9. `json_bounds` is the only value-count limit. Reference-path depth 32 is a separate rule. Source: **REM-0063-CICLO-10-CONTRATTO**, point 2, and **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
 
 `validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `json_bounds` and then `operational_base` on each tool schema field before `_mcp_attach_definitions`, then `json_bounds` on the assembled descriptor. A static failure still refuses the descriptor only when no reference path reaches that node. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.
+
+
+## Cycle 11 record alignment
+
+REM-0063-CYCLE10-NO-GO (2026-11-18) option 1, steps 4 and 5, at code head
+`c03073f7dfad399f6e07ae45ac9a8780ee0f8f97`. The production commits are
+`82a3318fd895e97d6b221384f0ddd60625bbe4dd` and the separate realignment
+`c03073f7dfad399f6e07ae45ac9a8780ee0f8f97`. This section does not replace the
+cycle-10 contract above.
+
+`git diff --check f485dc964e47bde83842ecd5ba2627d8342612f9 c03073f7dfad399f6e07ae45ac9a8780ee0f8f97`
+exits 0 and prints nothing. The official-fixture whitespace exemption is not
+used. The trailing blank line of `mcp_profile.py` is gone.
+
+REM-0063-CYCLE10-LANE-ARGV-LIMIT and REM-0063-CYCLE10-INOTIFY-INSTANCES are
+decided and applied. Option 1 of each. The diagnostic campaign
+`8037040f14cc-1794928763` stays FAIL: pytest collected nothing on lane 1
+because `-m` was read as a marker expression (41953 deselected, exit 5).
+Commit `3ae284727c9829902e72bea25c2f07373e60d969` is the follow-up that assigns
+the argv tail. It is not a passing campaign.
+
+The self-check table adds the VF-010 parsers and the cycle-11 enumeration
+paths. The phase-A inventory text is kept as history and is not the current
+inventory. Preventive review, the four-lane campaign and `verify_request.json`
+are not this commit.
