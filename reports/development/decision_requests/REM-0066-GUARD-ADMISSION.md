@@ -41,3 +41,18 @@ Opzione 1. `CI-STATO-RAPIDA (2026-11-14)` ha già autorizzato la route, e la pro
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta, `OCOR-DEV-REM-0066` è bloccato. Non si modifica `reports/tests/test_kind_teardown_observation.py` né `reports/tests/test_fuseki_archive_acquisition.py` per far passare il gate. Non si scrive `prereview_request.json` e non si avvia la suite completa. Non si apre una PR candidata. Il branch resta all'HEAD `b7895ab1ec31ad289ff113e1224c26425a35bb5f`. `OCOR-DEV-REM-0063` resta bloccato da `REM-0063-CYCLE7-NO-GO` e il ciclo 7 non parte. `OCOR-DEV-REM-0065` non è bloccato da questa richiesta: è la prossima unità eseguibile, all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. Non partono `OCOR-DEV-REM-0060`, l'adozione della PR #599 e l'unità del punto 5. La PR #595 non si integra. La PR #628 non si riapre e il suo job di `validation-closure` non si rilancia. La PR #640 resta lavoro concorrente. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna modifica a `inputs/`. Questa richiesta non cambia codice, test, gate, timer, tetti, partizioni o criteri.
+
+## Disposition
+
+Decisa su delega completa del PO, modello `claude-fable-5-2`, effort `high`. Decisione `REM-0066-GUARD-ADMISSION (2026-11-15)`. Opzione 1 applicata. Le opzioni 2 e 3 non sono applicate.
+
+Sul branch `governed/ocor-dev-rem-0066-state-only-ci`, senza rebase, reset o force-push: il guard è il commit `91a4140e14c39fe44a6eb9ee35961150bb784f77`; l'allowlist dei record nuovi è `8ba7809edc62f0cd392af438cfe24e1905842a6b`; i record di riqualifica sono `6f714e7c5dba194370067453b04be551fe5f6e40`. I record `*.requalified-rem0066` non sono stati riscritti. Le baseline, i pin, i timer, le partizioni e la selezione dei casi non sono cambiati. `inputs/` non è stato modificato.
+
+`PRE-CAMPAIGN-GATE` su `91a4140e14c39fe44a6eb9ee35961150bb784f77` è FAIL solo a `drift`. `gates.json` sha256 `8266d467fa1cd3478fc4a03722389ef94c4755e502f9bb65960684711e2f64d9`. Un pytest dei task `OCOR-DEV-0005`, `OCOR-DEV-0050` e `OCOR-DEV-0082` su `8ba7809edc62f0cd392af438cfe24e1905842a6b` ha dato 214 passed e zero skip, durata 4,91 s, avvio `2026-11-18T01:45:16Z`.
+
+`PRE-CAMPAIGN-GATE` su `6f714e7c5dba194370067453b04be551fe5f6e40`, base `eaed84dad757ce8a9fdbfda624a719d6d7917a37`, è FAIL. Quarantacinque passi, quarantaquattro PASS, un solo FAIL: `rem0046-unit`. `gates.json` sha256 `2a31080c17be5ea0b36e4840db793ab11a10e387a94ef3235c500c499fd4b65b`. `test_ncr_plan_006_conforms` segnala `ORPHAN_DESIGN` per `reports/tests/test_classify_pull_request_ci_route.py`. Questo fallimento non è descritto dall'opzione 1. Non è stata scritta `prereview_request.json`. La suite completa non è stata avviata.
+
+La richiesta successiva è `REM-0066-ROUTE-TEST-TRACEABILITY`, stato `OPEN_PO_DECISION_REQUIRED`, branch `governed/decision-request-rem0066-route-test-traceability`, commit `f68e0640764f8c6a4847ca2a814d04c3d313f128`, sha256 `b22651b7970f8c34df8e3297fa4affbe8da9797cbe9427267c743b463ea6ef78`, PR #675 bozza, non si integra. Nessuna opzione di quella richiesta è applicata.
+
+Il testo sopra questa sezione resta quello del commit `d57732f5345636ff9ca2e819e037f345af26679c`, sha256 `56f50622954689e1913c73fc0d3bac5c111cb9d19b740b67799bef96c2a1d476`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
+
