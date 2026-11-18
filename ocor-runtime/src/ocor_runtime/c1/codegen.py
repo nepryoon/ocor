@@ -31,6 +31,8 @@ from .mcp_profile import (
     SchemaCalculationFailure,
     assert_reference_path_bound,
     autonomous_registry,
+    contained_subschemas,
+    enforce_emitted_schema_rules,
     enter_subschema,
     json_bounds,
     operational_base,
@@ -304,19 +306,15 @@ def _mcp_require_defs_objects(node: object, path: str, seen: set[int] | None = N
     defs = node.get("$defs")
     if defs is not None and not isinstance(defs, Mapping):
         raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $defs must be an object")
-    try:
-        children = list(DRAFT202012.subresources_of(node))
-    except (AttributeError, TypeError, ValueError):
-        return
-    for child in children:
+    for child in contained_subschemas(node):
         _mcp_require_defs_objects(child, path, seen)
 
 
 def _mcp_children(node: Mapping[str, Any], path: str) -> list[Any]:
-    try:
-        return list(DRAFT202012.subresources_of(node))
-    except (AttributeError, TypeError, ValueError) as exc:
-        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not resolvable") from exc
+    """The profile's enumeration. A container the draft cannot walk is typed."""
+
+    del path
+    return list(contained_subschemas(node))
 
 
 def _mcp_defs_name(ref: str) -> str | None:
@@ -384,17 +382,17 @@ def _mcp_uncrawled_schemas(
     resolver: Any,
     path: str,
 ) -> list[Mapping[str, Any]]:
-    """``additionalItems`` stays on the current resource unless its base changes."""
+    """``additionalItems`` is not a resource. Refs on it stay on this resource.
 
+    The pinned draft does not index the keyword. A ``$id`` here does not open
+    a resource and is not a typed refusal. The value is still scanned so a
+    ``$ref`` that sits on the current resource is closed there.
+    """
+
+    del resolver, path
     extra = node.get("additionalItems")
     if not isinstance(extra, Mapping):
         return []
-    try:
-        _entered, changed = enter_subschema(resolver, extra)
-    except (ValueError, AttributeError, TypeError) as exc:
-        raise _mcp_library_error(exc, path) from exc
-    if changed:
-        raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not crawled")
     return [extra]
 
 
@@ -665,12 +663,12 @@ def _mcp_close_resource(
 def _mcp_strip_unreachable_defs(root: Mapping[str, Any], resolver: Any, path: str) -> None:
     """Drop ``$defs`` on a node that does not start a resource."""
 
-    def visit(node: object, res: Any, *, is_root: bool) -> None:
+    def visit(node: object, res: Any, *, is_root: bool, stay: bool = False) -> None:
         if not isinstance(node, dict):
             return
-        if is_root:
+        if stay or is_root:
             current = res
-            resource_root = True
+            resource_root = is_root and not stay
         else:
             try:
                 current = res.in_subresource(DRAFT202012.create_resource(node))
@@ -693,26 +691,17 @@ def _mcp_strip_unreachable_defs(root: Mapping[str, Any], resolver: Any, path: st
             else:
                 resource_root = lookup_ok and crawl_owner is node
         if not resource_root:
+            # An unreachable user definition is omitted, including one that
+            # is itself a resource under a node that is not a resource.
             defs = node.get("$defs")
             if isinstance(defs, dict):
-                kept: dict[str, Any] = {}
-                for name, body in defs.items():
-                    if not isinstance(body, dict):
-                        continue
-                    try:
-                        _entered, body_changes = enter_subschema(current, body)
-                    except (ValueError, AttributeError, TypeError) as exc:
-                        raise _mcp_library_error(exc, path) from exc
-                    if body_changes:
-                        kept[name] = body
-                if kept:
-                    node["$defs"] = kept
-                else:
-                    node.pop("$defs", None)
+                node.pop("$defs", None)
         for child in _mcp_children(node, path):
             visit(child, current, is_root=False)
         for extra in _mcp_uncrawled_schemas(node, current, path):
-            visit(extra, current, is_root=False)
+            # additionalItems is not a resource. Do not ask the library for
+            # its id: a non-string $id is not a refusal on this keyword.
+            visit(extra, current, is_root=False, stay=True)
 
     visit(root, resolver, is_root=True)
 
@@ -784,6 +773,7 @@ def _mcp_attach_definitions(
         raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not an object")
     try:
         json_bounds(copied)
+        enforce_emitted_schema_rules(copied)
     except SchemaCalculationFailure as exc:
         raise _mcp_calculation_error(exc, path) from exc
     _mcp_require_defs_objects(copied, path)

@@ -44,27 +44,35 @@ DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 ACCEPTED_DIALECTS = frozenset({DRAFT_2020_12, DRAFT_2020_12 + "#"})
 MAX_SCHEMA_DEPTH = 32
 MAX_SCHEMA_NODES = 4096
+def _library_keyword_groups() -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
+    """Keyword groups of ``DRAFT202012.subresources_of``.
+
+    The groups are read from the pinned specification so the profile cannot
+    grow a second table. ``additionalItems`` is not a JSON Schema 2020-12
+    keyword and is not a member. Identification is by a member of each group,
+    not by closure order.
+    """
+
+    function = DRAFT202012.subresources_of
+    groups = [
+        frozenset(cell.cell_contents)
+        for cell in function.__closure__ or ()
+        if isinstance(cell.cell_contents, (set, frozenset))
+    ]
+    try:
+        maps = next(group for group in groups if "properties" in group)
+        objects = next(group for group in groups if "items" in group)
+        arrays = next(group for group in groups if "allOf" in group)
+    except StopIteration as exc:
+        raise RuntimeError("pinned draft subresource keywords are not recognisable") from exc
+    if "additionalItems" in maps | objects | arrays:
+        raise RuntimeError("pinned draft unexpectedly indexes additionalItems")
+    return maps, objects, arrays
+
+
 # Applicator keywords whose values are schemas. Map keys are names, not keywords.
-_SCHEMA_MAP_KEYWORDS = frozenset(
-    {"$defs", "definitions", "dependentSchemas", "patternProperties", "properties"}
-)
-_SCHEMA_OBJECT_KEYWORDS = frozenset(
-    {
-        "additionalItems",
-        "additionalProperties",
-        "contains",
-        "contentSchema",
-        "else",
-        "if",
-        "items",
-        "not",
-        "propertyNames",
-        "then",
-        "unevaluatedItems",
-        "unevaluatedProperties",
-    }
-)
-_SCHEMA_ARRAY_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
+# The sets are the pinned draft's, not a hand-written copy.
+_SCHEMA_MAP_KEYWORDS, _SCHEMA_OBJECT_KEYWORDS, _SCHEMA_ARRAY_KEYWORDS = _library_keyword_groups()
 # Plain-name anchors indexed by the pinned referencing resolver for draft 2020-12.
 _ANCHOR_KEYWORDS = ("$anchor", "$dynamicAnchor")
 
@@ -629,42 +637,81 @@ def _require_draft_2020_12(schema: object, index: int, field: str) -> None:
         ) from exc
 
 
-def _iter_schema_children(node: Mapping[str, Any]) -> Iterator[object]:
-    """Yield only values in JSON Schema 2020-12 applicator positions.
+def contained_subschemas(node: Mapping[str, Any]) -> tuple[object, ...]:
+    """Subschemas the pinned draft indexes under ``node``.
 
-    ``additionalItems`` is excluded: the pinned draft's crawl does not index
-    it as a subresource and the profile does not index anchors there either.
+    This is the only enumeration of contained subschemas. The profile and the
+    generator both call it. ``additionalItems`` is not a member: JSON Schema
+    2020-12 does not index it, and a ``$id``, ``$anchor`` or ``$ref`` stored
+    there is not a resource boundary. A keyword value that is not the
+    container the draft walks contributes nothing, so a string does not
+    become a sequence of characters.
     """
 
+    if not isinstance(node, Mapping):
+        return ()
+    found: list[object] = []
     for key, value in node.items():
         if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
-            yield from value.values()
+            found.extend(value.values())
             continue
-        if (
-            key in _SCHEMA_ARRAY_KEYWORDS
-            and isinstance(value, Sequence)
-            and not isinstance(value, (str, bytes))
+        if key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, Sequence) and not isinstance(
+            value, (str, bytes)
         ):
-            yield from value
+            found.extend(value)
             continue
         if key in _SCHEMA_OBJECT_KEYWORDS:
-            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-                yield from value
-            else:
-                yield value
+            found.append(value)
+    return tuple(found)
+
+
+def _iter_schema_children(node: Mapping[str, Any]) -> Iterator[object]:
+    """Yield the shared enumeration. ``additionalItems`` is not included."""
+
+    yield from contained_subschemas(node)
 
 
 def _iter_check_children(node: Mapping[str, Any]) -> Iterator[object]:
-    """Yield schema children for keyword checks, including ``additionalItems``.
+    """Keyword checks use the same enumeration as resource indexing."""
 
-    The pinned draft does not crawl ``additionalItems`` as a subresource, but
-    the profile still checks a ``$ref`` stored there: the value is a schema
-    position for dialect, local-reference and resolution rules.
+    yield from contained_subschemas(node)
+
+
+def enforce_emitted_schema_rules(schema: object) -> None:
+    """Rule 3 on every schema the shared enumeration reaches.
+
+    Dialect 2020-12, and no ``$dynamicRef`` or ``$recursiveRef``, on the root,
+    on a nested schema and on the root of a nested resource. ``additionalItems``
+    is not walked. Callers map ``SchemaCalculationFailure`` to their public
+    error. The message is the profile sentence.
     """
 
-    yield from _iter_schema_children(node)
-    if "additionalItems" in node:
-        yield node["additionalItems"]
+    seen: set[int] = set()
+
+    def visit(node: object) -> None:
+        if not isinstance(node, Mapping):
+            return
+        identity = id(node)
+        if identity in seen:
+            return
+        seen.add(identity)
+        if "$dynamicRef" in node or "$recursiveRef" in node:
+            raise SchemaCalculationFailure(
+                "KEYWORD",
+                "MCP $ref resolution does not follow dynamic references",
+            )
+        if "$schema" in node:
+            dialect = node["$schema"]
+            if not isinstance(dialect, str) or dialect not in ACCEPTED_DIALECTS:
+                raise SchemaCalculationFailure(
+                    "KEYWORD",
+                    "MCP schema dialect must be JSON Schema 2020-12",
+                )
+        if isinstance(node, Mapping):
+            for child in contained_subschemas(node):
+                visit(child)
+
+    visit(schema)
 
 
 def _reject_non_string_schema_ids(node: object, *, seen: set[int] | None = None) -> None:
@@ -745,7 +792,7 @@ def _collect_anchor_owners(
     ``referencing`` keeps one anchor when a name repeats. The profile records
     every owner of the same resource root and rejects the reference. A node
     whose ``$id`` changes the base is a different resource. ``additionalItems``
-    and instance data are not anchor positions.
+    is not indexed. Instance data is not an anchor position.
     """
 
     owners: dict[tuple[int, str], list[Mapping[str, Any]]] = {}
@@ -1025,7 +1072,21 @@ def _resolve_reference(
 
     if not isinstance(reference, str) or not reference.startswith("#"):
         raise McpProfileError("MCP $ref must be a same-document fragment")
-    decoded = _decode_uri_fragment(reference[1:])
+    fragment = reference[1:]
+    # A JSON Pointer the pinned libraries resolve is accepted. The three
+    # pre-lookup refusals of ``~`` other than ``~0``/``~1``, of loose
+    # percent-encoding and of strict UTF-8 have no source in the contract
+    # (REM-0063-CYCLE10-NO-GO option 1, VF-002). Non-canonical array indexes
+    # stay a profile refusal. Fragments that do not start with ``/`` keep
+    # the encoded-anchor rule.
+    if fragment.startswith("/"):
+        resolved = _lookup_reference(context.resolver, reference)
+        if resolved is not None:
+            _reject_noncanonical_array_index(context.resolver, fragment)
+            target = resolved.contents
+            _require_schema(target)
+            return target, _ref_target_context(context, resolved.resolver, target)
+    decoded = _decode_uri_fragment(fragment)
     if decoded and not decoded.startswith("/"):
         # The library does not percent-decode anchor names. An encoded anchor
         # is refused, including one whose literal spelling is itself an anchor.
@@ -1106,6 +1167,28 @@ def _reject_ambiguous_anchor(
 ) -> None:
     if len(anchors.get((resource_id, name), ())) > 1:
         raise McpProfileError("MCP $ref anchor is ambiguous")
+
+
+def _reject_noncanonical_array_index(resolver: Any, fragment: str) -> None:
+    """Keep the array-index rule when the libraries already resolved the pointer.
+
+    A spelling the libraries resolve and the strict decoder refuses is not an
+    array index. Those spellings follow the libraries. A decoded token whose
+    parent is an array still has to be canonical.
+    """
+
+    try:
+        decoded = _decode_uri_fragment(fragment)
+    except McpProfileError:
+        return
+    if not decoded.startswith("/"):
+        return
+    raw_tokens = decoded[1:].split("/")
+    try:
+        tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
+    except McpProfileError:
+        return
+    _validate_pointer_array_indices(resolver, raw_tokens, tokens)
 
 
 def _validate_pointer_array_indices(
@@ -1257,5 +1340,3 @@ def _json_pointer_token(raw: str) -> str:
             continue
         index += 1
     return raw.replace("~1", "/").replace("~0", "~")
-
-
