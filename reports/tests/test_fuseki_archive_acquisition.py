@@ -164,8 +164,14 @@ def test_ci_cache_actions_are_exact_key_pinned_in_every_stack_job():
         'rccad-methodology-part', 'rccad-methodology', 'delivery-activation-part', 'delivery-activation',
         'validation-closure-part', 'validation-closure', 'conditional-infrastructure-0049-part'}
     # The 0049 aggregator only verifies the parts' union and never provisions or restores a stack.
-    assert set(jobs) - provisioning_jobs == {'conditional-infrastructure-0049'}
+    # REM-0066-GUARD-ADMISSION (2026-11-15) option 1: classify-ci-route is the only other
+    # non-provisioning job. It has no stack step and no actions/cache restore or save.
+    assert set(jobs) - provisioning_jobs == {'classify-ci-route', 'conditional-infrastructure-0049'}
     assert not any('cache' in s.get('uses', '') for s in jobs['conditional-infrastructure-0049']['steps'])
+    for name in ('ocor-rccad.yml', 'ocor-delivery-activation.yml', 'ocor-validation-closure.yml'):
+        classify = yaml.safe_load((repo / '.github/workflows' / name).read_text())['jobs']['classify-ci-route']
+        assert not any(step.get('name') == 'Provision the full pinned disposable stack' for step in classify['steps'])
+        assert not any(step.get('uses', '').startswith('actions/cache/') for step in classify['steps'])
     for job in (jobs[name] for name in sorted(provisioning_jobs)):
         steps = job['steps']
         restore = next(s for s in steps if s.get('id') == 'fuseki-cache')

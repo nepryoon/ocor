@@ -10,6 +10,8 @@ Invariance guard (NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9,
 REM-0038-GUARD-BASELINE-CONSOLIDATION option 1, OCOR-DEV-REM-0045): every workflow and the
 campaign supervisor must be byte-identical to the single baseline 82b71d0. The normalisation
 chain against 9b4d3be and 7cd5f7a is frozen history: it runs only on the content of 82b71d0.
+REM-0066-GUARD-ADMISSION (2026-11-15) option 1 adds one working-tree normalisation of the
+three route workflows back to that baseline. No other working-tree normalisation applies.
 """
 import ast
 import hashlib
@@ -732,6 +734,163 @@ def normalize_rem0037_workflow(path, after):
     return after.replace(added, baseline, 1)
 
 
+REM0066_STATE_ONLY_STEPS = r"""      - name: Set up Python for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12.11"
+
+      - name: Install uv for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.12.5"
+          enable-cache: true
+
+      - name: Install and verify pinned ruff executable for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        run: |
+          set -euo pipefail
+          uv tool install ruff==0.13.1
+          tool_bin="$(uv tool dir --bin)"
+          echo "$tool_bin" >> "$GITHUB_PATH"
+          "$tool_bin/ruff" --version
+          python - "$tool_bin/ruff" <<'PYTHON'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          lock = json.loads(Path('infra/toolchain.lock.json').read_text())
+          entry = next(tool for tool in lock['tools'] if tool['id'] == 'ruff')
+          actual = hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()
+          if actual != entry['integrity']:
+              raise SystemExit('Installed ruff digest differs from the governed lock')
+          print(f"ruff {entry['version']}: SHA-256 matches governed lock")
+          PYTHON
+
+      - name: Synchronize locked runtime environment for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        working-directory: ocor-runtime
+        run: |
+          set -euo pipefail
+          uv sync --frozen --extra test --extra lint
+          .venv/bin/python --version
+
+      - name: Run state-only local gates and non-stack tests
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        run: |
+          set -euo pipefail
+          ocor-runtime/.venv/bin/python scripts/run_state_only_ci_path.py \
+            --base-ref "${{ github.event.pull_request.base.sha || 'origin/main' }}" \
+            --branch "${{ github.head_ref || github.ref_name }}"
+"""
+REM0066_STATE_ONLY_AT_EOF = "\n" + REM0066_STATE_ONLY_STEPS
+REM0066_CLASSIFY_JOB = r"""  classify-ci-route:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      route: ${{ steps.classify.outputs.route }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Classify pull request CI route
+        id: classify
+        run: |
+          set -euo pipefail
+          route_file="$RUNNER_TEMP/ci-route.env"
+          set +e
+          python3 scripts/classify_pull_request_ci_route.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --github-output "$route_file"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] || ! grep -Eq '^route=(full|state_only)$' "$route_file"; then
+            echo "route=full" > "$route_file"
+          fi
+          cat "$route_file" >> "$GITHUB_OUTPUT"
+
+"""
+REM0066_PART_PREAMBLE = "    needs: classify-ci-route\n    if: always() && needs.classify-ci-route.outputs.route != 'state_only'\n"
+REM0066_FULL_STEP_IF = "        if: success() && needs.classify-ci-route.outputs.route != 'state_only'\n"
+REM0066_CACHE_IF = "        if: success() && needs.classify-ci-route.outputs.route != 'state_only' && steps.fuseki-cache.outputs.cache-hit != 'true'\n"
+REM0066_CACHE_IF_BASELINE = "        if: success() && steps.fuseki-cache.outputs.cache-hit != 'true'\n"
+REM0066_ALWAYS_IF = "        if: always() && needs.classify-ci-route.outputs.route != 'state_only'\n"
+REM0066_ALWAYS_IF_BASELINE = '        if: always()\n'
+REM0066_SUBSTITUTIONS = {
+    '.github/workflows/ocor-delivery-activation.yml': [
+        (REM0066_STATE_ONLY_AT_EOF, "", 1),
+        (REM0066_CLASSIFY_JOB, "", 1),
+        (REM0066_PART_PREAMBLE, "", 1),
+        (REM0066_CACHE_IF, REM0066_CACHE_IF_BASELINE, 1),
+        (REM0066_ALWAYS_IF, REM0066_ALWAYS_IF_BASELINE, 2),
+        (REM0066_FULL_STEP_IF, "", 20),
+        ("    needs: [classify-ci-route, delivery-activation-part]\n", "    needs: delivery-activation-part\n", 1),
+    ],
+    '.github/workflows/ocor-rccad.yml': [
+        (REM0066_STATE_ONLY_AT_EOF, "", 1),
+        (REM0066_CLASSIFY_JOB, "", 1),
+        (REM0066_PART_PREAMBLE, "", 1),
+        (REM0066_CACHE_IF, REM0066_CACHE_IF_BASELINE, 1),
+        (REM0066_ALWAYS_IF, REM0066_ALWAYS_IF_BASELINE, 2),
+        (REM0066_FULL_STEP_IF, "", 21),
+        ("    needs: [classify-ci-route, rccad-methodology-part]\n", "    needs: rccad-methodology-part\n", 1),
+    ],
+    '.github/workflows/ocor-validation-closure.yml': [
+        (REM0066_STATE_ONLY_STEPS, "", 1),
+        (REM0066_CLASSIFY_JOB, "", 1),
+        (REM0066_PART_PREAMBLE, "", 2),
+        (REM0066_CACHE_IF, REM0066_CACHE_IF_BASELINE, 1),
+        (REM0066_ALWAYS_IF, REM0066_ALWAYS_IF_BASELINE, 3),
+        (REM0066_FULL_STEP_IF, "", 25),
+        (
+            "    needs: [classify-ci-route, validation-closure-part, conditional-infrastructure-0049]\n",
+            "    needs: [validation-closure-part, conditional-infrastructure-0049]\n",
+            1,
+        ),
+        (
+            "    needs: [classify-ci-route, conditional-infrastructure-0049-part]\n"
+            "    if: always() && needs.classify-ci-route.outputs.route != 'state_only'\n",
+            "    needs: conditional-infrastructure-0049-part\n    if: always()\n",
+            1,
+        ),
+    ],
+}
+
+REM0066_WORKFLOWS = (
+    '.github/workflows/ocor-delivery-activation.yml',
+    '.github/workflows/ocor-rccad.yml',
+    '.github/workflows/ocor-validation-closure.yml',
+)
+
+
+def normalize_rem0066_workflow(path, text):
+    """REM-0066-GUARD-ADMISSION (2026-11-15), option 1: exact delta of OCOR-DEV-REM-0066.
+
+    Only these three workflows are normalised, and only back to 82b71d0. The
+    substitutions remove the classify-ci-route job, the if conditions that select
+    the state_only route or keep the full route, and the classify-ci-route entry in
+    needs of conditional-infrastructure-0049 together with the same job edge on the
+    part and aggregator jobs that wire it. Each fragment must occur the declared
+    number of times. Any other byte still fails the current proof. Baselines do not
+    move and no other normalisation is added.
+    """
+    substitutions = REM0066_SUBSTITUTIONS.get(path)
+    if substitutions is None:
+        return text
+    for old, _new, count in substitutions:
+        found = text.count(old)
+        if found != count:
+            raise AssertionError(
+                "REM-0066 substitution count %s != %s in %s" % (found, count, path))
+    for old, new, count in substitutions:
+        text = text.replace(old, new, count)
+    if "classify-ci-route" in text or "state_only" in text:
+        raise AssertionError("REM-0066 residue in " + path)
+    return text
+
+
 def assert_governed_workflow(path, before, after):
     """Accept only the PO's exact pin lifecycle/N update and scope-gate reorder."""
     if path == '.github/workflows/ocor-delivery-activation.yml':
@@ -835,7 +994,8 @@ class ExecutionInvariants(unittest.TestCase):
             self.assertNotIn('.ocor/candidate-0049', command)
             self.assertIn('--shard-count 5', command)
         self.assertEqual(jobs['conditional-infrastructure-0049-part']['strategy']['matrix']['part'], [1, 2, 3, 4, 5])
-        self.assertEqual(jobs['conditional-infrastructure-0049']['needs'], 'conditional-infrastructure-0049-part')
+        self.assertEqual(jobs['conditional-infrastructure-0049']['needs'],
+                         ['classify-ci-route', 'conditional-infrastructure-0049-part'])
         self.assertIn('conditional-infrastructure-0049', jobs['validation-closure']['needs'])
 
     def test_workflow_invariant_rejects_every_unapproved_change(self):
@@ -1141,8 +1301,10 @@ def current_baseline_proof(overrides=None):
     Every workflow and the campaign supervisor must be byte-identical to 82b71d0, and the set of
     workflow files must equal that of 82b71d0 (a workflow added, removed or renamed fails). The
     observer keeps the window, cadence, sampler and kind binary of 82b71d0 and ten-second probe
-    timeouts. No normalisation applies to the working tree: a future difference needs a new exact
-    normalisation on 82b71d0 authorised by a PO decision, or a new consolidation decided by the PO.
+    timeouts. The only working-tree normalisation is normalize_rem0066_workflow, the exact
+    OCOR-DEV-REM-0066 delta authorised by REM-0066-GUARD-ADMISSION (2026-11-15) option 1.
+    Any other difference needs a new exact normalisation on 82b71d0 authorised by a PO
+    decision, or a new consolidation decided by the PO.
     ``overrides`` replaces file text (``None`` removes the file) for the negative cases.
     """
     root = Path(__file__).resolve().parents[2]
@@ -1163,6 +1325,8 @@ def current_baseline_proof(overrides=None):
     digests = {}
     for path in expected + [CAMPAIGN_PATH]:
         data = current(path)
+        if data is not None and path in REM0066_WORKFLOWS:
+            data = normalize_rem0066_workflow(path, data.decode()).encode()
         if data != baseline_bytes(path):
             raise AssertionError('Byte drift from 82b71d0: ' + path)
         digests[path] = hashlib.sha256(data).hexdigest()
@@ -1272,6 +1436,69 @@ class GuardBaselineConsolidation(unittest.TestCase):
                 self.assertGreaterEqual(observer.count(old), 1)
                 self.assertEqual(current_guard_failures({OBSERVER_PATH: observer.replace(old, new, 1)}), {CURRENT_PROOF})
         self.assertEqual(current_guard_failures({OBSERVER_PATH: None}), {CURRENT_PROOF})
+
+
+class Rem0066GuardAdmission(unittest.TestCase):
+    """REM-0066-GUARD-ADMISSION (2026-11-15), option 1: the exact route delta is admitted.
+
+    The three workflow files stay the OCOR-DEV-REM-0066 text. Normalisation returns them
+    to the bytes of 82b71d0. Every other byte, on these files, on every other workflow and
+    on the campaign supervisor, still fails. The baseline revision does not move.
+    """
+
+    def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_bytes(self):
+        root = Path(__file__).resolve().parents[2]
+        for path, substitutions in REM0066_SUBSTITUTIONS.items():
+            current = (root / path).read_text()
+            for old, _new, count in substitutions:
+                self.assertEqual(current.count(old), count, path)
+            normalised = normalize_rem0066_workflow(path, current)
+            self.assertEqual(normalised, baseline_text(path))
+            self.assertNotIn("classify-ci-route", normalised)
+            self.assertNotIn("state_only", normalised)
+        self.assertEqual(current_guard_failures({}), set())
+        self.assertEqual(GUARD_BASELINE, "82b71d0db410bcdb8124e8ec8a8235631ecfa1fa")
+        for path in baseline_workflows():
+            self.assertNotIn("classify-ci-route", baseline_text(path))
+
+    def test_every_other_byte_difference_still_fails(self):
+        root = Path(__file__).resolve().parents[2]
+        delivery = (root / ".github/workflows/ocor-delivery-activation.yml").read_text()
+        rccad = (root / ".github/workflows/ocor-rccad.yml").read_text()
+        closure = (root / ".github/workflows/ocor-validation-closure.yml").read_text()
+        tooling = ".github/workflows/ocor-tooling-bootstrap.yml"
+        cases = [
+            ("delivery aggregator timer",
+             {".github/workflows/ocor-delivery-activation.yml": delivery.replace("timeout-minutes: 110", "timeout-minutes: 111", 1)}),
+            ("classify job timeout",
+             {".github/workflows/ocor-delivery-activation.yml": delivery.replace("timeout-minutes: 5\n", "timeout-minutes: 6\n", 1)}),
+            ("one full-route if altered",
+             {".github/workflows/ocor-rccad.yml": rccad.replace(REM0066_FULL_STEP_IF, REM0066_FULL_STEP_IF.replace("!=", "=="), 1)}),
+            ("0049 needs gains another job",
+             {".github/workflows/ocor-validation-closure.yml": closure.replace(
+                 "needs: [classify-ci-route, conditional-infrastructure-0049-part]",
+                 "needs: [classify-ci-route, other-job, conditional-infrastructure-0049-part]", 1)}),
+            ("state-only steps duplicated",
+             {".github/workflows/ocor-delivery-activation.yml": delivery.replace(REM0066_STATE_ONLY_STEPS, REM0066_STATE_ONLY_STEPS + REM0066_STATE_ONLY_STEPS, 1)}),
+            ("classify job duplicated",
+             {".github/workflows/ocor-rccad.yml": rccad.replace(REM0066_CLASSIFY_JOB, REM0066_CLASSIFY_JOB + REM0066_CLASSIFY_JOB, 1)}),
+            ("comment on another workflow",
+             {tooling: baseline_text(tooling) + "# note\n"}),
+            ("comment on the campaign supervisor",
+             {CAMPAIGN_PATH: baseline_text(CAMPAIGN_PATH) + "# note\n"}),
+            ("closure shard count",
+             {".github/workflows/ocor-validation-closure.yml": closure.replace("--shard-count 5", "--shard-count 4", 1)}),
+            ("delivery comment outside the delta",
+             {".github/workflows/ocor-delivery-activation.yml": delivery.replace(
+                 "ruleset 23412233 is unchanged.", "ruleset 23412233 is unchanged. ", 1)}),
+        ]
+        for label, overrides in cases:
+            with self.subTest(change=label):
+                path, text = next(iter(overrides.items()))
+                self.assertNotEqual(text, (root / path).read_text() if (root / path).is_file() else baseline_text(path))
+                self.assertEqual(current_guard_failures(overrides), {CURRENT_PROOF})
+
+
 
 if __name__ == '__main__':
     unittest.main()
