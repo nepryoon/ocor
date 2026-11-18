@@ -1866,7 +1866,7 @@ def main() -> int:
         # REM-0063-CYCLE10-NO-GO option 1 step 7, applied before the gate:
         # the cycle-11 library probe and the regression records that pin this
         # allowlist. The probe is the RIALLINEAMENTO point 4 script.
-        "reports/assurance/OCOR-DEV-REM-0063-RCCAD/cycle11_library_probe.py",
+        "reports/tests/cycle11_library_probe.py",
         "reports/assurance/OCOR-DEV-REM-0063-RCCAD/cycle11_library_probe.out.json",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-cycle11.json",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-cycle11.log",
@@ -1890,6 +1890,24 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-REM-0064.requalified-rem0063.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-step7.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-step7.log",
+        # Second supersession after the probe moved under reports/tests/,
+        # the area the language policy authorizes for a Python harness.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-step7b.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-step7b.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-step7b.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-step7b.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0063-step7b.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0063-step7b.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0047.requalified-rem0063-step7b.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0047.requalified-rem0063-step7b.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0063-step7b.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0063-step7b.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-step7b.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-step7b.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0064.requalified-rem0063-step7b.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0064.requalified-rem0063-step7b.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-step7b.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-step7b.log",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.json",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063.json",

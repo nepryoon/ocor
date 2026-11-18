@@ -106,7 +106,7 @@ Cycle 11 (`REM-0063-CYCLE10-NO-GO` option 1) realigns the planted-key rows,
 the pre-cycle-10 `~` rows, and the cycle-10 `malformed-escape` cells other
 than the leading-zero array index `02`. Names, inputs and case counts stay.
 The table is `repair_cycle_11.implementation.cycle11_library_realignment`.
-The library-only probe is `cycle11_library_probe.py` in this directory.
+The library-only probe is `reports/tests/cycle11_library_probe.py`. Its captured output remains `cycle11_library_probe.out.json` in this directory. The script is not stored here: the language policy authorizes a Python harness under `reports/tests/`.
 
 Only reference spellings starting with `#` are accepted, even when an URI naming
 a contained resource resolves without network access. The generator emits only
