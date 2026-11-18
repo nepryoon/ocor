@@ -1859,6 +1859,18 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066.log",
+        # Regression-only requalification after REM-0066-GUARD-ADMISSION
+        # (2026-11-15) option 1. The guard normalisation changes a sealed
+        # input of 0005 and 0050. These paths are declared before the records
+        # exist so the execution commit already contains the allowlist the
+        # records will hash. The task tests are unchanged. These records do
+        # not qualify requirements.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-guard.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-guard.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-guard.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-guard.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-guard.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-guard.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
