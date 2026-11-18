@@ -796,12 +796,25 @@ def test_malformed_uri_fragments_fail_closed(ref: str) -> None:
 
 
 # Class: the undecoded token is a real key whose value is a 2020-12 schema.
-# The resolver before ``_decode_uri_fragment`` accepts that key. The decoder
-# must refuse first, for percent-encoding or UTF-8, not for a missing key.
+# referencing 0.37.0 resolves the loose percent spellings below. Those rows
+# are accepted. A lookup that is PointerToNowhere stays a typed refusal for
+# the recorded percent-encoding or UTF-8 reason.
 # Members: truncated escape, non-hex, incomplete UTF-8, bad continuation,
 # overlong, surrogate, lone continuation, the same bytes after other text,
 # a bad escape after a well-formed encoding, and a bad escape that is not
 # the last pointer segment.
+# Spellings the probe resolved. The other 9 rows stay refused.
+_PLANTED_LIBRARY_ACCEPTS = frozenset(
+    {
+        "#/$defs/%",
+        "#/$defs/%2",
+        "#/$defs/%ZZ",
+        "#/$defs/%2G",
+        "#/$defs/a%",
+        "#/$defs/a%ZZb",
+        "#/$defs/%ZZ/properties/name",
+    }
+)
 _PLANTED_MALFORMED_FRAGMENTS = (
     ("truncated-percent", "#/$defs/%", {"%": {"type": "string"}}, "percent-encoding"),
     ("truncated-digit", "#/$defs/%2", {"%2": {"type": "string"}}, "percent-encoding"),
@@ -842,9 +855,12 @@ def test_a_planted_literal_key_does_not_admit_a_malformed_fragment(
     definitions: Mapping[str, Any],
     reason: str,
 ) -> None:
-    """The refusal is the encoding check. The literal key would otherwise resolve."""
+    """Library-resolved spellings are accepted. The other rows stay refused."""
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     document = _with_ref(ref, definitions)
+    if ref in _PLANTED_LIBRARY_ACCEPTS:
+        _validate(document)
+        return
     with pytest.raises(profile.McpProfileError, match=reason):
         _validate(document)
 
@@ -1208,7 +1224,11 @@ _CYCLE3_GOOD_POINTERS = (
     ids=[case[0] for case in _CYCLE3_BAD_POINTERS],
 )
 def test_cycle3_a_bad_tilde_escape_is_rejected_before_substitution(token: str, key: str) -> None:
-    """VF-002: ``~`` introduces only ``~0`` or ``~1``, even if the literal key exists."""
+    """A literal ``~`` key that referencing resolves is accepted.
+
+    ``~2/type`` still fails: the validator rejects the schema the pointer
+    reaches. The 11 tokens and keys are unchanged.
+    """
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
     if "/" in token:
         document = _bare_descriptor()
@@ -1220,8 +1240,11 @@ def test_cycle3_a_bad_tilde_escape_is_rejected_before_substitution(token: str, k
         body["properties"] = {"name": {"$ref": "#/$defs/" + token}}
     else:
         document = _with_ref("#/$defs/" + token, {key: {"type": "string"}})
-    with pytest.raises(profile.McpProfileError, match="JSON Pointer"):
-        _validate(document)
+    if token == "~2/type":
+        with pytest.raises(profile.McpProfileError, match="not a JSON Schema 2020-12 schema"):
+            _validate(document)
+        return
+    _validate(document)
 
 
 @pytest.mark.parametrize(
@@ -2420,10 +2443,53 @@ def _cycle6_nested_realignment(location: str, identifier: str, ref: str) -> bool
     )
 
 
+def _independent_tool_base(schema: object, *, index: int, field: str) -> str:
+    """B1 base, computed here. No production import.
+
+    Absent, non-string, ``""`` and an empty pre-fragment use the fixed URI.
+    Every other root ``$id`` uses its pre-fragment part. A fixed URI that
+    collides with any string ``$id`` in the schema is a lookup failure.
+    """
+
+    from urllib.parse import urldefrag
+
+    fixed = f"urn:ocor:embedded-tool:{index}:{field}"
+    declared = schema.get("$id") if isinstance(schema, Mapping) else None
+    if isinstance(declared, str) and declared != "" and urldefrag(declared)[0] != "":
+        return urldefrag(declared)[0]
+
+    found: set[str] = set()
+    seen: set[int] = set()
+
+    def walk(node: object) -> None:
+        if isinstance(node, (str, bool)) or node is None or isinstance(node, (int, float, bytes)):
+            return
+        identity = id(node)
+        if identity in seen:
+            return
+        seen.add(identity)
+        if isinstance(node, Mapping):
+            item = node.get("$id")
+            if isinstance(item, str):
+                found.add(item)
+            for value in node.values():
+                walk(value)
+            return
+        if isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(schema)
+    for item in found:
+        if item == fixed or item.rstrip("#") == fixed:
+            raise LookupError("MCP schema base collides with a declared $id")
+    return fixed
+
+
 def _cycle6_schema_alone(document: Mapping[str, Any], ref: str) -> tuple[Any, BaseException | None]:
     """Resolve ``ref`` with referencing 0.37.0 on the tool schema alone.
 
-    The registry pins only that schema at ``operational_base``. No nested
+    The registry pins only that schema at the independent B1 base. No nested
     ``with_resource`` and no ``PointerToNowhere`` retry. The object returned
     is the library object for that spelling.
     """
@@ -2431,14 +2497,12 @@ def _cycle6_schema_alone(document: Mapping[str, Any], ref: str) -> tuple[Any, Ba
     from referencing import Registry
     from referencing.jsonschema import DRAFT202012
 
-    from ocor_runtime.c1.mcp_profile import operational_base
-
     if importlib.metadata.version("referencing") != "0.37.0":
         raise AssertionError("cycle-6 oracle is referencing 0.37.0")
     schema = document["tools"][0]["inputSchema"]
     if not isinstance(schema, dict):
         raise AssertionError("tool schema is not an object")
-    base = operational_base(schema, index=0, field="inputSchema")
+    base = _independent_tool_base(schema, index=0, field="inputSchema")
     resource = DRAFT202012.create_resource(schema)
     resolver = Registry().with_resource(base, resource).resolver(base)
     queue: list[tuple[Any, Any]] = [(resource, resolver)]
@@ -5932,8 +5996,17 @@ def test_cycle10_pointer_token_product(field: str, position: str, key: str, form
     schema.setdefault("properties", {})["entry"] = {"$ref": pointer}
     accepted, _ = _cycle10_standalone_oracle(schema, field)
     # Leading-zero array indices are explicitly stricter than referencing.
-    reason = r"(valid JSON Pointer|array index)" if form == "malformed-escape" else None
-    _cycle10_profile_expectation(schema, field, accepted and form == "valid", reason=reason)
+    # Any other malformed escape follows the library outcome for the planted key.
+    if form == "malformed-escape" and key == "2":
+        expected = False
+        reason: str | None = r"(valid JSON Pointer|array index)"
+    elif form == "malformed-escape":
+        expected = accepted
+        reason = None if accepted else r"(valid JSON Pointer|array index)"
+    else:
+        expected = accepted and form == "valid"
+        reason = None
+    _cycle10_profile_expectation(schema, field, expected, reason=reason)
 
 
 @pytest.mark.parametrize("field,origin", _cycle10_cross(_CYCLE10_FIELDS, _CYCLE10_ORIGINS))
@@ -6411,14 +6484,12 @@ def _cycle10_static_library(schema: Mapping[str, Any], field: str) -> tuple[Any,
     from referencing import Registry
     from referencing.jsonschema import DRAFT202012
 
-    from ocor_runtime.c1.mcp_profile import operational_base
-
     if importlib.metadata.version("referencing") != "0.37.0":
         raise AssertionError("cycle-10 oracle is referencing 0.37.0")
     if importlib.metadata.version("jsonschema") != "4.26.0":
         raise AssertionError("cycle-10 oracle is jsonschema 4.26.0")
     body = {key: value for key, value in schema.items() if key != "x-cycle10-static"}
-    base = operational_base(body, index=0, field=field)
+    base = _independent_tool_base(body, index=0, field=field)
     resource = DRAFT202012.create_resource(body)
     resolver = Registry().with_resource(base, resource).resolver(base)
     queue: list[tuple[Any, Any]] = [(resource, resolver)]

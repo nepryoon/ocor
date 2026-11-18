@@ -100,7 +100,13 @@ realignment to the single omitted case `encoded-slash` of
 and 19 cases; only `encoded-slash` expects `McpProfileError`. The old and new
 expectation of every authorized realignment is the table
 `repair_cycle_10.implementation.authorized_realignments` in the assurance
-record. No other existing test changes.
+record. No other existing test changes in that cycle.
+
+Cycle 11 (`REM-0063-CYCLE10-NO-GO` option 1) realigns the planted-key rows,
+the pre-cycle-10 `~` rows, and the cycle-10 `malformed-escape` cells other
+than the leading-zero array index `02`. Names, inputs and case counts stay.
+The table is `repair_cycle_11.implementation.cycle11_library_realignment`.
+The library-only probe is `cycle11_library_probe.py` in this directory.
 
 Only reference spellings starting with `#` are accepted, even when an URI naming
 a contained resource resolves without network access. The generator emits only
@@ -365,8 +371,10 @@ placed on the owner. The earlier rule that treated every base change as its
 own closure root is superseded: a joined URI whose unpinned crawl returns
 an ancestor keeps the reachable references on that ancestor, and unreachable
 `$defs` on the descendant are omitted.
-`additionalItems` stays on the current resource unless its base changes, in
-which case the generator reports `MCP schema resource is not crawled`.
+`additionalItems` is not a JSON Schema 2020-12 keyword. The shared
+enumeration does not index it, and a `$id` under it is not a resource and
+is not reported as `MCP schema resource is not crawled`. A `$ref` on that
+value is still closed on the current resource.
 `_mcp_attach_definitions` keeps its signature. `_mcp_ref`, `_mcp_defs_name`,
 `_mcp_select_body`, the name-clash error and `without_context_overwrite` stay.
 There is no cross-schema identifier union and no suffix loop.
