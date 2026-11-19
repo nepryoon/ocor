@@ -29,6 +29,7 @@ from .mcp_profile import (
     McpProfileError,
     SchemaCalculationFailure,
     assert_reference_path_bound,
+    assert_walkable_schema_resource,
     autonomous_registry,
     contained_subschemas,
     enforce_emitted_schema_rules,
@@ -310,7 +311,7 @@ def _mcp_require_defs_objects(node: object, path: str, seen: set[int] | None = N
 
 
 def _mcp_children(node: Mapping[str, Any], path: str) -> list[Any]:
-    """The profile's enumeration. A container the draft cannot walk is typed."""
+    """The profile's enumeration. Walkability is checked before this walk."""
 
     del path
     return list(contained_subschemas(node))
@@ -777,6 +778,11 @@ def _mcp_attach_definitions(
             base_uri,
             registry_factory=Registry,
             translate_null_applicator=True,
+        )
+        assert_walkable_schema_resource(
+            copied,
+            base_uri,
+            registry_factory=Registry,
         )
     except SchemaCalculationFailure as exc:
         raise _mcp_calculation_error(exc, path) from exc

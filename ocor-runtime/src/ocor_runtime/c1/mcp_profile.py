@@ -258,7 +258,8 @@ def autonomous_registry(
         # Other AttributeError values are left to the caller's later schema
         # check. Mapping every one to NOT_RESOLVABLE would replace the
         # existing non-schema diagnostic on a tool schema whose ``$defs``
-        # holds a scalar.
+        # holds a scalar. The generator calls
+        # ``assert_walkable_schema_resource`` for that class.
     except TypeError as exc:
         raise SchemaCalculationFailure(
             "NOT_RESOLVABLE",
@@ -270,6 +271,41 @@ def autonomous_registry(
             "MCP $id is not a valid URI reference",
         ) from exc
     return cast(Registry[Any], registry)
+
+
+def assert_walkable_schema_resource(
+    schema: Mapping[str, Any],
+    base_uri: str,
+    *,
+    registry_factory: Callable[[], Any] = Registry,
+) -> None:
+    """Refuse a schema the pinned library cannot crawl.
+
+    ``autonomous_registry`` keeps its two crawl mappings: a null applicator
+    stays ``CRAWL`` when the caller asks for that translation, and a null
+    ``properties`` stays ``NOT_RESOLVABLE``. The ``AttributeError`` values
+    left to a later check are a non-schema in a schema position or a
+    container of the wrong kind. The generator no longer walks those with
+    ``subresources``, so this function is that later check. A boolean schema
+    crawls and is not refused here.
+    """
+
+    resource = DRAFT202012.create_resource(schema)
+    probe = registry_factory().with_resource(base_uri, resource)
+    try:
+        probe.crawl()
+    except AttributeError as exc:
+        text = str(exc)
+        if "NoneType" in text and "get" in text:
+            return
+        if "rstrip" in text or ("NoneType" in text and "values" in text):
+            return
+        raise SchemaCalculationFailure(
+            "NOT_RESOLVABLE",
+            "MCP schema resource index is not resolvable",
+        ) from exc
+    except (Unresolvable, TypeError, ValueError):
+        return
 
 
 def _resolver_for_subresource(resolver: Any, resource: Resource[Any]) -> tuple[Any, bool]:
@@ -917,7 +953,7 @@ def _ref_target_context(
 
 def _resolve_graph(
     roots: Sequence[tuple[Any, _ResolutionContext]],
-) -> tuple[list[tuple[Any, _ResolutionContext, int]], set[tuple[int, str]]]:
+) -> tuple[list[tuple[Any, _ResolutionContext]], set[tuple[int, str]]]:
     """Resolve every ``$ref`` path before any keyword is checked.
 
     ``referencing`` owns every lookup. The static descent records, for each
@@ -945,43 +981,41 @@ def _resolve_graph(
         except SchemaCalculationFailure as exc:
             raise _as_profile(exc) from exc
 
-    static_order: list[tuple[Any, _ResolutionContext, int]] = []
-    static_refs: list[tuple[Any, _ResolutionContext, int]] = []
+    static_order: list[tuple[Any, _ResolutionContext]] = []
+    static_refs: list[tuple[Any, _ResolutionContext]] = []
     visited_static: set[tuple[int, str, int]] = set()
-    queue: list[tuple[Any, _ResolutionContext, int]] = [
-        (node, context, 1) for node, context in roots
-    ]
+    queue: list[tuple[Any, _ResolutionContext]] = list(roots)
     while queue:
-        node, context, depth = queue.pop(0)
+        node, context = queue.pop(0)
         if not isinstance(node, Mapping):
             continue
         # Depth belongs to ``assert_reference_path_bound``. This walk does not
-        # count it again. The visit key keeps the registry identity.
+        # carry a depth. The visit key keeps the registry identity.
         state = (id(node), context.base_uri, id(context.registry))
         if state in visited_static:
             continue
         visited_static.add(state)
-        static_order.append((node, context, depth))
+        static_order.append((node, context))
         if "$ref" in node:
-            static_refs.append((node, context, depth))
+            static_refs.append((node, context))
         for child in _iter_check_children(node):
-            queue.append((child, _descend(context, child), depth + 1))
+            queue.append((child, _descend(context, child)))
 
     ref_states: set[tuple[int, str]] = set()
     ref_reached: set[int] = set()
     static_outcomes: dict[tuple[int, str], tuple[object, _ResolutionContext]] = {}
 
-    static_sequence: list[tuple[int, int]] = []
+    static_sequence: list[int] = []
     static_failures: dict[tuple[int, str], McpProfileError] = {}
-    ref_queue: list[tuple[Any, _ResolutionContext, int]] = []
+    ref_queue: list[tuple[Any, _ResolutionContext]] = []
     visited_ref: set[tuple[int, str, int]] = set()
-    ref_order: list[tuple[Any, _ResolutionContext, int]] = []
+    ref_order: list[tuple[Any, _ResolutionContext]] = []
 
     def seed_static() -> None:
-        for node, context, depth in static_refs:
+        for node, context in static_refs:
             identity = id(node)
             key = (identity, context.base_uri)
-            static_sequence.append((identity, depth))
+            static_sequence.append(identity)
             try:
                 target, target_context = _resolve_reference(
                     node["$ref"], context
@@ -990,7 +1024,7 @@ def _resolve_graph(
                 static_failures[key] = exc
                 continue
             static_outcomes[key] = (target, target_context)
-        for node, _context, depth in static_refs:
+        for node, _context in static_refs:
             key = (id(node), _context.base_uri)
             if id(node) in ref_reached:
                 continue
@@ -999,11 +1033,11 @@ def _resolve_graph(
                 continue
             target, target_context = outcome
             if isinstance(target, Mapping):
-                ref_queue.append((target, target_context, depth + 1))
+                ref_queue.append((target, target_context))
 
     def drain_refs() -> None:
         while ref_queue:
-            node, context, depth = ref_queue.pop(0)
+            node, context = ref_queue.pop(0)
             if not isinstance(node, Mapping):
                 continue
             state = (id(node), context.base_uri, id(context.registry))
@@ -1012,15 +1046,15 @@ def _resolve_graph(
             visited_ref.add(state)
             ref_reached.add(id(node))
             ref_states.add((id(node), context.base_uri))
-            ref_order.append((node, context, depth))
+            ref_order.append((node, context))
             if "$ref" in node:
                 target, target_context = _resolve_reference(
                     node["$ref"], context
                 )
                 if isinstance(target, Mapping):
-                    ref_queue.append((target, target_context, depth + 1))
+                    ref_queue.append((target, target_context))
             for child in _iter_check_children(node):
-                ref_queue.append((child, _descend(context, child), depth + 1))
+                ref_queue.append((child, _descend(context, child)))
 
     seed_static()
     drain_refs()
@@ -1034,7 +1068,7 @@ def _resolve_graph(
         if iterations > MAX_SCHEMA_NODES:
             raise McpProfileError("MCP schema exceeds the revision bounds")
 
-    for identity, _depth in static_sequence:
+    for identity in static_sequence:
         if identity in ref_reached:
             continue
         for key, error in static_failures.items():
@@ -1044,17 +1078,17 @@ def _resolve_graph(
 
 
 def _check_reached_schemas(
-    order: Sequence[tuple[Any, _ResolutionContext, int]],
+    order: Sequence[tuple[Any, _ResolutionContext]],
     ref_states: set[tuple[int, str]],
 ) -> None:
     """Check each reached state: static contexts only where no ref lands."""
 
     ref_reached = {identity for identity, _base in ref_states}
-    for node, context, depth in order:
+    for node, context in order:
         identity = id(node)
         if identity in ref_reached and (identity, context.base_uri) not in ref_states:
             continue
-        _check_schema_keywords(node, context, depth=depth)
+        _check_schema_keywords(node, context)
 
 
 def _resolve_reference(
@@ -1228,18 +1262,15 @@ def _validate_pointer_array_indices(
 def _check_schema_keywords(
     node: object,
     context: _ResolutionContext,
-    *,
-    depth: int,
 ) -> None:
     """Apply dialect and ``$ref`` rules to one reached schema object.
 
     ``$ref`` resolution already happened in ``_resolve_graph`` with the
-    context of each path that reached this node. This pass only reads the
-    node's own keywords; children are separate states of the graph.
+    context of each path that reached this node. Reference-path depth is
+    ``assert_reference_path_bound``. This pass only reads the node's own
+    keywords; children are separate states of the graph.
     """
 
-    if depth > MAX_SCHEMA_DEPTH:
-        raise McpProfileError("MCP schema exceeds the revision bounds")
     if not isinstance(node, Mapping):
         return
     try:
