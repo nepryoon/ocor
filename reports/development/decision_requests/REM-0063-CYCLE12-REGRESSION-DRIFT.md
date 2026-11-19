@@ -1,6 +1,6 @@
 # REM-0063-CYCLE12-REGRESSION-DRIFT
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Status: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Revisione preventiva: `OCOR-DEV-REM-0063-49fc2d1adf0b-pre`, esito `BLOCKING_FINDINGS`, head rivisto `49fc2d1adf0b5fa5107087675264addf4279002f`, sha256 dell'esito `ae501632a3a46ae5e17dca796f16a5c10878054c3b9bff3d0571a7cf2b59f8e0`.
 HEAD di comportamento del codice: `da754e862a2c2fba621cf5d4534fcc5396299b6a` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`.
@@ -73,3 +73,17 @@ Opzione 1. Chiude la deriva con un solo commit di allowlist, nominato prima dei 
 Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`. Gli altri task non sono bloccati da questa richiesta. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CANONICAL-R1-HUMAN-GATE`. `OCOR-DEV-REM-0065` resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. `AGENTIC-RISK-MAP-PARTIAL-GAPS` non blocca alcun task.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist del validatore del piano per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione.
+
+## Disposition
+
+Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Decisione `REM-0063-CYCLE12-REGRESSION-DRIFT (2026-11-19)`. Opzione 1 adottata. Le opzioni 2 e 3 non sono applicate.
+
+Il preambolo `~/.ocor-codex/openhands_preamble.md`, sha256 `03692b1bc9a1296eec2def2cc7d134df560bf15152c3a7bcf139a3bdd054bf35`, contiene la sezione `## REM-0063-CYCLE12-REGRESSION-DRIFT (2026-11-19) — decisione del PO, su delega completa`. Adotta l'opzione 1 al commit `497f661cbfcd5939f5e9e83150ba357eb0b551a4`. Lo sha256 del file a quel commit è `64f989b4dba329b58ec20e1702fec4fedd5475fdefb739aaf916ffcec573e851`, verificato con `git cat-file -e`, `git merge-base --is-ancestor` e `sha256sum`.
+
+Il parent del commit di allowlist è `8394d359b3fd2568b828d8d43a3ec68e1973e442`. A quel parent `scripts/validate_ocor_development_plan.py` ha ancora sha256 `0d5e0eef97ac64479c0744cb40063b77bf6f2f91fa82b0e4ee6b86284e09411b`. Il commit di allowlist `9d4c552041bb98122c655269e6ace44d38433840` cambia solo quel file e aggiunge esattamente gli otto percorsi. Lo sha256 misurato del validatore su quel commit è `a284aa5fa5127181ab40158c892a207c70256925835ed835f6bc3115a66166cc`. Il diff rispetto a `0d5e0eef97ac64479c0744cb40063b77bf6f2f91fa82b0e4ee6b86284e09411b` è esattamente le otto stringhe.
+
+Sull'impronta congelata i quattro record di sola regressione sono il commit `d2aed94dd99af8a72aca5b449e1dd72bd68119ca` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`. `select_most_recent` sceglie `OCOR-DEV-0005-requalified-rem0063-cycle12-9d4c552041bb`, `OCOR-DEV-0050-requalified-rem0063-cycle12-9d4c552041bb`, `OCOR-DEV-0082-requalified-rem0063-cycle12-9d4c552041bb` e `OCOR-DEV-REM-0062-requalified-rem0063-cycle12b-9d4c552041bb`. I record superseduti restano byte-identici. `scripts/validate_evidence_input_drift.py` esce 0: 75 task, 241 input, `drifted_inputs` 0. Pytest dei tre task: 214 passed, 0 skipped, 4,95 s. Pytest di `OCOR-DEV-REM-0062`: 25 passed, 13 subtests passed, 0 skipped, 0,63 s. L'HEAD di comportamento del codice resta `da754e862a2c2fba621cf5d4534fcc5396299b6a`. Nessun file sotto `ocor-runtime/src/` e nessun test è cambiato. Il RED `bc6af772c09eabad698e4ac97fec425556a4466f` non è riscritto.
+
+`PRE-CAMPAIGN-GATE`, la campagna a quattro corsie, il controllo distinto e la richiesta di verifica non sono in questa pubblicazione: sono l'unità successiva e i record non si rifanno. Non c'è una seconda revisione preventiva. P5 e VF-008 non fanno parte di questa decisione. Il branch di produzione resta `5ffc19bddca6bf0176575191e6bc3f0d4ea717d8`. Le campagne diagnostiche `5a1a8aaff6af-1794907944`, `8037040f14cc-1794928763` e `3ae284727c98-1794931254` non sono state rilanciate.
+
+Il testo sopra questa sezione, esclusa la riga di stato, resta quello del commit `497f661cbfcd5939f5e9e83150ba357eb0b551a4`, sha256 `64f989b4dba329b58ec20e1702fec4fedd5475fdefb739aaf916ffcec573e851`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
