@@ -10100,3 +10100,5 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - `REM-0066-CANONICAL-R1-HUMAN-GATE` resta aperta e blocca `OCOR-DEV-REM-0066`. `AGENTIC-RISK-MAP-PARTIAL-GAPS` resta aperta e non blocca alcun task. `OCOR-DEV-REM-0065` resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c` ed è differito.
 - Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO. Nessun nuovo DEC.
 - Gate locali di questo state sync: PASS, 13 comandi. Suite completa NOT_EXECUTED: change set di solo stato. Lo stack non è stato avviato. Attesa CI: massimo 5400 s dal primo run, polling 90 s; solo i 13 check richiesti per nome, sull'HEAD esatto. Un obbligatorio fallito chiude subito l'attesa.
+
+- Rilettura immediatamente prima del commit di questo state sync, 2026-11-19T07:38:46.470376+00:00, sha256 `eecee8167a2f67bcd3324b4b638950ed67695d4afe23ac5fedb856a88a6b612b`. Ultima sezione invariata: `REM-0063-CYCLE12-VISIT-KEY (2026-11-19)`. Opzione 1 già applicata. Nessuna sezione successiva. P1 e P2 sono già pubblicati sul branch di campagna.
