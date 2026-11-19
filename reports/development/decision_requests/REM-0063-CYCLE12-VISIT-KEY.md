@@ -1,6 +1,6 @@
 # REM-0063-CYCLE12-VISIT-KEY
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Status: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Decisione in corso: `REM-0063-CYCLE12-JSON-DEPTH (2026-11-19)`, opzione 1, commit della richiesta `ac6b59e999b79be45dcb754d475914614fb6d662`, sha256 `5746866b2088094cc9b7b6eabf6d5e8c26c76164bee7518b6c974157054bda53`. Disposition `8a2c7f6a2e3022090070af1a9afa86f554762541`, sha256 `3df2689c32d5d01a118dfb6da2bef794aa01d8f515acd724a6fe8fc6d05018e3`, sul branch `governed/decision-request-rem0063-cycle12-json-depth`.
 RED del confronto diretto: `bc6af772c09eabad698e4ac97fec425556a4466f` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`, parent `480f70240a21019b539ab4b1b847e7dd5d1af833`.
@@ -51,3 +51,19 @@ Opzione 1. La misura dice che il rifiuto dell'ancora alle catene 26–28 è il c
 Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`. Gli altri task non sono bloccati da questa richiesta. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CANONICAL-R1-HUMAN-GATE`. `OCOR-DEV-REM-0065` resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. `AGENTIC-RISK-MAP-PARTIAL-GAPS` non blocca alcun task.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist del validatore del piano per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione.
+
+## Disposition
+
+Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Decisione `REM-0063-CYCLE12-VISIT-KEY (2026-11-19)`. Opzione 1 adottata. Le opzioni 2 e 3 non sono applicate.
+
+Il preambolo `~/.ocor-codex/openhands_preamble.md`, sha256 `eecee8167a2f67bcd3324b4b638950ed67695d4afe23ac5fedb856a88a6b612b`, contiene la sezione `## REM-0063-CYCLE12-VISIT-KEY (2026-11-19) — decisione del PO, su delega completa`. Adotta l'opzione 1 al commit `fdc240c4672287a3147ad1eff15211a59810d709`. Lo sha256 del file a quel commit è `83d07b7f0e3b12aa2c3d57369884b29c4e402d9fab1f12cb5724dd4617aa9949`, verificato con `git cat-file -e`, `git merge-base --is-ancestor` e `sha256sum`.
+
+In `_resolve_graph` non restano i due controlli `depth > MAX_SCHEMA_DEPTH`. La chiave di visita resta `(nodo, base, identità del registro)`. La frase letterale «chiave `(nodo, base)` senza identità del registro» non è applicata. Il confronto diretto già committato non è modificato. `test_cycle8_pointer_and_anchor_paths_are_each_resolved` resta com'è committato. `json_bounds` è invariato. I tetti 4096 e 32 restano. I test del ciclo 10 non cambiano.
+
+VF-001: `_reject_noncanonical_array_index` calcola i token come `referencing` 0.37.0, unquote dell'intero puntatore, split su `/`, sostituzione `~1`/`~0` quando l'escape è valido. Un segmento che il decoder rigoroso rifiuta non fa ritornare prima della regola 4. VF-003: `_mcp_iter_resources` e `_mcp_strip_unreachable_defs` passano da `contained_subschemas` e `enter_subschema`. In `codegen.py` non resta una chiamata a `subresources` o `in_subresource`. `_check_schema_keywords` chiama `enforce_emitted_schema_rules`.
+
+GREEN `b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`, parent `bc6af772c09eabad698e4ac97fec425556a4466f`, senza rebase, reset o force-push. File: `ocor-runtime/src/ocor_runtime/c1/mcp_profile.py` e `ocor-runtime/src/ocor_runtime/c1/codegen.py`. Nessun altro file. Nessuna dipendenza nuova. Il RED `bc6af772c09eabad698e4ac97fec425556a4466f` non è riscritto. Il branch di produzione resta `5ffc19bddca6bf0176575191e6bc3f0d4ea717d8`.
+
+Pytest sul file di test dell'unità, dopo il GREEN: 42169 passed, 822,86 s. Il filtro `cycle12 or cycle8_pointer_and_anchor_paths_are_each_resolved or cycle10_final_depth or cycle10_final_node or cycle10_depth_growth`: 203 passed, 41966 deselected, 3,67 s. Ruff e mypy sui due file di sorgente: exit 0. La patch non committata `ac3a5f9e3032e62895f31ee4e76d6359b2d319a6a1021227f6083b2ccafc773c` non è applicata. Le campagne diagnostiche `5a1a8aaff6af-1794907944`, `8037040f14cc-1794928763` e `3ae284727c98-1794931254` non sono state rilanciate. VF-008 non è stato toccato. Il passo 6 non è eseguito in questa pubblicazione: è l'iterazione successiva. `inputs/` non è stato modificato. Nessun record sigillato è stato riscritto.
+
+Il testo sopra questa sezione, esclusa la riga di stato, resta quello del commit `fdc240c4672287a3147ad1eff15211a59810d709`, sha256 `83d07b7f0e3b12aa2c3d57369884b29c4e402d9fab1f12cb5724dd4617aa9949`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
