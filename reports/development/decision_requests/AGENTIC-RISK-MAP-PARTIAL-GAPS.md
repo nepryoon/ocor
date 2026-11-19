@@ -54,7 +54,6 @@ un nuovo `DEC-*`.
 Opzione 1. La decisione che autorizza la mappa dice che il documento non
 è evidenza, non è un claim (`NFR-050`) e non cambia i criteri di
 `OCOR-DEV-0062`, `OCOR-DEV-0064`, `OCOR-DEV-0068` e `OCOR-DEV-0069`.
-
 ## Disposition
 
 Decisa dal PO di persona il 2026-11-19. Decisione `AGENTIC-RISK-MAP-PARTIAL-GAPS (2026-11-19)`. Opzione 1 adottata. Le opzioni 2 e 3 non sono applicate.
