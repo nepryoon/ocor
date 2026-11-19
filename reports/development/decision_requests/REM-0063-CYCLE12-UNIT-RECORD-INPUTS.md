@@ -1,6 +1,6 @@
 # REM-0063-CYCLE12-UNIT-RECORD-INPUTS
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Status: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Decisione che genera lo stop: `REM-0063-CYCLE12-NO-GO (2026-11-19)` opzione 1, commit `60981e9a069327b8ceecfbba7c2c167fdcc8eeba`, sha256 `31e33b67c7025c8cc4811a2a0065969a6ac1234ae5dbdb33cb68a352daf27160`.
 Head di campagna misurato: `698b944a1de4ef78a39346a034bed1a5e6fe4b10`.
@@ -53,3 +53,17 @@ Opzione 1. È l'unico modo in cui il record dell'unità passa il controllo sull'
 Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`. Gli altri task non sono bloccati da questa richiesta. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CANONICAL-R1-HUMAN-GATE`. `OCOR-DEV-REM-0065` resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Il percorso di questa richiesta non è nell'allowlist del validatore del piano: l'estensione dell'allowlist è un change set a parte e non fa parte di questa pubblicazione. La PR resta bozza e non è un percorso di integrazione.
+
+## Disposition
+
+Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Decisione `REM-0063-CYCLE12-UNIT-RECORD-INPUTS (2026-11-19)`. Opzione 1 adottata. Le opzioni 2 e 3 non sono applicate.
+
+Il preambolo `~/.ocor-codex/openhands_preamble.md`, sha256 `59e98012251975769d5b859b926134655b2836d609ba8a438b6cb9f122b3ba7c`, contiene la sezione `## REM-0063-CYCLE12-UNIT-RECORD-INPUTS (2026-11-19) — decisione del PO, su delega completa`. Adotta l'opzione 1 al commit `8eb1d9bbe47a2591084a028c2b6bd6b9379415a1`. Lo sha256 del file a quel commit è `65948d4cf7551df910b3f165d90a13c542e42a8bc4e2b8c682a51a9dc83f90a7`, verificato con `git cat-file -e`, `git merge-base --is-ancestor` e `sha256sum`. Quel commit resta sul branch `origin/governed/decision-request-rem0063-cycle12-unit-record-inputs`. La PR #704 non si integra.
+
+Il commit `2e4a3e51220a35bfec8bbfd93202f52bbaca7f19` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign` ha parent `aaf98a282f4c6787f1c4753ea86199f2808f7a72` e cambia solo `reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json`. Il commit dichiarato del record diventa `aaf98a282f4c6787f1c4753ea86199f2808f7a72`. Gli unici hash rimisurati sono `reports/planning/OCOR_PLAN_RUN_STATE.json` `723af7b47239eace4cb92c51b8e27b3c7101f291893a2a6b51411106e3e06563` e `scripts/validate_ocor_development_plan.py` `f06c2ebc0631d0ad4766d9e8109154fa030f9399501c0c8b79ff8bf37ad831a0`. Gli altri byte di input restano quelli già misurati. Nessun file sotto `ocor-runtime/src/`, nessun `codegen.py`, nessun record `cycle12c`, nessun manifest, nessun input e nessun claim è cambiato.
+
+`scripts/check_execution_commit_inputs.py --execution-commit aaf98a282f4c6787f1c4753ea86199f2808f7a72 --record reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json` esce 0 sull'HEAD `2e4a3e51220a35bfec8bbfd93202f52bbaca7f19`: 0 finding, 17 input, stdout sha256 `ed91f1b82b6eaf87b8beaf52653b157f275e7b34ebdc768428ae24b296429f98`. I 38 record sotto `reports/evidence` aggiunti dal branch rispetto al merge-base `3c11b6125fc22f4d2af81eca73a4c7503237fff1`, un'invocazione per record con il commit dichiarato da quel record, restano 8 PASS e 30 FAIL. I FAIL restano confinati a `OCOR-DEV-0005`, `OCOR-DEV-0050`, `OCOR-DEV-0082`, `OCOR-DEV-REM-0037`, `OCOR-DEV-REM-0047`, `OCOR-DEV-REM-0056`, `OCOR-DEV-REM-0062` e `OCOR-DEV-REM-0064`. Lo stdout concatenato ha sha256 `a8092516edeaf07c9ac41e0739fb846a36dc9d385197fe45b23fc26b148b21d8`.
+
+`verify_request.json` è scritta sull'HEAD `2e4a3e51220a35bfec8bbfd93202f52bbaca7f19`, request_id `OCOR-DEV-REM-0063-2e4a3e51220a-12`, sha256 `be95c7b464208e4bd62795f21e1eb8d42af7b8f69dfc69eb375773b433ebc6cf`. La campagna `698b944a1de4-1795114196` e il controllo distinto `698b944a1de4-1795117669` non sono rilanciati. Non c'è un ciclo 13. Il branch di produzione resta `5ffc19bddca6bf0176575191e6bc3f0d4ea717d8`.
+
+Il testo sopra questa sezione, esclusa la riga di stato, resta quello del commit `8eb1d9bbe47a2591084a028c2b6bd6b9379415a1`, sha256 `65948d4cf7551df910b3f165d90a13c542e42a8bc4e2b8c682a51a9dc83f90a7`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
