@@ -1,6 +1,6 @@
 # REM-0063-CYCLE12-JSON-DEPTH
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Status: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Decisione in corso: `REM-0063-CYCLE11-NO-GO (2026-11-18)`, opzione 1, commit `391ff177a5c0e25fbbdbe4840a0d4c14612ae03e`, sha256 `c8ae68e98a1455591761726be8f85575d857faa3a3a20ce6be866e383d89403f`.
 RED del ciclo 12: `480f70240a21019b539ab4b1b847e7dd5d1af833` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`, parent `5defee7436120e9a5f51191113b5995467bacaf2`.
@@ -72,3 +72,15 @@ Opzione 1. Chiude la causa misurata, il secondo contatore, senza alzare ciò che
 Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`. Gli altri task non sono bloccati da questa richiesta. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CANONICAL-R1-HUMAN-GATE`. `OCOR-DEV-REM-0065` resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. `AGENTIC-RISK-MAP-PARTIAL-GAPS` non blocca alcun task.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist del validatore del piano per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione.
+
+## Disposition
+
+Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Decisione `REM-0063-CYCLE12-JSON-DEPTH (2026-11-19)`. Opzione 1 adottata. Le opzioni 2 e 3 non sono applicate.
+
+Il RED del confronto diretto, prima di ogni modifica sotto `ocor-runtime/src/`, è il commit `bc6af772c09eabad698e4ac97fec425556a4466f` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`, parent `480f70240a21019b539ab4b1b847e7dd5d1af833`, senza rebase, reset o force-push. Il file cambiato è solo `ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py`. Pytest `-k cycle12_vf002` su quel commit, con il sorgente ancora al RED: 6 failed, 22 passed, 42141 deselected, 1,75 s. I 6 fallimenti sono le ancore delle catene 26, 27 e 28 in `test_cycle12_vf002_schema_graph_matches_the_shared_bound`: `assert_reference_path_bound` accetta e `_resolve_graph` rifiuta. I puntatori delle stesse catene passano. Le profondità 31, 32 e 33 restano un rifiuto pubblico `exceeds the revision bounds`. La catena 23, profondità di riferimento 27, resta accettata in pubblico.
+
+Il codice del grafo non è pubblicato. Tolti solo i due controlli `depth > MAX_SCHEMA_DEPTH` dentro `_resolve_graph`, e lasciata la chiave di visita `(nodo, base, identità del registro)`, il confronto diretto e `test_cycle8_pointer_and_anchor_paths_are_each_resolved` sono verdi: 16 passed. Tolta anche l'identità del registro, come la frase dell'opzione 1 chiede, i due casi `b_first` di quel test del ciclo 8 non alzano più `McpProfileError`: stesso nodo, stessa base, due registri, e vince il primo. Quel sorgente non è un commit. Il branch di campagna pubblicato resta `bc6af772c09eabad698e4ac97fec425556a4466f`. Il branch di produzione resta `5ffc19bddca6bf0176575191e6bc3f0d4ea717d8`.
+
+L'attuazione letterale della chiave senza registro rende rossa una cella già committata che l'opzione 1 dice di non indebolire. Non si sceglie al posto del PO. È aperta `REM-0063-CYCLE12-VISIT-KEY`. VF-001 e VF-003 non sono pubblicati. VF-008 non è stato toccato. Le campagne diagnostiche `5a1a8aaff6af-1794907944`, `8037040f14cc-1794928763` e `3ae284727c98-1794931254` non sono state rilanciate. `inputs/` non è stato modificato. Nessun record sigillato è stato riscritto.
+
+Il testo sopra questa sezione, esclusa la riga di stato, resta quello del commit `ac6b59e999b79be45dcb754d475914614fb6d662`, sha256 `5746866b2088094cc9b7b6eabf6d5e8c26c76164bee7518b6c974157054bda53`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
