@@ -981,7 +981,7 @@
     "effort": "xhigh",
     "model": "grok-4.7",
     "provider": "xAI",
-    "scope": "OCOR-DEV-REM-0063 cycle 12 step 6 of REM-0063-CYCLE11-NO-GO option 1: self-check rows, one regression record, role alignment and the VF-009 record. Production code stays the GREEN b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. No production file changes in this commit. VF-008 is not corrected. Earlier implementers remain in roles.implementers."
+    "scope": "OCOR-DEV-REM-0063 cycle 12 review disposal of OCOR-DEV-REM-0063-49fc2d1adf0b-pre. Grok Build, grok-4.7, xAI, effort xhigh, realigns this assurance record only. The code behaviour head is da754e862a2c2fba621cf5d4534fcc5396299b6a. The GREEN of the shared bound remains b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. No production file changes in this commit. The fingerprint commit stays 43fdba6d6bfd93bd215ea37cc3d28ea462341839. P5 is not applied. VF-008 is not corrected. The plan-validator allowlist is not extended. Earlier implementers remain in roles.implementers."
   },
   "input_robustness_self_check": {
     "applied_sections": [
@@ -995,18 +995,19 @@
     ],
     "cell_scan": {
       "cells": 540,
-      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 43fdba6d6bfd93bd215ea37cc3d28ea462341839 /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json da754e862a2c2fba621cf5d4534fcc5396299b6a /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
       "counts": {
         "FIXED": 94,
         "N/A": 269,
         "PASS": 177
       },
       "errors": 0,
-      "head": "43fdba6d6bfd93bd215ea37cc3d28ea462341839",
-      "note": "Scan of the cycle-12 table on the worktree whose production files and cited tests match the GREEN b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. The record commit does not change those files. Not a review request.",
+      "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+      "note": "Rescan after the review-disposal record realignment. The table is unchanged. The scanner checks table shape and pytest --collect-only of cited tests. It does not compare production source to the cells. Not a review request.",
       "rows": 90,
       "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "stdout_sha256": "bda11c1ea9b93c4d415781aa22bee3535d335b3da2ec208edad9697a2e125ab1",
+      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/cell-scan-da754e86.txt",
+      "stdout_sha256": "60a997268a3f1bd36d056db4d3ecff6dab75312b89098d1ef07e8379524f200d",
       "tests_cited": 130,
       "tests_collected": 6092
     },
@@ -1020,12 +1021,13 @@
     "inventory_note": "An ast walk lists every module-level function and class. McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and have no row. codegen.py contributes the _mcp row; its other functions do not receive an MCP payload. _walk was removed and replaced by _walk_json and _check_schema_keywords in cycle 7. In this prereview fix the resolution index and the descent machinery were rebuilt around per-tree registries: _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph, _check_reached_schemas and _iter_check_children replace _ResolutionIndex, _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver. Cycle 8 re-run on a3965ed45cd41435226fd338c3da7697e4e846bf: 40 rows for mcp_profile.py (two new rows _collect_declared_ids and _synthetic_tool_uri), 4 for codegen.py (three new generator helpers), 7 for mcp_call.py and 1 for mcp_boundary.py: 52 rows, 312 cells. Cycle 9 re-runs the path inventory on 1284f91e1c4e110706ca654a27d193d60c7f9152. codegen.py lists 37 module-level names. The MCP rows are 23: _mcp, _mcp_ref, and the helpers that place each resource closure. _mcp_reached_names is removed with the root-only closure. mcp_profile.py still lists 43 module-level names and its rows are unchanged. The new codegen rows are _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43. The cycle-9 table was retargeted at the pre-campaign repair. Dead helper names now name the shared function that replaced them. Rows for json_bounds, operational_base, autonomous_registry, enter_subschema, assert_reference_path_bound, _resolver_for_subresource, _lookup_past_registered_boundary and _mcp_unpinned_crawl_owner were added. REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17) A1, B1 and C1 is applied. _lookup_past_registered_boundary is deleted and its row records the deletion. The current closure-owner row is _mcp_library_resource. A changed base is not registered. The 39 named cycle-6 cases are realigned. C1 adds 24 cells. The original 40180 cells remain. The previous cell scan is historical completeness only. Cycle 11 path inventory on c03073f7dfad399f6e07ae45ac9a8780ee0f8f97 replaces the phase-A sentence. ast walk of mcp_profile.py lists 44 module-level names and codegen.py lists 37. New rows: _recover_scalar_target, _reject_non_string_schema_ids, _reject_noncanonical_array_index, contained_subschemas, enforce_emitted_schema_rules, _mcp_require_defs_objects, _mcp_calculation_error, _mcp_library_error. Names without a row are classes or helpers that do not parse an MCP payload: {\"codegen.py\": [\"_drift\", \"local_name\", \"component_name\", \"pascal\", \"snake\", \"_json\", \"_Model\", \"_json_schema\", \"_openapi\", \"_asyncapi\", \"_McpResource\", \"_Proto\", \"_python_sdk\", \"_typescript_sdk\", \"IrArtifactGenerator\"], \"mcp_profile.py\": [\"_library_keyword_groups\", \"McpProfileError\", \"SchemaCalculationFailure\", \"_as_profile\", \"_fixed_tool_uri\", \"_SchemaTree\", \"_ResolutionContext\", \"_ScalarTarget\"]}. _library_keyword_groups reads the pinned draft closure and carries no descriptor. _as_profile and _mcp_calculation_error map an already-typed failure; _mcp_calculation_error still has a row because the generator's public error is that map. _fixed_tool_uri formats an index and a field the caller already checked. Removed functions _lookup_past_registered_boundary and _mcp_unpinned_crawl_owner keep their historical rows; the functions are absent at this head.",
     "inventory_search": "Python ast walk of mcp_profile.py at edfe829322d57875c2bd0685a50f9710b4636726 lists 41 module-level names. 38 of them have a row; McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and keep no row, as in previous cycles. The manual resolver was removed in cycle 7 and the two-level descriptor fallback in this prereview fix; _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver are replaced by _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph and _check_reached_schemas, plus _iter_check_children for additionalItems. The cycle-8 inventory re-run on a3965ed45cd41435226fd338c3da7697e4e846bf lists 43 module-level names in mcp_profile.py; 40 have a row and McpProfileError, _SchemaTree and _ResolutionContext keep no row as before. _collect_declared_ids and _synthetic_tool_uri are new rows; codegen.py gains _mcp_ref, _mcp_reached_names and _mcp_attach_definitions beside _mcp. The cycle-9 ast walk of codegen.py at 1284f91e1c4e110706ca654a27d193d60c7f9152 lists _drift, local_name, component_name, pascal, snake, _json, _Model, _json_schema, _openapi, _asyncapi, _mcp_ref, _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_attach_definitions, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri, _mcp, _Proto, _python_sdk, _typescript_sdk, IrArtifactGenerator (37 names). MCP rows: 23. _mcp_reached_names is absent. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43. Cycle 11 search on c03073f7dfad399f6e07ae45ac9a8780ee0f8f97: Python ast walk of ocor-runtime/src/ocor_runtime/c1/mcp_profile.py and ocor-runtime/src/ocor_runtime/c1/codegen.py, compared with the table functions. SELF-CHECK-PATH-INVENTORY (2026-11-09).",
     "role_coherence_scan": {
-      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle12/role_scan_cycle12.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json",
-      "compared_fields": 50,
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle12/role_scan_cycle12_review.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json",
+      "compared_fields": 74,
       "errors": 0,
-      "note": "Cycle-12 scan. It does not read this metadata. The cycle-11 scanner still passes when invoked with head c03073f7dfad399f6e07ae45ac9a8780ee0f8f97.",
+      "note": "Successor of role_scan_cycle12.py. The previous scanner hard-codes the cycle-11 Cursor reviewer and is not this scan. This scanner does not read this metadata.",
       "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
-      "stdout_sha256": "8f001af73931a9637b822c58733f798aebcf66ad7d1ef07514f2d8d77b32da50"
+      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/role-scan-cycle12-review.txt",
+      "stdout_sha256": "88a0f9e70596567572b63753d2326b6af5bcb47030f44bb92ff5943c98d07fbf"
     },
     "table": [
       {
@@ -3132,6 +3134,32 @@
       "note": "Cycle-11 scan after the record alignment. The cycle-9 scanner stays historical: it pins head 1284f91e1c4e110706ca654a27d193d60c7f9152 and a top-level preventive_review key this record does not have. Google was added to verifier_excluded_providers. Anthropic remains the assigned verifier and is not an implementer. The scanner does not read this metadata.",
       "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
       "stdout_sha256": "966f9c7b9aa35d8da0544fb4c52efe511ba24be6d9e8c059d265fee771a9666d"
+    },
+    "historical_cell_scan_before_cycle12_review_disposal": {
+      "cells": 540,
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 43fdba6d6bfd93bd215ea37cc3d28ea462341839 /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "counts": {
+        "FIXED": 94,
+        "N/A": 269,
+        "PASS": 177
+      },
+      "errors": 0,
+      "head": "43fdba6d6bfd93bd215ea37cc3d28ea462341839",
+      "note": "Scan of the cycle-12 table on the worktree whose production files and cited tests match the GREEN b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. The record commit does not change those files. Not a review request.",
+      "rows": 90,
+      "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "stdout_sha256": "bda11c1ea9b93c4d415781aa22bee3535d335b3da2ec208edad9697a2e125ab1",
+      "tests_cited": 130,
+      "tests_collected": 6092
+    },
+    "historical_role_coherence_scan_before_cycle12_review_disposal": {
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle12/role_scan_cycle12.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json",
+      "compared_fields": 50,
+      "errors": 0,
+      "note": "Cycle-12 scan. It does not read this metadata. The cycle-11 scanner still passes when invoked with head c03073f7dfad399f6e07ae45ac9a8780ee0f8f97.",
+      "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "stdout_sha256": "8f001af73931a9637b822c58733f798aebcf66ad7d1ef07514f2d8d77b32da50",
+      "note_after_realignment": "role_scan_cycle12.py was re-run after this reviewer change and exits 1 with 7 errors. It still expects the cycle-11 Cursor reviewer. The scanner file is unchanged. That failure is expected and is not the current scan. Stdout sha256 84af84783f2268307c6680cb8bcd03f4bd1f3724132c50577029adae438b7d26."
     }
   },
   "inputs": {
@@ -3913,6 +3941,53 @@
         "model": "cursor-grok-4.6-xhigh",
         "provider": "xAI",
         "reserve": true
+      }
+    },
+    {
+      "counts": {
+        "advisory": 2,
+        "blocking": 3,
+        "high": 0,
+        "low": 0,
+        "medium": 0,
+        "total": 5
+      },
+      "dispositions": [
+        {
+          "disposition": "CORRECTED",
+          "finding": "P1",
+          "row": "CORRECTED at da754e862a2c2fba621cf5d4534fcc5396299b6a. The graph-owned depth comparison is removed. assert_reference_path_bound remains the only reference-path depth counter. The visit key stays (node, base, registry identity). RED 1f9e3fa3a8b936a218899c987d9835df107d483a, then the correction. Finding lines were against 49fc2d1adf0b5fa5107087675264addf4279002f."
+        },
+        {
+          "disposition": "CORRECTED",
+          "finding": "P2",
+          "row": "CORRECTED at da754e862a2c2fba621cf5d4534fcc5396299b6a. An unwalkable schema resource is a typed refusal, MCP schema resource is not resolvable. Boolean schemas stay accepted. Null properties and null allOf keep their existing diagnostics. Finding lines were against 49fc2d1adf0b5fa5107087675264addf4279002f."
+        },
+        {
+          "disposition": "NOT_CORRECTED",
+          "finding": "P3",
+          "row": "NOT CORRECTED. Decision request REM-0063-CYCLE12-REGRESSION-DRIFT is open at 497f661cbfcd5939f5e9e83150ba357eb0b551a4. No option is applied. The allowlist is not extended."
+        },
+        {
+          "disposition": "THIS_RECORD",
+          "finding": "P4",
+          "row": "THIS RECORD. Roles, preventive_review_history and traces are realigned. The code behaviour head is da754e862a2c2fba621cf5d4534fcc5396299b6a. Finding lines were against 49fc2d1adf0b5fa5107087675264addf4279002f, not against da754e862a2c2fba621cf5d4534fcc5396299b6a."
+        },
+        {
+          "disposition": "NOT_APPLIED",
+          "finding": "P5",
+          "row": "NOT APPLIED. The structural scan still misses library enumeration names and DRAFT202012 in codegen.py. The typed refusal of a lone surrogate in an internal pointer is not applied."
+        }
+      ],
+      "outcome_sha256": "ae501632a3a46ae5e17dca796f16a5c10878054c3b9bff3d0571a7cf2b59f8e0",
+      "request_id": "OCOR-DEV-REM-0063-49fc2d1adf0b-pre",
+      "result": "BLOCKING_FINDINGS",
+      "reviewed_head": "49fc2d1adf0b5fa5107087675264addf4279002f",
+      "reviewer": {
+        "agent": "Claude Code",
+        "model": "claude-fable-5-2",
+        "provider": "Anthropic",
+        "reserve": false
       }
     }
   ],
@@ -7434,7 +7509,7 @@
       "agent": "Claude Code",
       "assignment": "VERIFIER-CLAUDE-REM0063 (2026-11-16)",
       "effort": "max",
-      "independence_limits": "The cycle-11 preventive reviewer is Cursor CLI, cursor-grok-4.6-xhigh, xAI, reserve, the same provider as an implementer. The assigned verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, a different provider from that reviewer and from the cycle-12 implementer. Authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementation. The cycle-11 preventive review said the planned final verifier was none; this record declares the assigned verifier. That review is not verification evidence. No fallback if this assigned model is unavailable.",
+      "independence_limits": "The cycle-12 preventive reviewer is Claude Code, claude-fable-5-2, Anthropic, effort max, not a reserve reviewer. The assigned verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, the same provider and a different model. Authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementation. This review is not verification evidence. No fallback if this assigned model is unavailable.",
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
       "status": "REQUESTED"
@@ -7527,6 +7602,13 @@
         "model": "grok-4.7",
         "provider": "xAI",
         "scope": "OCOR-DEV-REM-0063 cycle 12 step 6 of REM-0063-CYCLE11-NO-GO option 1: self-check rows, one regression record, role alignment and the VF-009 record. Production code stays the GREEN b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. No production file changes in this commit. VF-008 is not corrected. Earlier implementers remain in roles.implementers."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 12 review disposal of OCOR-DEV-REM-0063-49fc2d1adf0b-pre. Grok Build, grok-4.7, xAI, effort xhigh, realigns this assurance record only. The code behaviour head is da754e862a2c2fba621cf5d4534fcc5396299b6a. The GREEN of the shared bound remains b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. No production file changes in this commit. The fingerprint commit stays 43fdba6d6bfd93bd215ea37cc3d28ea462341839. P5 is not applied. VF-008 is not corrected. The plan-validator allowlist is not extended. Earlier implementers remain in roles.implementers."
       }
     ],
     "preventive_review_history": [
@@ -7657,18 +7739,29 @@
         "reserve": true,
         "result": "NO_BLOCKING_FINDINGS",
         "reviewed_head": "88ce3e0f2c59392a1e92b0e5e9b99ce278ac0906"
+      },
+      {
+        "agent": "Claude Code",
+        "model": "claude-fable-5-2",
+        "provider": "Anthropic",
+        "request_id": "OCOR-DEV-REM-0063-49fc2d1adf0b-pre",
+        "reserve": false,
+        "result": "BLOCKING_FINDINGS",
+        "reviewed_head": "49fc2d1adf0b5fa5107087675264addf4279002f"
       }
     ],
     "preventive_reviewer": {
-      "agent": "Cursor CLI",
-      "assignment": "Cycle-11 preventive review OCOR-DEV-REM-0063-88ce3e0f2c59-pre. Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10).",
-      "effort": "xhigh",
-      "independence_limits": "Reserve reviewer. Same provider (xAI) as the cycle-11 and cycle-12 implementer Grok Build grok-4.7, different model cursor-grok-4.6-xhigh. The outcome file names the process Cursor; this record uses the agent string Cursor CLI already used for that reserve reviewer. The assigned final verifier is Claude Code, claude-opus-5-5, Anthropic, a different provider. This review is not verification evidence.",
-      "model": "cursor-grok-4.6-xhigh",
-      "provider": "xAI",
-      "request_id": "OCOR-DEV-REM-0063-88ce3e0f2c59-pre",
-      "reserve": true,
-      "status": "NO_BLOCKING_FINDINGS"
+      "agent": "Claude Code",
+      "assignment": "Cycle-12 preventive review OCOR-DEV-REM-0063-49fc2d1adf0b-pre. Not a reserve reviewer.",
+      "effort": "max",
+      "independence_limits": "Same provider (Anthropic) as the assigned verifier Claude Code, claude-opus-5-5, different model claude-fable-5-2. Not a reserve reviewer. No Anthropic implementer (implementers are xAI, DeepSeek and OpenAI). This review is not verification evidence. No fallback if the assigned verifier model is unavailable. Authorised limit VERIFIER-CLAUDE-REM0063 (2026-11-16).",
+      "model": "claude-fable-5-2",
+      "outcome_sha256": "ae501632a3a46ae5e17dca796f16a5c10878054c3b9bff3d0571a7cf2b59f8e0",
+      "provider": "Anthropic",
+      "request_id": "OCOR-DEV-REM-0063-49fc2d1adf0b-pre",
+      "reserve": false,
+      "reviewed_head": "49fc2d1adf0b5fa5107087675264addf4279002f",
+      "status": "BLOCKING_FINDINGS"
     },
     "verifier_excluded_providers": [
       "DeepSeek",
@@ -7692,7 +7785,19 @@
       "status": "DESIGN_REVIEW_INTEGRATED_PRE_CAMPAIGN_RETURNED_CAMPAIGN_WAITING",
       "pre_campaign_request_id": "OCOR-DEV-REM-0063-cce3ba8ba7ab-pre"
     },
-    "historical_final_verifier_independence_limits_before_cycle12": "Same provider as the assigned preventive reviewer (claude-fable-5-2), different model; expressly authorised by the Product Owner. No Anthropic implementation. No fallback if this assigned model is unavailable."
+    "historical_final_verifier_independence_limits_before_cycle12": "Same provider as the assigned preventive reviewer (claude-fable-5-2), different model; expressly authorised by the Product Owner. No Anthropic implementation. No fallback if this assigned model is unavailable.",
+    "historical_preventive_reviewer_before_cycle12_review_disposal": {
+      "agent": "Cursor CLI",
+      "assignment": "Cycle-11 preventive review OCOR-DEV-REM-0063-88ce3e0f2c59-pre. Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10).",
+      "effort": "xhigh",
+      "independence_limits": "Reserve reviewer. Same provider (xAI) as the cycle-11 and cycle-12 implementer Grok Build grok-4.7, different model cursor-grok-4.6-xhigh. The outcome file names the process Cursor; this record uses the agent string Cursor CLI already used for that reserve reviewer. The assigned final verifier is Claude Code, claude-opus-5-5, Anthropic, a different provider. This review is not verification evidence.",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "request_id": "OCOR-DEV-REM-0063-88ce3e0f2c59-pre",
+      "reserve": true,
+      "status": "NO_BLOCKING_FINDINGS"
+    },
+    "historical_final_verifier_independence_limits_before_cycle12_review_disposal": "The cycle-11 preventive reviewer is Cursor CLI, cursor-grok-4.6-xhigh, xAI, reserve, the same provider as an implementer. The assigned verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, a different provider from that reviewer and from the cycle-12 implementer. Authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementation. The cycle-11 preventive review said the planned final verifier was none; this record declares the assigned verifier. That review is not verification evidence. No fallback if this assigned model is unavailable."
   },
   "schema_version": "1.0",
   "status": "CANDIDATE",
@@ -8847,7 +8952,11 @@
       "VF-008 is tracked and not corrected.",
       "No prereview_request.json and no verify_request.json.",
       "No cycle-12 four-lane campaign and no distinct check.",
-      "Diagnostic campaigns 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 and 3ae284727c98-1794931254 were not re-run."
+      "Diagnostic campaigns 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 and 3ae284727c98-1794931254 were not re-run.",
+      "The plan-validator allowlist is not extended in this record commit.",
+      "P5 is not applied.",
+      "Drift of OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 stays FAIL and is the subject of REM-0063-CYCLE12-REGRESSION-DRIFT.",
+      "No second preventive review and no cycle 13."
     ],
     "qualifying_campaign": "NOT_EXECUTED",
     "red": {
@@ -8869,9 +8978,11 @@
         "commit": "bc6af772c09eabad698e4ac97fec425556a4466f",
         "counts_from_handoff": "6 failed, 22 passed, 42141 deselected, 1.75 s, filter cycle12_vf002",
         "parent": "480f70240a21019b539ab4b1b847e7dd5d1af833",
-        "raw_log": null,
-        "raw_log_note": "No raw log file for bc6af772 was found to hash. The counts are handoff metadata, not a hashed log.",
-        "src_changed": false
+        "raw_log": "/home/luca/.ocor-codex/rem-0063/preserved/bc6af772c09eabad698e4ac97fec425556a4466f/red.log.schema_graph.raw",
+        "raw_log_note": "Reproduced at bc6af772c09eabad698e4ac97fec425556a4466f without rewriting that commit. The previous record stored raw_log null and took the counts from the handoff. Measured 6 failed, 22 passed, 42141 deselected in 1.61s. PYTEST_EXIT:1 is inside the hashed log. The handoff duration was about 1.75 s. counts_from_handoff is kept.",
+        "src_changed": false,
+        "counts": "6 failed, 22 passed, 42141 deselected in 1.61s",
+        "raw_sha256": "8d09f40dd57b693205a471b89c981788fda300ba47ec4c32cea9e155c1963032"
       }
     },
     "regression_record": "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-cycle12.json",
@@ -8902,6 +9013,106 @@
       "status": "PASS",
       "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/execution-commit-inputs-d823326.json",
       "stdout_sha256": "1687048333e162462c69027df6f5e1378b73172237083ad12c01b966d33327e5"
+    },
+    "review_disposal": {
+      "code_behaviour_head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+      "decision_request": {
+        "commit": "497f661cbfcd5939f5e9e83150ba357eb0b551a4",
+        "id": "REM-0063-CYCLE12-REGRESSION-DRIFT",
+        "note": "No option is applied. That publication and this record commit do not extend the plan-validator allowlist.",
+        "path": "reports/development/decision_requests/REM-0063-CYCLE12-REGRESSION-DRIFT.md",
+        "pr": 696,
+        "pr_disposition": "DRAFT_NOT_FOR_MERGE_PATH_NOT_ON_ALLOWLIST",
+        "sha256": "64f989b4dba329b58ec20e1702fec4fedd5475fdefb739aaf916ffcec573e851",
+        "status": "OPEN_PO_DECISION_REQUIRED"
+      },
+      "drift": {
+        "checked_inputs": 241,
+        "checked_tasks": 75,
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+        "drifted_inputs": 3,
+        "drifted_tasks": [
+          "OCOR-DEV-0005",
+          "OCOR-DEV-0050",
+          "OCOR-DEV-0082"
+        ],
+        "exit_code": 1,
+        "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+        "note": "This commit does not claim the drift passes. The current records of OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 still cite c210364d7dda6ac4739e1fbd89de868ce4f6b83d46b1bc767e86f082ac2024dd. The validator file sha256 is 0d5e0eef97ac64479c0744cb40063b77bf6f2f91fa82b0e4ee6b86284e09411b.",
+        "recorded_validator_sha256": "c210364d7dda6ac4739e1fbd89de868ce4f6b83d46b1bc767e86f082ac2024dd",
+        "status": "FAIL",
+        "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/drift-da754e86.json",
+        "stdout_sha256": "f7f3579f5cb4b255eeed4f7bba9974e7ec500f48669afed0494c0e13e96c058d",
+        "validator_sha256": "0d5e0eef97ac64479c0744cb40063b77bf6f2f91fa82b0e4ee6b86284e09411b"
+      },
+      "finding_lines_head": "49fc2d1adf0b5fa5107087675264addf4279002f",
+      "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+      "note": "Finding file lines were reported against 49fc2d1adf0b5fa5107087675264addf4279002f, not against da754e862a2c2fba621cf5d4534fcc5396299b6a. The full-module raw sha at GREEN b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac is not stored. green.unit_recheck remains that hashed cycle12 filter. The traces below are the review-disposal runs and are not a substitute for that missing GREEN full-module raw log.",
+      "request_id": "OCOR-DEV-REM-0063-49fc2d1adf0b-pre",
+      "traces": {
+        "full_task_module": {
+          "counts": "42187 passed in 806.34s",
+          "exit_marker": "PYTEST_EXIT:0",
+          "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+          "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle12/green-task-suite.log",
+          "raw_sha256": "9f9ae718bcacbb440d9ca848973b2ecb9478d5253dacc01448c593cd2197469a"
+        },
+        "git_diff_check": {
+          "base": "f485dc964e47bde83842ecd5ba2627d8342612f9",
+          "command": "git diff --check f485dc964e47bde83842ecd5ba2627d8342612f9",
+          "exit_code": 0,
+          "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+          "note": "Stdout of git diff --check was empty. The preserved file appends EXIT:0 before the hash. The earlier git_diff_check on the fingerprint commit stays the empty-stdout measurement.",
+          "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle12/diffcheck-da754e86.txt",
+          "raw_sha256": "194ff5bca66278888f0f00be5c7ca523d15098ece958b14952533811089f6106"
+        },
+        "mypy": {
+          "command": "mypy --cache-dir=/dev/null on mcp_profile.py and codegen.py",
+          "exit_code": 0,
+          "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+          "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle12/mypy-da754e86.txt",
+          "raw_sha256": "d160af84b47f4d94f8de7be6015f2b5bad47ecf14931ea9e056697a49a349937",
+          "summary": "Success: no issues found in 2 source files"
+        },
+        "red_review_disposal": {
+          "commit": "1f9e3fa3a8b936a218899c987d9835df107d483a",
+          "counts": "19 failed, 12 passed, 42156 deselected in 1.79s",
+          "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle12/red-p1-p2-review-disposal.log",
+          "raw_sha256": "1a3597e244f34f48b9e2fec7ad5adcbf00ddf4255ac090aaaa3c30926a56175c"
+        },
+        "ruff": {
+          "command": "ruff check --no-cache on mcp_profile.py and codegen.py",
+          "exit_code": 0,
+          "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+          "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle12/ruff-da754e86.txt",
+          "raw_sha256": "d56acb0407c1283c7767207d5e345474c8f3c3e685bea2637193aad1566fdafa",
+          "summary": "All checks passed!"
+        },
+        "targeted": {
+          "counts": "50 passed, 42137 deselected in 1.62s",
+          "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+          "raw_log": "/home/luca/.ocor-codex/rem-0063/cycle12/green-p1-p2-targeted.log",
+          "raw_sha256": "758119955d4c186751ff74d804fa1c6c95937adf7a84906c979568270cf01b7f"
+        }
+      }
+    },
+    "execution_commit_digest_check_review_disposal": {
+      "checked_artifacts": 5,
+      "checked_inputs": 22,
+      "checked_records": 2,
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 43fdba6d6bfd93bd215ea37cc3d28ea462341839 --record reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json --record reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-cycle12.json",
+      "execution_commit": "43fdba6d6bfd93bd215ea37cc3d28ea462341839",
+      "findings": 6,
+      "head_at_check": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+      "note": "Rerun at the review-disposal head. Status is FAIL. The six findings are codegen.py, mcp_profile.py and test_ocor_dev_rem_0063.py, each both changed between 43fdba6d6bfd93bd215ea37cc3d28ea462341839 and HEAD and different in the worktree from that execution commit. Those bytes changed in 1f9e3fa3a8b936a218899c987d9835df107d483a and da754e862a2c2fba621cf5d4534fcc5396299b6a. This record commit does not change them. The PASS at d823326cff43e0666d9c1a9bfbd5e5b476961f96 stays the measurement for the fingerprint commit and is not rewritten.",
+      "paths": [
+        "ocor-runtime/src/ocor_runtime/c1/codegen.py",
+        "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py"
+      ],
+      "status": "FAIL",
+      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/execution-commit-inputs-review-disposal.json",
+      "stdout_sha256": "580f0da292f2d20a428b8421a5d71a060825b9c540bd2fc82b681aab3536c423"
     }
   },
   "historical_allowlist_precheck_before_cycle12_record": {
@@ -8929,5 +9140,12 @@
       "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.json",
       "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063.log"
     ]
+  },
+  "historical_top_level_implementer_before_cycle12_review_disposal": {
+    "agent": "Grok Build",
+    "effort": "xhigh",
+    "model": "grok-4.7",
+    "provider": "xAI",
+    "scope": "OCOR-DEV-REM-0063 cycle 12 step 6 of REM-0063-CYCLE11-NO-GO option 1: self-check rows, one regression record, role alignment and the VF-009 record. Production code stays the GREEN b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. No production file changes in this commit. VF-008 is not corrected. Earlier implementers remain in roles.implementers."
   }
 }
