@@ -21,7 +21,6 @@ from typing import Any, cast
 
 from referencing import Registry
 from referencing.exceptions import Unresolvable
-from referencing.jsonschema import DRAFT202012
 
 from .ir import ARTIFACT_MEDIA_TYPES, malformed_core_rejected, parse_core, require_core_shape
 from .mcp_profile import (
@@ -474,14 +473,14 @@ def _mcp_iter_resources(
     path: str,
     resolver: Any,
 ) -> list[_McpResource]:
-    """Resource roots, using ``in_subresource`` as the only boundary.
+    """Resource roots. Children come from ``contained_subschemas``.
 
-    Two different nodes that the library assigns one base are
-    ``DUPLICATE_RESOURCE``. ``closure`` is ``lookup("#").contents``: the
-    object the pinned libraries resolve fragments against. ``scans`` starts
-    at the boundary node, which is where a reference can sit when a
-    descendant rejoins that URI. References collected from those scans are
-    written onto ``closure``.
+    The only resource entry is ``enter_subschema``. Two different nodes that
+    the library assigns one base are ``DUPLICATE_RESOURCE``. ``closure`` is
+    ``lookup("#").contents``: the object the pinned libraries resolve
+    fragments against. ``scans`` starts at the boundary node, which is where
+    a reference can sit when a descendant rejoins that URI. References
+    collected from those scans are written onto ``closure``.
     """
 
     found: list[_McpResource] = []
@@ -489,24 +488,20 @@ def _mcp_iter_resources(
     if not isinstance(root, dict):
         raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not an object")
     found.append(_McpResource(base_uri, root, resolver, root))
-    root_resource = DRAFT202012.create_resource(root)
-    queue: list[tuple[Any, Any]] = [(root_resource, resolver)]
+    queue: list[tuple[Any, Any]] = [(root, resolver)]
     seen: set[tuple[int, str]] = set()
     while queue:
         current, context = queue.pop()
-        try:
-            children = list(current.subresources())
-        except (AttributeError, TypeError, ValueError) as exc:
-            raise _mcp_library_error(exc, path) from exc
+        if not isinstance(current, Mapping):
+            continue
         parent_base = getattr(context, "_base_uri", base_uri)
-        for child in children:
-            contents = child.contents
+        for contents in contained_subschemas(current):
             if isinstance(contents, Mapping):
                 defs = contents.get("$defs")
                 if defs is not None and not isinstance(defs, Mapping):
                     raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP $defs must be an object")
             try:
-                nxt = context.in_subresource(child)
+                nxt, _changed = enter_subschema(context, contents)
             except (ValueError, AttributeError, TypeError) as exc:
                 raise _mcp_library_error(exc, path) from exc
             uri = getattr(nxt, "_base_uri", parent_base)
@@ -554,7 +549,7 @@ def _mcp_iter_resources(
             if identity in seen:
                 continue
             seen.add(identity)
-            queue.append((child, nxt))
+            queue.append((contents, nxt))
     return found
 
 
@@ -671,12 +666,9 @@ def _mcp_strip_unreachable_defs(root: Mapping[str, Any], resolver: Any, path: st
             resource_root = is_root and not stay
         else:
             try:
-                current = res.in_subresource(DRAFT202012.create_resource(node))
+                current, base_changed = enter_subschema(res, node)
             except (ValueError, AttributeError, TypeError) as exc:
                 raise _mcp_library_error(exc, path) from exc
-            parent_base = getattr(res, "_base_uri", None)
-            entered_base = getattr(current, "_base_uri", None)
-            base_changed = isinstance(entered_base, str) and entered_base != parent_base
             try:
                 crawl_owner = current.lookup("#").contents
                 lookup_ok = True
@@ -761,7 +753,7 @@ def _mcp_attach_definitions(
 ) -> Any:
     """Place each reachable ``#/$defs`` closure on the resource that uses it.
 
-    The resource boundary is ``Resolver.in_subresource``. The registry passed
+    The resource boundary is ``enter_subschema``. The registry passed
     to crawl is the ``Registry`` attribute of this module, so a test that
     replaces it still fails inside ``crawl``.
     """

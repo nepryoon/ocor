@@ -955,8 +955,8 @@ def _resolve_graph(
         node, context, depth = queue.pop(0)
         if not isinstance(node, Mapping):
             continue
-        if depth > MAX_SCHEMA_DEPTH:
-            raise McpProfileError("MCP schema exceeds the revision bounds")
+        # Depth belongs to ``assert_reference_path_bound``. This walk does not
+        # count it again. The visit key keeps the registry identity.
         state = (id(node), context.base_uri, id(context.registry))
         if state in visited_static:
             continue
@@ -1006,8 +1006,6 @@ def _resolve_graph(
             node, context, depth = ref_queue.pop(0)
             if not isinstance(node, Mapping):
                 continue
-            if depth > MAX_SCHEMA_DEPTH:
-                raise McpProfileError("MCP schema exceeds the revision bounds")
             state = (id(node), context.base_uri, id(context.registry))
             if state in visited_ref:
                 continue
@@ -1170,24 +1168,23 @@ def _reject_ambiguous_anchor(
 
 
 def _reject_noncanonical_array_index(resolver: Any, fragment: str) -> None:
-    """Keep the array-index rule when the libraries already resolved the pointer.
+    """Apply rule 4 to every array index the library resolved.
 
-    A spelling the libraries resolve and the strict decoder refuses is not an
-    array index. Those spellings follow the libraries. A decoded token whose
-    parent is an array still has to be canonical.
+    Tokens match ``referencing`` 0.37.0: unquote the pointer, split on ``/``,
+    then substitute ``~1`` and ``~0`` when that escape is valid. A segment the
+    strict decoder refuses is not an early return. Rule 4 still applies to
+    every other token whose parent, resolved by the library, is an array.
     """
 
-    try:
-        decoded = _decode_uri_fragment(fragment)
-    except McpProfileError:
+    if not fragment.startswith("/"):
         return
-    if not decoded.startswith("/"):
-        return
-    raw_tokens = decoded[1:].split("/")
-    try:
-        tokens = [_json_pointer_token(raw_token) for raw_token in raw_tokens]
-    except McpProfileError:
-        return
+    raw_tokens = unquote(fragment[1:]).split("/")
+    tokens: list[str] = []
+    for raw_token in raw_tokens:
+        try:
+            tokens.append(_json_pointer_token(raw_token))
+        except McpProfileError:
+            tokens.append(raw_token)
     _validate_pointer_array_indices(resolver, raw_tokens, tokens)
 
 
@@ -1245,12 +1242,10 @@ def _check_schema_keywords(
         raise McpProfileError("MCP schema exceeds the revision bounds")
     if not isinstance(node, Mapping):
         return
-    if "$dynamicRef" in node or "$recursiveRef" in node:
-        raise McpProfileError("MCP $ref resolution does not follow dynamic references")
-    if "$schema" in node:
-        dialect = node["$schema"]
-        if not isinstance(dialect, str) or dialect not in ACCEPTED_DIALECTS:
-            raise McpProfileError("MCP schema dialect must be JSON Schema 2020-12")
+    try:
+        enforce_emitted_schema_rules(node)
+    except SchemaCalculationFailure as exc:
+        raise _as_profile(exc) from exc
 
 
 _HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
