@@ -1,6 +1,6 @@
 # AGENTIC-RISK-MAP-PARTIAL-GAPS
 
-Status: `OPEN_PO_DECISION_REQUIRED`
+Status: `DECIDED_BY_PO`
 
 Livello: operativo. Unità `OCOR-DEV-REM-0065`, punto 2 di
 `FABLE52-POST-POC-PROGRAMME (2026-11-11)`. Il documento generato non è
@@ -54,3 +54,13 @@ un nuovo `DEC-*`.
 Opzione 1. La decisione che autorizza la mappa dice che il documento non
 è evidenza, non è un claim (`NFR-050`) e non cambia i criteri di
 `OCOR-DEV-0062`, `OCOR-DEV-0064`, `OCOR-DEV-0068` e `OCOR-DEV-0069`.
+
+## Disposition
+
+Decisa dal PO di persona il 2026-11-19. Decisione `AGENTIC-RISK-MAP-PARTIAL-GAPS (2026-11-19)`. Opzione 1 adottata. Le opzioni 2 e 3 non sono applicate.
+
+Lo sha256 del preambolo riletto è `1c265493f9b7026397ccdf7ec447ff733fae8978ce2ce2f4e7a9d3e9a8bb2b0a`. La sezione `## AGENTIC-RISK-MAP-PARTIAL-GAPS (2026-11-19) — decisione del PO` adotta l'opzione 1 al commit `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. Lo sha256 del file a quel commit è `1b327c2b6b1ed9462251a221e0b7d89d956f962bf568eb666999517cc2729c00`, verificato con `git cat-file -e` e `sha256sum`.
+
+Le righe `ASI01`–`ASI10` restano un allegato informativo. Nessun criterio cambia. La richiesta non blocca alcun task. Non è stato modificato codice di runtime, un test esistente, `inputs/` o il backlog approvato. Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC `NO-GO`, Production `NO-GO`.
+
+Il testo sopra questa sezione, esclusa la riga di stato, resta quello del commit `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`, sha256 `1b327c2b6b1ed9462251a221e0b7d89d956f962bf568eb666999517cc2729c00`.
