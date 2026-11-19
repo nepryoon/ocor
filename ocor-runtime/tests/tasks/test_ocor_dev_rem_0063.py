@@ -7069,12 +7069,14 @@ def test_cycle12_vf002_reference_path_depth_matches_the_shared_bound(
     ref_depth: int,
     chain: int,
 ) -> None:
-    """VF-002: anchor and pointer follow ``assert_reference_path_bound`` at depth 31, 32 and 33.
+    """VF-002: the shared bound accepts 31 and 32; the public document does not.
 
     The schema carries two ``$ref`` paths. ``properties.q`` is the shallow one.
-    ``allOf`` nests four ``not`` keywords before the same reference. On
-    5defee743612 the profile's own counter refuses depths the shared function
-    still accepts.
+    ``allOf`` nests four ``not`` keywords before the same reference. Reference
+    depths 31 and 32 put the delivered document at JSON depth 36 and 37, so
+    ``json_bounds`` refuses it. The test still records that
+    ``assert_reference_path_bound`` accepts those depths. Depth 33 is refused
+    by both. The profile graph is compared on the schema, not on the document.
     """
     from jsonschema import Draft202012Validator
 
@@ -7094,11 +7096,59 @@ def test_cycle12_vf002_reference_path_depth_matches_the_shared_bound(
     else:
         bound_accepts = True
     assert bound_accepts is (ref_depth <= 32), ref_depth
-    if bound_accepts:
-        _validate(_cycle11_deliver(schema, field))
-        return
     with pytest.raises(profile.McpProfileError, match="exceeds the revision bounds"):
         _validate(_cycle11_deliver(schema, field))
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("form", ("anchor", "pointer"))
+@pytest.mark.parametrize("chain", (26, 27, 28))
+def test_cycle12_vf002_schema_graph_matches_the_shared_bound(
+    field: str,
+    form: str,
+    chain: int,
+) -> None:
+    """The profile graph and the shared bound have the same outcome on the schema.
+
+    Chains 26, 27 and 28 are reference depths 30, 31 and 32. The comparison
+    does not deliver a descriptor, so ``json_bounds`` is not the result.
+    """
+    schema = _cycle12_depth_schema(form, chain, deep=4)
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    base = _cycle11_fixed_base(field)
+    registry = _cycle11_library_registry(schema, field)
+    shared_refused = False
+    try:
+        profile.assert_reference_path_bound(schema, registry.resolver(base))
+    except profile.SchemaCalculationFailure as exc:
+        assert "bounds" in str(exc)
+        shared_refused = True
+    tree = profile._schema_tree(schema, base)
+    graph_refused = False
+    try:
+        profile._resolve_graph([(tree.root, profile._root_context(tree))])
+    except profile.McpProfileError as exc:
+        assert "bounds" in str(exc)
+        graph_refused = True
+    assert graph_refused is shared_refused
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("form", ("anchor", "pointer"))
+def test_cycle12_vf002_public_acceptance_stops_at_reference_depth_27(
+    field: str,
+    form: str,
+) -> None:
+    """Chain 23 is the deepest public acceptance of this family.
+
+    The document is JSON depth 32. Anchor and pointer are accepted, and the
+    reference depth is 27. It does not stand in for depths 31 and 32.
+    """
+    schema = _cycle12_depth_schema(form, 23, deep=4)
+    profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
+    registry = _cycle11_library_registry(schema, field)
+    profile.assert_reference_path_bound(schema, registry.resolver(_cycle11_fixed_base(field)))
+    _validate(_cycle11_deliver(schema, field))
 
 
 def test_cycle12_vf003_generator_enters_resources_only_through_the_profile() -> None:
