@@ -435,3 +435,20 @@ The self-check table adds the VF-010 parsers and the cycle-11 enumeration
 paths. The phase-A inventory text is kept as history and is not the current
 inventory. Preventive review, the four-lane campaign and `verify_request.json`
 are not this commit.
+
+## Cycle 12 record
+
+REM-0063-CYCLE11-NO-GO option 1 step 6. The production code stays the GREEN
+`b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac`. This section does not change it.
+
+Rule 4 applies to every array index after the `referencing` 0.37.0 token
+split. A loose segment is not an early return. The generator enters resources
+only through `contained_subschemas` and `enter_subschema`, and
+`_check_schema_keywords` calls `enforce_emitted_schema_rules`. The visit key
+in `_resolve_graph` stays `(node, base, registry identity)`. The two depth
+checks that lived in that function are gone. `assert_reference_path_bound`
+remains the only reference-path depth counter.
+
+VF-008 is not corrected. It stays the separate unit already reserved for after
+`GO_FOR_EVIDENCE_SEAL`. The cycle-12 preventive review, the four-lane campaign
+and `verify_request.json` are not this record.

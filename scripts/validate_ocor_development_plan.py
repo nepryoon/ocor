@@ -1904,6 +1904,10 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0063-step7b.log",
         "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-step7b.json",
         "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-step7b.log",
+        # REM-0063-CYCLE11-NO-GO option 1 step 6: one regression record that
+        # supersedes the 0062 step7b record. No other path is added.
+        "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-cycle12.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-cycle12.log",
         "reports/evidence/G2/OCOR-DEV-REM-0064.requalified-rem0063-step7b.json",
         "reports/evidence/G2/OCOR-DEV-REM-0064.requalified-rem0063-step7b.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-step7b.json",
