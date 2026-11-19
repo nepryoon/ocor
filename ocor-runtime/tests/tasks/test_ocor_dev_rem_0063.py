@@ -7110,8 +7110,11 @@ def test_cycle12_vf002_schema_graph_matches_the_shared_bound(
 ) -> None:
     """The profile graph and the shared bound have the same outcome on the schema.
 
-    Chains 26, 27 and 28 are reference depths 30, 31 and 32. The comparison
-    does not deliver a descriptor, so ``json_bounds`` is not the result.
+    Chains 26, 27 and 28 are reference depths 30, 31 and 32. The graph is
+    ``_resolve_graph`` followed by ``_check_reached_schemas``, the same two
+    calls the public descriptor path makes after ``json_bounds``. The
+    comparison does not deliver a descriptor, so ``json_bounds`` is not the
+    result. On 49fc2d1adf0b the six anchor cells still diverge.
     """
     schema = _cycle12_depth_schema(form, chain, deep=4)
     profile = importlib.import_module("ocor_runtime.c1.mcp_profile")
@@ -7126,7 +7129,8 @@ def test_cycle12_vf002_schema_graph_matches_the_shared_bound(
     tree = profile._schema_tree(schema, base)
     graph_refused = False
     try:
-        profile._resolve_graph([(tree.root, profile._root_context(tree))])
+        order, ref_states = profile._resolve_graph([(tree.root, profile._root_context(tree))])
+        profile._check_reached_schemas(order, ref_states)
     except profile.McpProfileError as exc:
         assert "bounds" in str(exc)
         graph_refused = True
@@ -7151,12 +7155,18 @@ def test_cycle12_vf002_public_acceptance_stops_at_reference_depth_27(
     _validate(_cycle11_deliver(schema, field))
 
 
+_CYCLE12_LIBRARY_WALK_NAMES = frozenset(
+    {"subresources", "in_subresource", "subresources_of", "maybe_in_subresource", "DRAFT202012"}
+)
+
+
 def test_cycle12_vf003_generator_enters_resources_only_through_the_profile() -> None:
     """VF-003: codegen must not walk resources itself, and rule 3 has one predicate.
 
     ``contained_subschemas`` and ``enter_subschema`` are the shared entry.
     ``_check_schema_keywords`` must call ``enforce_emitted_schema_rules``.
-    On 5defee743612 both checks fail.
+    A name, an attribute, a call or a constant that reaches the library
+    enumeration directly is the same breach as ``subresources()``.
     """
     codegen = (ROOT / "ocor-runtime/src/ocor_runtime/c1/codegen.py").read_text(encoding="utf-8")
     profile_source = (ROOT / "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py").read_text(
@@ -7164,10 +7174,16 @@ def test_cycle12_vf003_generator_enters_resources_only_through_the_profile() -> 
     )
     problems: list[str] = []
     for node in ast.walk(ast.parse(codegen)):
-        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
-            continue
-        if node.func.attr in {"subresources", "in_subresource"}:
-            problems.append(f"codegen.py:{node.lineno} calls {node.func.attr}")
+        if isinstance(node, ast.Attribute) and node.attr in _CYCLE12_LIBRARY_WALK_NAMES:
+            problems.append(f"codegen.py:{node.lineno} attribute {node.attr}")
+        elif isinstance(node, ast.Name) and node.id in _CYCLE12_LIBRARY_WALK_NAMES:
+            problems.append(f"codegen.py:{node.lineno} name {node.id}")
+        elif isinstance(node, ast.Constant) and node.value in _CYCLE12_LIBRARY_WALK_NAMES:
+            problems.append(f"codegen.py:{node.lineno} constant {node.value}")
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name in _CYCLE12_LIBRARY_WALK_NAMES or alias.asname in _CYCLE12_LIBRARY_WALK_NAMES:
+                    problems.append(f"codegen.py:{node.lineno} imports {alias.name}")
     predicate = None
     for node in ast.walk(ast.parse(profile_source)):
         if isinstance(node, ast.FunctionDef) and node.name == "_check_schema_keywords":
@@ -7182,3 +7198,58 @@ def test_cycle12_vf003_generator_enters_resources_only_through_the_profile() -> 
     if "enforce_emitted_schema_rules" not in calls:
         problems.append("_check_schema_keywords does not call enforce_emitted_schema_rules")
     assert problems == []
+
+
+_CYCLE12_UNWALKABLE: tuple[tuple[str, dict[str, Any]], ...] = (
+    ("items-int", {"type": "array", "items": 5}),
+    ("items-string", {"type": "array", "items": "abc"}),
+    ("property-int", {"type": "object", "properties": {"p": 5}}),
+    ("property-list", {"type": "object", "properties": {"p": []}}),
+    ("nested-properties-list", {"type": "object", "properties": {"p": {"properties": []}}}),
+    ("properties-list", {"type": "object", "properties": []}),
+    ("allof-string", {"allOf": "abc", "type": "object"}),
+    ("allof-int", {"allOf": [5], "type": "object"}),
+    ("not-string", {"not": "x", "type": "object"}),
+    ("not-list", {"not": [], "type": "object"}),
+    ("prefix-items", {"type": "array", "prefixItems": [1, 2]}),
+    ("if-int", {"if": 3, "type": "object"}),
+    ("defs-scalar", {"type": "object", "$defs": {"x": 5}}),
+)
+
+
+@pytest.mark.parametrize(
+    ("label", "schema"),
+    _CYCLE12_UNWALKABLE,
+    ids=[item[0] for item in _CYCLE12_UNWALKABLE],
+)
+def test_cycle12_vf003_unwalkable_schema_resource_is_not_resolvable(
+    label: str,
+    schema: dict[str, Any],
+) -> None:
+    """A schema the pinned library cannot crawl is a typed TYPE_ERROR.
+
+    The class is a scalar, a string or a list in a schema position, and a
+    container of the wrong kind under a list or map keyword. ``properties:
+    None`` and ``allOf: [None]`` stay on their existing diagnostics and are
+    not in this class. On 49fc2d1adf0b every row is accepted.
+    """
+    del label
+    with pytest.raises(C1Error, match="MCP schema resource is not resolvable") as caught:
+        _cycle9_attach(schema)
+    assert caught.value.diagnostics[0].code == DiagnosticCode.TYPE_ERROR
+
+
+@pytest.mark.parametrize(
+    "schema",
+    (
+        {"type": "object", "additionalProperties": False},
+        {"type": "array", "items": False},
+        {"allOf": [True], "type": "object"},
+        {"type": "object", "properties": {"p": False}},
+        {"not": False, "type": "object"},
+    ),
+    ids=("additionalProperties", "items", "allOf", "property", "not"),
+)
+def test_cycle12_vf003_boolean_schemas_stay_accepted(schema: dict[str, Any]) -> None:
+    """A boolean schema is a schema. The library crawls it and the generator accepts it."""
+    _cycle9_attach(schema)
