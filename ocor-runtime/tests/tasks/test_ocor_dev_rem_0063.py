@@ -7253,3 +7253,187 @@ def test_cycle12_vf003_unwalkable_schema_resource_is_not_resolvable(
 def test_cycle12_vf003_boolean_schemas_stay_accepted(schema: dict[str, Any]) -> None:
     """A boolean schema is a schema. The library crawls it and the generator accepts it."""
     _cycle9_attach(schema)
+
+
+
+# Cycle 13 public-boundary examples and class coverage (PO, 2026-11-20).
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("origin", ["delivery", "generation", "restored"])
+@pytest.mark.parametrize("identifier,accepted", [
+    ("https://[::1]/schema#", True), ("relative.json#", True),
+    ("http://[x#frag", False), ("http://[x#", False), ("https://[abc]#part", False),
+    ("https://missing]#part", False), ("https://[:zzz]#frag", False),
+])
+def test_cycle13_boundary_identifier(field: str, origin: str, identifier: str, accepted: bool) -> None:
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema = {"type": "object", "$id": identifier}
+
+    def submit() -> None:
+        if origin == "delivery":
+            document = _bare_descriptor()
+            document["tools"][0][field] = schema
+        elif origin == "generation":
+            document, _, _ = _cycle10_generated(field, schema)
+        else:
+            document = _cycle13_restored(field, schema)
+        _validate(document)
+
+    if accepted:
+        submit()
+    elif origin == "delivery":
+        with pytest.raises(McpProfileError) as failure:
+            submit()
+        assert str(failure.value) == "MCP $id is not a valid URI reference"
+    else:
+        with pytest.raises(C1Error) as rejected:
+            submit()
+        diagnostic, = rejected.value.diagnostics
+        if origin == "generation" and not identifier.endswith("#"):
+            # The source grammar rejects non-empty URI fragments before rendering.
+            assert diagnostic.code == DiagnosticCode.SOURCE_INVALID
+            assert diagnostic.path.endswith("/" + {"inputSchema": "input_schema", "outputSchema": "output_schema"}[field])
+            assert diagnostic.message == f"{identifier!r} does not match '^[^#]*#?$'"
+        else:
+            assert (diagnostic.code, diagnostic.message) == (
+                DiagnosticCode.TYPE_ERROR, "MCP $id is not a valid URI reference"
+            )
+
+
+def _cycle13_restored(field: str, value: object) -> dict[str, Any]:
+    from ocor_runtime.c1.ports import CanonicalIrRelease
+
+    fleet = _fleet()
+    release = fleet.compiler().build(fleet.oac_request())
+    core = json.loads(release.canonical_bytes)
+    contract = next(item for item in core["named_contracts"] if item["kind"] != "EVENT")
+    contract[{"inputSchema": "input_schema", "outputSchema": "output_schema"}[field]] = value
+    restored = CanonicalIrRelease.create(
+        core=core, artifacts=release.artifacts, signature_envelope_ref=release.signature_envelope_ref
+    )
+    files = fleet.c1("codegen").IrArtifactGenerator().render(restored)
+    return json.loads(files["urn:ocor:package:fleet:mcp-descriptor"])
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("schema", [
+    {"type": "object"}, {"type": "object", "minProperties": 0},
+    {"type": "object", "minProperties": -1}, {"type": "object", "minLength": -1},
+    {"type": "object", "required": [1]}, True, False, None, 7, "object", [],
+])
+def test_cycle13_boundary_restored_fields(field: str, schema: object) -> None:
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError
+
+    tool_field = _official_schema()["$defs"]["Tool"]["properties"][field]
+    valid = Draft202012Validator(tool_field).is_valid(schema)
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError:
+        valid = False
+    if valid:
+        _validate(_cycle13_restored(field, schema))
+    else:
+        with pytest.raises(C1Error) as rejected:
+            _cycle13_restored(field, schema)
+        diagnostic, = rejected.value.diagnostics
+        assert diagnostic.code == DiagnosticCode.TYPE_ERROR
+        if isinstance(schema, dict) and schema.get("required") != [1]:
+            assert diagnostic.message.endswith(f"{field} is not a JSON Schema 2020-12 schema")
+
+
+@pytest.mark.parametrize("suffix", ["", "example"])
+def test_cycle13_boundary_derived_name(suffix: str) -> None:
+    source = _with_contracts(_contract("urn:ocor:contract:" + suffix))
+    if suffix:
+        document, _ = _descriptor(source)
+        assert suffix in [tool["name"] for tool in document["tools"]]
+        _validate(document)
+    else:
+        with pytest.raises(C1Error) as rejected:
+            _descriptor(source)
+        diagnostic, = rejected.value.diagnostics
+        assert (diagnostic.code, diagnostic.message) == (
+            DiagnosticCode.TYPE_ERROR, "MCP tool name must be a non-empty string"
+        )
+
+
+@pytest.mark.parametrize("container", [
+    "dict", "list", "tuple", "proxy", "range", "memoryview", "array", "deque", "user-list",
+    "user-dict", "chain-map",
+])
+@pytest.mark.parametrize("nested", [False, True])
+def test_cycle13_boundary_json_containers(container: str, nested: bool) -> None:
+    from array import array
+    from collections import ChainMap, UserDict, UserList, deque
+    from ocor_runtime.c1.mcp_profile import SchemaCalculationFailure, json_bounds
+
+    value = {
+        "dict": {"a": 1}, "list": [1], "tuple": (1,), "proxy": MappingProxyType({"a": (1,)}),
+        "range": range(2), "memoryview": memoryview(b"ab"), "array": array("i", [1]),
+        "deque": deque([1]), "user-list": UserList([1]), "user-dict": UserDict({"a": 1}),
+        "chain-map": ChainMap({"a": 1}),
+    }[container]
+    document = {"child": [value]} if nested else value
+    if container in {"dict", "list", "tuple", "proxy"}:
+        json_bounds(document)
+    else:
+        with pytest.raises(SchemaCalculationFailure) as rejected:
+            json_bounds(document)
+        assert rejected.value.code == "NOT_JSON"
+
+
+@pytest.mark.parametrize("present", [False, True])
+@pytest.mark.parametrize("mutation", [
+    "original", "optional-pointer", "missing-anchor", "missing-dynamic-anchor",
+    "transitive", "external", "regex", "minimum", "foreign-draft",
+])
+def test_cycle13_boundary_official_fixture(mutation: str, present: bool) -> None:
+    from ocor_runtime.c1.mcp_profile import McpProfileError, validate_mcp_descriptor
+
+    schema = _official_schema()
+    tool = schema["$defs"]["Tool"]
+    target = {"type": "string"}
+    if mutation in ("optional-pointer", "missing-anchor", "external"):
+        target = {"$ref": {
+            "optional-pointer": "#/$defs/missing", "missing-anchor": "#missing",
+            "external": "https://example.invalid/outside",
+        }[mutation]}
+    elif mutation == "missing-dynamic-anchor":
+        target = {"$dynamicRef": "#missing"}
+    elif mutation == "transitive":
+        schema["$defs"]["Intermediate"] = {"$ref": "#/$defs/missing"}
+        target = {"$ref": "#/$defs/Intermediate"}
+    elif mutation == "regex":
+        tool["patternProperties"] = {"[": {}}
+    elif mutation == "minimum":
+        tool["minLength"] = -1
+    elif mutation == "foreign-draft":
+        schema["$schema"] = "http://json-schema.org/draft-07/schema#"
+    tool["properties"]["x-cycle13-probe"] = target
+    document = _bare_descriptor()
+    if present:
+        document["tools"][0]["x-cycle13-probe"] = "present"
+    if mutation == "original":
+        validate_mcp_descriptor(document, schema, expected_revision=REVISION)
+    else:
+        with pytest.raises(McpProfileError) as rejected:
+            validate_mcp_descriptor(document, schema, expected_revision=REVISION)
+        assert str(rejected.value) == "official MCP schema fixture is not a JSON Schema"
+
+
+def test_cycle13_boundary_opaque_extension_characterization() -> None:
+    schema = {"type": "object", "x-ocor-opaque": {"$ref": "urn:ocor:type:vessel"}}
+    document, field, _ = _cycle10_generated("outputSchema", schema)
+    assert field == {"type": "object", "x-ocor-opaque": {"$ref": "#/$defs/urn.ocor.type.vessel"}}
+    _validate(document)
+
+
+def test_cycle13_boundary_unused_definition_characterization() -> None:
+    schema = {"type": "object", "$defs": {"unused": {"$schema": "http://json-schema.org/draft-07/schema#", "type": "integer"}}}
+    with pytest.raises(C1Error) as rejected:
+        _cycle10_generated("outputSchema", schema)
+    diagnostic, = rejected.value.diagnostics
+    assert (diagnostic.code, diagnostic.message) == (
+        DiagnosticCode.TYPE_ERROR, "MCP schema dialect must be JSON Schema 2020-12"
+    )
