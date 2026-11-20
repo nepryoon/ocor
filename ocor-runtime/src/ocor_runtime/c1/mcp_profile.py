@@ -13,7 +13,8 @@ root context when structural descent reaches it without crossing a definition
 member, and in every context reached by reference. A definition reached only
 by inventory retains its existing checks. REM-0063-CYCLE13-EVALUATION-CONTEXTS
 (2026-11-20), A1, adds the pinned evaluator and annotation collector contexts
-on every finished field, both before emission and at delivery.
+on every finished field, both before emission and at delivery. B1 rejects
+a reachable evaluation cycle that can stay on the same instance.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from collections import deque
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
+from graphlib import CycleError, TopologicalSorter
 from types import MappingProxyType
 from typing import Any, cast
 from urllib.parse import quote, unquote, urldefrag
@@ -1023,7 +1025,7 @@ def _ref_target_context(
 
 def _evaluation_edges(
     node: Mapping[str, Any], context: _ResolutionContext, mode: str,
-) -> Iterator[tuple[object, _ResolutionContext, str]]:
+) -> Iterator[tuple[object, _ResolutionContext, str, str]]:
     """Resolver transitions in the pinned validator and its annotation collectors.
 
     In jsonschema 4.26.0, descend enters a resource. Evolving a validator with
@@ -1034,17 +1036,17 @@ def _evaluation_edges(
         return  # The collector returns all indexes before looking at any keyword.
     if "$ref" in node:
         target, resolved = _resolve_reference(node["$ref"], context)
-        yield target, resolved, mode
+        yield target, resolved, mode, "$ref"
 
     if mode == "validate":
         if "unevaluatedProperties" in node:
-            yield node, context, "keys"
+            yield node, context, "keys", "collectKeys"
         if "unevaluatedItems" in node:
-            yield node, context, "indexes"
+            yield node, context, "indexes", "collectIndexes"
         # Once one member has succeeded, oneOf tests each remaining member
         # with evolve instead of descend. A later member has both contexts.
         for child in node.get("oneOf", [])[1:]:
-            yield child, context, mode
+            yield child, context, mode, "oneOf"
 
     for keyword, child in _schema_edges(node):
         if keyword in {"then", "else"} and "if" not in node:
@@ -1053,40 +1055,88 @@ def _evaluation_edges(
             if keyword in {"$defs", "definitions", "contentSchema", "unevaluatedItems"}:
                 continue
             entered = context if keyword in {"not", "if", "contains"} else _descend(context, child)
-            yield child, entered, mode
+            yield child, entered, mode, keyword
         elif keyword in {"allOf", "anyOf", "oneOf"}:
             # Both collectors descend to test the member before collecting
             # annotations on the successful member with their original resolver.
-            yield child, _descend(context, child), "validate"
-            yield child, context, mode
+            yield child, _descend(context, child), "validate", keyword
+            yield child, context, mode, keyword
         elif keyword in {"if", "then", "else"}:
             if keyword == "if":
-                yield child, context, "validate"
-            yield child, context, mode
+                yield child, context, "validate", keyword
+            yield child, context, mode, keyword
         elif mode == "keys":
             if keyword == "dependentSchemas":
-                yield child, context, mode
+                yield child, context, mode, keyword
             elif keyword in {"additionalProperties", "unevaluatedProperties"}:
-                yield child, _descend(context, child), "validate"
+                yield child, _descend(context, child), "validate", keyword
         elif keyword in {"contains", "unevaluatedItems"}:
-            yield child, context, "validate"
+            yield child, context, "validate", keyword
+
+
+_CHILD_VALUE_EDGES = frozenset({
+    "properties", "patternProperties", "additionalProperties", "unevaluatedProperties",
+    "prefixItems", "items", "contains", "unevaluatedItems",
+})
+_CONTAINER_EDGES = _CHILD_VALUE_EDGES | {"propertyNames", "dependentSchemas", "collectKeys", "collectIndexes"}
+_EvaluatorState = tuple[int, str, int, int, str]
+
+
+def _evaluator_state(node: object, context: _ResolutionContext, mode: str) -> _EvaluatorState:
+    return id(node), context.base_uri, context.resource_id, id(context.registry), mode
+
+
+def _require_evaluation_progress(
+    root: _EvaluatorState, edges: Mapping[_EvaluatorState, list[tuple[_EvaluatorState, str]]],
+) -> None:
+    """Reject cycles in the same-instance edges of the evaluation-reachable graph."""
+    pending = [(root, False)]
+    reached: set[tuple[_EvaluatorState, bool]] = set()
+    same_instance: TopologicalSorter[tuple[_EvaluatorState, bool]] = TopologicalSorter()
+    while pending:
+        state, on_name = pending.pop()
+        here = (state, on_name)
+        if here in reached:
+            continue
+        reached.add(here)
+        for target, keyword in edges[state]:
+            if on_name and keyword in _CONTAINER_EDGES:
+                continue  # A property name is a string, even across a reference.
+            if keyword == "propertyNames":
+                pending.append((target, True))
+            elif keyword in _CHILD_VALUE_EDGES:
+                pending.append((target, False))
+            else:
+                there = (target, on_name)
+                same_instance.add(there, here)
+                pending.append(there)
+    try:
+        same_instance.prepare()
+    except CycleError as exc:
+        raise McpProfileError("MCP schema contains a non-progressing evaluation cycle") from exc
 
 
 def _check_evaluation_contexts(tree: _SchemaTree) -> None:
-    """Require resolution on every reachable evaluator path of one finished field."""
-    pending = deque([(tree.root, _root_context(tree), "validate")])
-    # Keep the resolver alive: a library crawl can return a distinct registry
-    # at the same URI. The resource owner also disambiguates duplicate anchors.
-    visited: dict[tuple[int, str, int, int, str], _ResolutionContext] = {}
+    """Check resolution first, then instance progress, on the same evaluator graph."""
+    root = _root_context(tree)
+    pending = deque([(tree.root, root, "validate")])
+    # Preserve every A1 resolver check, including structural contexts for
+    # positions that B1 can rule out when the current instance is a name.
+    # Keeping resolvers live also prevents reuse of a crawled registry's id.
+    visited: dict[_EvaluatorState, _ResolutionContext] = {}
+    edges: dict[_EvaluatorState, list[tuple[_EvaluatorState, str]]] = {}
     while pending:
         node, context, mode = pending.popleft()
-        state = (id(node), context.base_uri, context.resource_id, id(context.registry), mode)
+        state = _evaluator_state(node, context, mode)
         if state in visited:
             continue
         visited[state] = context
-        for child, resolver, child_mode in _evaluation_edges(node, context, mode):
+        edges[state] = []
+        for child, resolver, child_mode, keyword in _evaluation_edges(node, context, mode):
             if isinstance(child, Mapping):
+                edges[state].append((_evaluator_state(child, resolver, child_mode), keyword))
                 pending.append((child, resolver, child_mode))
+    _require_evaluation_progress(_evaluator_state(tree.root, root, "validate"), edges)
 
 
 def _resolve_graph(
