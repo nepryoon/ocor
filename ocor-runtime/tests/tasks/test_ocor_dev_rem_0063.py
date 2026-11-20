@@ -7806,3 +7806,58 @@ def test_cycle13_evaluator_preserves_declared_parent_target(field, mode, positio
     emitted, = [tool[field] for tool in descriptor["tools"] if "payload" in tool[field].get("properties", {})]
     assert emitted == schema
     _validate(descriptor)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("mode,position", [("validate", "not"), ("keys", "allOf"), ("indexes", "then")])
+@pytest.mark.parametrize("retain", [False, True])
+def test_cycle13_evaluator_compiled_source(field, mode, position, retain):
+    body = {"title": _CYCLE10_STATUS, "type": "string", "enum": ["ACTIVE", "LAID_UP"]}
+    subject = {"$id": "https://evaluation.invalid/compiled", "$ref": _CYCLE10_STATUS}
+    holder, instance = _cycle13_evaluator_carrier(mode, position, subject)
+    source = {"type": "object", "properties": {"payload": holder}}
+    if retain:
+        source["properties"]["retain"] = {"$ref": _CYCLE10_STATUS}
+    symbol = "#/$defs/" + _CYCLE10_TYPE_NAME
+    expected_subject = dict(subject, **{"$ref": symbol, "$defs": {_CYCLE10_TYPE_NAME: body}})
+    expected_holder, _ = _cycle13_evaluator_carrier(mode, position, expected_subject)
+    expected = {"type": "object", "properties": {"payload": expected_holder}}
+    if retain:
+        expected["properties"]["retain"] = {"$ref": symbol}
+        expected["$defs"] = {_CYCLE10_TYPE_NAME: body}
+    missing, _ = _cycle13_evaluator_oracle(field, expected, expected_subject, True, instance)
+    assert missing == ([] if retain else ["parent"])
+    if missing:
+        with pytest.raises(C1Error) as caught:
+            _cycle10_generated(field, source)
+        diagnostic, = caught.value.diagnostics
+        assert (diagnostic.code, diagnostic.message) == (
+            DiagnosticCode.UNRESOLVED_REFERENCE, "MCP $ref does not resolve in the descriptor"
+        )
+        return
+    document, emitted, _ = _cycle10_generated(field, source)
+    assert emitted == expected
+    _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("mode,position", [("validate", "not"), ("keys", "dependentSchemas"), ("indexes", "then")])
+def test_cycle13_evaluator_keeps_both_lookup_resolvers(field, mode, position):
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    def bridge(name):
+        return {"$id": "https://evaluation.invalid/" + name, "$ref": "#/$defs/leaf", "$defs": {"leaf": {"title": name}}}
+
+    subject = {"$id": "https://evaluation.invalid/subject", "$ref": "#/$defs/bridge", "$defs": {"bridge": bridge("inner")}}
+    holder, instance = _cycle13_evaluator_carrier(mode, position, subject)
+    schema = {"type": "object", "properties": {"payload": holder}, "$defs": {"bridge": bridge("outer")}}
+    assert _cycle13_evaluator_oracle(field, schema, subject, True, instance) == ([], False)
+    base = f"urn:ocor:embedded-tool:0:{field}"
+    parent = Registry().with_resource(base, DRAFT202012.create_resource(schema)).resolver(base)
+    child = parent.in_subresource(DRAFT202012.create_resource(subject))
+    for context, title in ((parent, "outer"), (child, "inner")):
+        resolved = context.lookup(subject["$ref"])
+        leaf = resolved.resolver.lookup(resolved.contents["$ref"])
+        assert leaf.contents == {"title": title}
+    _cycle13_assert_delivery(schema, field, False)

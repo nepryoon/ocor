@@ -621,6 +621,7 @@ def _mcp_close_resource(
     type_schemas: Mapping[str, Any],
     placed: dict[tuple[int, str], Any],
     path: str,
+    evaluator_names: set[str],
 ) -> bool:
     names: set[str] = set()
     raw: set[str] = set()
@@ -630,7 +631,7 @@ def _mcp_close_resource(
             scan, resource.resolver, path, names, raw, depth=1, owner=closure,
         )
     resolved: dict[str, Any] = {}
-    pending = set(names)
+    pending = names | evaluator_names
     while pending:
         name = min(pending)
         pending.remove(name)
@@ -757,6 +758,7 @@ def _mcp_attach_definitions(
     *,
     path: str,
     base_uri: str,
+    check_finished: Callable[[Any], None] | None = None,
 ) -> Any:
     """Place each reachable ``#/$defs`` closure on the resource that uses it.
 
@@ -766,6 +768,8 @@ def _mcp_attach_definitions(
     """
 
     if not isinstance(schema, Mapping):
+        if check_finished is not None:
+            check_finished(schema)
         return schema
     copied = copy.deepcopy(schema)
     if not isinstance(copied, dict):
@@ -795,20 +799,40 @@ def _mcp_attach_definitions(
     resolver = registry.resolver(base_uri)
     user_defs = _mcp_record_user_defs(copied, path)
     placed: dict[tuple[int, str], Any] = {}
+    evaluator_names: dict[int, set[str]] = {}
     for _pass in range(MAX_SCHEMA_NODES):
         changed = False
         for resource in _mcp_iter_resources(copied, base_uri, path, resolver):
+            owner = id(resource.closure)
+            # A reachable definition copied from the IR can itself introduce a
+            # new resource. Snapshot its declarations before the first prune.
+            if owner not in user_defs:
+                user_defs[owner] = dict(resource.closure.get("$defs", {}))
             if _mcp_close_resource(
                 resource,
-                user_defs.get(id(resource.closure), {}),
+                user_defs[owner],
                 type_schemas,
                 placed,
                 path,
+                evaluator_names.get(owner, set()),
             ):
                 changed = True
         if not changed:
             _mcp_strip_unreachable_defs(copied, resolver, path)
             _mcp_post_check(copied, base_uri, path, registry)
+            if check_finished is not None:
+                try:
+                    check_finished(copied)
+                except McpUnresolvedReference as exc:
+                    # Restore an explicitly declared symbol that the evaluator
+                    # uses on this resource. A type available elsewhere cannot
+                    # supply a missing parent declaration.
+                    name = _mcp_defs_name(exc.reference)
+                    needed = evaluator_names.setdefault(exc.resource_id, set())
+                    if name is None or name not in user_defs.get(exc.resource_id, {}) or name in needed:
+                        raise
+                    needed.add(name)
+                    continue
             return copied
     raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema exceeds the revision bounds")
 
@@ -857,14 +881,11 @@ def _mcp(model: _Model) -> bytes:
                 base_uri = operational_base(tool[field], index=index, field=field)
             except SchemaCalculationFailure as exc:
                 raise _mcp_calculation_error(exc, path) from exc
-            tool[field] = _mcp_attach_definitions(
-                tool[field],
-                type_schemas,
-                path=path,
-                base_uri=base_uri,
-            )
             try:
-                require_tool_field(tool[field], index, field)
+                tool[field] = _mcp_attach_definitions(
+                    tool[field], type_schemas, path=path, base_uri=base_uri,
+                    check_finished=lambda finished: require_tool_field(finished, index, field),
+                )
             except McpUnresolvedReference as exc:
                 raise _mcp_error(DiagnosticCode.UNRESOLVED_REFERENCE, path, str(exc)) from exc
             except McpProfileError as exc:

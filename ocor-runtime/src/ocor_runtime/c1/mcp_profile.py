@@ -11,7 +11,9 @@ input schema.
 REM-0063-RITORNO-AL-PROGETTO (2026-11-20), §2. Check each reference in the
 root context when structural descent reaches it without crossing a definition
 member, and in every context reached by reference. A definition reached only
-by inventory retains its existing checks. This is a static delivery decision.
+by inventory retains its existing checks. REM-0063-CYCLE13-EVALUATION-CONTEXTS
+(2026-11-20), A1, adds the pinned evaluator and annotation collector contexts
+on every finished field, both before emission and at delivery.
 """
 
 from __future__ import annotations
@@ -98,6 +100,11 @@ class McpProfileError(ValueError):
 
 class McpUnresolvedReference(McpProfileError):
     """An unresolved local reference at either public tool boundary."""
+
+    def __init__(self, reference: str, resource_id: int) -> None:
+        super().__init__("MCP $ref does not resolve in the descriptor")
+        self.reference = reference
+        self.resource_id = resource_id
 
 
 class SchemaCalculationFailure(Exception):
@@ -1195,7 +1202,7 @@ def _resolve_reference(
         # The library does not percent-decode anchor names. An encoded anchor
         # is refused, including one whose literal spelling is itself an anchor.
         if reference[1:] != decoded:
-            raise McpUnresolvedReference("MCP $ref does not resolve in the descriptor")
+            raise McpUnresolvedReference(reference, context.resource_id)
         _reject_ambiguous_anchor(context.resource_id, decoded, context.anchors)
     elif decoded.startswith("/"):
         raw_tokens = decoded[1:].split("/")
@@ -1203,7 +1210,7 @@ def _resolve_reference(
         _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
     resolved = _lookup_reference(context.resolver, reference)
     if resolved is None:
-        raise McpUnresolvedReference("MCP $ref does not resolve in the descriptor")
+        raise McpUnresolvedReference(reference, context.resource_id)
     target = resolved.contents
     _require_schema(target)
     return target, _ref_target_context(context, resolved.resolver, target)
