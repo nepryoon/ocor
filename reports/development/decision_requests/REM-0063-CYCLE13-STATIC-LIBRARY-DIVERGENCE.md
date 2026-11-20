@@ -1,6 +1,6 @@
 # REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Status: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Decisione che apre questa richiesta: `REM-0063-CYCLE12C-NO-GO (2026-11-20)`, opzione 1, preambolo sha256 `4100cbd8afb0a93b72c755bc0235aa03da040e6e07c79aeb0120266b5d6ea02b`.
 File della richiesta decisa: `reports/development/decision_requests/REM-0063-CYCLE12C-NO-GO.md` al commit `08bfe9034db5cd6c0f625dc50c603d7550c22ff6`, sha256 `921a7565a953e49386093e3434af31d60de4851f5875a00ec6a7850b9535998d`.
@@ -60,3 +60,12 @@ Opzione 1. Chiude la divergenza permissiva di VF-001 sulle celle che le librerie
 Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`. Gli altri task non sono bloccati da questa richiesta. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CANONICAL-R1-HUMAN-GATE`. `OCOR-DEV-REM-0065` resta all'HEAD `583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c`. La PR #640, branch `nepryoon-patch-1`, non si tocca.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+## Disposition del Product Owner — 2026-11-20
+
+`REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE (2026-11-20)` adotta l'opzione 1. Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Rilettura di `~/.ocor-codex/openhands_preamble.md` immediatamente prima di questo commit: sha256 `c9b4cfca3ad4b60b3a4ed42e7b58830e6c33ae9321b70c68857e469585203ecd`. L'ultima sezione è `## REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE (2026-11-20) — decisione del PO, su delega completa`.
+
+L'opzione 1 è applicata sul candidato `governed/ocor-dev-rem-0063-cycle10-campaign`, head `e5e09b329818bd18aab5aa59f558e1c45969dcaa`. Commit di comportamento del codice `a857b332f5c4816243fa3e9bf09ad46195077ca7`. Allowlist dei ventidue percorsi `2becd7bab0a0dab9b2aa7b7a3260f51c7cadef47`. Settle del solo hash del validatore `816c043f83ca9bc06ffe4c5bf3235ce1a4d27795`. Undici record `acd5e08477b88075f97ad6fd53417a4d5d2d5635`. Allineamento di VF-003 `e5e09b329818bd18aab5aa59f558e1c45969dcaa`. Le opzioni 2 e 3 non sono applicate. La suite del file di test è verde: 44694 passed, zero skip. I tre test esistenti restano invariati. I nodi raggiungibili dalla radice soltanto attraverso `$defs` o `definitions` restano esenti. Non c'è un ciclo 14 automatico.
+
+Il testo sopra ## Disposition, esclusa la riga di stato, resta il commit `7ca292c4adb953bd2772d7852c390f7a66b27e2c`, sha256 `6d954208386ca4253e794ab4b68fae93f3a35530004b4fe0f520970700f0970b`.
+
+L'intestazione del file usa la riga `Status:` con `DECIDED_BY_PO`, perché DR-STATUS-CLOSURE-SYNC (2026-11-09) confronta quella riga con lo stato del registro.
