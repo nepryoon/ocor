@@ -999,11 +999,11 @@
     "scope": "OCOR-DEV-REM-0063 original cycle and repair cycles 1, 2, 3, 4, 5 and 6: Grok Build, grok-4.7, xAI. Cycle 7: Codex CLI, deepseek-flash, DeepSeek, effort max. Cycle 8: Codex CLI, deepseek-v4-pro, DeepSeek, effort max, through a3965ed45cd41435226fd338c3da7697e4e846bf; completion of cycle 8 from that head: Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). Cycle 9: Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the task. The final verifier is Codex, OpenAI, a different vendor from xAI, DeepSeek and Anthropic."
   },
   "implementer": {
-    "agent": "Grok Build",
-    "effort": "xhigh",
-    "model": "grok-4.7",
-    "provider": "xAI",
-    "scope": "OCOR-DEV-REM-0063 cycle 12 qualifying execution after REM-0063-CYCLE12-NO-GO option 1. Grok Build, grok-4.7, xAI, effort xhigh, recorded the PRE-CAMPAIGN-GATE, campaign 698b944a1de4-1795114196 and distinct check 698b944a1de4-1795117669 measured on 698b944a1de4ef78a39346a034bed1a5e6fe4b10. No production file changes in this commit. The code-behaviour head stays da754e862a2c2fba621cf5d4534fcc5396299b6a. The eight cycle12c records are not regenerated. Campaign a3bd36d3ab51-1795089861 stays historical and does not transfer counts. VF-003 is not corrected. VF-008 is not corrected. The isolated-surrogate refusal of P5 is not applied. Earlier implementers remain in roles.implementers."
+    "agent": "Codex",
+    "provider": "OpenAI",
+    "model": "gpt-6.2-astra",
+    "effort": "ultra",
+    "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger."
   },
   "input_robustness_self_check": {
     "applied_sections": [
@@ -1016,41 +1016,19 @@
       "SELF-CHECK-ORACOLO (2026-11-14)"
     ],
     "cell_scan": {
-      "cells": 546,
-      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json da754e862a2c2fba621cf5d4534fcc5396299b6a /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
-      "counts": {
-        "FIXED": 94,
-        "N/A": 274,
-        "PASS": 178
-      },
-      "errors": 0,
-      "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
-      "note": "Rescan after the cycle12c realignment. One row was added for assert_walkable_schema_resource and the finite_numbers motivations now name json_bounds. The scanner checks table shape and pytest --collect-only of cited tests. It does not compare production source to the cells. Not a review request.",
-      "rows": 91,
-      "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/cell-scan-cycle12c-da754e86.txt",
-      "stdout_sha256": "93704190aae4b0d84a48a8bc838a35438c402806dd783825be0091bb98e7ecb4",
-      "tests_cited": 132,
-      "tests_collected": 6110
+      "status": "PENDING_SCAN"
     },
     "change_set_rows": {
-      "mcp_profile.py": 57,
+      "mcp_profile.py": 77,
       "mcp_call.py": 7,
       "mcp_boundary.py": 1,
-      "codegen.py": 25
+      "codegen.py": 29
     },
     "first_application": "inventory realigned after preventive review OCOR-DEV-REM-0063-241a2af5792d-pre; execution commit c28cd9c411c466f38e9671d2774939bb9a910a30. The first table was the d3382f6 repair at 524837d841db. Cycle 2 re-examined _resolve_pointer and added _decode_uri_fragment and _require_schema at 3dd37e29222ae2c85f400f4fc7573def127f6a53. Cycle 3 adds _json_pointer_token and _note_reached_schema and corrects the _require_schema and _array_index cells at aec75cd69010a29fe0997cd3dd15e5c89c639633. Cycle 6 realigns the inventory on 265f6ad2ced262999bd23c35c9dea3fc94caf988: 22 rows for mcp_profile.py, 7, 1 and 1 for the other files, 31 rows, 186 cells. Cycle 7 replaces the manual resolver with referencing 0.37.0 on 0c8bf777f363fffc42234d14b239e4f0b0a8e652: 37 rows for mcp_profile.py, 7, 1 and 1 for the other files, 46 rows, 276 cells. The stale _roots_for_target cell of VF-003 in OCOR-DEV-REM-0063-d70920ea901f-6 is removed together with the function; it is not rewritten and not reintroduced. Cycle 8 fixes the embedded-resource identity across a no-op $id in instance data on 8a4893df052b04f3e357490e1e83c64288bb5603: every tool schema gets its own local registry keyed by the effective base in _build_resolution_index; _enter_tool_schema resolves through that registry at the effective base; _context_after_resolution keeps the current resource and fallback unless the base really changed. Cycle-8 anchor repair on 271bdaf561ab99a6b8b96c58f067f6aa096b6f2f: _profile_id_of returns the raw $id exactly as the pinned draft's id_of; _build_resolution_index builds a local registry for every tool schema with its own $id; _enter_schema_resource keeps the no-op identity check first and resolves a distinct resource through the current resolver's registry; _enter_tool_schema resolves a distinct tool-schema $id through its own local registry; _check_schema_keywords does not re-enter a child already reached through the library crawl. Cycle 8 re-runs the path inventory on a3965ed45cd41435226fd338c3da7697e4e846bf: mcp_profile.py carries 43 module-level names, 40 of them with a row; the two rows _collect_declared_ids and _synthetic_tool_uri are added for the synthetic-tool-URI repair of MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15) and codegen.py carries four rows (_mcp plus the generator helpers _mcp_ref, _mcp_reached_names and _mcp_attach_definitions), change_set_rows.codegen.py 1 -> 4. Cycle 9 re-runs the path inventory on 1284f91e1c4e110706ca654a27d193d60c7f9152. codegen.py lists 37 module-level names. The MCP rows are 23: _mcp, _mcp_ref, and the helpers that place each resource closure. _mcp_reached_names is removed with the root-only closure. mcp_profile.py still lists 43 module-level names and its rows are unchanged. The new codegen rows are _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43.",
     "inventory_note": "An ast walk lists every module-level function and class. McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and have no row. codegen.py contributes the _mcp row; its other functions do not receive an MCP payload. _walk was removed and replaced by _walk_json and _check_schema_keywords in cycle 7. In this prereview fix the resolution index and the descent machinery were rebuilt around per-tree registries: _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph, _check_reached_schemas and _iter_check_children replace _ResolutionIndex, _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver. Cycle 8 re-run on a3965ed45cd41435226fd338c3da7697e4e846bf: 40 rows for mcp_profile.py (two new rows _collect_declared_ids and _synthetic_tool_uri), 4 for codegen.py (three new generator helpers), 7 for mcp_call.py and 1 for mcp_boundary.py: 52 rows, 312 cells. Cycle 9 re-runs the path inventory on 1284f91e1c4e110706ca654a27d193d60c7f9152. codegen.py lists 37 module-level names. The MCP rows are 23: _mcp, _mcp_ref, and the helpers that place each resource closure. _mcp_reached_names is removed with the root-only closure. mcp_profile.py still lists 43 module-level names and its rows are unchanged. The new codegen rows are _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43. The cycle-9 table was retargeted at the pre-campaign repair. Dead helper names now name the shared function that replaced them. Rows for json_bounds, operational_base, autonomous_registry, enter_subschema, assert_reference_path_bound, _resolver_for_subresource, _lookup_past_registered_boundary and _mcp_unpinned_crawl_owner were added. REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17) A1, B1 and C1 is applied. _lookup_past_registered_boundary is deleted and its row records the deletion. The current closure-owner row is _mcp_library_resource. A changed base is not registered. The 39 named cycle-6 cases are realigned. C1 adds 24 cells. The original 40180 cells remain. The previous cell scan is historical completeness only. Cycle 11 path inventory on c03073f7dfad399f6e07ae45ac9a8780ee0f8f97 replaces the phase-A sentence. ast walk of mcp_profile.py lists 44 module-level names and codegen.py lists 37. New rows: _recover_scalar_target, _reject_non_string_schema_ids, _reject_noncanonical_array_index, contained_subschemas, enforce_emitted_schema_rules, _mcp_require_defs_objects, _mcp_calculation_error, _mcp_library_error. Names without a row are classes or helpers that do not parse an MCP payload: {\"codegen.py\": [\"_drift\", \"local_name\", \"component_name\", \"pascal\", \"snake\", \"_json\", \"_Model\", \"_json_schema\", \"_openapi\", \"_asyncapi\", \"_McpResource\", \"_Proto\", \"_python_sdk\", \"_typescript_sdk\", \"IrArtifactGenerator\"], \"mcp_profile.py\": [\"_library_keyword_groups\", \"McpProfileError\", \"SchemaCalculationFailure\", \"_as_profile\", \"_fixed_tool_uri\", \"_SchemaTree\", \"_ResolutionContext\", \"_ScalarTarget\"]}. _library_keyword_groups reads the pinned draft closure and carries no descriptor. _as_profile and _mcp_calculation_error map an already-typed failure; _mcp_calculation_error still has a row because the generator's public error is that map. _fixed_tool_uri formats an index and a field the caller already checked. Removed functions _lookup_past_registered_boundary and _mcp_unpinned_crawl_owner keep their historical rows; the functions are absent at this head. Cycle 12 inventory on da754e862a2c2fba621cf5d4534fcc5396299b6a: Python ast walk of ocor-runtime/src/ocor_runtime/c1/mcp_profile.py lists 45 module-level names and ocor-runtime/src/ocor_runtime/c1/codegen.py lists 37. The only name added since c03073f7dfad399f6e07ae45ac9a8780ee0f8f97 is assert_walkable_schema_resource, and that function now has a row. Names that still have no row are the same classes and helpers as the cycle-11 inventory. codegen.py adds no module-level name. SELF-CHECK-PATH-INVENTORY (2026-11-09).",
     "inventory_search": "Python ast walk of mcp_profile.py at edfe829322d57875c2bd0685a50f9710b4636726 lists 41 module-level names. 38 of them have a row; McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and keep no row, as in previous cycles. The manual resolver was removed in cycle 7 and the two-level descriptor fallback in this prereview fix; _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver are replaced by _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph and _check_reached_schemas, plus _iter_check_children for additionalItems. The cycle-8 inventory re-run on a3965ed45cd41435226fd338c3da7697e4e846bf lists 43 module-level names in mcp_profile.py; 40 have a row and McpProfileError, _SchemaTree and _ResolutionContext keep no row as before. _collect_declared_ids and _synthetic_tool_uri are new rows; codegen.py gains _mcp_ref, _mcp_reached_names and _mcp_attach_definitions beside _mcp. The cycle-9 ast walk of codegen.py at 1284f91e1c4e110706ca654a27d193d60c7f9152 lists _drift, local_name, component_name, pascal, snake, _json, _Model, _json_schema, _openapi, _asyncapi, _mcp_ref, _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_attach_definitions, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri, _mcp, _Proto, _python_sdk, _typescript_sdk, IrArtifactGenerator (37 names). MCP rows: 23. _mcp_reached_names is absent. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43. Cycle 11 search on c03073f7dfad399f6e07ae45ac9a8780ee0f8f97: Python ast walk of ocor-runtime/src/ocor_runtime/c1/mcp_profile.py and ocor-runtime/src/ocor_runtime/c1/codegen.py, compared with the table functions. SELF-CHECK-PATH-INVENTORY (2026-11-09). Cycle 12 inventory on da754e862a2c2fba621cf5d4534fcc5396299b6a: Python ast walk of ocor-runtime/src/ocor_runtime/c1/mcp_profile.py lists 45 module-level names and ocor-runtime/src/ocor_runtime/c1/codegen.py lists 37. The only name added since c03073f7dfad399f6e07ae45ac9a8780ee0f8f97 is assert_walkable_schema_resource, and that function now has a row. Names that still have no row are the same classes and helpers as the cycle-11 inventory. codegen.py adds no module-level name. SELF-CHECK-PATH-INVENTORY (2026-11-09).",
     "role_coherence_scan": {
-      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle12/role_scan_cycle12c.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 0c48624c879e3c898de146e8da5fb2a88aee1263 /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
-      "compared_fields": 130,
-      "errors": 0,
-      "head": "0c48624c879e3c898de146e8da5fb2a88aee1263",
-      "note": "Successor of role_scan_cycle12_review.py. The previous scanner hard-codes the step-6 fingerprint and the sentence that the allowlist is not extended. This scanner does not read this metadata. The head is the parent of this commit: the scan read the working-tree record that this commit adds.",
-      "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
-      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/role-scan-cycle12c.txt",
-      "stdout_sha256": "f8410bf3366da77b310763427b245e253296482e12f4b03d7919c51d7703bf1c"
+      "status": "PENDING_SCAN"
     },
     "table": [
       {
@@ -3101,6 +3079,616 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle12_vf003_unwalkable_schema_resource_is_not_resolvable",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle12_vf003_boolean_schemas_stay_accepted"
         ]
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "json_bounds",
+        "review_cycle": 13,
+        "paths": "Native JSON scalars, lists and dictionaries and the supported frozen containers are counted before serialization.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: finite floats are required and JSON bounds reject invalid scalar or container values.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Native JSON scalars, lists and dictionaries and the supported frozen containers are counted before serialization."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_json_containers",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_final_node_boundary",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_final_depth_boundary"
+        ],
+        "oracle": {
+          "observations": "Native JSON scalars, lists and dictionaries and the supported frozen containers are counted before serialization.",
+          "collected_cases": {
+            "test_cycle13_boundary_json_containers": 22,
+            "test_cycle10_final_node_boundary": 8,
+            "test_cycle10_final_depth_boundary": 8
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "operational_base",
+        "review_cycle": 13,
+        "paths": "Malformed root authorities are translated before a field resource can be opened. A fixed URI colliding with a declared identifier is rejected.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Malformed root authorities are translated before a field resource can be opened. A fixed URI colliding with a declared identifier is rejected."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_identifier",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
+        ],
+        "oracle": {
+          "observations": "Malformed root authorities are translated before a field resource can be opened. A fixed URI colliding with a declared identifier is rejected.",
+          "collected_cases": {
+            "test_cycle13_boundary_identifier": 36,
+            "test_cycle13_exact_fixed_base_collision": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "require_tool_name",
+        "review_cycle": 13,
+        "paths": "Both the compiler output and delivered Tool require a non-empty string name.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Both the compiler output and delivered Tool require a non-empty string name."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_derived_name"
+        ],
+        "oracle": {
+          "observations": "Both the compiler output and delivered Tool require a non-empty string name.",
+          "collected_cases": {
+            "test_cycle13_boundary_derived_name": 2
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "validate_mcp_descriptor",
+        "review_cycle": 13,
+        "paths": "The public boundary checks the revision, field resources, transport binding, official fixture and finished schema.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: The public boundary checks the revision, field resources, transport binding, official fixture and finished schema."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_reference_outcome",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_official_fixture",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
+        ],
+        "oracle": {
+          "observations": "The public boundary checks the revision, field resources, transport binding, official fixture and finished schema.",
+          "collected_cases": {
+            "test_cycle13_exact_reference_outcome": 10,
+            "test_cycle13_boundary_official_fixture": 18,
+            "test_cycle13_static_progress": 144
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_official_tool_validator",
+        "review_cycle": 13,
+        "paths": "The cached Tool validator is built from the exact fixture snapshot after meta-schema and reachable-reference checks.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: The cached Tool validator is built from the exact fixture snapshot after meta-schema and reachable-reference checks."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_official_fixture"
+        ],
+        "oracle": {
+          "observations": "The cached Tool validator is built from the exact fixture snapshot after meta-schema and reachable-reference checks.",
+          "collected_cases": {
+            "test_cycle13_boundary_official_fixture": 18
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_validate_tools",
+        "review_cycle": 13,
+        "paths": "Fixture errors, Tool shape errors and errors in the finished field have distinct bounded diagnostics.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Fixture errors, Tool shape errors and errors in the finished field have distinct bounded diagnostics."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_official_fixture",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_restored_fields",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
+        ],
+        "oracle": {
+          "observations": "Fixture errors, Tool shape errors and errors in the finished field have distinct bounded diagnostics.",
+          "collected_cases": {
+            "test_cycle13_boundary_official_fixture": 18,
+            "test_cycle13_boundary_restored_fields": 22,
+            "test_cycle13_static_progress": 144
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "require_tool_field",
+        "review_cycle": 13,
+        "paths": "Both public paths call the same finished-field check after shape validation; each field has its own resource.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Both public paths call the same finished-field check after shape validation; each field has its own resource."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_restored_fields",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_contexts",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
+        ],
+        "oracle": {
+          "observations": "Both public paths call the same finished-field check after shape validation; each field has its own resource.",
+          "collected_cases": {
+            "test_cycle13_boundary_restored_fields": 22,
+            "test_cycle13_evaluator_contexts": 2304,
+            "test_cycle13_static_progress": 144
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "contained_subschemas",
+        "review_cycle": 13,
+        "paths": "The pinned draft identifies subschema positions independently from the name of a property.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: The pinned draft identifies subschema positions independently from the name of a property."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_root_and_incoming",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_definition_only"
+        ],
+        "oracle": {
+          "observations": "The pinned draft identifies subschema positions independently from the name of a property.",
+          "collected_cases": {
+            "test_cycle13_context_root_and_incoming": 8640,
+            "test_cycle13_context_definition_only": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_schema_edges",
+        "review_cycle": 13,
+        "paths": "The introducing keyword labels each draft subschema. Definitions and instance-data positions retain their distinct reachability.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: The introducing keyword labels each draft subschema. Definitions and instance-data positions retain their distinct reachability."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_root_and_incoming",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_definition_only"
+        ],
+        "oracle": {
+          "observations": "The introducing keyword labels each draft subschema. Definitions and instance-data positions retain their distinct reachability.",
+          "collected_cases": {
+            "test_cycle13_context_root_and_incoming": 8640,
+            "test_cycle13_context_definition_only": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_evaluation_edges",
+        "review_cycle": 13,
+        "paths": "Evaluator and collector modes retain the resolver of each pinned-library transition and the keyword that moves the instance.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "FIXED: reachable evaluation states previously admitted same-instance returns. Evaluator and collector modes retain the resolver of each pinned-library transition and the keyword that moves the instance."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_contexts",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context"
+        ],
+        "oracle": {
+          "observations": "Evaluator and collector modes retain the resolver of each pinned-library transition and the keyword that moves the instance.",
+          "collected_cases": {
+            "test_cycle13_evaluator_contexts": 2304,
+            "test_cycle13_progress_in_evaluation_context": 28
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_evaluator_state",
+        "review_cycle": 13,
+        "paths": "Node, base URI, resource owner, registry and mode distinguish states after a lookup and collector transition.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "FIXED: reachable evaluation states previously admitted same-instance returns. Node, base URI, resource owner, registry and mode distinguish states after a lookup and collector transition."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_keeps_both_lookup_resolvers"
+        ],
+        "oracle": {
+          "observations": "Node, base URI, resource owner, registry and mode distinguish states after a lookup and collector transition.",
+          "collected_cases": {
+            "test_cycle13_progress_in_evaluation_context": 28,
+            "test_cycle13_evaluator_keeps_both_lookup_resolvers": 6
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_require_evaluation_progress",
+        "review_cycle": 13,
+        "paths": "A same-instance subgraph is checked for a cycle after finding all reachable states, including those beyond a consuming edge.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "FIXED: reachable evaluation states previously admitted same-instance returns. A same-instance subgraph is checked for a cycle after finding all reachable states, including those beyond a consuming edge."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_reachability",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_optional_child_progress_witness"
+        ],
+        "oracle": {
+          "observations": "A same-instance subgraph is checked for a cycle after finding all reachable states, including those beyond a consuming edge.",
+          "collected_cases": {
+            "test_cycle13_static_progress": 144,
+            "test_cycle13_progress_reachability": 32,
+            "test_cycle13_optional_child_progress_witness": 4
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_check_evaluation_contexts",
+        "review_cycle": 13,
+        "paths": "Reference resolution precedes the progress check; a name is scalar on every following same-instance transition.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "FIXED: reachable evaluation states previously admitted same-instance returns. Reference resolution precedes the progress check; a name is scalar on every following same-instance transition."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_contexts",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context"
+        ],
+        "oracle": {
+          "observations": "Reference resolution precedes the progress check; a name is scalar on every following same-instance transition.",
+          "collected_cases": {
+            "test_cycle13_evaluator_contexts": 2304,
+            "test_cycle13_static_progress": 144,
+            "test_cycle13_progress_in_evaluation_context": 28
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_resolve_graph",
+        "review_cycle": 13,
+        "paths": "Reference-derived states remain mandatory. Root-applicable structural states retain their own resolution outcome.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Reference-derived states remain mandatory. Root-applicable structural states retain their own resolution outcome."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_root_and_incoming",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_unused_definition_seeds_paths",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_graph_depth"
+        ],
+        "oracle": {
+          "observations": "Reference-derived states remain mandatory. Root-applicable structural states retain their own resolution outcome.",
+          "collected_cases": {
+            "test_cycle13_context_root_and_incoming": 8640,
+            "test_cycle13_context_unused_definition_seeds_paths": 48,
+            "test_cycle13_exact_graph_depth": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_check_reached_schemas",
+        "review_cycle": 13,
+        "paths": "Reached nodes retain draft and keyword checks after all root and reference contexts are enumerated.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Reached nodes retain draft and keyword checks after all root and reference contexts are enumerated."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_root_and_incoming",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle11_vf001_generator_refuses_profile_keyword_rules"
+        ],
+        "oracle": {
+          "observations": "Reached nodes retain draft and keyword checks after all root and reference contexts are enumerated.",
+          "collected_cases": {
+            "test_cycle13_context_root_and_incoming": 8640,
+            "test_cycle11_vf001_generator_refuses_profile_keyword_rules": 10
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_resolve_reference",
+        "review_cycle": 13,
+        "paths": "Only a schema in the current resource can be a target. A lookup supplies the resolver for the next hop.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Only a schema in the current resource can be a target. A lookup supplies the resolver for the next hop."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_reference_outcome",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_keeps_both_lookup_resolvers"
+        ],
+        "oracle": {
+          "observations": "Only a schema in the current resource can be a target. A lookup supplies the resolver for the next hop.",
+          "collected_cases": {
+            "test_cycle13_exact_reference_outcome": 10,
+            "test_cycle13_evaluator_keeps_both_lookup_resolvers": 6
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_as_profile",
+        "review_cycle": 13,
+        "paths": "MCP calculation failures acquire the matching bounded public message when leaving the field boundary.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: MCP calculation failures acquire the matching bounded public message when leaving the field boundary."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_identifier",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
+        ],
+        "oracle": {
+          "observations": "MCP calculation failures acquire the matching bounded public message when leaving the field boundary.",
+          "collected_cases": {
+            "test_cycle13_boundary_identifier": 36,
+            "test_cycle13_exact_fixed_base_collision": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_fixed_tool_uri",
+        "review_cycle": 13,
+        "paths": "The base of an unidentified field varies by tool index and field; collision tests use both indices.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: The base of an unidentified field varies by tool index and field; collision tests use both indices."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
+        ],
+        "oracle": {
+          "observations": "The base of an unidentified field varies by tool index and field; collision tests use both indices.",
+          "collected_cases": {
+            "test_cycle13_exact_fixed_base_collision": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "_library_keyword_groups",
+        "review_cycle": 13,
+        "paths": "Draft subresource groups come from the pinned local library at import, before processing a descriptor.",
+        "rereads_stored_data": false,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "N/A: this function inspects only the pinned draft keyword sets at import.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "N/A: this function reads keyword groups from the installed library at import.",
+          "types_before_conversions": "PASS: Draft subresource groups come from the pinned local library at import, before processing a descriptor."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_root_and_incoming",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_definition_only"
+        ],
+        "oracle": {
+          "observations": "Draft subresource groups come from the pinned local library at import, before processing a descriptor.",
+          "collected_cases": {
+            "test_cycle13_context_root_and_incoming": 8640,
+            "test_cycle13_context_definition_only": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
+        "function": "_mcp_calculation_error",
+        "review_cycle": 13,
+        "paths": "The renderer maps the malformed-base and collision failures to their C1 type diagnostics.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: The renderer maps the malformed-base and collision failures to their C1 type diagnostics."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_identifier",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
+        ],
+        "oracle": {
+          "observations": "The renderer maps the malformed-base and collision failures to their C1 type diagnostics.",
+          "collected_cases": {
+            "test_cycle13_boundary_identifier": 36,
+            "test_cycle13_exact_fixed_base_collision": 16
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
+        "function": "_mcp_close_resource",
+        "review_cycle": 13,
+        "paths": "Definition closure retains declarations needed by either evaluator context.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Definition closure retains declarations needed by either evaluator context."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_preserves_declared_parent_target",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_compiled_source"
+        ],
+        "oracle": {
+          "observations": "Definition closure retains declarations needed by either evaluator context.",
+          "collected_cases": {
+            "test_cycle13_evaluator_preserves_declared_parent_target": 6,
+            "test_cycle13_evaluator_compiled_source": 12
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
+        "function": "_mcp_attach_definitions",
+        "review_cycle": 13,
+        "paths": "Definition closure precedes the shared finished-field check on a restored or compiled release.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: Definition closure precedes the shared finished-field check on a restored or compiled release."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_restored_fields",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_compiled_source",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context"
+        ],
+        "oracle": {
+          "observations": "Definition closure precedes the shared finished-field check on a restored or compiled release.",
+          "collected_cases": {
+            "test_cycle13_boundary_restored_fields": 22,
+            "test_cycle13_evaluator_compiled_source": 12,
+            "test_cycle13_progress_in_evaluation_context": 28
+          }
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/codegen.py",
+        "function": "_mcp",
+        "review_cycle": 13,
+        "paths": "The renderer checks every finished field and derived tool name before returning descriptor bytes.",
+        "rereads_stored_data": true,
+        "checks": {
+          "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
+          "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
+          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
+          "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
+          "types_before_conversions": "PASS: The renderer checks every finished field and derived tool name before returning descriptor bytes."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_derived_name",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_restored_fields",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
+        ],
+        "oracle": {
+          "observations": "The renderer checks every finished field and derived tool name before returning descriptor bytes.",
+          "collected_cases": {
+            "test_cycle13_boundary_derived_name": 2,
+            "test_cycle13_boundary_restored_fields": 22,
+            "test_cycle13_static_progress": 144
+          }
+        }
       }
     ],
     "historical_cell_scan_before_pre_campaign_repair": {
@@ -3228,6 +3816,34 @@
       "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
       "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/role-scan-cycle12-review.txt",
       "stdout_sha256": "88a0f9e70596567572b63753d2326b6af5bcb47030f44bb92ff5943c98d07fbf"
+    },
+    "historical_cell_scan_before_cycle13_prereview": {
+      "cells": 546,
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json da754e862a2c2fba621cf5d4534fcc5396299b6a /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "counts": {
+        "FIXED": 94,
+        "N/A": 274,
+        "PASS": 178
+      },
+      "errors": 0,
+      "head": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
+      "note": "Rescan after the cycle12c realignment. One row was added for assert_walkable_schema_resource and the finite_numbers motivations now name json_bounds. The scanner checks table shape and pytest --collect-only of cited tests. It does not compare production source to the cells. Not a review request.",
+      "rows": 91,
+      "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/cell-scan-cycle12c-da754e86.txt",
+      "stdout_sha256": "93704190aae4b0d84a48a8bc838a35438c402806dd783825be0091bb98e7ecb4",
+      "tests_cited": 132,
+      "tests_collected": 6110
+    },
+    "historical_role_coherence_scan_before_cycle13_prereview": {
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle12/role_scan_cycle12c.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 0c48624c879e3c898de146e8da5fb2a88aee1263 /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "compared_fields": 130,
+      "errors": 0,
+      "head": "0c48624c879e3c898de146e8da5fb2a88aee1263",
+      "note": "Successor of role_scan_cycle12_review.py. The previous scanner hard-codes the step-6 fingerprint and the sentence that the allowlist is not extended. This scanner does not read this metadata. The head is the parent of this commit: the scan read the working-tree record that this commit adds.",
+      "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle12/role-scan-cycle12c.txt",
+      "stdout_sha256": "f8410bf3366da77b310763427b245e253296482e12f4b03d7919c51d7703bf1c"
     }
   },
   "inputs": {
@@ -4057,6 +4673,24 @@
         "provider": "Anthropic",
         "reserve": false
       }
+    },
+    {
+      "request_id": "OCOR-DEV-REM-0063-010f1f6faba3-pre",
+      "result": "BLOCKING_FINDINGS",
+      "reviewed_head": "010f1f6faba36f37f985406e9c0c915d7990eeae",
+      "reviewer": {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "model": "claude-fable-5-2",
+        "reserve": false
+      },
+      "outcome_sha256": "9c70416d6c8dd2b00abd71ae2d14746b05765d928ba7f6f32c522bd5f5b0d1cd",
+      "kind": "DESIGN",
+      "counts": {
+        "blocking": 1,
+        "advisory": 5
+      },
+      "disposition": "P1: adopted A1 and B1. P2-P5: entry-point and context matrices. P6: record, role and cell inventories for the reviewed code."
     }
   ],
   "previous_observation": {
@@ -7575,12 +8209,12 @@
     },
     "final_verifier": {
       "agent": "Claude Code",
-      "assignment": "VERIFIER-CLAUDE-REM0063 (2026-11-16)",
-      "effort": "max",
-      "independence_limits": "The cycle-12 preventive reviewer is Claude Code, claude-fable-5-2, Anthropic, effort max, not a reserve reviewer. The assigned verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, the same provider and a different model. Authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementation. This review is not verification evidence. No fallback if this assigned model is unavailable.",
-      "model": "claude-opus-5-5",
       "provider": "Anthropic",
-      "status": "REQUESTED"
+      "model": "claude-opus-5-5",
+      "effort": "max",
+      "status": "NOT_REQUESTED_CYCLE13",
+      "assignment": "VERIFIER-CLAUDE-REM0063 (2026-11-16)",
+      "independence_limits": "The preventive reviewer and final verifier are Anthropic models with different model identities. No Anthropic implementation. VERIFIER-CLAUDE-REM0063, no fallback."
     },
     "historical_preventive_reviewer_before_cycle10": {
       "agent": "Claude Code",
@@ -7704,7 +8338,7 @@
         "provider": "OpenAI",
         "model": "gpt-6.2-astra",
         "effort": "ultra",
-        "scope": "Cycle 13 design, public entry-point repairs and root and incoming reference contexts under REM-0063-RITORNO-AL-PROGETTO (2026-11-20)"
+        "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger."
       }
     ],
     "preventive_review_history": [
@@ -7844,20 +8478,26 @@
         "reserve": false,
         "result": "BLOCKING_FINDINGS",
         "reviewed_head": "49fc2d1adf0b5fa5107087675264addf4279002f"
+      },
+      {
+        "request_id": "OCOR-DEV-REM-0063-010f1f6faba3-pre",
+        "result": "BLOCKING_FINDINGS",
+        "reviewed_head": "010f1f6faba36f37f985406e9c0c915d7990eeae",
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "model": "claude-fable-5-2",
+        "reserve": false
       }
     ],
     "preventive_reviewer": {
       "agent": "Claude Code",
-      "assignment": "Cycle-12 preventive review OCOR-DEV-REM-0063-49fc2d1adf0b-pre. Not a reserve reviewer.",
-      "effort": "max",
-      "independence_limits": "Same provider (Anthropic) as the assigned verifier Claude Code, claude-opus-5-5, different model claude-fable-5-2. Not a reserve reviewer. No Anthropic implementer (implementers are xAI, DeepSeek and OpenAI). This review is not verification evidence. No fallback if the assigned verifier model is unavailable. Authorised limit VERIFIER-CLAUDE-REM0063 (2026-11-16).",
-      "model": "claude-fable-5-2",
-      "outcome_sha256": "ae501632a3a46ae5e17dca796f16a5c10878054c3b9bff3d0571a7cf2b59f8e0",
       "provider": "Anthropic",
-      "request_id": "OCOR-DEV-REM-0063-49fc2d1adf0b-pre",
+      "model": "claude-fable-5-2",
       "reserve": false,
-      "reviewed_head": "49fc2d1adf0b5fa5107087675264addf4279002f",
-      "status": "BLOCKING_FINDINGS"
+      "effort": "max",
+      "assignment": "REM-0063-RITORNO-AL-PROGETTO (2026-11-20)",
+      "status": "ASSIGNED",
+      "independence_limits": "The preventive reviewer and final verifier are Anthropic models with different model identities. No Anthropic implementation. VERIFIER-CLAUDE-REM0063, no fallback."
     },
     "verifier_excluded_providers": [
       "DeepSeek",
@@ -7893,7 +8533,29 @@
       "reserve": true,
       "status": "NO_BLOCKING_FINDINGS"
     },
-    "historical_final_verifier_independence_limits_before_cycle12_review_disposal": "The cycle-11 preventive reviewer is Cursor CLI, cursor-grok-4.6-xhigh, xAI, reserve, the same provider as an implementer. The assigned verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, a different provider from that reviewer and from the cycle-12 implementer. Authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementation. The cycle-11 preventive review said the planned final verifier was none; this record declares the assigned verifier. That review is not verification evidence. No fallback if this assigned model is unavailable."
+    "historical_final_verifier_independence_limits_before_cycle12_review_disposal": "The cycle-11 preventive reviewer is Cursor CLI, cursor-grok-4.6-xhigh, xAI, reserve, the same provider as an implementer. The assigned verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, a different provider from that reviewer and from the cycle-12 implementer. Authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementation. The cycle-11 preventive review said the planned final verifier was none; this record declares the assigned verifier. That review is not verification evidence. No fallback if this assigned model is unavailable.",
+    "historical_preventive_reviewer_before_cycle13_prereview": {
+      "agent": "Claude Code",
+      "assignment": "Cycle-12 preventive review OCOR-DEV-REM-0063-49fc2d1adf0b-pre. Not a reserve reviewer.",
+      "effort": "max",
+      "independence_limits": "Same provider (Anthropic) as the assigned verifier Claude Code, claude-opus-5-5, different model claude-fable-5-2. Not a reserve reviewer. No Anthropic implementer (implementers are xAI, DeepSeek and OpenAI). This review is not verification evidence. No fallback if the assigned verifier model is unavailable. Authorised limit VERIFIER-CLAUDE-REM0063 (2026-11-16).",
+      "model": "claude-fable-5-2",
+      "outcome_sha256": "ae501632a3a46ae5e17dca796f16a5c10878054c3b9bff3d0571a7cf2b59f8e0",
+      "provider": "Anthropic",
+      "request_id": "OCOR-DEV-REM-0063-49fc2d1adf0b-pre",
+      "reserve": false,
+      "reviewed_head": "49fc2d1adf0b5fa5107087675264addf4279002f",
+      "status": "BLOCKING_FINDINGS"
+    },
+    "historical_final_verifier_before_cycle13_prereview": {
+      "agent": "Claude Code",
+      "assignment": "VERIFIER-CLAUDE-REM0063 (2026-11-16)",
+      "effort": "max",
+      "independence_limits": "The cycle-12 preventive reviewer is Claude Code, claude-fable-5-2, Anthropic, effort max, not a reserve reviewer. The assigned verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, the same provider and a different model. Authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementation. This review is not verification evidence. No fallback if this assigned model is unavailable.",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "status": "REQUESTED"
+    }
   },
   "schema_version": "1.0",
   "status": "CANDIDATE",
@@ -9618,7 +10280,7 @@
       "provider": "OpenAI",
       "model": "gpt-6.2-astra",
       "effort": "ultra",
-      "scope": "Cycle 13 design, public entry-point repairs and root and incoming reference contexts under REM-0063-RITORNO-AL-PROGETTO (2026-11-20)"
+      "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger."
     },
     "stage": "IN_PROGRESS",
     "entry_point_checkpoint": "20fce5e3b798cc17407c50a666a6f01f1fe482dd",
@@ -9752,6 +10414,160 @@
         "source-red": "6 failed, 12 passed, 53310 deselected in 3.07s",
         "module": "53328 passed in 1040.61s (0:17:20)"
       }
+    },
+    "cycle13_inventory": {
+      "files": {
+        "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py": {
+          "module_functions": 47,
+          "compared_functions": [
+            "_as_profile",
+            "_build_schema_trees",
+            "_check_evaluation_contexts",
+            "_check_reached_schemas",
+            "_check_schema_keywords",
+            "_collect_anchor_owners",
+            "_collect_string_ids",
+            "_decode_uri_fragment",
+            "_descend",
+            "_evaluation_edges",
+            "_evaluator_state",
+            "_fixed_tool_uri",
+            "_id_identity",
+            "_iter_check_children",
+            "_iter_schema_children",
+            "_json_pointer_token",
+            "_library_keyword_groups",
+            "_lookup_reference",
+            "_official_tool_validator",
+            "_recover_scalar_target",
+            "_ref_target_context",
+            "_reject_ambiguous_anchor",
+            "_reject_context_overwrite",
+            "_reject_non_string_schema_ids",
+            "_reject_noncanonical_array_index",
+            "_require_evaluation_progress",
+            "_require_schema",
+            "_resolve_graph",
+            "_resolve_reference",
+            "_resolver_for_subresource",
+            "_root_context",
+            "_schema_edges",
+            "_schema_tree",
+            "_validate_pointer_array_indices",
+            "_validate_tools",
+            "assert_reference_path_bound",
+            "assert_walkable_schema_resource",
+            "autonomous_registry",
+            "contained_subschemas",
+            "enforce_emitted_schema_rules",
+            "enter_subschema",
+            "json_bounds",
+            "operational_base",
+            "require_tool_field",
+            "require_tool_name",
+            "validate_mcp_descriptor",
+            "without_context_overwrite"
+          ],
+          "changed_functions": [
+            "json_bounds",
+            "operational_base",
+            "require_tool_name",
+            "validate_mcp_descriptor",
+            "_official_tool_validator",
+            "_validate_tools",
+            "require_tool_field",
+            "contained_subschemas",
+            "_schema_edges",
+            "_evaluation_edges",
+            "_evaluator_state",
+            "_require_evaluation_progress",
+            "_check_evaluation_contexts",
+            "_resolve_graph",
+            "_check_reached_schemas",
+            "_resolve_reference"
+          ],
+          "reviewed_cycle13_rows": 19
+        },
+        "ocor-runtime/src/ocor_runtime/c1/codegen.py": {
+          "module_functions": 33,
+          "compared_functions": [
+            "_asyncapi",
+            "_drift",
+            "_json",
+            "_json_schema",
+            "_mcp",
+            "_mcp_attach_definitions",
+            "_mcp_calculation_error",
+            "_mcp_children",
+            "_mcp_close_resource",
+            "_mcp_defs_ids",
+            "_mcp_defs_name",
+            "_mcp_error",
+            "_mcp_fragment_refs",
+            "_mcp_iter_resources",
+            "_mcp_library_error",
+            "_mcp_library_resource",
+            "_mcp_post_check",
+            "_mcp_record_user_defs",
+            "_mcp_ref",
+            "_mcp_require_defs_objects",
+            "_mcp_select_body",
+            "_mcp_strip_unreachable_defs",
+            "_mcp_take_instance",
+            "_mcp_take_ref",
+            "_mcp_uncrawled_schemas",
+            "_mcp_walk_json_refs",
+            "_openapi",
+            "_python_sdk",
+            "_typescript_sdk",
+            "component_name",
+            "local_name",
+            "pascal",
+            "snake"
+          ],
+          "changed_functions": [
+            "_mcp_calculation_error",
+            "_mcp_close_resource",
+            "_mcp_attach_definitions",
+            "_mcp"
+          ],
+          "reviewed_cycle13_rows": 4
+        }
+      },
+      "code_head": "a1bb900b194a53754378887621054710c7609b8c",
+      "rows_added": 23,
+      "search": "Python AST module-level function inventory and ast.dump comparison against 2e4a3e51220a35bfec8bbfd93202f52bbaca7f19; call-site search for require_tool_field, _evaluation_edges and _check_evaluation_contexts in the two source modules.",
+      "consumers": [
+        "validate_mcp_descriptor -> _validate_tools -> require_tool_field",
+        "IrArtifactGenerator.render -> _mcp -> _mcp_attach_definitions -> require_tool_field"
+      ],
+      "oracle": "Pinned standalone resources, the independent finite path oracle, exact boundary diagnostics and the logged input/output comparisons in the cycle 13 matrices."
+    },
+    "pre_campaign_reviewer": {
+      "agent": "Claude Code",
+      "provider": "Anthropic",
+      "model": "claude-fable-5-2",
+      "reserve": false,
+      "effort": "max",
+      "assignment": "REM-0063-RITORNO-AL-PROGETTO (2026-11-20)",
+      "status": "ASSIGNED",
+      "independence_limits": "The preventive reviewer and final verifier are Anthropic models with different model identities. No Anthropic implementation. VERIFIER-CLAUDE-REM0063, no fallback."
+    },
+    "assigned_final_verifier": {
+      "agent": "Claude Code",
+      "provider": "Anthropic",
+      "model": "claude-opus-5-5",
+      "effort": "max",
+      "status": "NOT_REQUESTED_CYCLE13",
+      "assignment": "VERIFIER-CLAUDE-REM0063 (2026-11-16)",
+      "independence_limits": "The preventive reviewer and final verifier are Anthropic models with different model identities. No Anthropic implementation. VERIFIER-CLAUDE-REM0063, no fallback."
     }
+  },
+  "historical_top_level_implementer_before_cycle13_prereview": {
+    "agent": "Grok Build",
+    "effort": "xhigh",
+    "model": "grok-4.7",
+    "provider": "xAI",
+    "scope": "OCOR-DEV-REM-0063 cycle 12 qualifying execution after REM-0063-CYCLE12-NO-GO option 1. Grok Build, grok-4.7, xAI, effort xhigh, recorded the PRE-CAMPAIGN-GATE, campaign 698b944a1de4-1795114196 and distinct check 698b944a1de4-1795117669 measured on 698b944a1de4ef78a39346a034bed1a5e6fe4b10. No production file changes in this commit. The code-behaviour head stays da754e862a2c2fba621cf5d4534fcc5396299b6a. The eight cycle12c records are not regenerated. Campaign a3bd36d3ab51-1795089861 stays historical and does not transfer counts. VF-003 is not corrected. VF-008 is not corrected. The isolated-surrogate refusal of P5 is not applied. Earlier implementers remain in roles.implementers."
   }
 }
