@@ -1051,6 +1051,183 @@ def test_part_whose_selection_collects_differently_fails_before_execution(tmp_pa
     assert 'selection' in json.loads((output / 'campaign_result.json').read_text())['error']
 
 
+def _argv_probe(tmp_path, monkeypatch):
+    """A pytest module that records the argv it actually receives and exits."""
+    import os
+    probe = tmp_path / 'probe'
+    probe.mkdir(parents=True)
+    observed = tmp_path / 'observed.json'
+    marker = tmp_path / 'pytest-ran'
+    (probe / 'pytest.py').write_text(
+        'import json, os\n'
+        'from pathlib import Path\n'
+        'Path(os.environ["ARGV_OBSERVED"]).write_text(json.dumps(__import__("sys").argv), encoding="utf-8")\n'
+        'Path(os.environ["ARGV_PYTEST_MARKER"]).write_text("ran", encoding="utf-8")\n'
+        'if "--collect-only" in __import__("sys").argv:\n'
+        '    for item in __import__("sys").argv:\n'
+        '        if "::" in item:\n'
+        '            print(item)\n',
+        encoding='utf-8')
+    monkeypatch.setenv('ARGV_OBSERVED', str(observed))
+    monkeypatch.setenv('ARGV_PYTEST_MARKER', str(marker))
+    inherited = os.environ.get('PYTHONPATH')
+    monkeypatch.setenv('PYTHONPATH', os.pathsep.join([str(probe)] + ([inherited] if inherited else [])))
+    return observed, marker
+
+
+def _selection_past_arg_max(tmp_path, env, suite, marker):
+    """A node-id list whose direct pytest and collection commands execve rejects with E2BIG."""
+    import errno
+    import subprocess
+    output = tmp_path / 'probe-output'
+    output.mkdir()
+    count = 20000
+    while count <= 400000:
+        selection = [f'tests/tasks/test_overflow.py::test_{index:06d}_{"n" * 40}' for index in range(count)]
+        commands = [
+            [sys.executable, '-m', 'pytest', '-v', '--cov=src', '--cov-report=term-missing',
+             f'--cov-report=json:{output / "runtime_coverage_post_approval.json"}',
+             f'--junitxml={output / "runtime_junit_post_approval.xml"}', *selection],
+            [sys.executable, '-m', 'pytest', '--collect-only', '-q', '-p', 'no:cacheprovider', *selection],
+        ]
+        rejected = True
+        for command in commands:
+            try:
+                subprocess.run(command, cwd=suite, env=env, capture_output=True, text=True, timeout=180, check=False)
+            except OSError as exc:
+                if exc.errno != errno.E2BIG:
+                    raise
+            else:
+                rejected = False
+                assert marker.read_text(encoding='utf-8') == 'ran'
+                marker.unlink()
+        if rejected:
+            return selection
+        count *= 2
+    raise AssertionError('selection still fits in ARG_MAX')
+
+
+def _direct_pytest_command(output, selection):
+    return [sys.executable, '-m', 'pytest', '-v', '--cov=src', '--cov-report=term-missing',
+            f'--cov-report=json:{output / "runtime_coverage_post_approval.json"}',
+            f'--junitxml={output / "runtime_junit_post_approval.xml"}', *selection]
+
+
+def test_selection_past_arg_max_is_collected_and_executed_with_the_same_identifiers(tmp_path, monkeypatch):
+    """A part selection that fits keeps the direct command. One past ARG_MAX is collected and
+    executed with the same identifiers through a short process command."""
+    import json
+    import subprocess
+    real_popen = subprocess.Popen
+    root = Path(__file__).resolve().parents[2]
+    lane = root / 'scripts/run_local_lane_campaign.py'
+    recorded = subprocess.check_output(['git', '-C', str(root), 'show', 'origin/main:scripts/run_local_lane_campaign.py'])
+    assert lane.read_bytes() == recorded
+
+    output, _json = stub_completed_campaign(tmp_path, monkeypatch, seconds=10)
+    monkeypatch.setattr(sys, 'argv', ['campaign.py', '--execute', '--output-dir', str(output), '--shard-index', '2', '--shard-count', '3'])
+    selected = GUARD.partition(NODEIDS, 3)[1]
+    calls = []
+
+    def collect(directory, selection):
+        calls.append(list(selection))
+        return list(NODEIDS) if selection == ['tests/'] else list(selection)
+
+    monkeypatch.setattr(GUARD, 'collect_nodeids', collect)
+    launched = []
+
+    def launch(command, *, stdout, **kwargs):
+        launched.append(command)
+        assert kwargs['env'] == GUARD.pytest_environment(Path(kwargs['cwd']))
+        stdout.write('ok\n')
+        (output / 'runtime_junit_post_approval.xml').write_text(junit_xml(selected))
+        (Path(kwargs['cwd']) / '.coverage').write_text('data')
+
+        class Process:
+            pid = 99999
+            returncode = 0
+
+            def poll(self):
+                return 0
+
+        return Process()
+
+    monkeypatch.setattr(GUARD.subprocess, 'Popen', launch)
+    suite = tmp_path / 'ocor-runtime'
+    suite.mkdir()
+    assert GUARD.main() == 0
+    assert calls == [['tests/'], selected]
+    assert launched[0] == _direct_pytest_command(output, selected)
+    assert launched[0][1] == '-m'
+
+    monkeypatch.setattr(GUARD.subprocess, 'Popen', real_popen)
+    observed, marker = _argv_probe(tmp_path / 'argv', monkeypatch)
+    long_output = tmp_path / 'long-run'
+    suite_env = GUARD.pytest_environment(suite)
+    huge = _selection_past_arg_max(tmp_path / 'argv', suite_env, suite, marker)
+    collected = [HELM, 'tests/tasks/test_anchor_a.py::test_one', 'tests/tasks/test_anchor_b.py::test_one', *huge]
+    parts = GUARD.partition(collected, 3)
+    shard = next(index for index, part in enumerate(parts, start=1) if any(node.startswith('tests/tasks/test_overflow.py::') for node in part))
+    chosen = parts[shard - 1]
+    assert any(node.startswith('tests/tasks/test_overflow.py::') for node in chosen)
+    collect_command = [sys.executable, '-m', 'pytest', '--collect-only', '-q', '-p', 'no:cacheprovider', *chosen]
+    assert GUARD.command_vector_fits(_direct_pytest_command(long_output, chosen), suite_env) is False
+    assert GUARD.command_vector_fits(collect_command, suite_env) is False
+    monkeypatch.setattr(sys, 'argv', ['campaign.py', '--execute', '--output-dir', str(long_output), '--shard-index', str(shard), '--shard-count', '3'])
+    calls.clear()
+    launched.clear()
+
+    def collect_initial(directory, selection):
+        calls.append(list(selection))
+        if selection == ['tests/']:
+            return list(collected)
+        raise OSError(7, 'Argument list too long')
+
+    monkeypatch.setattr(GUARD, 'collect_nodeids', collect_initial)
+
+    def launch_long(command, **kwargs):
+        stdout = kwargs.get('stdout')
+        if not hasattr(stdout, 'write'):
+            return real_popen(command, **kwargs)
+        launched.append(list(command))
+        stdout.write('ok\n')
+        (long_output / 'runtime_junit_post_approval.xml').write_text(junit_xml(chosen))
+        (Path(kwargs['cwd']) / '.coverage').write_text('data')
+
+        class Process:
+            pid = 99999
+            returncode = 0
+
+            def poll(self):
+                return 0
+
+        return Process()
+
+    monkeypatch.setattr(GUARD.subprocess, 'Popen', launch_long)
+    clock = {'n': 0}
+
+    def monotonic():
+        clock['n'] += 1
+        return 0 if clock['n'] == 1 else 10
+
+    monkeypatch.setattr(GUARD.time, 'monotonic', monotonic)
+    assert GUARD.main() == 0, (long_output / 'campaign_result.json').read_text() if (long_output / 'campaign_result.json').exists() else 'no result'
+    assert calls == [['tests/']]
+    command = launched[0]
+    assert command[0] == sys.executable and command[1] == '-c'
+    assert len(command) == 5
+    assert all('test_overflow' not in item for item in command)
+    spec = json.loads(Path(command[3]).read_text(encoding='utf-8'))
+    assert spec['selection'] == chosen
+    marker.unlink(missing_ok=True)
+    observed.unlink(missing_ok=True)
+    monkeypatch.setattr(GUARD.subprocess, 'Popen', real_popen)
+    completed = subprocess.run(command, cwd=suite, env=GUARD.pytest_environment(suite), capture_output=True, text=True, timeout=180, check=False)
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(observed.read_text(encoding='utf-8')) == _direct_pytest_command(long_output, chosen)
+    assert marker.read_text(encoding='utf-8') == 'ran'
+
+
 def test_known_node_disappearance_cannot_qualify_without_removal_proof(monkeypatch):
     history = {"node:containerd": {"restarts": 0, "active": "active", "pid": 111}}
     def reject(node):

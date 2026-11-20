@@ -1844,6 +1844,21 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
+        # REM-0063-CI-ARGV-LAUNCHER (2026-11-20) option 1: regression-only
+        # requalification after the counted campaign launcher. OCOR-DEV-0005,
+        # 0050 and 0082 are the standing allowlist amendment.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-ci-argv.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0063-ci-argv.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-ci-argv.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0063-ci-argv.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-rem0063-ci-argv.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-rem0063-ci-argv.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-rem0063-ci-argv.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-rem0063-ci-argv.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-ci-argv.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0063-ci-argv.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0063-ci-argv.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0063-ci-argv.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",

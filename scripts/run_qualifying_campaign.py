@@ -17,12 +17,14 @@ import os
 import re
 import select
 import signal
+import struct
 import subprocess
 import sys
 import threading
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -446,6 +448,79 @@ def collect_nodeids(directory: Path, selection: list[str]) -> list[str]:
     return nodeids
 
 
+def command_vector_fits(argv: list[str], env: Mapping[str, str]) -> bool:
+    """True when this host can execve ``argv`` with ``env``.
+
+    The kernel counts each string's bytes, its NUL and one pointer, plus a
+    second copy of the executable path, and rejects one string of 32 pages
+    or more. ``SC_ARG_MAX`` already includes the environment.
+    """
+    if not argv:
+        return False
+    page = os.sysconf("SC_PAGE_SIZE")
+    limit = os.sysconf("SC_ARG_MAX")
+    pointer = struct.calcsize("P")
+    encoded = [os.fsencode(item) for item in argv]
+    encoded.extend(os.fsencode(f"{key}={value}") for key, value in env.items())
+    if any(len(item) >= 32 * page for item in encoded):
+        return False
+    return sum(len(item) + 1 + pointer for item in encoded) + len(encoded[0]) + 1 <= limit
+
+
+# Same delivery as the lane launchers. The lane module imports this supervisor,
+# so these copies stay here and that module stays byte-identical.
+_PART_PYTEST_LAUNCHER = """\
+import json, runpy, sys
+from pathlib import Path
+spec_path, output = Path(sys.argv[1]), Path(sys.argv[2])
+selection = json.loads(spec_path.read_text(encoding="utf-8"))["selection"]
+sys.argv = [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing",
+            "--cov-report=json:" + str(output / "runtime_coverage_post_approval.json"),
+            "--junitxml=" + str(output / "runtime_junit_post_approval.xml"), *selection]
+runpy.run_module("pytest", run_name="__main__")
+"""
+
+_PART_COLLECT_LAUNCHER = """\
+import json, runpy, sys
+from pathlib import Path
+selection = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["selection"]
+sys.argv = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]
+runpy.run_module("pytest", run_name="__main__")
+"""
+
+
+def _write_selection_spec(spec_path: Path, selection: list[str]) -> None:
+    spec_path.parent.mkdir(parents=True, exist_ok=True)
+    spec_path.write_text(json.dumps({"selection": selection}, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def collect_part_selection(directory: Path, selection: list[str], spec_path: Path) -> list[str]:
+    """Direct collection, or the same collection from the selection spec when argv does not fit."""
+    env = pytest_environment(directory)
+    direct = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]
+    if command_vector_fits(direct, env):
+        return collect_nodeids(directory, selection)
+    _write_selection_spec(spec_path, selection)
+    completed = subprocess.run(
+        [sys.executable, "-c", _PART_COLLECT_LAUNCHER, str(spec_path)],
+        cwd=directory, env=env, capture_output=True, text=True, timeout=600, check=False)
+    nodeids = [line for line in completed.stdout.splitlines() if "::" in line and not line.startswith(" ")]
+    if completed.returncode or not nodeids or len(nodeids) != len(set(nodeids)):
+        raise CampaignError(f"pytest collection failed (exit {completed.returncode}): {completed.stdout[-2000:]}{completed.stderr[-2000:]}")
+    return nodeids
+
+
+def part_pytest_command(output: Path, selection: list[str], *, env: Mapping[str, str], spec_path: Path) -> list[str]:
+    """The direct pytest command, or a short launcher when that command does not fit."""
+    direct = [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing",
+              f"--cov-report=json:{output / 'runtime_coverage_post_approval.json'}",
+              f"--junitxml={output / 'runtime_junit_post_approval.xml'}", *selection]
+    if command_vector_fits(direct, env):
+        return direct
+    _write_selection_spec(spec_path, selection)
+    return [sys.executable, "-c", _PART_PYTEST_LAUNCHER, str(spec_path), str(output)]
+
+
 def partition_units(nodeids: list[str]) -> list[list[str]]:
     """Keep other modules whole; qualified 0049 cases are independent units."""
     units: dict[str, list[str]] = {}
@@ -796,7 +871,7 @@ def main() -> int:
             collected = collect_nodeids(suite_repository / "ocor-runtime", ["tests/"])
             parts = partition(collected, args.shard_count)
             selection = parts[args.shard_index - 1]
-            if collect_nodeids(suite_repository / "ocor-runtime", selection) != selection:
+            if collect_part_selection(suite_repository / "ocor-runtime", selection, output / "part-selection.json") != selection:
                 raise CampaignError("part selection does not collect exactly its node IDs")
             (output / "partition.json").write_text(json.dumps({
                 "collected_count": len(collected), "collected_sha256": collection_digest(collected),
@@ -804,7 +879,9 @@ def main() -> int:
                 "selected_weight_seconds": sum(node_weight(node) for node in selection),
                 "shard_count": args.shard_count, "shard_index": args.shard_index}, indent=2, sort_keys=True) + "\n")
             required_modules = []
-        command.extend(selection)
+            command = part_pytest_command(output, selection, env=pytest_environment(suite_repository / "ocor-runtime"), spec_path=output / "part-selection.json")
+        else:
+            command.extend(selection)
         initial = inspect_stack()
         if len(initial) != MANDATORY_CONTAINERS:
             raise CampaignError(f"expected {MANDATORY_CONTAINERS} mandatory containers, found {len(initial)}")

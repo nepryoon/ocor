@@ -1141,8 +1141,9 @@ def current_baseline_proof(overrides=None):
     Every workflow and the campaign supervisor must be byte-identical to 82b71d0, and the set of
     workflow files must equal that of 82b71d0 (a workflow added, removed or renamed fails). The
     observer keeps the window, cadence, sampler and kind binary of 82b71d0 and ten-second probe
-    timeouts. No normalisation applies to the working tree: a future difference needs a new exact
-    normalisation on 82b71d0 authorised by a PO decision, or a new consolidation decided by the PO.
+    timeouts. The campaign supervisor may differ from 82b71d0 only by the counted launcher
+    fragments of REM-0063-CI-ARGV-LAUNCHER (2026-11-20) option 1, each present once and restored
+    before this comparison. Any other difference fails.
     ``overrides`` replaces file text (``None`` removes the file) for the negative cases.
     """
     root = Path(__file__).resolve().parents[2]
@@ -1163,6 +1164,8 @@ def current_baseline_proof(overrides=None):
     digests = {}
     for path in expected + [CAMPAIGN_PATH]:
         data = current(path)
+        if path == CAMPAIGN_PATH and data is not None:
+            data = normalize_rem0063_ci_argv_launcher(data.decode()).encode()
         if data != baseline_bytes(path):
             raise AssertionError('Byte drift from 82b71d0: ' + path)
         digests[path] = hashlib.sha256(data).hexdigest()
@@ -1272,6 +1275,90 @@ class GuardBaselineConsolidation(unittest.TestCase):
                 self.assertGreaterEqual(observer.count(old), 1)
                 self.assertEqual(current_guard_failures({OBSERVER_PATH: observer.replace(old, new, 1)}), {CURRENT_PROOF})
         self.assertEqual(current_guard_failures({OBSERVER_PATH: None}), {CURRENT_PROOF})
+
+REM0063_ARGV_FRAGMENTS = (
+    ('import signal\nimport struct\nimport subprocess\n',
+     'import signal\nimport subprocess\n'),
+    ('from collections import Counter\nfrom collections.abc import Mapping\nfrom pathlib import Path\n',
+     'from collections import Counter\nfrom pathlib import Path\n'),
+    ('raise CampaignError(f"pytest collection failed (exit {result.returncode}): {result.stdout[-2000:]}{result.stderr[-2000:]}")\n    return nodeids\n\n\ndef command_vector_fits(argv: list[str], env: Mapping[str, str]) -> bool:\n    """True when this host can execve ``argv`` with ``env``.\n\n    The kernel counts each string\'s bytes, its NUL and one pointer, plus a\n    second copy of the executable path, and rejects one string of 32 pages\n    or more. ``SC_ARG_MAX`` already includes the environment.\n    """\n    if not argv:\n        return False\n    page = os.sysconf("SC_PAGE_SIZE")\n    limit = os.sysconf("SC_ARG_MAX")\n    pointer = struct.calcsize("P")\n    encoded = [os.fsencode(item) for item in argv]\n    encoded.extend(os.fsencode(f"{key}={value}") for key, value in env.items())\n    if any(len(item) >= 32 * page for item in encoded):\n        return False\n    return sum(len(item) + 1 + pointer for item in encoded) + len(encoded[0]) + 1 <= limit\n\n\n# Same delivery as the lane launchers. The lane module imports this supervisor,\n# so these copies stay here and that module stays byte-identical.\n_PART_PYTEST_LAUNCHER = """\\\nimport json, runpy, sys\nfrom pathlib import Path\nspec_path, output = Path(sys.argv[1]), Path(sys.argv[2])\nselection = json.loads(spec_path.read_text(encoding="utf-8"))["selection"]\nsys.argv = [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing",\n            "--cov-report=json:" + str(output / "runtime_coverage_post_approval.json"),\n            "--junitxml=" + str(output / "runtime_junit_post_approval.xml"), *selection]\nrunpy.run_module("pytest", run_name="__main__")\n"""\n\n_PART_COLLECT_LAUNCHER = """\\\nimport json, runpy, sys\nfrom pathlib import Path\nselection = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["selection"]\nsys.argv = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]\nrunpy.run_module("pytest", run_name="__main__")\n"""\n\n\ndef _write_selection_spec(spec_path: Path, selection: list[str]) -> None:\n    spec_path.parent.mkdir(parents=True, exist_ok=True)\n    spec_path.write_text(json.dumps({"selection": selection}, sort_keys=True) + "\\n", encoding="utf-8")\n\n\ndef collect_part_selection(directory: Path, selection: list[str], spec_path: Path) -> list[str]:\n    """Direct collection, or the same collection from the selection spec when argv does not fit."""\n    env = pytest_environment(directory)\n    direct = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]\n    if command_vector_fits(direct, env):\n        return collect_nodeids(directory, selection)\n    _write_selection_spec(spec_path, selection)\n    completed = subprocess.run(\n        [sys.executable, "-c", _PART_COLLECT_LAUNCHER, str(spec_path)],\n        cwd=directory, env=env, capture_output=True, text=True, timeout=600, check=False)\n    nodeids = [line for line in completed.stdout.splitlines() if "::" in line and not line.startswith(" ")]\n    if completed.returncode or not nodeids or len(nodeids) != len(set(nodeids)):\n        raise CampaignError(f"pytest collection failed (exit {completed.returncode}): {completed.stdout[-2000:]}{completed.stderr[-2000:]}")\n    return nodeids\n\n\ndef part_pytest_command(output: Path, selection: list[str], *, env: Mapping[str, str], spec_path: Path) -> list[str]:\n    """The direct pytest command, or a short launcher when that command does not fit."""\n    direct = [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing",\n              f"--cov-report=json:{output / \'runtime_coverage_post_approval.json\'}",\n              f"--junitxml={output / \'runtime_junit_post_approval.xml\'}", *selection]\n    if command_vector_fits(direct, env):\n        return direct\n    _write_selection_spec(spec_path, selection)\n    return [sys.executable, "-c", _PART_PYTEST_LAUNCHER, str(spec_path), str(output)]\n\n\ndef partition_units(nodeids: list[str]) -> list[list[str]]:\n',
+     'raise CampaignError(f"pytest collection failed (exit {result.returncode}): {result.stdout[-2000:]}{result.stderr[-2000:]}")\n    return nodeids\n\n\ndef partition_units(nodeids: list[str]) -> list[list[str]]:\n'),
+    ('            selection = parts[args.shard_index - 1]\n            if collect_part_selection(suite_repository / "ocor-runtime", selection, output / "part-selection.json") != selection:\n                raise CampaignError("part selection does not collect exactly its node IDs")\n            (output / "partition.json").write_text(json.dumps({\n                "collected_count": len(collected), "collected_sha256": collection_digest(collected),\n                "partition_sha256": partition_digest(parts), "selected": selection,\n                "selected_weight_seconds": sum(node_weight(node) for node in selection),\n                "shard_count": args.shard_count, "shard_index": args.shard_index}, indent=2, sort_keys=True) + "\\n")\n            required_modules = []\n            command = part_pytest_command(output, selection, env=pytest_environment(suite_repository / "ocor-runtime"), spec_path=output / "part-selection.json")\n        else:\n            command.extend(selection)\n        initial = inspect_stack()\n',
+     '            selection = parts[args.shard_index - 1]\n            if collect_nodeids(suite_repository / "ocor-runtime", selection) != selection:\n                raise CampaignError("part selection does not collect exactly its node IDs")\n            (output / "partition.json").write_text(json.dumps({\n                "collected_count": len(collected), "collected_sha256": collection_digest(collected),\n                "partition_sha256": partition_digest(parts), "selected": selection,\n                "selected_weight_seconds": sum(node_weight(node) for node in selection),\n                "shard_count": args.shard_count, "shard_index": args.shard_index}, indent=2, sort_keys=True) + "\\n")\n            required_modules = []\n        command.extend(selection)\n        initial = inspect_stack()\n'),
+)
+
+
+def normalize_rem0063_ci_argv_launcher(text):
+    """REM-0063-CI-ARGV-LAUNCHER (2026-11-20) option 1: only the counted launcher
+    fragments, each present once, return to the bytes of 82b71d0."""
+    for added, baseline in REM0063_ARGV_FRAGMENTS:
+        assert text.count(added) == 1, 'Unexpected REM-0063 source: ' + added[:90]
+        text = text.replace(added, baseline, 1)
+    return text
+
+
+class Rem0063CiArgvLauncherGuardAdmission(unittest.TestCase):
+    """REM-0063-CI-ARGV-LAUNCHER (2026-11-20) option 1: the exact counted launcher delta
+    normalises to the 82b71d0 literal. A comment, a moved fragment, a limit, timeout,
+    partition or gate change, and any workflow still fail current_baseline_proof."""
+
+    CAMPAIGN = CAMPAIGN_PATH
+
+    def _working_campaign(self):
+        return (Path(__file__).resolve().parents[2] / self.CAMPAIGN).read_text(encoding='utf-8')
+
+    def test_the_exact_delta_normalises_to_the_baseline_literal(self):
+        campaign = self._working_campaign()
+        self.assertEqual(GUARD_BASELINE, '82b71d0db410bcdb8124e8ec8a8235631ecfa1fa')
+        self.assertEqual(CURRENT_PROOF, 'bytes-82b71d0')
+        for added, baseline in REM0063_ARGV_FRAGMENTS:
+            self.assertEqual(campaign.count(added), 1)
+            self.assertNotEqual(added, baseline)
+        normalised = normalize_rem0063_ci_argv_launcher(campaign)
+        self.assertEqual(normalised, baseline_text(self.CAMPAIGN))
+        self.assertEqual(current_guard_failures({}), set())
+        self.assertEqual(Rem0038GuardAdmission.failing_proofs(self, {}), set())
+
+    def test_every_other_difference_still_fails(self):
+        campaign = self._working_campaign()
+        function_block = REM0063_ARGV_FRAGMENTS[2][0]
+        self.assertEqual(campaign.count('import struct\n'), 1)
+        self.assertEqual(campaign.count(function_block), 1)
+        closure = baseline_text('.github/workflows/ocor-validation-closure.yml')
+        cases = [
+            ('comment appended', {self.CAMPAIGN: campaign + '# note\n'}),
+            ('import struct moved to the end of the module',
+             {self.CAMPAIGN: campaign.replace('import struct\n', '', 1) + 'import struct\n'}),
+            ('launcher block moved to the end of the module',
+             {self.CAMPAIGN: campaign.replace(function_block, '', 1) + function_block}),
+            ('full suite limit',
+             {self.CAMPAIGN: campaign.replace('FULL_SUITE_LIMIT_SECONDS = 5400\n', 'FULL_SUITE_LIMIT_SECONDS = 5401\n', 1)}),
+            ('part limit',
+             {self.CAMPAIGN: campaign.replace('PART_LIMIT_SECONDS = 2700\n', 'PART_LIMIT_SECONDS = 2701\n', 1)}),
+            ('observer timeout margin',
+             {self.CAMPAIGN: campaign.replace('default=FULL_SUITE_LIMIT_SECONDS + 60', 'default=FULL_SUITE_LIMIT_SECONDS + 61', 1)}),
+            ('partition minimum',
+             {self.CAMPAIGN: campaign.replace('if count < 2:\n', 'if count < 3:\n', 1)}),
+            ('part selection gate',
+             {self.CAMPAIGN: campaign.replace(
+                 'part selection does not collect exactly its node IDs',
+                 'part selection does not match', 1)}),
+            ('workflow added', {'.github/workflows/ocor-extra.yml': 'name: extra\n'}),
+            ('workflow timeout',
+             {'.github/workflows/ocor-validation-closure.yml': closure.replace('timeout-minutes: 75', 'timeout-minutes: 76', 1)}),
+        ]
+        for label, overrides in cases:
+            with self.subTest(change=label):
+                path, changed = next(iter(overrides.items()))
+                if path == self.CAMPAIGN:
+                    original = campaign
+                elif (Path(__file__).resolve().parents[2] / path).is_file():
+                    original = baseline_text(path)
+                else:
+                    original = None
+                self.assertNotEqual(changed, original)
+                self.assertEqual(current_guard_failures(overrides), {CURRENT_PROOF})
+
 
 if __name__ == '__main__':
     unittest.main()
