@@ -471,6 +471,23 @@ Codex (`gpt-6.2-astra`, OpenAI, ultra) owns cycle 13 from this decision. Grok Bu
 
 After design review, record each authorised expectation change with case ID, old and new results, library outcome and failing context. After RED, GREEN and the pre-campaign review, §7 retains the 22-path allowlist, settle, eleven new `cycle12d` records including the orphan group, and VF-003 alignment. Compare REM-0062 tests with both its sealed and preceding records. Check execution inputs on the frozen HEAD before requesting verification. Final counts come from collection on that candidate.
 
+### Cycle 13 entry-point checkpoint
+
+On 20 November, design review of `010f1f6faba36f37f985406e9c0c915d7990eeae` returned one blocking question and five advisory findings. The normative question is recorded in `REM-0063-CYCLE13-EVALUATION-CONTEXTS`, draft PR #716, request commit `8a38ac5efab5d95cb9800bbcf246d341c6315ede`. Eight independent observations cover two schema fields and four situations. With a nested resource under `not`, the pinned validator looked up a local pointer on the parent and raised `PointerToNowhere`; delivery accepted. Providing the target on both resources allowed evaluation to complete. A same-instance self-reference led to `RecursionError`; descent to a finite child instance completed. Output SHA-256 `b6bc06d328c84ff3d3738f45986dbb3623da502934190f8a7e0ae52edb519eb3`. The interpretation of evaluation contexts and non-progressing recursion awaits disposition. The remaining static-context matrix, expectation ledger, pre-campaign review and qualification are pending.
+
+Codex (`gpt-6.2-astra`, OpenAI) implemented the independent entry-point corrections under §3. The historical implementer and review assignments above also apply to this checkpoint. The 108 cases added in `86220c30361ffdde129eb62c91a7efad80487d07` check names, root URIs, restored fields, official fixtures, JSON containers and both deferred behaviours. They exercise public delivery and rendering. The source compiler separately rejects non-empty identifier fragments at grammar admission. Fixture checks use the pinned draft meta-schema and a registry with local resources. Tool fields in a restored release are checked as finished fields. Native dictionaries and lists plus internal tuples and read-only mapping proxies remain supported. Seven non-JSON container forms are exercised both as roots and as children.
+
+| Boundary check | Independent expectation or control | Cases |
+| --- | --- | ---: |
+| Root URI | Two valid spellings and five malformed authorities on three paths for both fields; early grammar rejections have their own exact diagnostic | 42 |
+| Restored field | Pinned Tool field and draft meta-schema decide admission on eleven values for each field | 22 |
+| Derived name | Named source compiles, renders and delivers; an empty suffix fails before rendering returns bytes | 2 |
+| JSON container | Closed list of admitted normal and frozen representations; embedding a value in a JSON object and array preserves its admission result | 22 |
+| Official fixture | Nine fixture variants on an absent or present optional property; draft, local lookup, regex and minimum errors belong to the fixture | 18 |
+| Follow-up characterisation | Opaque extension retains its transformed pointer, unused foreign dialect still fails before pruning | 2 |
+
+The targeted command was `ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py -k cycle13_boundary` with the worktree source on `PYTHONPATH`. The RED had 65 failures and 43 passes, SHA-256 `1c1b1b76c7333ab05ed5477ee9299c81e2a9823adf8f7070737bbd41cd917008`. All 108 passed at `175f4e897959a8ce462c0dec90ddc763894f6493`, SHA-256 `e457c1ea41291c3e9a6f0f00654822a8bbc2c82d6c8616a2f1336d7db4ca9042`. Both selections reported 42,187 deselected. The targeted run does not contribute qualifying campaign counts. All earlier test cases and expectations are intact.
+
 ## Cycle 12 record
 
 REM-0063-CYCLE11-NO-GO option 1 step 6. The production code stays the GREEN
