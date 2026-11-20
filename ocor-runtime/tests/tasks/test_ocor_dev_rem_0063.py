@@ -8236,3 +8236,99 @@ def test_cycle13_optional_child_progress_witness(field, present):
     assert depth == (2 if present else 0)
     assert list(Draft202012Validator(schema, _resolver=resolver).iter_errors(instance)) == []
     _validate(_cycle10_delivered(schema, field))
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("mode", ["validate", "keys", "indexes"])
+def test_cycle13_immutable_registry_visits(field, mode):
+    """No-op indexing preserves a visit. The initial indexing is observable."""
+    from dataclasses import replace
+    from ocor_runtime.c1 import mcp_profile as profile
+
+    base = _cycle11_fixed_base(field)
+    leaf = {"type": "string", "$anchor": "text"}
+    schema = {"type": "object", "$defs": {"leaf": leaf}, "$ref": "#/$defs/leaf"}
+    tree = profile._schema_tree(schema, base)
+    original = profile._root_context(tree)
+    initial = original.registry
+    indexed = initial.crawl()
+    again = indexed.crawl()
+    assert indexed is not again
+    # Compare the pinned library's resource, anchor and pending inventories.
+    assert indexed == again and initial != indexed
+    contexts = [replace(original, resolver=r.resolver(base)) for r in (initial, indexed, again)]
+    first, second, third = (profile._evaluator_state(schema, c, mode) for c in contexts)
+    assert first != second
+    assert second == third
+
+    order, _ = profile._resolve_graph([(schema, c) for c in contexts])
+    assert sum(node is schema for node, _ in order) == 2
+    # Two static and two reference visits of the same leaf, one per snapshot.
+    assert sum(node is leaf for node, _ in order) == 4
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("keyword,refused", [("allOf", True), ("properties", False)])
+def test_cycle13_reindexed_progress_edges(field, keyword, refused):
+    """The graph classification is invariant under an empty library crawl."""
+    from dataclasses import replace
+    from ocor_runtime.c1 import mcp_profile as profile
+
+    node = {"type": "object"}
+    base = _cycle11_fixed_base(field)
+    original = profile._root_context(profile._schema_tree(node, base))
+    snapshot = original.registry.crawl()
+    states = [profile._evaluator_state(node, replace(original, resolver=r.resolver(base)), "validate")
+              for r in (snapshot, snapshot.crawl())]
+    edges = {states[1]: [], states[0]: [(states[1], keyword)]}
+    if refused:
+        with pytest.raises(profile.McpProfileError) as rejected:
+            profile._require_evaluation_progress(states[0], edges)
+        assert str(rejected.value) == "MCP schema contains a non-progressing evaluation cycle"
+    else:
+        profile._require_evaluation_progress(states[0], edges)
+
+
+@pytest.mark.parametrize("cause", [OverflowError, ZeroDivisionError, FloatingPointError])
+@pytest.mark.parametrize("stage", ["fixture", "tool"])
+def test_cycle13_arithmetic_error_ownership(monkeypatch, stage, cause):
+    """The public boundary translates arithmetic failures at their owning stage."""
+    from ocor_runtime.c1 import mcp_profile as profile
+
+    fixture = _official_schema()
+    document = _bare_descriptor()
+    if stage == "fixture":
+        def build(_snapshot):
+            raise cause()
+        monkeypatch.setattr(profile, "_official_tool_validator", build)
+        expected = "official MCP schema fixture is not a JSON Schema"
+    else:
+        class FailingValidator:
+            def iter_errors(self, instance):
+                assert instance is document["tools"][0]
+                raise cause()
+        monkeypatch.setattr(profile, "_official_tool_validator", lambda _: (fixture, FailingValidator()))
+        expected = "MCP tool 0 is not a Tool of the pinned revision: arithmetic evaluation failed"
+    with pytest.raises(profile.McpProfileError) as rejected:
+        profile.validate_mcp_descriptor(document, fixture, expected_revision=REVISION)
+    assert str(rejected.value) == expected
+    assert type(rejected.value.__cause__) is cause
+
+
+@pytest.mark.parametrize("value,accepted", [(4, True), (3, False)])
+def test_cycle13_tool_arithmetic_predicate(value, accepted):
+    from jsonschema import Draft202012Validator
+    from ocor_runtime.c1 import mcp_profile as profile
+
+    fixture = _official_schema()
+    pair = {"type": "integer", "multipleOf": 2}
+    fixture["$defs"]["Tool"]["properties"]["x-pair"] = pair
+    document = _bare_descriptor()
+    document["tools"][0]["x-pair"] = value
+    assert Draft202012Validator(pair).is_valid(value) is accepted
+    if accepted:
+        profile.validate_mcp_descriptor(document, fixture, expected_revision=REVISION)
+    else:
+        with pytest.raises(profile.McpProfileError) as rejected:
+            profile.validate_mcp_descriptor(document, fixture, expected_revision=REVISION)
+        assert str(rejected.value) == "MCP tool 0 is not a Tool of the pinned revision: 3 is not a multiple of 2"
