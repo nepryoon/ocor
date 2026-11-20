@@ -1016,7 +1016,21 @@
       "SELF-CHECK-ORACOLO (2026-11-14)"
     ],
     "cell_scan": {
-      "status": "PENDING_SCAN"
+      "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle9/cell_scan_cycle9.py reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json 78a1b38fa380a7577e2a1ae28603be333fac5b5f /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063",
+      "head": "78a1b38fa380a7577e2a1ae28603be333fac5b5f",
+      "rows": 114,
+      "cells": 684,
+      "counts": {
+        "PASS": 241,
+        "FIXED": 98,
+        "N/A": 345
+      },
+      "errors": 0,
+      "tests_cited": 151,
+      "tests_collected": 17498,
+      "stdout_sha256": "ca03982c6d450c8e7e623fa60a74569b21c297aec9e21c6ffc37671a7a7a764c",
+      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle13-b1-20261120/cell-scan.log"
     },
     "change_set_rows": {
       "mcp_profile.py": 77,
@@ -1028,7 +1042,14 @@
     "inventory_note": "An ast walk lists every module-level function and class. McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and have no row. codegen.py contributes the _mcp row; its other functions do not receive an MCP payload. _walk was removed and replaced by _walk_json and _check_schema_keywords in cycle 7. In this prereview fix the resolution index and the descent machinery were rebuilt around per-tree registries: _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph, _check_reached_schemas and _iter_check_children replace _ResolutionIndex, _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver. Cycle 8 re-run on a3965ed45cd41435226fd338c3da7697e4e846bf: 40 rows for mcp_profile.py (two new rows _collect_declared_ids and _synthetic_tool_uri), 4 for codegen.py (three new generator helpers), 7 for mcp_call.py and 1 for mcp_boundary.py: 52 rows, 312 cells. Cycle 9 re-runs the path inventory on 1284f91e1c4e110706ca654a27d193d60c7f9152. codegen.py lists 37 module-level names. The MCP rows are 23: _mcp, _mcp_ref, and the helpers that place each resource closure. _mcp_reached_names is removed with the root-only closure. mcp_profile.py still lists 43 module-level names and its rows are unchanged. The new codegen rows are _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43. The cycle-9 table was retargeted at the pre-campaign repair. Dead helper names now name the shared function that replaced them. Rows for json_bounds, operational_base, autonomous_registry, enter_subschema, assert_reference_path_bound, _resolver_for_subresource, _lookup_past_registered_boundary and _mcp_unpinned_crawl_owner were added. REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17) A1, B1 and C1 is applied. _lookup_past_registered_boundary is deleted and its row records the deletion. The current closure-owner row is _mcp_library_resource. A changed base is not registered. The 39 named cycle-6 cases are realigned. C1 adds 24 cells. The original 40180 cells remain. The previous cell scan is historical completeness only. Cycle 11 path inventory on c03073f7dfad399f6e07ae45ac9a8780ee0f8f97 replaces the phase-A sentence. ast walk of mcp_profile.py lists 44 module-level names and codegen.py lists 37. New rows: _recover_scalar_target, _reject_non_string_schema_ids, _reject_noncanonical_array_index, contained_subschemas, enforce_emitted_schema_rules, _mcp_require_defs_objects, _mcp_calculation_error, _mcp_library_error. Names without a row are classes or helpers that do not parse an MCP payload: {\"codegen.py\": [\"_drift\", \"local_name\", \"component_name\", \"pascal\", \"snake\", \"_json\", \"_Model\", \"_json_schema\", \"_openapi\", \"_asyncapi\", \"_McpResource\", \"_Proto\", \"_python_sdk\", \"_typescript_sdk\", \"IrArtifactGenerator\"], \"mcp_profile.py\": [\"_library_keyword_groups\", \"McpProfileError\", \"SchemaCalculationFailure\", \"_as_profile\", \"_fixed_tool_uri\", \"_SchemaTree\", \"_ResolutionContext\", \"_ScalarTarget\"]}. _library_keyword_groups reads the pinned draft closure and carries no descriptor. _as_profile and _mcp_calculation_error map an already-typed failure; _mcp_calculation_error still has a row because the generator's public error is that map. _fixed_tool_uri formats an index and a field the caller already checked. Removed functions _lookup_past_registered_boundary and _mcp_unpinned_crawl_owner keep their historical rows; the functions are absent at this head. Cycle 12 inventory on da754e862a2c2fba621cf5d4534fcc5396299b6a: Python ast walk of ocor-runtime/src/ocor_runtime/c1/mcp_profile.py lists 45 module-level names and ocor-runtime/src/ocor_runtime/c1/codegen.py lists 37. The only name added since c03073f7dfad399f6e07ae45ac9a8780ee0f8f97 is assert_walkable_schema_resource, and that function now has a row. Names that still have no row are the same classes and helpers as the cycle-11 inventory. codegen.py adds no module-level name. SELF-CHECK-PATH-INVENTORY (2026-11-09).",
     "inventory_search": "Python ast walk of mcp_profile.py at edfe829322d57875c2bd0685a50f9710b4636726 lists 41 module-level names. 38 of them have a row; McpProfileError, _SchemaTree and _ResolutionContext carry no MCP payload and keep no row, as in previous cycles. The manual resolver was removed in cycle 7 and the two-level descriptor fallback in this prereview fix; _build_resolution_index, _enter_schema_resource, _enter_root_schema_resource, _enter_tool_schema, _context_after_resolution, _queue_reached_schema, _register_resource_root and _resource_resolver are replaced by _build_schema_trees, _schema_tree, _collect_node_uris, _root_context, _descend, _ref_target_context, _resolve_graph and _check_reached_schemas, plus _iter_check_children for additionalItems. The cycle-8 inventory re-run on a3965ed45cd41435226fd338c3da7697e4e846bf lists 43 module-level names in mcp_profile.py; 40 have a row and McpProfileError, _SchemaTree and _ResolutionContext keep no row as before. _collect_declared_ids and _synthetic_tool_uri are new rows; codegen.py gains _mcp_ref, _mcp_reached_names and _mcp_attach_definitions beside _mcp. The cycle-9 ast walk of codegen.py at 1284f91e1c4e110706ca654a27d193d60c7f9152 lists _drift, local_name, component_name, pascal, snake, _json, _Model, _json_schema, _openapi, _asyncapi, _mcp_ref, _mcp_error, _mcp_bounds, _mcp_declared_id, _mcp_resource_uri, _mcp_changes_resource, _mcp_children, _mcp_defs_name, _mcp_take_ref, _mcp_walk_json_refs, _mcp_take_instance, _mcp_fragment_refs, _mcp_seed_refs, _mcp_iter_resources, _mcp_record_user_defs, _mcp_select_body, _mcp_close_resource, _mcp_post_check, _mcp_attach_definitions, _mcp_collect_ids, _mcp_synthetic_uri, _mcp_base_uri, _mcp, _Proto, _python_sdk, _typescript_sdk, IrArtifactGenerator (37 names). MCP rows: 23. _mcp_reached_names is absent. Cycle 9 prereview repair on 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c adds _mcp_defs_ids, _mcp_uncrawled_schemas and _mcp_strip_unreachable_defs. codegen.py lists 40 module-level names. MCP rows are 26. mcp_profile.py still lists 43. Cycle 11 search on c03073f7dfad399f6e07ae45ac9a8780ee0f8f97: Python ast walk of ocor-runtime/src/ocor_runtime/c1/mcp_profile.py and ocor-runtime/src/ocor_runtime/c1/codegen.py, compared with the table functions. SELF-CHECK-PATH-INVENTORY (2026-11-09). Cycle 12 inventory on da754e862a2c2fba621cf5d4534fcc5396299b6a: Python ast walk of ocor-runtime/src/ocor_runtime/c1/mcp_profile.py lists 45 module-level names and ocor-runtime/src/ocor_runtime/c1/codegen.py lists 37. The only name added since c03073f7dfad399f6e07ae45ac9a8780ee0f8f97 is assert_walkable_schema_resource, and that function now has a row. Names that still have no row are the same classes and helpers as the cycle-11 inventory. codegen.py adds no module-level name. SELF-CHECK-PATH-INVENTORY (2026-11-09).",
     "role_coherence_scan": {
-      "status": "PENDING_SCAN"
+      "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle13-b1-20261120/role-scan.py 78a1b38fa380a7577e2a1ae28603be333fac5b5f",
+      "head": "78a1b38fa380a7577e2a1ae28603be333fac5b5f",
+      "compared_fields": 134,
+      "errors": 0,
+      "stdout_sha256": "a0eb857a2acaaf5fe7e9d9a641bb4a9a74b25bbcf31714f49acfb4e10ad6e48f",
+      "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle13-b1-20261120/role-scan.json",
+      "note": "The initial probe used the provider key for a design review which declares vendor and includes the execution mode after the process name. Both identity fields were read in their recorded format and rechecked."
     },
     "table": [
       {
@@ -10282,7 +10303,7 @@
       "effort": "ultra",
       "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger."
     },
-    "stage": "IN_PROGRESS",
+    "stage": "PRE_CAMPAIGN_REVIEW_PENDING",
     "entry_point_checkpoint": "20fce5e3b798cc17407c50a666a6f01f1fe482dd",
     "context_checkpoint": {
       "baseline": "20fce5e3b798cc17407c50a666a6f01f1fe482dd",
@@ -10326,11 +10347,11 @@
       "cases": 8,
       "sha256": "5ef3991c3c74118241f9988f39550e3d560a903af2a2a75758442fc432e8ddac"
     },
-    "implementation_of_A1_B1": "A1_TASK_MODULE_GREEN_B1_PENDING",
-    "pre_campaign_review": "NOT_REQUESTED",
-    "qualifying_campaign": "NOT_EXECUTED",
-    "distinct_check": "NOT_EXECUTED",
-    "final_verification": "NOT_REQUESTED",
+    "implementation_of_A1_B1": "A1_AND_B1_TASK_MODULE_GREEN",
+    "pre_campaign_review": "PENDING_LOOP_REVIEW",
+    "qualifying_campaign": "NOT_EXECUTED_CYCLE13",
+    "distinct_check": "NOT_EXECUTED_CYCLE13",
+    "final_verification": "NOT_REQUESTED_CYCLE13",
     "qualification_scope": "Previous top-level execution metadata and results describe the historical cycle 12 candidate.",
     "evaluation_contexts_A1": {
       "authority": "REM-0063-CYCLE13-EVALUATION-CONTEXTS (2026-11-20), A1",
@@ -10561,6 +10582,112 @@
       "status": "NOT_REQUESTED_CYCLE13",
       "assignment": "VERIFIER-CLAUDE-REM0063 (2026-11-16)",
       "independence_limits": "The preventive reviewer and final verifier are Anthropic models with different model identities. No Anthropic implementation. VERIFIER-CLAUDE-REM0063, no fallback."
+    },
+    "evaluation_progress_B1": {
+      "baseline": "b020e62306489924fded18bb20290f29233112ff",
+      "code_head": "a1bb900b194a53754378887621054710c7609b8c",
+      "exact_junit_union": true,
+      "historical_changed": 397,
+      "new_after_initial_red": {
+        "test_cycle13_exact_fixed_base_collision": 16,
+        "test_cycle13_exact_graph_depth": 16,
+        "test_cycle13_exact_reference_outcome": 10,
+        "test_cycle13_optional_child_progress_witness": 4,
+        "test_cycle13_progress_in_evaluation_context": 28,
+        "test_cycle13_progress_oracle_in_isolation": 1,
+        "test_cycle13_progress_reachability": 32
+      },
+      "preexisting_cases": 53328,
+      "production_head": "d257887f20745ce4c68e8b5780bdaeeabfa10af3",
+      "raw_sha256": {
+        "bootstrap-ready.log": "fea801039fc18766e1aa48e38e1314b2c0b410e8b24687e0c2f2de0208cd4c73",
+        "expectation-ledger.json": "f444b3e90f3f52e2a3ac45ba27b16434f8494667adebac89baa7e0f12d31c23d",
+        "final-collection.log": "1cc3520927f6ef99a972d551933315c8d407187e645157200c0ca8ab723a1999",
+        "final.log": "9fe0248cc6c62e5aac214da06f610cc842b489beca47bf9d747068d04b333e57",
+        "final.xml": "25627a8bbf1001ee5c19b215dc35ee509a0a9c7d0046b2cc3ce1cd91e6c125ce",
+        "green.xml": "58659e9e47816cd7a15bcd454719feb62776d06b2b301f148b386456af5a39d4",
+        "historical.xml": "b46e3dcfb2a0b24d92a10596560d1d1b3e2ea239f374cdc9d08457d529204497",
+        "history-recheck.xml": "b0ca4c23a45dd861c54005d77c74cd83190efaf093f6b840f49be8fd106985b6",
+        "preflight-ready.json": "ade88b8ac0e48fecaebed5744802d5e0665d74552735eb75a8d978150dbe211b",
+        "red.log": "7b914b2b57a998772a156b4d504d1944269f22190d5c8caa1fdd4d58676accd8",
+        "red.xml": "7a961f1d1800a1220ebf74240c86a1a9cda0d3dceee7a9562538bcc569e8f4ab",
+        "teardown.log": "ad016c68db4b29d6fcb3b5ed48d61165937639f5a25ceaa6a6c05bdcc295fb3a"
+      },
+      "red_head": "0ec40aaa8effc81579fb5ff0768459e861d4803f",
+      "runs": {
+        "final": {
+          "cases": 53579,
+          "error": 0,
+          "failure": 0,
+          "seconds": 1079.821,
+          "skipped": 0
+        },
+        "green": {
+          "cases": 144,
+          "error": 0,
+          "failure": 0,
+          "seconds": 6.756,
+          "skipped": 0
+        },
+        "historical": {
+          "cases": 53472,
+          "error": 0,
+          "failure": 397,
+          "seconds": 1064.964,
+          "skipped": 0
+        },
+        "history-recheck": {
+          "cases": 397,
+          "error": 0,
+          "failure": 0,
+          "seconds": 10.144,
+          "skipped": 0
+        },
+        "red": {
+          "cases": 144,
+          "error": 0,
+          "failure": 36,
+          "seconds": 5.988,
+          "skipped": 0
+        }
+      },
+      "authority": "REM-0063-CYCLE13-EVALUATION-CONTEXTS (2026-11-20), B1",
+      "repair_cycle": 13,
+      "qualification": "Diagnostic task-module run. Four-lane campaign and distinct check are pending.",
+      "red_messages": {
+        "Failed: DID NOT RAISE McpProfileError": 18,
+        "Failed: DID NOT RAISE C1Error": 18
+      },
+      "supplemental_baseline_replay": {
+        "tested": 60,
+        "failed": 28,
+        "passed": 32,
+        "messages": {
+          "Failed: DID NOT RAISE McpProfileError": 14,
+          "Failed: DID NOT RAISE C1Error": 14
+        },
+        "junit_sha256": "445c5d25424c8cd98c13aa327221bd3cdd478e17f4a52fd29c858de0bec2e192"
+      },
+      "host_commands": [
+        "lscpu --json",
+        "getconf _NPROCESSORS_ONLN",
+        "getconf _PHYS_PAGES",
+        "getconf PAGE_SIZE"
+      ],
+      "host": {
+        "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+        "threads": 24,
+        "ram_bytes": 65740460032,
+        "kernel": "7.0.0-43-generic"
+      },
+      "environment": {
+        "python": "Python 3.12.11",
+        "packages": "4.26.0 0.37.0",
+        "cli": "codex-cli 0.170.0",
+        "bootstrap": "scripts/bootstrap_ci_environment.py --execute --timeout 600, clean shell in a disposable worktree",
+        "health_ready": 11,
+        "teardown": "PASS, zero residual containers, networks and volumes"
+      }
     }
   },
   "historical_top_level_implementer_before_cycle13_prereview": {
