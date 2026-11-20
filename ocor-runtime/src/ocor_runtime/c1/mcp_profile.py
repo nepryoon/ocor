@@ -12,13 +12,14 @@ input schema.
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, cast
 from urllib.parse import quote, unquote, urldefrag
 
 from jsonschema import Draft202012Validator
-from jsonschema.exceptions import SchemaError, UnknownType
+from jsonschema.exceptions import SchemaError, UnknownType, _WrappedReferencingError
 from referencing import Registry, Resource
 from referencing.exceptions import (
     CannotDetermineSpecification,
@@ -951,6 +952,271 @@ def _ref_target_context(
     )
 
 
+_DEF_KEYWORDS = frozenset({"$defs", "definitions"})
+_LIBRARY_INSTANCE_CAP = 32
+
+
+def _iter_keyword_children(node: Mapping[str, Any]) -> Iterator[tuple[str, object]]:
+    """Same children as ``contained_subschemas``, with the keyword that holds them."""
+
+    for key, value in node.items():
+        if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
+            for child in value.values():
+                yield key, child
+            continue
+        if key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, Sequence) and not isinstance(
+            value, (str, bytes)
+        ):
+            for child in value:
+                yield key, child
+            continue
+        if key in _SCHEMA_OBJECT_KEYWORDS:
+            yield key, value
+
+
+def _defs_only_identities(
+    roots: Sequence[tuple[Any, _ResolutionContext]],
+) -> set[int]:
+    """Nodes whose every static path from a root is ``$defs`` or ``definitions``.
+
+    The root is applicative. A later applicative path clears the exemption,
+    so the visit key includes the flag and the walk is not first-visit.
+    """
+
+    applicative: set[int] = set()
+    defs_only: set[int] = set()
+    visited: set[tuple[int, bool]] = set()
+    queue: list[tuple[Any, bool, bool]] = [(node, True, False) for node, _context in roots]
+    while queue:
+        node, is_root, only_defs = queue.pop(0)
+        if not isinstance(node, Mapping):
+            continue
+        state = (id(node), only_defs)
+        if state in visited:
+            continue
+        visited.add(state)
+        if only_defs:
+            defs_only.add(id(node))
+        else:
+            applicative.add(id(node))
+        for keyword, child in _iter_keyword_children(node):
+            if not isinstance(child, Mapping):
+                continue
+            child_only = keyword in _DEF_KEYWORDS and (is_root or only_defs)
+            queue.append((child, False, child_only))
+    return defs_only - applicative
+
+
+def _pattern_sample(pattern: str) -> str:
+    """A short string the pattern matches, or ``n`` when none of the probes do."""
+
+    for candidate in ("p", "a", "n", "0", "x", "key", ""):
+        try:
+            if re.search(pattern, candidate):
+                return candidate
+        except re.error:
+            return "n"
+    literal = pattern[1:] if pattern.startswith("^") else pattern
+    if literal.endswith("$"):
+        literal = literal[:-1]
+    try:
+        if literal and re.search(pattern, literal):
+            return literal
+    except re.error:
+        return "n"
+    return "n"
+
+
+def _benign_instance(node: Mapping[str, Any]) -> object:
+    kind = node.get("type")
+    if kind in ("integer", "number"):
+        return 11
+    if kind == "boolean":
+        return True
+    if kind == "array":
+        return []
+    if kind == "object":
+        return {}
+    if isinstance(kind, list) and kind:
+        return _benign_instance({"type": kind[0]})
+    return "a"
+
+
+def _library_child_resolver(resolver: Any, child: Mapping[str, Any]) -> Any:
+    try:
+        return resolver.in_subresource(DRAFT202012.create_resource(child))
+    except (ValueError, AttributeError, TypeError):
+        return resolver
+
+
+def _schema_containing(
+    roots: Sequence[tuple[Any, _ResolutionContext]],
+    target: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], str] | None:
+    def contains(node: object, seen: set[int]) -> bool:
+        if not isinstance(node, Mapping):
+            return False
+        if node is target:
+            return True
+        identity = id(node)
+        if identity in seen:
+            return False
+        seen.add(identity)
+        return any(contains(child, seen) for child in contained_subschemas(node))
+
+    for schema, context in roots:
+        if isinstance(schema, Mapping) and contains(schema, set()):
+            return schema, context.base_uri
+    return None
+
+
+def _instances_reaching(
+    schema: Mapping[str, Any],
+    base: str,
+    target: Mapping[str, Any],
+) -> list[object]:
+    """One instance per way Draft 2020-12 can apply ``target``.
+
+    A lookup the libraries refuse is not an instance path. ``$defs`` and
+    ``definitions`` are walked so a ``$ref`` can enter them; their own
+    instances are not returned. The walk stops at the schema-node bound.
+    """
+
+    registry = Registry().with_resource(base, DRAFT202012.create_resource(schema))
+    resolver = registry.resolver(base)
+    steps = 0
+
+    def walk(node: object, res: Any, seen: set[tuple[int, int]]) -> list[object]:
+        nonlocal steps
+        if not isinstance(node, Mapping):
+            return []
+        steps += 1
+        if steps > MAX_SCHEMA_NODES:
+            return []
+        state = (id(node), id(res))
+        if state in seen:
+            return []
+        seen.add(state)
+        try:
+            return _open(node, res, seen)
+        finally:
+            seen.remove(state)
+
+    def _open(node: Mapping[str, Any], res: Any, seen: set[tuple[int, int]]) -> list[object]:
+        if node is target:
+            return [_benign_instance(node)]
+        produced: list[object] = []
+        ref = node.get("$ref")
+        if isinstance(ref, str):
+            resolved = None
+            try:
+                resolved = res.lookup(ref)
+            except (PointerToNowhere, Unresolvable, *_SCHEMA_LIBRARY_ERRORS):
+                resolved = None
+            if resolved is not None and isinstance(resolved.contents, dict):
+                produced.extend(walk(resolved.contents, resolved.resolver, seen))
+        child_res = _library_child_resolver(res, node)
+        props = node.get("properties")
+        if isinstance(props, Mapping):
+            for key, sub in props.items():
+                if isinstance(sub, Mapping) and isinstance(key, str):
+                    for item in walk(sub, child_res, seen):
+                        produced.append({key: item})
+        patterns = node.get("patternProperties")
+        if isinstance(patterns, Mapping):
+            for pattern, sub in patterns.items():
+                if isinstance(sub, Mapping) and isinstance(pattern, str):
+                    for item in walk(sub, child_res, seen):
+                        produced.append({_pattern_sample(pattern): item})
+        items = node.get("items")
+        if isinstance(items, Mapping):
+            for item in walk(items, child_res, seen):
+                produced.append([item])
+        prefix = node.get("prefixItems")
+        if isinstance(prefix, Sequence) and not isinstance(prefix, (str, bytes)):
+            for index, sub in enumerate(prefix):
+                if isinstance(sub, Mapping):
+                    for item in walk(sub, child_res, seen):
+                        row: list[object] = [None] * index
+                        row.append(item)
+                        produced.append(row)
+        for key in ("allOf", "anyOf", "oneOf"):
+            group = node.get(key)
+            if isinstance(group, Sequence) and not isinstance(group, (str, bytes)):
+                for sub in group:
+                    if isinstance(sub, Mapping):
+                        produced.extend(walk(sub, child_res, seen))
+        for key in ("not", "if", "then", "else", "additionalProperties"):
+            sub = node.get(key)
+            if isinstance(sub, Mapping):
+                produced.extend(walk(sub, child_res, seen))
+        contains = node.get("contains")
+        if isinstance(contains, Mapping):
+            for item in walk(contains, child_res, seen):
+                produced.append([item])
+        dependent = node.get("dependentSchemas")
+        if isinstance(dependent, Mapping):
+            for key, sub in dependent.items():
+                if isinstance(sub, Mapping) and isinstance(key, str):
+                    for item in walk(sub, child_res, seen):
+                        instance = dict(item) if isinstance(item, dict) else {}
+                        instance.setdefault(key, None)
+                        produced.append(instance)
+        for key in _DEF_KEYWORDS:
+            group = node.get(key)
+            if isinstance(group, Mapping):
+                for sub in group.values():
+                    if isinstance(sub, Mapping):
+                        walk(sub, child_res, seen)
+        return produced
+
+    found = walk(schema, resolver, set())
+    unique: list[object] = []
+    seen_values: set[str] = set()
+    for item in found:
+        marker = repr(item)
+        if marker in seen_values:
+            continue
+        seen_values.add(marker)
+        unique.append(item)
+        if len(unique) == _LIBRARY_INSTANCE_CAP:
+            break
+    return unique
+
+
+def _libraries_reject_node(
+    schema: Mapping[str, Any],
+    base: str,
+    target: Mapping[str, Any],
+) -> bool:
+    """True when the pinned libraries raise a referencing error on some reaching instance.
+
+    A returned validation error is acceptance. An instance the builder cannot
+    find is not a rejection. The registry is the schema alone at base B1.
+    """
+
+    try:
+        registry = Registry().with_resource(base, DRAFT202012.create_resource(schema))
+        validator = Draft202012Validator(
+            schema,
+            registry=registry,
+            _resolver=registry.resolver(base),
+        )
+        instances = _instances_reaching(schema, base, target)
+    except _SCHEMA_LIBRARY_ERRORS:
+        return False
+    for instance in instances:
+        try:
+            list(validator.iter_errors(instance))
+        except (_WrappedReferencingError, PointerToNowhere, Unresolvable):
+            return True
+        except _SCHEMA_LIBRARY_ERRORS:
+            continue
+        except RecursionError:
+            continue
+    return False
+
+
 def _resolve_graph(
     roots: Sequence[tuple[Any, _ResolutionContext]],
 ) -> tuple[list[tuple[Any, _ResolutionContext]], set[tuple[int, str]]]:
@@ -962,11 +1228,16 @@ def _resolve_graph(
     rejects the descriptor, so the outcome cannot depend on the order of
     members or the order of visits.
 
-    The profile rule that static keyword descent applies only to nodes no
-    reference reaches is realized as a fixed point. A static ``$ref`` is
-    resolved for every statically reached node, but its failure only
-    rejects the descriptor when no reference path reaches that node; the
-    set of reference-reached nodes is recomputed until it stops growing,
+    A static ``$ref`` failure still refuses a node that no reference path
+    reaches. It also refuses an applicative node when ``referencing`` 0.37.0
+    and ``Draft202012Validator``, on the schema alone with base B1 and a
+    positive instance that reaches the node, reject. Where they accept, the
+    profile accepts. A node reachable from the root only through ``$defs``
+    or ``definitions`` stays exempt. Source:
+    REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE (2026-11-20) option 1, which
+    completes REM-0063-CYCLE12C-NO-GO (2026-11-20) option 1.
+
+    The set of reference-reached nodes is recomputed until it stops growing,
     because a reference path can reach a node whose own static ``$ref``
     seeds further reference paths. Reference-path resolutions are never
     suppressed and raise at once. Trees never share state: every path
@@ -1007,6 +1278,7 @@ def _resolve_graph(
 
     static_sequence: list[int] = []
     static_failures: dict[tuple[int, str], McpProfileError] = {}
+    static_nodes: dict[int, Mapping[str, Any]] = {}
     ref_queue: list[tuple[Any, _ResolutionContext]] = []
     visited_ref: set[tuple[int, str, int]] = set()
     ref_order: list[tuple[Any, _ResolutionContext]] = []
@@ -1022,6 +1294,8 @@ def _resolve_graph(
                 )
             except McpProfileError as exc:
                 static_failures[key] = exc
+                if isinstance(node, Mapping):
+                    static_nodes.setdefault(identity, node)
                 continue
             static_outcomes[key] = (target, target_context)
         for node, _context in static_refs:
@@ -1068,11 +1342,30 @@ def _resolve_graph(
         if iterations > MAX_SCHEMA_NODES:
             raise McpProfileError("MCP schema exceeds the revision bounds")
 
+    defs_only = _defs_only_identities(roots)
+    library_rejection: dict[int, bool] = {}
+
+    def libraries_reject(identity: int) -> bool:
+        cached = library_rejection.get(identity)
+        if cached is not None:
+            return cached
+        node = static_nodes.get(identity)
+        located = _schema_containing(roots, node) if isinstance(node, Mapping) else None
+        if node is None or located is None:
+            library_rejection[identity] = False
+            return False
+        schema, base = located
+        decision = _libraries_reject_node(schema, base, node)
+        library_rejection[identity] = decision
+        return decision
+
     for identity in static_sequence:
-        if identity in ref_reached:
+        if identity in defs_only:
             continue
         for key, error in static_failures.items():
-            if key[0] == identity:
+            if key[0] != identity:
+                continue
+            if identity not in ref_reached or libraries_reject(identity):
                 raise error
     return static_order + ref_order, ref_states
 
