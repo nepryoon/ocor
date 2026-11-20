@@ -1,6 +1,6 @@
 # REM-0063-CYCLE13-EVALUATION-CONTEXTS
 
-Stato `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Unità `OCOR-DEV-REM-0063`, ciclo 13. La richiesta riguarda il §2 di `REM-0063-RITORNO-AL-PROGETTO (2026-11-20)`, in applicazione di `NORMATIVE-QUESTIONS-EARLY-DR (2026-11-09)` e della sua integrazione sui vincoli del PO.
+Stato `DECIDED_BY_PO`. Unità `OCOR-DEV-REM-0063`, ciclo 13. La richiesta riguarda il §2 di `REM-0063-RITORNO-AL-PROGETTO (2026-11-20)`, in applicazione di `NORMATIVE-QUESTIONS-EARLY-DR (2026-11-09)` e della sua integrazione sui vincoli del PO.
 
 ## Osservazioni e perimetro
 
@@ -49,3 +49,9 @@ B2. **Limitare la garanzia ai riferimenti e alla validità dello schema.** La fr
 | Schema ricorsivo di un oggetto con un oggetto figlio finito | Risoluzione e consegna riuscite (B1) | Risoluzione e consegna riuscite (B2) |
 
 Raccomandazione A1 e B1. Entrambe eliminano una classe di contratti inutilizzabili sul validatore fissato e dichiarano la differenza ammessa per i rami statici. L'ordine proposto è contratto, prove differenziali, implementazione unica, revisione prima della campagna e verifica del candidato finale secondo il §7. Il quesito blocca i percorsi dipendenti e la qualifica del solo `OCOR-DEV-REM-0063`. Le correzioni indipendenti ai punti d'ingresso del §3 restano eseguibili.
+
+## Disposition del 20 novembre 2026
+
+La decisione `REM-0063-CYCLE13-EVALUATION-CONTEXTS (2026-11-20)` adotta A1 per il quesito A e B1 per il quesito B. Disposizione decisa per conto del PO, modello claude-fable-5-2, effort max, ai sensi di `DECISIONI-A-FABLE (2026-11-17)`. La richiesta decisa è al commit `8a38ac5efab5d95cb9800bbcf246d341c6315ede` con SHA-256 `a5903e9cc23f06b5cdb660f2b7a8bf574b034b696bf5f3d92a4915efd2166f40`.
+
+A1 estende il controllo condiviso ai contesti di valutazione e di raccolta delle annotazioni del validatore fissato. B1 richiede il rifiuto dei cicli potenziali sulla stessa istanza. Perimetro, diagnostici, casi positivi e negativi e ordine dei lavori sono quelli delle due opzioni sopra. L'attuazione prosegue nel ciclo 13 di `OCOR-DEV-REM-0063`.
