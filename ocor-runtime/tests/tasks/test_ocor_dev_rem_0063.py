@@ -7608,3 +7608,37 @@ assert _cycle13_context_oracle({"type": "object"}, "inputSchema", [{}]) == (Fals
 assert not any(n == 'ocor_runtime' or n.startswith('ocor_runtime.') for n in sys.modules)
 """
     subprocess.run([sys.executable, "-I", "-c", source + probe], check=True, timeout=30)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("keyword", ["$defs", "definitions"])
+@pytest.mark.parametrize("hops", [1, 2, 3])
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("incoming_target", [False, True])
+def test_cycle13_context_unused_definition_seeds_paths(
+    field: str, keyword: str, hops: int, reverse: bool, incoming_target: bool,
+) -> None:
+    # The sole initial anchor reference belongs to an unused definition.
+    # Further hops traverse opaque instance data by pointer, discovered only
+    # after the lookup has switched to the duplicate resource.
+    definitions = {"subject": {"$anchor": "subject", "$ref": "#/$defs/x"}}
+    definitions["entry"] = {"$ref": "#subject" if hops == 1 else "#bridge"}
+    if hops > 1:
+        definitions["bridge"] = {"$anchor": "bridge", "$ref": "#/const/step"}
+    repeated: dict[str, Any] = {"$id": _CYCLE13_ROOT_URI, "$defs": {"x": {}} if incoming_target else {}}
+    repeated["const"] = {"step": {"$ref": "#subject" if hops == 2 else "#/const/last"},
+                         "last": {"$ref": "#subject"}}
+    # Give the uncrawled root the opposite value, including a static pointer
+    # for the bridge that seeds a harmless target when checked in isolation.
+    schema: dict[str, Any] = {"type": "object", "$id": _CYCLE13_ROOT_URI, "const": {"step": {}},
+                              "$defs": {} if incoming_target else {"x": {}}, "allOf": [repeated]}
+    schema.setdefault(keyword, {}).update(definitions)
+    if reverse:
+        schema = dict(reversed(schema.items()))
+        schema[keyword] = dict(reversed(schema[keyword].items()))
+    witness, misses = _cycle13_context_oracle(schema, field, [{}])
+    assert not witness
+    assert bool(misses) == (not incoming_target)
+    if misses:
+        assert all(origin == "reference" and ref == "#/$defs/x" for origin, _, _, ref in misses)
+    _cycle13_assert_delivery(schema, field, bool(misses))
