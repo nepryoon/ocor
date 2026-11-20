@@ -198,10 +198,7 @@ mutual cross-product. Their restrictions are:
 
 The static matrix oracle uses `Resource.subresources`, `Resolver.in_subresource`
 and `Resolver.lookup` on the original resource, preserving registry crawl state.
-It checks `entry` with the same resolver/base. Its domain is the factored products,
-not all valid schemas: a static-context failure may be irrelevant when an anchor
-path reaches that node with a different library resolver. The existing profile
-rule and cycle-8 tests for those paths remain unchanged. The added 16-cell public
+It checks `entry` with the same resolver/base. The cycle 13 rule below governs which resolver contexts are mandatory. The added 16-cell public
 characterisation uses real positive/negative `Draft202012Validator` instances,
 without the stricter static oracle. No original matrix assertion is weakened.
 
@@ -409,7 +406,7 @@ Rules stricter than the libraries, each with its own typed error:
 8. `without_context_overwrite` on the input schema. Source: **GENERATORE**, point 1.
 9. `json_bounds` is the only value-count limit. Reference-path depth 32 is a separate rule. Source: **REM-0063-CICLO-10-CONTRATTO**, point 2, and **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
 
-`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `json_bounds` and then `operational_base` on each tool schema field before `_mcp_attach_definitions`, then `json_bounds` on the assembled descriptor. A static failure still refuses the descriptor only when no reference path reaches that node. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.
+`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `json_bounds` and then `operational_base` on each tool schema field before `_mcp_attach_definitions`, then `json_bounds` on the assembled descriptor. Cycle 13 retains the root context at every applicable node and checks every incoming reference context. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.
 
 
 ## Cycle 11 record alignment
@@ -435,6 +432,44 @@ The self-check table adds the VF-010 parsers and the cycle-11 enumeration
 paths. The phase-A inventory text is kept as history and is not the current
 inventory. Preventive review, the four-lane campaign and `verify_request.json`
 are not this commit.
+
+### Cycle 13 design
+
+**Authority and baseline.** Under REM-0063-RITORNO-AL-PROGETTO (20 November 2026), the MCP profile decides whether a descriptor can be delivered before any instance is available. Each tool field has its own draft 2020-12 resource, its B1 base and a local-only registry. The new static rule supersedes the whole of REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE option 1, including its instance-based exception. Revert `90f9639f` restored the exact published tree of `2e4a3e51220a` after six local commits. Their results and review request are historical. The worktree contained no uncommitted files.
+
+**Which contexts count (§2).**
+
+1. Walk the existing schema positions from the autonomous root using the initial uncrawled registry. Carry the resolver returned on entry to each subresource. Mark a visit as applicable from the root only while the path has crossed no member of a `$defs` or `definitions` map. Distinguish the keyword edge from a property *named* `$defs`. Keep the existing inspection of definitions, nested resources and keyword validity.
+2. At every reference follow the library lookup with the resolver at that occurrence. Retain its returned resolver at the target, including the registry after an anchor crawl. Enumerate reference paths and their existing schema-child descent to a fixed point. The applicable root visit and visits reached by reference are cumulative. Keep origin, node, base and registry identity distinct during traversal. Equal URI strings alone cannot merge visits. For a definition-only node record the existing static inspection separately. If no reference reaches it, its existing checks and failures still apply. If reached, check every incoming reference context without assigning it a root context merely because the static inventory listed it.
+3. Require lookup success in **every** applicable context. A success on a crawled registry cannot discard a failure on the initial one. Preserve local-only retrieval, target, dialect, keyword, depth and node checks. The unresolved-reference result is `McpProfileError("MCP $ref does not resolve in the descriptor")`. A normal instance validation error (e.g. wrong data type) demonstrates constraint enforcement. A library resolution exception on an instance requires refusal. Static refusal can additionally occur when an applicable context fails lookup and no instance selects it. Production does not search for a satisfying instance.
+
+**Public inputs and expected results (§§2–5).** Each count below is a planned number of labelled cells. Rows share fixtures but have distinct assertions. The original matrix remains part of the suite.
+
+| Entry | Generated input classes and expected outcome | Cells |
+| --- | --- | ---: |
+| Delivered descriptor, VF-001 | 13 applicators × 2 anchor types × 3 spellings of a repeated root URI × 4 duplicate locations × 2 member orders × 2 fields × 2 anchor-entry locations × 2 root-target variants. Accept when every applicable lookup resolves. A missing target in any applicable context gives the exact unresolved-reference error. | 4,992 |
+| Delivered descriptor, anchor-free control | Same applicators, spellings, duplicate locations, orders, fields and target variants. Remove both the anchor declaration and the referencing entry. | 1,248 |
+| Delivered descriptor, definition-only control | `$defs` or `definitions` × both fields × incoming reference present/absent × resolvable/unresolvable in the deciding context. Exercise a definition reached only through an anchor and an unreferenced definition in each map. | 16 |
+| Delivered descriptor, URI parsing | Each field with a valid absolute URI or `http://[x#frag`. Accept the valid control. Translate malformed authority to `McpProfileError("MCP $id is not a valid URI reference")`. | 4 |
+| Official fixture via descriptor validation | One valid tool × the pinned fixture or a copy declaring the draft with a dangling local `Tool` reference, an invalid `patternProperties` expression or `minLength: -1`. Accept the original. Each damaged fixture gives `McpProfileError("official MCP schema fixture is not a JSON Schema")`. | 4 |
+| Source → compile → render → deliver | Compiler-admitted contract ending in a name or a colon. Normal name yields a deliverable artifact. Empty derived name yields `C1Error` / `TYPE_ERROR` before bytes are returned. | 2 |
+| Stored core → recreate release → render → deliver | Change either field of an otherwise valid core to an object schema, an object schema with `minProperties: -1`, or the JSON boolean `true`. Accept the first. Reject the others with `C1Error` / `TYPE_ERROR` before returning artifacts. | 6 |
+| Shared JSON bound | List, tuple, dictionary and immutable mapping as positive controls. Reject `range` and `memoryview` with `SchemaCalculationFailure.code == "NOT_JSON"`. | 6 |
+| Source → render, follow-up characterisation | Retain the transformed pointer under an opaque extension without adding a closure definition. Retain the dialect error for an unused foreign-dialect definition before pruning. Component-name collisions remain a separate follow-up. | 2 |
+
+The **6,280 cells** use these axes: `properties`, `patternProperties`, `items`, `prefixItems`, `allOf`, `anyOf`, `oneOf`, `not`, `if`, `then`, `else`, `dependentSchemas`, `contains`; `$anchor` and `$dynamicAnchor`; literal absolute root URI, trailing empty fragment or equivalent relative spelling; duplicate in `allOf`, `anyOf`, `not` or `$defs`; both insertion orders; input and output; referencing entry in an applicator or an unreferenced definition. The target exists only in the duplicated resource in one variant and in both resources in the other. Supply companion keywords for conditional branches, object or array carriers for their applicators, and probes that demonstrate when evaluation actually enters the node. Keep a separate lookup observation for branches a probe cannot enter. Generator references in source are IR type symbols. Counting an arbitrary delivered JSON Pointer as compiler input would test a different operation.
+
+**Oracle and error ownership.** Use a test-only enumerator with imports limited to the standard library, `referencing` 0.37.0 and `jsonschema` 4.26.0. Exercise it in isolation with zero production imports, including transitive imports. It accepts only the original schema, field/index and probes. It constructs the B1 registry independently, records schema paths and the provenance of every resolver, crosses definition boundaries explicitly and follows library-returned lookup contexts. Compare permutations by canonical case identity. A meta-schema rejection or library resolution failure on a selected instance takes precedence. On library acceptance, derive the expected result from the enumerated contexts, including the existing unreferenced-definition rule. Capture the failing path and resolver provenance. Assert the precise diagnostic independently for every negative cell. Mixed-message and production-as-oracle historical tests retain their original assertions and gain exact independent twins.
+
+In `mcp_profile.py`, protect base-URI parsing, validate the supplied fixture's meta-schema and the local references reachable from `Tool`, and translate library failures at the fixture boundary. A malformed tool in a valid fixture keeps its own diagnostic. Share the non-empty name predicate and validation of the finished field object and its draft schema with `codegen.py`. Render checks the fields after closure and before returning bytes, including on restored releases. Keep the existing bounds (4,096 values, depth 32) and supported internal tuple and immutable mapping representations.
+
+**Producer-to-consumer examples.** Compile the fleet fixture with a named MCP request whose two schemas are `{"type":"object"}`. Render its descriptor and deliver it under revision `2026-07-28` against the pinned fixture. Both fields pass. For the negative twin, restore that core with `output_schema: true` using `CanonicalIrRelease.create`. Rendering must raise `C1Error` with `TYPE_ERROR` before publishing bytes. Presenting the equivalent hand-delivered boolean to the consumer must independently fail its Tool/field check.
+
+**Observations and handoff.** On the restored tree the library raised `PointerToNowhere` for the direct `properties.p` witness while delivery accepted it. Malformed authority and the two invalid fixture operations escaped as library exceptions. The negative minimum passed. The compiler emitted an empty name, both invalid restored fields reached delivery, and both non-JSON sequences passed the bound. The positive tool and frozen mapping passed. These are diagnostic observations before RED, separate from the planned matrix. Local observation output SHA-256: `9465f3fd3821dc5a10655a7f92ecb201883d8212916e8dcc432c63b3ec5e3878`.
+
+Codex (`gpt-6.2-astra`, OpenAI, ultra) owns cycle 13 from this decision. Grok Build (`grok-4.7`, xAI) implemented the original, repairs 1–6, completion of 8, 9, 10 after phase A, 11 and 12. DeepSeek supplied `deepseek-flash` in 7 and `deepseek-v4-pro` for part of 8. Codex (`gpt-6.1-sol`, OpenAI) wrote cycle 10 phase A. The loop assigns design and pre-campaign review to Claude Code `claude-fable-5-2` and final verification to Claude Code `claude-opus-5-5`, both Anthropic, max effort. They share a provider and use separate models. The preventive review is outside the verification inputs.
+
+After design review, record each authorised expectation change with case ID, old and new results, library outcome and failing context. After RED, GREEN and the pre-campaign review, §7 retains the 22-path allowlist, settle, eleven new `cycle12d` records including the orphan group, and VF-003 alignment. Compare REM-0062 tests with both its sealed and preceding records. Check execution inputs on the frozen HEAD before requesting verification. Final counts come from collection on that candidate.
 
 ## Cycle 12 record
 
