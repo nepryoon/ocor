@@ -488,6 +488,18 @@ Codex (`gpt-6.2-astra`, OpenAI) implemented the independent entry-point correcti
 
 The targeted command was `ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py -k cycle13_boundary` with the worktree source on `PYTHONPATH`. The RED had 65 failures and 43 passes, SHA-256 `1c1b1b76c7333ab05ed5477ee9299c81e2a9823adf8f7070737bbd41cd917008`. All 108 passed at `175f4e897959a8ce462c0dec90ddc763894f6493`, SHA-256 `e457c1ea41291c3e9a6f0f00654822a8bbc2c82d6c8616a2f1336d7db4ca9042`. Both selections reported 42,187 deselected. The targeted run does not contribute qualifying campaign counts. All earlier test cases and expectations are intact.
 
+The first complete task-module regression on the same code at `175f4e897959a8ce462c0dec90ddc763894f6493` reported 1 failed, 42294 passed in 964.94s (0:16:04). The existing cycle 9 case for a custom mapping reached the new JSON check before its historical generator diagnostic. Commit `5ccc3606866f1424bab9172e65cf7b2996e33335` preserves that diagnostic at the generator boundary while the shared JSON check retains its typed rejection. The targeted rerun of the 108 new cases plus the historical case passed. Full module on the corrected commit: 42295 passed in 969.09s (0:16:09). The JUnit case identities match all 42,295 collected identities exactly, each occurring once, with zero skips, failures or errors. This is the diagnostic task module; the four-lane campaign and distinct check await the remaining cycle 13 work.
+
+| Raw output | SHA-256 |
+| --- | --- |
+| Initial complete module | `591bf7bfd19d3753008cb23239b98a853e38d3054a321e766366eaea8ce3cde7` |
+| Corrected targeted run | `0ef1aa81b833074ff8463dc148e7d5799a97b20ab01a1eb5ee7702949b10722b` |
+| Complete module on the corrected code | `913d6d79e693c63ee8f7b2128fbb9c48a85b9ae8bd363e48b4062e9dce35bf8f` |
+| Corrected JUnit XML | `3f99d2e2f0dad09f0f2442556222b15dc38b27e4d91dd568cac49a805f1c622f` |
+| Collection on the corrected code | `5e2eb5356b27a5ec9291daee17b437cb92c992e4d66795cb6987c9cdd80a9ee1` |
+
+The complete invocation selected the module without filters, with pytest `-q -p no:cacheprovider --tb=line --junitxml=<output>`, the candidate source on `PYTHONPATH` and a 45-minute limit. The independent collection used pytest `--collect-only -q -p no:cacheprovider` on the same module and commit. Host: Intel(R) Core(TM) Ultra 9 275HX, 24 logical threads, 64,199,668 KiB RAM, kernel `7.0.0-43-generic`, Python 3.12.11. The installed Codex CLI package was `0.170.0`. The module uses in-process compilation, release rendering and pinned schema libraries. These results have no live-backend or independent-verifier claim.
+
 ## Cycle 12 record
 
 REM-0063-CYCLE11-NO-GO option 1 step 6. The production code stays the GREEN
