@@ -7642,3 +7642,146 @@ def test_cycle13_context_unused_definition_seeds_paths(
     if misses:
         assert all(origin == "reference" and ref == "#/$defs/x" for origin, _, _, ref in misses)
     _cycle13_assert_delivery(schema, field, bool(misses))
+
+
+# Each row identifies a path in the pinned evaluator or in one of its two
+# annotation collectors. The third column says whether the parent resolver
+# reaches the subject. The fourth says whether our concrete witness takes it.
+_CYCLE13_EVALUATION_POSITIONS = (
+    ("validate", "not", True, True),
+    ("validate", "if", True, True),
+    ("validate", "contains", True, True),
+    ("validate", "oneOf-first", False, False),
+    ("validate", "oneOf-later", True, True),
+    ("validate", "oneOf-dormant", True, False),
+    ("validate", "then", False, False),
+    ("validate", "unevaluatedItems", True, True),
+    ("validate", "unevaluatedProperties", False, False),
+    ("keys", "allOf", True, True),
+    ("keys", "anyOf", True, True),
+    ("keys", "oneOf", True, True),
+    ("keys", "if", True, True),
+    ("keys", "then", True, True),
+    ("keys", "else", True, True),
+    ("keys", "dependentSchemas", True, True),
+    ("keys", "properties", False, False),
+    ("keys", "patternProperties", False, False),
+    ("keys", "additionalProperties", False, False),
+    ("keys", "nested", True, True),
+    ("indexes", "allOf", True, True),
+    ("indexes", "anyOf", True, True),
+    ("indexes", "oneOf", True, True),
+    ("indexes", "if", True, True),
+    ("indexes", "then", True, True),
+    ("indexes", "else", True, True),
+    ("indexes", "dependentSchemas", False, False),
+    ("indexes", "prefixItems", False, False),
+    ("indexes", "contains", True, True),
+    ("indexes", "unevaluatedItems", True, True),
+    ("indexes", "items-short-circuit", False, False),
+    ("indexes", "nested", True, True),
+)
+
+
+def _cycle13_evaluator_carrier(mode, position, subject):
+    instance = [1] if mode == "indexes" or position in {"contains", "unevaluatedItems"} else {"p": 1}
+    if position == "oneOf-first":
+        holder = {"oneOf": [subject, False]}
+    elif position.startswith("oneOf-"):
+        holder = {"oneOf": [position == "oneOf-later", subject]}
+    elif position == "items-short-circuit":
+        holder = {"items": True, "allOf": [subject]}
+    elif position == "nested":
+        holder = {"allOf": [{"then": subject, "if": True}]}
+    elif position in {"allOf", "oneOf", "anyOf", "prefixItems"}:
+        holder = {position: [subject]}
+    elif position in {"then", "else"}:
+        holder = {"if": position == "then", position: subject}
+    elif position in {"properties", "patternProperties", "dependentSchemas"}:
+        holder = {position: {"p": subject}}
+    else:
+        holder = {position: subject}
+    if mode != "validate":
+        holder.setdefault("unevaluatedProperties" if mode == "keys" else "unevaluatedItems", True)
+    return holder, {"payload": instance}
+
+
+def _cycle13_evaluator_oracle(field, schema, subject, parent_reaches, instance):
+    """Inspect the two specified resolver states independently of OCOR."""
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    Draft202012Validator.check_schema(schema)
+    base = schema.get("$id", f"urn:ocor:embedded-tool:0:{field}")
+    registry = Registry().with_resource(base, DRAFT202012.create_resource(schema))
+    parent = registry.resolver(base)
+    entered = parent.in_subresource(DRAFT202012.create_resource(subject))
+    contexts = [("structural", entered)]
+    if parent_reaches:
+        contexts.append(("parent", parent))
+    missing = []
+    for label, resolver in contexts:
+        try:
+            resolver.lookup(subject["$ref"])
+        except Unresolvable:
+            missing.append(label)
+    try:
+        list(Draft202012Validator(schema, _resolver=parent).iter_errors(instance))
+    except Unresolvable:
+        return missing, True
+    return missing, False
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("root", ["", "relative/root", "https://evaluation.invalid/root"])
+@pytest.mark.parametrize("origin,reference", [
+    ("delivery", "#/$defs/x"), ("delivery", "#hit"), ("delivery", "#/%24defs/x"),
+    ("restored", "#/$defs/x"),
+])
+@pytest.mark.parametrize("placement", ["none", "child", "both"])
+@pytest.mark.parametrize("mode,position,parent_reaches,witness", _CYCLE13_EVALUATION_POSITIONS)
+def test_cycle13_evaluator_contexts(field, root, origin, reference, placement, mode, position,
+                                    parent_reaches, witness):
+    subject = {"$id": "https://evaluation.invalid/subject", "$ref": reference}
+    target = {"$anchor": "hit"}
+    if placement != "none":
+        subject["$defs"] = {"x": target.copy()}
+    holder, instance = _cycle13_evaluator_carrier(mode, position, subject)
+    schema = {"type": "object", "properties": {"payload": holder}}
+    if root:
+        schema["$id"] = root
+    if placement == "both":
+        schema["$defs"] = {"x": target.copy()}
+        # This second, optional reference also keeps the root definition live
+        # through the IR generator's symbol closure.
+        schema["properties"]["retain"] = {"$ref": reference}
+    missing, lookup_failed = _cycle13_evaluator_oracle(field, schema, subject, parent_reaches, instance)
+    assert ("structural" in missing) == (placement == "none")
+    assert ("parent" in missing) == (parent_reaches and placement != "both")
+    if placement != "none":
+        assert lookup_failed == (witness and placement == "child")
+
+    if origin == "delivery":
+        _cycle13_assert_delivery(schema, field, bool(missing))
+        return
+    # The IR stores symbols. Only the generated standalone field has pointers.
+    expected_holder = copy.deepcopy(holder)
+    subject["$ref"] = "x"
+    if placement == "both":
+        schema["properties"]["retain"]["$ref"] = "x"
+    if missing:
+        with pytest.raises(C1Error) as caught:
+            _cycle13_restored(field, schema)
+        diagnostic, = caught.value.diagnostics
+        assert diagnostic.code == DiagnosticCode.UNRESOLVED_REFERENCE
+        if placement == "none":
+            assert diagnostic.message == "unresolved MCP definition x"
+        else:
+            assert diagnostic.message == "MCP $ref does not resolve in the descriptor"
+        return
+    descriptor = _cycle13_restored(field, schema)
+    emitted, = [tool[field] for tool in descriptor["tools"] if "payload" in tool[field].get("properties", {})]
+    assert emitted["properties"]["payload"] == expected_holder
+    _validate(descriptor)
