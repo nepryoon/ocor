@@ -582,8 +582,8 @@ The command was `ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider 
 
 ## Cycle 12 record
 
-REM-0063-CYCLE11-NO-GO option 1 step 6. The production code stays the GREEN
-`b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac`. This section does not change it.
+REM-0063-CYCLE11-NO-GO option 1 step 6. The cycle 12 code head was
+`da754e862a2c2fba621cf5d4534fcc5396299b6a`.
 
 Rule 4 applies to every array index after the `referencing` 0.37.0 token
 split. A loose segment is not an early return. The generator enters resources
@@ -1025,3 +1025,9 @@ Each row formerly admitted the field. B1 now requires `McpProfileError` with the
 The shared graph keys retain the identity of the resource and anchor maps, the pending-resource set and the retrieval function in referencing 0.37.0. An empty crawl preserves all four. Initial indexing remains observable. The resolver used for each lookup is the resolver returned by the library. The A1/B1 static checks cover resolution and progress. At the Tool boundary, an arithmetic evaluation failure while building a fixture belongs to that fixture. After successful fixture validation, an arithmetic failure while checking a Tool belongs to that Tool. Repeated meta-validation of a shared target remains a performance follow-up.
 
 The tests added at `b9c2c489a2b0a85f834edf14444150af35ba3e17` produced 14 failures and four passes against the reviewed implementation. On `ed40da87593784e15c13e31a6fa05bd3a4ab2d5b`, the targeted run passed 22 cases, including four historical pointer/anchor controls. The diagnostic module passed all 53,597 collected cases exactly once in 1088.842 seconds. Its JUnit SHA-256 is `e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952`. Each cycle 13 self-check row identifies its oracle or contract control and reports the observed results.
+
+### Cycle 13 regression fingerprints
+
+The 22 allowlisted paths were added in `b4d872a6e33d6b2642e5240594d2dd0e23dbcb40`. The validator fingerprint settled in `049a64961b8074e6aef55f0cf2a1127ed9031f60`, the execution commit for all eleven successor records. Each orphan successor precedes the current successor of the same task. The current REM-0062 test module differs from its sealed baseline by three additional tests. All eleven original test functions retain their syntax trees. Both recorded test files match the preceding cycle12c record.
+
+In cycle 12, the code head was `da754e862a2c2fba621cf5d4534fcc5396299b6a` and the record input measurement was `aaf98a282f4c6787f1c4753ea86199f2808f7a72`. Campaign `698b944a1de4-1795114196` is historical. The adopted REM-0063-CYCLE12-UNIT-RECORD-INPUTS disposition and the three prior fork heads are recorded under `repair_cycle_12`.
