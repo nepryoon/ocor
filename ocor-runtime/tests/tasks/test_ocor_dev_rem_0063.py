@@ -7253,3 +7253,289 @@ def test_cycle12_vf003_unwalkable_schema_resource_is_not_resolvable(
 def test_cycle12_vf003_boolean_schemas_stay_accepted(schema: dict[str, Any]) -> None:
     """A boolean schema is a schema. The library crawls it and the generator accepts it."""
     _cycle9_attach(schema)
+
+
+# REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE (2026-11-20), option 1.
+# The new dimension is additive. The three existing differential tests stay
+# as they are. The oracle below is referencing 0.37.0 and Draft202012Validator
+# on the schema alone. It does not call a production helper.
+
+_CYCLE13_ROOT = "https://v.invalid/dir/root.json"
+_CYCLE13_FIELDS = ("inputSchema", "outputSchema")
+_CYCLE13_POSITIONS = (
+    "properties",
+    "patternProperties",
+    "items",
+    "prefixItems",
+    "allOf",
+    "anyOf",
+    "oneOf",
+    "not",
+    "if",
+    "then",
+    "else",
+    "dependentSchemas",
+    "contains",
+)
+_CYCLE13_ANCHORS = ("$anchor", "$dynamicAnchor")
+_CYCLE13_REPEATS = {"literal": _CYCLE13_ROOT, "hash": _CYCLE13_ROOT + "#", "relative": "root.json"}
+_CYCLE13_PLACES = ("allOf", "anyOf", "not", "$defs")
+_CYCLE13_ORDERS = ("node_first", "repeat_first")
+_CYCLE13_ENTRIES = ("applicator", "defs")
+_CYCLE13_DEF_KEYWORDS = ("$defs", "definitions")
+
+
+def _cycle13_matrix() -> list[tuple[str, str, str, str, str, str, str]]:
+    """Full product. No sampled cell."""
+    from itertools import product
+
+    return list(
+        product(
+            _CYCLE13_FIELDS,
+            _CYCLE13_POSITIONS,
+            _CYCLE13_ANCHORS,
+            tuple(_CYCLE13_REPEATS),
+            _CYCLE13_PLACES,
+            _CYCLE13_ORDERS,
+            _CYCLE13_ENTRIES,
+        )
+    )
+
+
+def _cycle13_failing_node(anchor: str) -> dict[str, Any]:
+    return {anchor: "pa", "$ref": "#/$defs/x"}
+
+
+def _cycle13_place_node(position: str, node: dict[str, Any]) -> dict[str, Any]:
+    if position == "properties":
+        return {"type": "object", "properties": {"p": node, "q": {"$ref": "#pa"}}}
+    if position == "patternProperties":
+        return {
+            "type": "object",
+            "patternProperties": {"^p$": node},
+            "properties": {"q": {"$ref": "#pa"}},
+        }
+    if position == "items":
+        return {"type": "array", "items": node, "properties": {"q": {"$ref": "#pa"}}}
+    if position == "prefixItems":
+        return {"type": "array", "prefixItems": [node], "properties": {"q": {"$ref": "#pa"}}}
+    if position in ("allOf", "anyOf", "oneOf"):
+        return {"type": "object", position: [node], "properties": {"q": {"$ref": "#pa"}}}
+    if position == "not":
+        return {"not": node, "properties": {"q": {"$ref": "#pa"}}}
+    if position == "if":
+        return {"if": node, "then": {"type": "object"}, "properties": {"q": {"$ref": "#pa"}}}
+    if position == "then":
+        return {"if": True, "then": node, "properties": {"q": {"$ref": "#pa"}}}
+    if position == "else":
+        return {"if": False, "else": node, "properties": {"q": {"$ref": "#pa"}}}
+    if position == "dependentSchemas":
+        return {
+            "type": "object",
+            "dependentSchemas": {"p": node},
+            "properties": {"q": {"$ref": "#pa"}},
+        }
+    if position == "contains":
+        return {"type": "array", "contains": node, "properties": {"q": {"$ref": "#pa"}}}
+    raise AssertionError(position)
+
+
+def _cycle13_schema(
+    position: str,
+    anchor: str,
+    repeat: str,
+    place: str,
+    order: str,
+    entry: str,
+) -> dict[str, Any]:
+    """Applicative failing node, plus one repeated root URI in ``place``.
+
+    ``not`` stays one schema. When the failing node and the repeated URI share
+    ``not``, they meet under ``allOf`` inside that schema.
+    """
+    node = _cycle13_failing_node(anchor)
+    body = _cycle13_place_node(position, node)
+    body["$id"] = _CYCLE13_ROOT
+    repeated: dict[str, Any] = {"$id": _CYCLE13_REPEATS[repeat], "$defs": {"x": {"type": "string"}}}
+    if entry == "defs":
+        defs = body.get("$defs")
+        if not isinstance(defs, dict):
+            defs = {}
+        body["$defs"] = (
+            {"entry": {"$ref": "#pa"}, **defs} if order == "repeat_first" else {**defs, "entry": {"$ref": "#pa"}}
+        )
+        props = body.get("properties")
+        if isinstance(props, dict):
+            props.pop("q", None)
+    if place == "$defs":
+        defs = body.get("$defs")
+        if not isinstance(defs, dict):
+            defs = {}
+        body["$defs"] = {"bundle": repeated, **defs} if order == "repeat_first" else {**defs, "bundle": repeated}
+        return body
+    if place == "not":
+        current = body.get("not")
+        if isinstance(current, dict) and current is node:
+            body["not"] = {"allOf": [node, repeated] if order == "node_first" else [repeated, node]}
+        else:
+            body["not"] = repeated
+        return body
+    current = body.get(place)
+    if isinstance(current, list):
+        group = list(current)
+    elif isinstance(current, dict):
+        group = [current]
+    else:
+        group = []
+    body[place] = [repeated, *group] if order == "repeat_first" else [*group, repeated]
+    return body
+
+
+def _cycle13_instance(position: str) -> object:
+    if position in ("items", "prefixItems", "contains"):
+        return ["a"]
+    if position == "dependentSchemas":
+        return {"p": "a", "q": "a"}
+    if position in ("allOf", "anyOf", "oneOf", "not", "if", "then", "else"):
+        return "a"
+    return {"p": "a", "q": "a"}
+
+
+def _cycle13_defs_schema(keyword: str, *, applicative: bool) -> tuple[dict[str, Any], object]:
+    """A failing ``$ref`` whose only static path is ``$defs`` or ``definitions``.
+
+    The positive instance does not apply that node. The negative case adds
+    the same failure under ``properties``, which removes the exemption.
+    """
+    ref = "#/$defs/missing" if keyword == "$defs" else "#/definitions/missing"
+    schema: dict[str, Any] = {
+        "$id": _CYCLE13_ROOT,
+        "type": "object",
+        "properties": {"p": {"type": "string"}},
+        keyword: {"only": {"$anchor": "pa", "$ref": ref}},
+    }
+    if applicative:
+        schema["properties"] = {"p": {"$ref": ref}}
+    return schema, {"p": "a"}
+
+
+def _cycle13_library_rejects(schema: Mapping[str, Any], base: str, instance: object) -> bool:
+    """Pinned libraries on the schema alone. A returned validation error accepts."""
+    import importlib.metadata
+
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import _WrappedReferencingError
+    from referencing import Registry
+    from referencing.exceptions import PointerToNowhere, Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    if importlib.metadata.version("referencing") != "0.37.0":
+        raise AssertionError("cycle-13 oracle is referencing 0.37.0")
+    if importlib.metadata.version("jsonschema") != "4.26.0":
+        raise AssertionError("cycle-13 oracle is jsonschema 4.26.0")
+    registry = Registry().with_resource(base, DRAFT202012.create_resource(schema))
+    validator = Draft202012Validator(schema, registry=registry, _resolver=registry.resolver(base))
+    try:
+        list(validator.iter_errors(instance))
+    except (_WrappedReferencingError, PointerToNowhere, Unresolvable):
+        return True
+    return False
+
+
+def _cycle13_delivered(schema: Mapping[str, Any], field: str) -> dict[str, Any]:
+    return {
+        "x-ocor-mcp-protocol-revision": REVISION,
+        "tools": [
+            {
+                "name": "cycle13",
+                "inputSchema": {"type": "object"},
+                "outputSchema": {"type": "object"},
+                field: dict(schema),
+            }
+        ],
+    }
+
+
+def test_cycle13_dimension_is_the_full_product() -> None:
+    """Thirteen applicative positions, both anchors, three URI spellings, four places."""
+    assert len(_CYCLE13_POSITIONS) == 13
+    assert len(_cycle13_matrix()) == 13 * 2 * 3 * 4 * 2 * 2 * 2
+    assert len(_CYCLE13_FIELDS) * len(_CYCLE13_DEF_KEYWORDS) * 2 + len(_CYCLE13_FIELDS) == 10
+
+
+@pytest.mark.parametrize(
+    ("field", "position", "anchor", "repeat", "place", "order", "entry"),
+    _cycle13_matrix(),
+)
+def test_cycle13_applicative_static_ref_matches_the_pinned_libraries(
+    field: str,
+    position: str,
+    anchor: str,
+    repeat: str,
+    place: str,
+    order: str,
+    entry: str,
+) -> None:
+    """An applicative static ``$ref`` follows the pinned libraries.
+
+    REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE (2026-11-20) option 1. Where
+    referencing 0.37.0 and Draft202012Validator reject a positive instance
+    that reaches the node, on the schema alone with base B1, the profile
+    rejects. Where they accept, the profile accepts.
+    """
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema = _cycle13_schema(position, anchor, repeat, place, order, entry)
+    instance = _cycle13_instance(position)
+    base = _independent_tool_base(schema, index=0, field=field)
+    library_rejects = _cycle13_library_rejects(schema, base, instance)
+    document = _cycle13_delivered(schema, field)
+    if library_rejects:
+        with pytest.raises(McpProfileError, match="does not resolve"):
+            _validate(document)
+    else:
+        _validate(document)
+
+
+@pytest.mark.parametrize("field", _CYCLE13_FIELDS)
+def test_cycle13_twin_without_anchor_stays_refused(field: str) -> None:
+    """The twin without an anchor stays a refusal, as the libraries refuse it."""
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema = {
+        "$id": _CYCLE13_ROOT,
+        "type": "object",
+        "properties": {"p": {"$ref": "#/$defs/x"}},
+        "allOf": [{"$id": _CYCLE13_ROOT, "$defs": {"x": {"type": "string"}}}],
+    }
+    base = _independent_tool_base(schema, index=0, field=field)
+    assert _cycle13_library_rejects(schema, base, {"p": "a"})
+    with pytest.raises(McpProfileError, match="does not resolve"):
+        _validate(_cycle13_delivered(schema, field))
+
+
+@pytest.mark.parametrize("field", _CYCLE13_FIELDS)
+@pytest.mark.parametrize("keyword", _CYCLE13_DEF_KEYWORDS)
+def test_cycle13_defs_only_static_failure_stays_exempt(field: str, keyword: str) -> None:
+    """A node reached only through ``$defs`` or ``definitions`` stays exempt.
+
+    The positive instance does not apply that node. The libraries accept it,
+    and the profile accepts it too, static ``$ref`` failure included.
+    """
+    schema, instance = _cycle13_defs_schema(keyword, applicative=False)
+    base = _independent_tool_base(schema, index=0, field=field)
+    assert not _cycle13_library_rejects(schema, base, instance)
+    _validate(_cycle13_delivered(schema, field))
+
+
+@pytest.mark.parametrize("field", _CYCLE13_FIELDS)
+@pytest.mark.parametrize("keyword", _CYCLE13_DEF_KEYWORDS)
+def test_cycle13_defs_only_node_does_not_hide_an_applicative_failure(field: str, keyword: str) -> None:
+    """The exempt definition does not hide an applicative ``$ref`` the libraries refuse."""
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema, instance = _cycle13_defs_schema(keyword, applicative=True)
+    base = _independent_tool_base(schema, index=0, field=field)
+    assert _cycle13_library_rejects(schema, base, instance)
+    with pytest.raises(McpProfileError, match="does not resolve"):
+        _validate(_cycle13_delivered(schema, field))
