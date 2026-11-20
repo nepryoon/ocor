@@ -11,9 +11,13 @@ input schema.
 
 from __future__ import annotations
 
+import json
 import math
+import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
+from types import MappingProxyType
 from typing import Any, cast
 from urllib.parse import quote, unquote, urldefrag
 
@@ -139,15 +143,11 @@ def json_bounds(document: object) -> None:
                     "NON_FINITE", "MCP descriptor contains a non-finite number"
                 )
             return
-        if isinstance(node, (bytes, bytearray)):
-            raise SchemaCalculationFailure(
-                "NOT_JSON", "MCP descriptor contains a value that is not JSON"
-            )
-        if isinstance(node, Sequence) and not isinstance(node, str):
+        if isinstance(node, (list, tuple)):
             for item in node:
                 visit(item, depth + 1)
             return
-        if not isinstance(node, Mapping):
+        if not isinstance(node, (dict, MappingProxyType)):
             raise SchemaCalculationFailure(
                 "NOT_JSON", "MCP descriptor contains a value that is not JSON"
             )
@@ -210,8 +210,13 @@ def operational_base(schema: object, *, index: int, field: str) -> str:
 
     fixed = _fixed_tool_uri(index, field)
     declared = schema.get("$id") if isinstance(schema, Mapping) else None
-    if isinstance(declared, str) and declared != "" and urldefrag(declared)[0] != "":
-        return urldefrag(declared)[0]
+    if isinstance(declared, str):
+        try:
+            base, _ = urldefrag(declared)
+        except ValueError as exc:
+            raise SchemaCalculationFailure("INVALID_ID", "MCP $id is not a valid URI reference") from exc
+        if base:
+            return base
     found: set[str] = set()
     _collect_string_ids(schema, found)
     for item in found:
@@ -507,6 +512,13 @@ def without_context_overwrite(schema: Mapping[str, Any]) -> dict[str, Any]:
     return projected
 
 
+def require_tool_name(value: object) -> str:
+    """The name admitted by both generation and delivery."""
+    if not isinstance(value, str) or not value:
+        raise McpProfileError("MCP tool name must be a non-empty string")
+    return value
+
+
 def validate_mcp_descriptor(
     document: Mapping[str, Any],
     schema: Mapping[str, Any],
@@ -563,13 +575,7 @@ def validate_mcp_descriptor(
         raise McpProfileError("MCP descriptor tools must be a list")
     names: list[str] = []
     for tool in tools:
-        if (
-            not isinstance(tool, Mapping)
-            or not isinstance(tool.get("name"), str)
-            or not tool["name"]
-        ):
-            raise McpProfileError("MCP tool name must be a non-empty string")
-        names.append(str(tool["name"]))
+        names.append(require_tool_name(tool.get("name") if isinstance(tool, Mapping) else None))
     if names != sorted(names) or len(names) != len(set(names)):
         raise McpProfileError("MCP tools are not in deterministic name order")
     if "$defs" in document:
@@ -609,6 +615,36 @@ def _reject_context_overwrite(schema: object) -> None:
         raise McpProfileError("MCP input schema cannot overwrite governed_context_ref")
 
 
+@lru_cache(maxsize=1)
+def _official_tool_validator(fixture_json: str) -> tuple[dict[str, Any], Any]:
+    """Validate a private snapshot. Reusing it depends on every byte of the fixture."""
+    fixture = json.loads(fixture_json)
+    if fixture.get("$schema") not in ACCEPTED_DIALECTS:
+        raise McpProfileError("official MCP schema fixture is not a JSON Schema")
+    Draft202012Validator.check_schema(fixture)
+    registry = Registry().with_resource(OFFICIAL_SCHEMA_URI, DRAFT202012.create_resource(fixture))
+    tool = registry.resolver(OFFICIAL_SCHEMA_URI).lookup("#/$defs/Tool")
+    pending = [(tool.contents, tool.resolver)]
+    visited: set[tuple[int, str]] = set()
+    while pending:
+        node, resolver = pending.pop()
+        if isinstance(node, bool):
+            continue
+        if not isinstance(node, dict):
+            raise McpProfileError("official MCP schema fixture is not a JSON Schema")
+        key = (id(node), resolver._base_uri)
+        if key in visited:
+            continue
+        visited.add(key)
+        for keyword in ("$ref", "$dynamicRef"):
+            if keyword in node:
+                target = resolver.lookup(node[keyword])
+                pending.append((target.contents, target.resolver))
+        for resource in DRAFT202012.create_resource(node).subresources():
+            pending.append((resource.contents, resolver.in_subresource(resource)))
+    return fixture, Draft202012Validator({"$ref": OFFICIAL_SCHEMA_URI + "#/$defs/Tool"}, registry=registry)
+
+
 def _validate_tools(tools: list[Any], schema: Mapping[str, Any]) -> None:
     if not isinstance(schema, Mapping):
         raise McpProfileError("official MCP schema fixture has no Tool definition")
@@ -619,13 +655,12 @@ def _validate_tools(tools: list[Any], schema: Mapping[str, Any]) -> None:
     if not isinstance(tool_definition, Mapping):
         raise McpProfileError("official MCP schema fixture has no Tool definition")
     try:
-        validator = Draft202012Validator(
-            {"$ref": OFFICIAL_SCHEMA_URI + "#/$defs/Tool"},
-            registry=Registry().with_resource(
-                OFFICIAL_SCHEMA_URI, Resource.from_contents(dict(schema))
-            ),
-        )
-    except _SCHEMA_LIBRARY_ERRORS as exc:
+        snapshot, validator = _official_tool_validator(json.dumps(dict(schema), allow_nan=False))
+        # JSON encoding coerces tuples and non-string object keys. A fixture
+        # must itself have the schema shape that was checked and cached.
+        if schema != snapshot:
+            raise McpProfileError("official MCP schema fixture is not a JSON Schema")
+    except (*_SCHEMA_LIBRARY_ERRORS, Unresolvable, re.error, RecursionError) as exc:
         raise McpProfileError(
             "official MCP schema fixture is not a JSON Schema"
         ) from exc
@@ -637,7 +672,7 @@ def _validate_tools(tools: list[Any], schema: Mapping[str, Any]) -> None:
                 validator.iter_errors(tool),
                 key=lambda item: tuple(str(part) for part in item.absolute_path),
             )
-        except _SCHEMA_LIBRARY_ERRORS as exc:
+        except (*_SCHEMA_LIBRARY_ERRORS, Unresolvable, re.error, RecursionError) as exc:
             raise McpProfileError(
                 "official MCP schema fixture is not a JSON Schema"
             ) from exc
@@ -648,12 +683,12 @@ def _validate_tools(tools: list[Any], schema: Mapping[str, Any]) -> None:
             raise McpProfileError(
                 f"MCP tool {index} is not a Tool of the pinned revision: {detail}"
             )
-        _require_draft_2020_12(tool.get("inputSchema"), index, "inputSchema")
+        require_tool_field(tool.get("inputSchema"), index, "inputSchema")
         if "outputSchema" in tool:
-            _require_draft_2020_12(tool["outputSchema"], index, "outputSchema")
+            require_tool_field(tool["outputSchema"], index, "outputSchema")
 
 
-def _require_draft_2020_12(schema: object, index: int, field: str) -> None:
+def require_tool_field(schema: object, index: int, field: str) -> None:
     """Reject a tool schema that is not a JSON Schema 2020-12 object.
 
     FABLE52-POST-POC-PROGRAMME (2026-11-11) point 1(a) requires each ``inputSchema``

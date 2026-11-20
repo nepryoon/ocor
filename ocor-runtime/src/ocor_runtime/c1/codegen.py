@@ -36,6 +36,8 @@ from .mcp_profile import (
     enter_subschema,
     json_bounds,
     operational_base,
+    require_tool_field,
+    require_tool_name,
     without_context_overwrite,
 )
 from .ports import ArtifactManifestEntry, C1Diagnostic, C1Error, CanonicalIrRelease, DiagnosticCode
@@ -815,6 +817,10 @@ def _mcp(model: _Model) -> bytes:
     ordered = sorted(model.requests(), key=lambda c: (local_name(str(c["contract_id"])), str(c["contract_id"])))
     for contract in ordered:
         name = local_name(str(contract["contract_id"]))
+        try:
+            require_tool_name(name)
+        except McpProfileError as exc:
+            raise _mcp_error(DiagnosticCode.TYPE_ERROR, "mcp-descriptor", str(exc)) from exc
         if name in seen:
             raise C1Error((C1Diagnostic(
                 DiagnosticCode.TYPE_ERROR, "mcp-descriptor", f"duplicate MCP tool name {name}",
@@ -853,6 +859,10 @@ def _mcp(model: _Model) -> bytes:
                 path=path,
                 base_uri=base_uri,
             )
+            try:
+                require_tool_field(tool[field], index, field)
+            except McpProfileError as exc:
+                raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, str(exc)) from exc
         tools.append(tool)
     document = {
         "x-ocor-mcp-protocol-revision": MCP_PROTOCOL_REVISION,
