@@ -1003,7 +1003,7 @@
     "provider": "OpenAI",
     "model": "gpt-6.2-astra",
     "effort": "ultra",
-    "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger."
+    "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger. Implemented the post-review correction and measured the cycle 13 self-check."
   },
   "input_robustness_self_check": {
     "applied_sections": [
@@ -1033,7 +1033,7 @@
       "stdout_preserved": "/home/luca/.ocor-codex/rem-0063/cycle13-b1-20261120/cell-scan.log"
     },
     "change_set_rows": {
-      "mcp_profile.py": 77,
+      "mcp_profile.py": 78,
       "mcp_call.py": 7,
       "mcp_boundary.py": 1,
       "codegen.py": 29
@@ -3121,12 +3121,19 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle10_final_depth_boundary"
         ],
         "oracle": {
-          "observations": "Native JSON scalars, lists and dictionaries and the supported frozen containers are counted before serialization.",
+          "method": "Counted final JSON values and depth at the two legislative limits, plus representation invariance under list and object embedding.",
           "collected_cases": {
             "test_cycle13_boundary_json_containers": 22,
             "test_cycle10_final_node_boundary": 8,
             "test_cycle10_final_depth_boundary": 8
-          }
+          },
+          "executed": 38,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3148,11 +3155,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
         ],
         "oracle": {
-          "observations": "Malformed root authorities are translated before a field resource can be opened. A fixed URI colliding with a declared identifier is rejected.",
+          "method": "The root-URI grammar and the prescribed per-field URI in the two-index collision matrix give the expected result independently.",
           "collected_cases": {
-            "test_cycle13_boundary_identifier": 36,
+            "test_cycle13_boundary_identifier": 42,
             "test_cycle13_exact_fixed_base_collision": 16
-          }
+          },
+          "executed": 58,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3173,10 +3187,17 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_derived_name"
         ],
         "oracle": {
-          "observations": "Both the compiler output and delivered Tool require a non-empty string name.",
+          "method": "No library defines the OCOR mapping from contract ID to Tool name. The property is that a non-empty suffix survives rendering and an empty suffix gives the specified diagnostic; the two source cases test this.",
           "collected_cases": {
             "test_cycle13_boundary_derived_name": 2
-          }
+          },
+          "executed": 2,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3196,15 +3217,26 @@
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_reference_outcome",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_official_fixture",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_arithmetic_error_ownership",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_tool_arithmetic_predicate"
         ],
         "oracle": {
-          "observations": "The public boundary checks the revision, field resources, transport binding, official fixture and finished schema.",
+          "method": "Draft202012Validator on Tool, fresh standalone referencing resolvers, and the independent graph enumerator decide the respective input classes.",
           "collected_cases": {
             "test_cycle13_exact_reference_outcome": 10,
             "test_cycle13_boundary_official_fixture": 18,
-            "test_cycle13_static_progress": 144
-          }
+            "test_cycle13_static_progress": 144,
+            "test_cycle13_arithmetic_error_ownership": 6,
+            "test_cycle13_tool_arithmetic_predicate": 2
+          },
+          "executed": 180,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3225,10 +3257,17 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_official_fixture"
         ],
         "oracle": {
-          "observations": "The cached Tool validator is built from the exact fixture snapshot after meta-schema and reachable-reference checks.",
+          "method": "Draft202012Validator.check_schema and the known local targets of the Tool fixture determine the fixture controls.",
           "collected_cases": {
             "test_cycle13_boundary_official_fixture": 18
-          }
+          },
+          "executed": 18,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3240,7 +3279,7 @@
         "checks": {
           "boundary_digests": "N/A: this path does not receive a credential, digest or signature to authenticate.",
           "complete_normative_records": "N/A: this path checks a tool schema; it does not construct a governed context record.",
-          "finite_numbers": "PASS: numeric input is checked by the shared descriptor bounds before delivery and by the finished rendering bounds before emission. This path introduces no numeric coercion.",
+          "finite_numbers": "FIXED: the validator now translates arithmetic failures at the fixture or Tool stage. Numeric predicate controls and each exception family have exact outcomes.",
           "processes_and_resources": "N/A: this path processes in-memory schema data or a local library object without starting a process or opening a connection.",
           "strict_decoding": "PASS: the input here is an already decoded document or a library state derived from it. URI fragments use the shared lookup and the supplied fixture is meta-validated.",
           "types_before_conversions": "PASS: Fixture errors, Tool shape errors and errors in the finished field have distinct bounded diagnostics."
@@ -3248,15 +3287,26 @@
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_official_fixture",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_boundary_restored_fields",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_arithmetic_error_ownership",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_tool_arithmetic_predicate"
         ],
         "oracle": {
-          "observations": "Fixture errors, Tool shape errors and errors in the finished field have distinct bounded diagnostics.",
+          "method": "The pinned Tool and field meta-schema, the progress graph, and injected arithmetic errors at each boundary isolate the source of each error.",
           "collected_cases": {
             "test_cycle13_boundary_official_fixture": 18,
             "test_cycle13_boundary_restored_fields": 22,
-            "test_cycle13_static_progress": 144
-          }
+            "test_cycle13_static_progress": 144,
+            "test_cycle13_arithmetic_error_ownership": 6,
+            "test_cycle13_tool_arithmetic_predicate": 2
+          },
+          "executed": 192,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3279,12 +3329,19 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
         ],
         "oracle": {
-          "observations": "Both public paths call the same finished-field check after shape validation; each field has its own resource.",
+          "method": "Standalone Draft202012Validator, its lookup contexts and the independent B1 progress graph determine finished-field admission.",
           "collected_cases": {
             "test_cycle13_boundary_restored_fields": 22,
             "test_cycle13_evaluator_contexts": 2304,
             "test_cycle13_static_progress": 144
-          }
+          },
+          "executed": 2470,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3306,11 +3363,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_definition_only"
         ],
         "oracle": {
-          "observations": "The pinned draft identifies subschema positions independently from the name of a property.",
+          "method": "The independently traversed draft schema positions and direct lookups on the original standalone resource distinguish definition-only nodes.",
           "collected_cases": {
             "test_cycle13_context_root_and_incoming": 8640,
             "test_cycle13_context_definition_only": 16
-          }
+          },
+          "executed": 8656,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3332,11 +3396,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_definition_only"
         ],
         "oracle": {
-          "observations": "The introducing keyword labels each draft subschema. Definitions and instance-data positions retain their distinct reachability.",
+          "method": "The test enumerator labels children by their introducing draft keyword and checks both standalone lookup paths.",
           "collected_cases": {
             "test_cycle13_context_root_and_incoming": 8640,
             "test_cycle13_context_definition_only": 16
-          }
+          },
+          "executed": 8656,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3358,11 +3429,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context"
         ],
         "oracle": {
-          "observations": "Evaluator and collector modes retain the resolver of each pinned-library transition and the keyword that moves the instance.",
+          "method": "Pinned Draft202012Validator evaluation and annotation-collector paths on witnesses are compared with standalone resolve outcomes.",
           "collected_cases": {
             "test_cycle13_evaluator_contexts": 2304,
             "test_cycle13_progress_in_evaluation_context": 28
-          }
+          },
+          "executed": 2332,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3381,14 +3459,25 @@
         },
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_keeps_both_lookup_resolvers"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_keeps_both_lookup_resolvers",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_immutable_registry_visits",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_reindexed_progress_edges"
         ],
         "oracle": {
-          "observations": "Node, base URI, resource owner, registry and mode distinguish states after a lookup and collector transition.",
+          "method": "The two-context lookup control and equality of the pinned Registry before and after indexing distinguish a changed snapshot from a no-op.",
           "collected_cases": {
             "test_cycle13_progress_in_evaluation_context": 28,
-            "test_cycle13_evaluator_keeps_both_lookup_resolvers": 6
-          }
+            "test_cycle13_evaluator_keeps_both_lookup_resolvers": 6,
+            "test_cycle13_immutable_registry_visits": 6,
+            "test_cycle13_reindexed_progress_edges": 4
+          },
+          "executed": 44,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3408,15 +3497,24 @@
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_reachability",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_optional_child_progress_witness"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_optional_child_progress_witness",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_reindexed_progress_edges"
         ],
         "oracle": {
-          "observations": "A same-instance subgraph is checked for a cycle after finding all reachable states, including those beyond a consuming edge.",
+          "method": "Independent classification of edges by whether they consume a value, finite witnesses and same-instance graph reachability determine B1.",
           "collected_cases": {
             "test_cycle13_static_progress": 144,
             "test_cycle13_progress_reachability": 32,
-            "test_cycle13_optional_child_progress_witness": 4
-          }
+            "test_cycle13_optional_child_progress_witness": 4,
+            "test_cycle13_reindexed_progress_edges": 4
+          },
+          "executed": 184,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3439,12 +3537,19 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context"
         ],
         "oracle": {
-          "observations": "Reference resolution precedes the progress check; a name is scalar on every following same-instance transition.",
+          "method": "Draft202012Validator on finite witnesses and the independent graph walk determine the two phases of acceptance.",
           "collected_cases": {
             "test_cycle13_evaluator_contexts": 2304,
             "test_cycle13_static_progress": 144,
             "test_cycle13_progress_in_evaluation_context": 28
-          }
+          },
+          "executed": 2476,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3464,15 +3569,24 @@
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_root_and_incoming",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_unused_definition_seeds_paths",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_graph_depth"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_graph_depth",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_immutable_registry_visits"
         ],
         "oracle": {
-          "observations": "Reference-derived states remain mandatory. Root-applicable structural states retain their own resolution outcome.",
+          "method": "Test-only standalone context traversal, explicit path depth, and the idempotence of crawling an already indexed Registry are the controls.",
           "collected_cases": {
             "test_cycle13_context_root_and_incoming": 8640,
             "test_cycle13_context_unused_definition_seeds_paths": 48,
-            "test_cycle13_exact_graph_depth": 16
-          }
+            "test_cycle13_exact_graph_depth": 16,
+            "test_cycle13_immutable_registry_visits": 6
+          },
+          "executed": 8710,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3494,11 +3608,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle11_vf001_generator_refuses_profile_keyword_rules"
         ],
         "oracle": {
-          "observations": "Reached nodes retain draft and keyword checks after all root and reference contexts are enumerated.",
+          "method": "Standalone root and incoming lookups plus the specified OCOR keyword refusal independently fix the expected result.",
           "collected_cases": {
             "test_cycle13_context_root_and_incoming": 8640,
             "test_cycle11_vf001_generator_refuses_profile_keyword_rules": 10
-          }
+          },
+          "executed": 8650,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3520,11 +3641,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_keeps_both_lookup_resolvers"
         ],
         "oracle": {
-          "observations": "Only a schema in the current resource can be a target. A lookup supplies the resolver for the next hop.",
+          "method": "Pinned Resolver.lookup on the original schema and explicit OCOR rejection rules determine the target or exact refusal.",
           "collected_cases": {
             "test_cycle13_exact_reference_outcome": 10,
             "test_cycle13_evaluator_keeps_both_lookup_resolvers": 6
-          }
+          },
+          "executed": 16,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3546,11 +3674,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
         ],
         "oracle": {
-          "observations": "MCP calculation failures acquire the matching bounded public message when leaving the field boundary.",
+          "method": "No independent library defines OCOR diagnostic text. The boundary table gives separate exact errors for malformed URIs and collisions.",
           "collected_cases": {
-            "test_cycle13_boundary_identifier": 36,
+            "test_cycle13_boundary_identifier": 42,
             "test_cycle13_exact_fixed_base_collision": 16
-          }
+          },
+          "executed": 58,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3571,10 +3706,17 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
         ],
         "oracle": {
-          "observations": "The base of an unidentified field varies by tool index and field; collision tests use both indices.",
+          "method": "No library assigns OCOR synthetic URIs. Expected values use the specified tool index and field, with both fragment spellings.",
           "collected_cases": {
             "test_cycle13_exact_fixed_base_collision": 16
-          }
+          },
+          "executed": 16,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3596,11 +3738,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_context_definition_only"
         ],
         "oracle": {
-          "observations": "Draft subresource groups come from the pinned local library at import, before processing a descriptor.",
+          "method": "The standalone draft walker in the context oracle distinguishes schema-bearing positions from definition-only and instance-data positions.",
           "collected_cases": {
             "test_cycle13_context_root_and_incoming": 8640,
             "test_cycle13_context_definition_only": 16
-          }
+          },
+          "executed": 8656,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3622,11 +3771,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_exact_fixed_base_collision"
         ],
         "oracle": {
-          "observations": "The renderer maps the malformed-base and collision failures to their C1 type diagnostics.",
+          "method": "No library assigns C1 diagnostics. Expected code, path and message are determined by the boundary table and the source of the failure.",
           "collected_cases": {
-            "test_cycle13_boundary_identifier": 36,
+            "test_cycle13_boundary_identifier": 42,
             "test_cycle13_exact_fixed_base_collision": 16
-          }
+          },
+          "executed": 58,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3648,11 +3804,18 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_evaluator_compiled_source"
         ],
         "oracle": {
-          "observations": "Definition closure retains declarations needed by either evaluator context.",
+          "method": "The independently computed targets and witnesses in the parent and child resources determine which declarations the emitted field requires.",
           "collected_cases": {
             "test_cycle13_evaluator_preserves_declared_parent_target": 6,
             "test_cycle13_evaluator_compiled_source": 12
-          }
+          },
+          "executed": 18,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3675,12 +3838,19 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_progress_in_evaluation_context"
         ],
         "oracle": {
-          "observations": "Definition closure precedes the shared finished-field check on a restored or compiled release.",
+          "method": "Standalone validation of compiled and restored fields plus collector witnesses decides the emitted closure.",
           "collected_cases": {
             "test_cycle13_boundary_restored_fields": 22,
             "test_cycle13_evaluator_compiled_source": 12,
             "test_cycle13_progress_in_evaluation_context": 28
-          }
+          },
+          "executed": 62,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       },
       {
@@ -3703,12 +3873,52 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_static_progress"
         ],
         "oracle": {
-          "observations": "The renderer checks every finished field and derived tool name before returning descriptor bytes.",
+          "method": "The public name predicate, pinned meta-schema for restored fields and independent progress walk apply to the emitted descriptor.",
           "collected_cases": {
             "test_cycle13_boundary_derived_name": 2,
             "test_cycle13_boundary_restored_fields": 22,
             "test_cycle13_static_progress": 144
-          }
+          },
+          "executed": 168,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
+        }
+      },
+      {
+        "file": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py",
+        "function": "registry_identity",
+        "review_cycle": 13,
+        "paths": "The visit identifies the immutable resource map, anchor map, pending set and retrieval function held by the resolver.",
+        "rereads_stored_data": false,
+        "checks": {
+          "boundary_digests": "N/A: this property operates on an in-process registry snapshot and receives no digest or credential.",
+          "complete_normative_records": "N/A: this property constructs a tuple of Python identities for graph traversal.",
+          "finite_numbers": "N/A: all four numbers come from Python object identities, with no external numeric input.",
+          "processes_and_resources": "N/A: the resolver holds only in-memory registry state and creates no external resources.",
+          "strict_decoding": "N/A: the inputs are four immutable registry fields from referencing 0.37.0.",
+          "types_before_conversions": "FIXED: empty library crawls formerly generated distinct visit keys for one snapshot. The visited states retain the live resolver."
+        },
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_immutable_registry_visits",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py::test_cycle13_reindexed_progress_edges"
+        ],
+        "oracle": {
+          "method": "Pinned Registry equality establishes crawl idempotence and distinguishes the initial state from the indexed state; multiplicity is checked in both visits.",
+          "collected_cases": {
+            "test_cycle13_immutable_registry_visits": 6,
+            "test_cycle13_reindexed_progress_edges": 4
+          },
+          "executed": 10,
+          "result": "PASS",
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "measurement_commit": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952"
         }
       }
     ],
@@ -4388,7 +4598,7 @@
       "reviewed_head": "baef056e5bf6156c05578c303b0ab9edbbb87c79",
       "reviewer": {
         "agent": "Claude Code",
-        "independence_limits": "Fornitore (Anthropic) diverso dagli implementatori del task (Grok Build, grok-4.7, xAI, ciclo originale e riparazioni 1-6; Codex CLI, deepseek-flash, DeepSeek, riparazione 7) e dal verifier finale previsto (Codex, OpenAI). Processo e contesto separati, sola lettura, worktree staccato all'head esatto. Limite da dichiarare: secondo il preambolo, modelli dello stesso fornitore hanno deciso su delega completa tre richieste di questo task (REM-0063-REPAIR1-NO-GO e REM-0063-CYCLE2-NO-GO con claude-fable-5-2, REM-0063-CYCLE3-NO-GO con claude-opus-5-5); non hanno scritto codice n\u00e9 record dell'unit\u00e0. Revisore indicato dal PO per i cicli eccezionali (REM-0063-CYCLE7-NO-GO punto 4, ECCEZIONE-REM0063).",
+        "independence_limits": "Fornitore (Anthropic) diverso dagli implementatori del task (Grok Build, grok-4.7, xAI, ciclo originale e riparazioni 1-6; Codex CLI, deepseek-flash, DeepSeek, riparazione 7) e dal verifier finale previsto (Codex, OpenAI). Processo e contesto separati, sola lettura, worktree staccato all'head esatto. Limite da dichiarare: secondo il preambolo, modelli dello stesso fornitore hanno deciso su delega completa tre richieste di questo task (REM-0063-REPAIR1-NO-GO e REM-0063-CYCLE2-NO-GO con claude-fable-5-2, REM-0063-CYCLE3-NO-GO con claude-opus-5-5); non hanno scritto codice né record dell'unità. Revisore indicato dal PO per i cicli eccezionali (REM-0063-CYCLE7-NO-GO punto 4, ECCEZIONE-REM0063).",
         "model": "claude-fable-5-2",
         "provider": "Anthropic",
         "reserve": false
@@ -4460,7 +4670,7 @@
       "reviewed_head": "5356e0d3eb7b7168192afec98ea7685f00f641bb",
       "reviewer": {
         "agent": "Claude Code",
-        "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI). Per trasparenza: alcune decision request di questo task sono state decise per conto del PO con lo stesso modello, e la revisione informativa OCOR-DEV-REM-0063-baef056e5bf6-pre del ciclo 7 \u00e8 di Claude Code; quell'esito non \u00e8 stato letto n\u00e9 usato. Il verdetto OCOR-DEV-REM-0063-07eb4fd2040b-7 \u00e8 stato letto come dato, per conoscere il perimetro (VF-001 e VF-002).",
+        "independence_limits": "Fornitore diverso dagli implementatori del task (xAI, DeepSeek) e dal verifier finale previsto (OpenAI). Per trasparenza: alcune decision request di questo task sono state decise per conto del PO con lo stesso modello, e la revisione informativa OCOR-DEV-REM-0063-baef056e5bf6-pre del ciclo 7 è di Claude Code; quell'esito non è stato letto né usato. Il verdetto OCOR-DEV-REM-0063-07eb4fd2040b-7 è stato letto come dato, per conoscere il perimetro (VF-001 e VF-002).",
         "model": "claude-fable-5-2",
         "provider": "Anthropic",
         "reserve": false
@@ -4712,6 +4922,24 @@
         "advisory": 5
       },
       "disposition": "P1: adopted A1 and B1. P2-P5: entry-point and context matrices. P6: record, role and cell inventories for the reviewed code."
+    },
+    {
+      "request_id": "OCOR-DEV-REM-0063-0856cece3435-pre",
+      "result": "BLOCKING_FINDINGS",
+      "reviewed_head": "0856cece3435bd224a79a5a331bf22d1d84e4838",
+      "reviewer": {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "model": "claude-fable-5-2",
+        "reserve": false
+      },
+      "outcome_sha256": "534f2a1fa5ff4372ca0b33840fd448391697b91961d84c85c7d111bca98d454a",
+      "kind": "PRE_CAMPAIGN",
+      "counts": {
+        "blocking": 3,
+        "advisory": 4
+      },
+      "disposition": "P1 registry snapshot identity, P2 typed arithmetic failures and P3 row-level oracle results addressed in the single authorised correction."
     }
   ],
   "previous_observation": {
@@ -8359,7 +8587,7 @@
         "provider": "OpenAI",
         "model": "gpt-6.2-astra",
         "effort": "ultra",
-        "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger."
+        "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger. Implemented the post-review correction and measured the cycle 13 self-check."
       }
     ],
     "preventive_review_history": [
@@ -8434,7 +8662,7 @@
       },
       {
         "agent": "Claude Code",
-        "independence_limits": "Fornitore (Anthropic) diverso dagli implementatori del task (Grok Build, grok-4.7, xAI, ciclo originale e riparazioni 1-6; Codex CLI, deepseek-flash, DeepSeek, riparazione 7) e dal verifier finale previsto (Codex, OpenAI). Processo e contesto separati, sola lettura, worktree staccato all'head esatto. Limite da dichiarare: secondo il preambolo, modelli dello stesso fornitore hanno deciso su delega completa tre richieste di questo task (REM-0063-REPAIR1-NO-GO e REM-0063-CYCLE2-NO-GO con claude-fable-5-2, REM-0063-CYCLE3-NO-GO con claude-opus-5-5); non hanno scritto codice n\u00e9 record dell'unit\u00e0. Revisore indicato dal PO per i cicli eccezionali (REM-0063-CYCLE7-NO-GO punto 4, ECCEZIONE-REM0063).",
+        "independence_limits": "Fornitore (Anthropic) diverso dagli implementatori del task (Grok Build, grok-4.7, xAI, ciclo originale e riparazioni 1-6; Codex CLI, deepseek-flash, DeepSeek, riparazione 7) e dal verifier finale previsto (Codex, OpenAI). Processo e contesto separati, sola lettura, worktree staccato all'head esatto. Limite da dichiarare: secondo il preambolo, modelli dello stesso fornitore hanno deciso su delega completa tre richieste di questo task (REM-0063-REPAIR1-NO-GO e REM-0063-CYCLE2-NO-GO con claude-fable-5-2, REM-0063-CYCLE3-NO-GO con claude-opus-5-5); non hanno scritto codice né record dell'unità. Revisore indicato dal PO per i cicli eccezionali (REM-0063-CYCLE7-NO-GO punto 4, ECCEZIONE-REM0063).",
         "model": "claude-fable-5-2",
         "provider": "Anthropic",
         "request_id": "OCOR-DEV-REM-0063-baef056e5bf6-pre",
@@ -8504,6 +8732,15 @@
         "request_id": "OCOR-DEV-REM-0063-010f1f6faba3-pre",
         "result": "BLOCKING_FINDINGS",
         "reviewed_head": "010f1f6faba36f37f985406e9c0c915d7990eeae",
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "model": "claude-fable-5-2",
+        "reserve": false
+      },
+      {
+        "request_id": "OCOR-DEV-REM-0063-0856cece3435-pre",
+        "result": "BLOCKING_FINDINGS",
+        "reviewed_head": "0856cece3435bd224a79a5a331bf22d1d84e4838",
         "agent": "Claude Code",
         "provider": "Anthropic",
         "model": "claude-fable-5-2",
@@ -9268,7 +9505,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "inputSchema-properties-caf\u00e9-malformed-escape",
+            "case_id": "inputSchema-properties-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9289,7 +9526,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "inputSchema-$defs-caf\u00e9-malformed-escape",
+            "case_id": "inputSchema-$defs-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9310,7 +9547,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "inputSchema-allOf-caf\u00e9-malformed-escape",
+            "case_id": "inputSchema-allOf-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9331,7 +9568,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "inputSchema-const-caf\u00e9-malformed-escape",
+            "case_id": "inputSchema-const-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9352,7 +9589,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "inputSchema-default-caf\u00e9-malformed-escape",
+            "case_id": "inputSchema-default-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9373,7 +9610,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "inputSchema-examples-caf\u00e9-malformed-escape",
+            "case_id": "inputSchema-examples-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9394,7 +9631,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "outputSchema-properties-caf\u00e9-malformed-escape",
+            "case_id": "outputSchema-properties-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9415,7 +9652,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "outputSchema-$defs-caf\u00e9-malformed-escape",
+            "case_id": "outputSchema-$defs-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9436,7 +9673,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "outputSchema-allOf-caf\u00e9-malformed-escape",
+            "case_id": "outputSchema-allOf-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9457,7 +9694,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "outputSchema-const-caf\u00e9-malformed-escape",
+            "case_id": "outputSchema-const-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9478,7 +9715,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "outputSchema-default-caf\u00e9-malformed-escape",
+            "case_id": "outputSchema-default-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -9499,7 +9736,7 @@
             "old_expectation": "profile refusal while the standalone oracle accepts"
           },
           {
-            "case_id": "outputSchema-examples-caf\u00e9-malformed-escape",
+            "case_id": "outputSchema-examples-café-malformed-escape",
             "function": "test_cycle10_pointer_token_product",
             "library_outcome": "referencing 0.37.0 resolves #/$defs/bad~2 and Draft202012Validator.check_schema accepts",
             "new_expectation": "accepted, the same outcome as the standalone oracle",
@@ -10301,9 +10538,9 @@
       "provider": "OpenAI",
       "model": "gpt-6.2-astra",
       "effort": "ultra",
-      "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger."
+      "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger. Implemented the post-review correction and measured the cycle 13 self-check."
     },
-    "stage": "PRE_CAMPAIGN_REVIEW_PENDING",
+    "stage": "POST_REVIEW_CODE_AND_DIAGNOSTIC_REGRESSION_COMPLETE",
     "entry_point_checkpoint": "20fce5e3b798cc17407c50a666a6f01f1fe482dd",
     "context_checkpoint": {
       "baseline": "20fce5e3b798cc17407c50a666a6f01f1fe482dd",
@@ -10348,7 +10585,7 @@
       "sha256": "5ef3991c3c74118241f9988f39550e3d560a903af2a2a75758442fc432e8ddac"
     },
     "implementation_of_A1_B1": "A1_AND_B1_TASK_MODULE_GREEN",
-    "pre_campaign_review": "PENDING_LOOP_REVIEW",
+    "pre_campaign_review": "BLOCKING_FINDINGS_SINGLE_CORRECTION_IMPLEMENTED",
     "qualifying_campaign": "NOT_EXECUTED_CYCLE13",
     "distinct_check": "NOT_EXECUTED_CYCLE13",
     "final_verification": "NOT_REQUESTED_CYCLE13",
@@ -10507,7 +10744,10 @@
             "_check_reached_schemas",
             "_resolve_reference"
           ],
-          "reviewed_cycle13_rows": 19
+          "reviewed_cycle13_rows": 20,
+          "changed_class_members": [
+            "_ResolutionContext.registry_identity"
+          ]
         },
         "ocor-runtime/src/ocor_runtime/c1/codegen.py": {
           "module_functions": 33,
@@ -10555,9 +10795,9 @@
           "reviewed_cycle13_rows": 4
         }
       },
-      "code_head": "a1bb900b194a53754378887621054710c7609b8c",
-      "rows_added": 23,
-      "search": "Python AST module-level function inventory and ast.dump comparison against 2e4a3e51220a35bfec8bbfd93202f52bbaca7f19; call-site search for require_tool_field, _evaluation_edges and _check_evaluation_contexts in the two source modules.",
+      "code_head": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+      "rows_added": 24,
+      "search": "Python AST module-level function inventory and ast.dump comparison against 2e4a3e51220a35bfec8bbfd93202f52bbaca7f19; call-site search for require_tool_field, _evaluation_edges and _check_evaluation_contexts in the two source modules.; the registry_identity property is inventoried separately from module-level functions.",
       "consumers": [
         "validate_mcp_descriptor -> _validate_tools -> require_tool_field",
         "IrArtifactGenerator.render -> _mcp -> _mcp_attach_definitions -> require_tool_field"
@@ -10687,6 +10927,54 @@
         "bootstrap": "scripts/bootstrap_ci_environment.py --execute --timeout 600, clean shell in a disposable worktree",
         "health_ready": 11,
         "teardown": "PASS, zero residual containers, networks and volumes"
+      }
+    },
+    "post_review_correction": {
+      "authority": "REM-0063-RITORNO-AL-PROGETTO §7; REM-0063-CYCLE13-EVALUATION-CONTEXTS A1/B1; REM-0063-CYCLE12-VISIT-KEY option 1",
+      "reviewed_head": "0856cece3435bd224a79a5a331bf22d1d84e4838",
+      "code_head": "ed40da87593784e15c13e31a6fa05bd3a4ab2d5b",
+      "red_commit": "b9c2c489a2b0a85f834edf14444150af35ba3e17",
+      "runs": {
+        "red": {
+          "cases": 18,
+          "passed": 4,
+          "failures": 14,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 1.946,
+          "junit_sha256": "b6d46ea99d32c1a1edbcb0f6336eb94cfeb173a3e88ce831386b000a62071d03",
+          "stdout_sha256": "62fe748dc424d328166112892fc1a14bbba34a18b7773b2112a86c3b89f48769"
+        },
+        "green": {
+          "cases": 22,
+          "passed": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 2.021,
+          "junit_sha256": "773e0c5a68f0b1afd52da3938e27d7f47464622b7b0763fb40cbe70c1483725b",
+          "stdout_sha256": "26dde2f6afdd61cf9391997b223148608d96cd14a56e34011436ce7f02ed87eb"
+        },
+        "final": {
+          "cases": 53597,
+          "passed": 53597,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 1088.842,
+          "junit_sha256": "e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952",
+          "stdout_sha256": "d29ab3f6c48bc293766368abeee75faf454778451ed0045fae30d1d5d8e20a04"
+        }
+      },
+      "collection_sha256": "a374c6495992a47577ba87ef0103f3bd44cca612a4cb54c537a6fab32c9756ac",
+      "exact_junit_union": true,
+      "oracle_rows": 24,
+      "source_of_raw": "/home/luca/.ocor-codex/rem-0063/cycle13-review-fix-20261120",
+      "advisories": {
+        "P4": "Static checks cover reference resolution and evaluation progress. Tool arithmetic translation takes place when validating a Tool against the supplied fixture.",
+        "P5": "Repeated target meta-validation cost tracked for subsequent work.",
+        "P6": "Final record input, cell and role scans are due on the evidence candidate.",
+        "P7": "The historical table names the meta-schema and resolution results for each cell. The per-instance limitation is explicit in the README."
       }
     }
   },
