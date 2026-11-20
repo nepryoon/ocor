@@ -7861,3 +7861,77 @@ def test_cycle13_evaluator_keeps_both_lookup_resolvers(field, mode, position):
         leaf = resolved.resolver.lookup(resolved.contents["$ref"])
         assert leaf.contents == {"title": title}
     _cycle13_assert_delivery(schema, field, False)
+
+
+# The reachability oracle works on labelled edges, independently of the schema
+# renderer and profile. It never evaluates a recursive schema against an instance.
+def _cycle13_progress_oracle(edges):
+    """Enumerate simple paths until progress, termination, or a repeated state."""
+    pending = [(0, False, frozenset())]
+    reached = set()
+    while pending:
+        node, name, ancestors = pending.pop()
+        state = (node, name)
+        if state in ancestors:
+            return False
+        entry = (state, ancestors)
+        if entry in reached:
+            continue
+        reached.add(entry)
+        for target, step in edges.get(node, ()):
+            if step == "same" or (step == "object" and not name):
+                pending.append((target, name, ancestors | {state}))
+            elif not name:
+                pending.append((target, step == "name", frozenset()))
+    return True
+
+
+_CYCLE13_PROGRESS_STEPS = {
+    "allOf": "same", "not": "same", "dependentSchemas": "object",
+    "properties": "child", "items": "child", "propertyNames": "name",
+}
+
+
+def _cycle13_step(keyword, value):
+    if keyword == "allOf":
+        return {keyword: [value]}
+    if keyword in {"properties", "dependentSchemas"}:
+        return {keyword: {"entry": value}}
+    return {keyword: value}
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("origin", ["delivery", "restored"])
+@pytest.mark.parametrize("first", _CYCLE13_PROGRESS_STEPS)
+@pytest.mark.parametrize("second", _CYCLE13_PROGRESS_STEPS)
+def test_cycle13_static_progress(field, origin, first, second):
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    # Both schema nodes are in a dormant conditional. This discriminates
+    # structural admission from validation of any concrete instance.
+    message = "MCP schema contains a non-progressing evaluation cycle"
+    ref = "part" if origin == "restored" else "#/$defs/part"
+    definition = _cycle13_step(first, _cycle13_step(second, {"$ref": ref}))
+    schema = {"type": "object", "$defs": {"part": definition},
+              "if": False, "then": {"$ref": ref}}
+    steps = (_CYCLE13_PROGRESS_STEPS[first], _CYCLE13_PROGRESS_STEPS[second])
+    # dependentSchemas keeps the object instance but is unreachable on a name.
+    edges = {0: [(1, steps[0])], 1: [(0, steps[1])]}
+    accepted = _cycle13_progress_oracle(edges)
+    if origin == "restored":
+        if accepted:
+            _validate(_cycle13_restored(field, schema))
+        else:
+            with pytest.raises(C1Error) as exc:
+                _cycle13_restored(field, schema)
+            diagnostic, = exc.value.diagnostics
+            assert (diagnostic.code, diagnostic.message) == (DiagnosticCode.TYPE_ERROR, message)
+    else:
+        descriptor = _bare_descriptor()
+        descriptor["tools"][0][field] = schema
+        if accepted:
+            _validate(descriptor)
+        else:
+            with pytest.raises(McpProfileError) as exc:
+                _validate(descriptor)
+            assert str(exc.value) == message
