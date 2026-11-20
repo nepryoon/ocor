@@ -27,6 +27,7 @@ from .mcp_profile import (
     MAX_SCHEMA_DEPTH,
     MAX_SCHEMA_NODES,
     McpProfileError,
+    McpUnresolvedReference,
     SchemaCalculationFailure,
     UnsupportedJsonMapping,
     assert_reference_path_bound,
@@ -864,6 +865,8 @@ def _mcp(model: _Model) -> bytes:
             )
             try:
                 require_tool_field(tool[field], index, field)
+            except McpUnresolvedReference as exc:
+                raise _mcp_error(DiagnosticCode.UNRESOLVED_REFERENCE, path, str(exc)) from exc
             except McpProfileError as exc:
                 raise _mcp_error(DiagnosticCode.TYPE_ERROR, path, str(exc)) from exc
         tools.append(tool)

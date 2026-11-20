@@ -96,6 +96,10 @@ class McpProfileError(ValueError):
         super().__init__(message)
 
 
+class McpUnresolvedReference(McpProfileError):
+    """An unresolved local reference at either public tool boundary."""
+
+
 class SchemaCalculationFailure(Exception):
     """Internal failure of the one schema calculation shared by both callers.
 
@@ -722,6 +726,12 @@ def require_tool_field(schema: object, index: int, field: str) -> None:
             f"MCP tool {index} {field} is not a JSON Schema 2020-12 schema"
         ) from exc
 
+    try:
+        root_uri = operational_base(schema, index=index, field=field)
+    except SchemaCalculationFailure as exc:
+        raise _as_profile(exc) from exc
+    _check_evaluation_contexts(_schema_tree(schema, root_uri))
+
 
 def contained_subschemas(node: Mapping[str, Any]) -> tuple[object, ...]:
     """Subschemas the pinned draft indexes under ``node``.
@@ -1004,6 +1014,74 @@ def _ref_target_context(
     )
 
 
+def _evaluation_edges(
+    node: Mapping[str, Any], context: _ResolutionContext, mode: str,
+) -> Iterator[tuple[object, _ResolutionContext, str]]:
+    """Resolver transitions in the pinned validator and its annotation collectors.
+
+    In jsonschema 4.26.0, descend enters a resource. Evolving a validator with
+    just a new schema, or recursing with the same annotation collector, retains
+    the parent resolver (REM-0063-CYCLE13-EVALUATION-CONTEXTS, A1).
+    """
+    if mode == "indexes" and "items" in node:
+        return  # The collector returns all indexes before looking at any keyword.
+    if "$ref" in node:
+        target, resolved = _resolve_reference(node["$ref"], context)
+        yield target, resolved, mode
+
+    if mode == "validate":
+        if "unevaluatedProperties" in node:
+            yield node, context, "keys"
+        if "unevaluatedItems" in node:
+            yield node, context, "indexes"
+        # Once one member has succeeded, oneOf tests each remaining member
+        # with evolve instead of descend. A later member has both contexts.
+        for child in node.get("oneOf", [])[1:]:
+            yield child, context, mode
+
+    for keyword, child in _schema_edges(node):
+        if keyword in {"then", "else"} and "if" not in node:
+            continue
+        if mode == "validate":
+            if keyword in {"$defs", "definitions", "contentSchema", "unevaluatedItems"}:
+                continue
+            entered = context if keyword in {"not", "if", "contains"} else _descend(context, child)
+            yield child, entered, mode
+        elif keyword in {"allOf", "anyOf", "oneOf"}:
+            # Both collectors descend to test the member before collecting
+            # annotations on the successful member with their original resolver.
+            yield child, _descend(context, child), "validate"
+            yield child, context, mode
+        elif keyword in {"if", "then", "else"}:
+            if keyword == "if":
+                yield child, context, "validate"
+            yield child, context, mode
+        elif mode == "keys":
+            if keyword == "dependentSchemas":
+                yield child, context, mode
+            elif keyword in {"additionalProperties", "unevaluatedProperties"}:
+                yield child, _descend(context, child), "validate"
+        elif keyword in {"contains", "unevaluatedItems"}:
+            yield child, context, "validate"
+
+
+def _check_evaluation_contexts(tree: _SchemaTree) -> None:
+    """Require resolution on every reachable evaluator path of one finished field."""
+    pending = deque([(tree.root, _root_context(tree), "validate")])
+    # Keep the resolver alive: a library crawl can return a distinct registry
+    # at the same URI. The resource owner also disambiguates duplicate anchors.
+    visited: dict[tuple[int, str, int, int, str], _ResolutionContext] = {}
+    while pending:
+        node, context, mode = pending.popleft()
+        state = (id(node), context.base_uri, context.resource_id, id(context.registry), mode)
+        if state in visited:
+            continue
+        visited[state] = context
+        for child, resolver, child_mode in _evaluation_edges(node, context, mode):
+            if isinstance(child, Mapping):
+                pending.append((child, resolver, child_mode))
+
+
 def _resolve_graph(
     roots: Sequence[tuple[Any, _ResolutionContext]],
 ) -> tuple[list[tuple[Any, _ResolutionContext]], set[tuple[int, str]]]:
@@ -1117,7 +1195,7 @@ def _resolve_reference(
         # The library does not percent-decode anchor names. An encoded anchor
         # is refused, including one whose literal spelling is itself an anchor.
         if reference[1:] != decoded:
-            raise McpProfileError("MCP $ref does not resolve in the descriptor")
+            raise McpUnresolvedReference("MCP $ref does not resolve in the descriptor")
         _reject_ambiguous_anchor(context.resource_id, decoded, context.anchors)
     elif decoded.startswith("/"):
         raw_tokens = decoded[1:].split("/")
@@ -1125,7 +1203,7 @@ def _resolve_reference(
         _validate_pointer_array_indices(context.resolver, raw_tokens, tokens)
     resolved = _lookup_reference(context.resolver, reference)
     if resolved is None:
-        raise McpProfileError("MCP $ref does not resolve in the descriptor")
+        raise McpUnresolvedReference("MCP $ref does not resolve in the descriptor")
     target = resolved.contents
     _require_schema(target)
     return target, _ref_target_context(context, resolved.resolver, target)
