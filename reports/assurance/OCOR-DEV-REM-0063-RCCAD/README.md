@@ -199,11 +199,14 @@ mutual cross-product. Their restrictions are:
 The static matrix oracle uses `Resource.subresources`, `Resolver.in_subresource`
 and `Resolver.lookup` on the original resource, preserving registry crawl state.
 It checks `entry` with the same resolver/base. Its domain is the factored products,
-not all valid schemas: a static-context failure may be irrelevant when an anchor
-path reaches that node with a different library resolver. The existing profile
-rule and cycle-8 tests for those paths remain unchanged. The added 16-cell public
-characterisation uses real positive/negative `Draft202012Validator` instances,
-without the stricter static oracle. No original matrix assertion is weakened.
+not all valid schemas. A static `$ref` failure on an applicative node refuses the
+descriptor only when `referencing` 0.37.0 and `Draft202012Validator`, on the schema
+alone, with base B1 and a positive instance that reaches the node, reject. Where
+they accept, the profile accepts. A returned validation error is acceptance, not
+rejection. Nodes reachable from the root only through `$defs` or `definitions`
+stay exempt. Source: **REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE (2026-11-20)**,
+option 1, which completes **REM-0063-CYCLE12C-NO-GO** option 1. The three existing
+anchor tests stay unchanged. No original matrix assertion is weakened.
 
 ### Decisions, questions and stopping conditions
 
@@ -409,7 +412,7 @@ Rules stricter than the libraries, each with its own typed error:
 8. `without_context_overwrite` on the input schema. Source: **GENERATORE**, point 1.
 9. `json_bounds` is the only value-count limit. Reference-path depth 32 is a separate rule. Source: **REM-0063-CICLO-10-CONTRATTO**, point 2, and **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
 
-`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `json_bounds` and then `operational_base` on each tool schema field before `_mcp_attach_definitions`, then `json_bounds` on the assembled descriptor. A static failure still refuses the descriptor only when no reference path reaches that node. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.
+`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `json_bounds` and then `operational_base` on each tool schema field before `_mcp_attach_definitions`, then `json_bounds` on the assembled descriptor. A static `$ref` failure still refuses a node no reference path reaches. It also refuses an applicative node when `referencing` 0.37.0 and `Draft202012Validator`, on the schema alone, with base B1 and a positive instance that reaches the node, reject. Where they accept, the profile accepts. Nodes reachable from the root only through `$defs` or `definitions` stay exempt. Source: **REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE (2026-11-20)**, option 1, which completes **REM-0063-CYCLE12C-NO-GO** option 1. The implementation adds no dependency and accepts no spelling these decisions refuse.
 
 
 ## Cycle 11 record alignment
@@ -438,8 +441,8 @@ are not this commit.
 
 ## Cycle 12 record
 
-REM-0063-CYCLE11-NO-GO option 1 step 6. The production code stays the GREEN
-`b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac`. This section does not change it.
+REM-0063-CYCLE11-NO-GO option 1 step 6. The code head of this cycle-12 record is
+`da754e862a2c2fba621cf5d4534fcc5396299b6a`. This section does not change it.
 
 Rule 4 applies to every array index after the `referencing` 0.37.0 token
 split. A loose segment is not an early return. The generator enters resources
