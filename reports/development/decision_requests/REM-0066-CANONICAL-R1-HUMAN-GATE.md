@@ -1,6 +1,6 @@
 # REM-0066-CANONICAL-R1-HUMAN-GATE
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 
 ## Contesto
 
@@ -29,3 +29,19 @@ Opzione 1. È l'unica che elimina la causa: lo schema accetta un `ActionType` co
 ## Impatto e task bloccati
 
 Finché questa richiesta è aperta, `OCOR-DEV-REM-0066` è bloccato. Non si modifica lo schema, `reports/tests/test_schema_conformance.py` né `scripts/run_state_only_ci_path.py`. Non si scrive `prereview_request.json` e non si avvia la suite completa. Il branch `governed/ocor-dev-rem-0066-state-only-ci` resta all'HEAD `fe913c06a22d6fd48915dff177d6145de69b0a40`. L'opzione 1 modifica `inputs/normative/OCOR_Architectural_Design_Document_v1.1.md` e `inputs/normative/SHA256SUMS`: per questo la richiesta resta al Product Owner. `OCOR-DEV-REM-0065` non è bloccato da questa richiesta. `OCOR-DEV-REM-0063` resta bloccato da `REM-0063-CYCLE11-NO-GO`. Il branch di produzione resta `5ffc19bddca6bf0176575191e6bc3f0d4ea717d8`. Le campagne diagnostiche non si rilanciano. Il candidato del ciclo 11 non si modifica. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+## Disposition del Product Owner — 2026-11-18
+
+Decisione del Product Owner, presa di persona il 2026-11-18. `REM-0066-CANONICAL-R1-HUMAN-GATE (2026-11-18)`, **opzione 2**. Nota: decisa dal PO di persona. Stato: `DECIDED_BY_PO`.
+
+L'opzione 2 non è applicata. Con il solo `--ignore` di `reports/tests/test_schema_conformance.py`, pytest di `reports/tests` esce 3 su `reports/tests/test_v12_approval_readiness.py` riga 70, `SystemExit: 0`. Trattare gli altri script va oltre il testo dell'opzione 2. Nessun commit sopra `fe913c06a22d6fd48915dff177d6145de69b0a40`. Il branch `governed/ocor-dev-rem-0066-state-only-ci` resta a quell'HEAD. La richiesta successiva è `REM-0066-STATE-ONLY-IMPORT-EXIT`. Nessuna sua opzione è applicata. `PRE-CAMPAIGN-GATE` non è stato rieseguito. La suite completa non è partita. Nessun nuovo `DEC-*`. Claim invariati.
+
+La richiesta decisa è il file al commit `32a15467d8cc46626d58c1a3eeed79c998366f95`, sha256 `8c8aa9596430144a15f3470e2ac2e59a6f7b52eeeb0b92614ffdceb63906686b`. Il testo della decisione è riportato qui sotto.
+
+### REM-0066-CANONICAL-R1-HUMAN-GATE (2026-11-18) — decisione del PO
+
+Decisione del PO, presa di persona il 2026-11-18 (`DECISIONI-AL-PO (2026-11-16)`). Il PO risolve la decision request `REM-0066-CANONICAL-R1-HUMAN-GATE` (branch `governed/decision-request-rem0066-canonical-r1-human-gate`, commit `32a15467d8cc46626d58c1a3eeed79c998366f95`, file `reports/development/decision_requests/REM-0066-CANONICAL-R1-HUMAN-GATE.md`, sha256 `8c8aa9596430144a15f3470e2ac2e59a6f7b52eeeb0b92614ffdceb63906686b`) adottando l'**opzione 2**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa dal PO di persona») e nell'`ITERATION_LOG.md`, come per le altre decisioni del PO.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
