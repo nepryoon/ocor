@@ -1,6 +1,6 @@
 # REM-0063-CI-ARGV-LAUNCHER
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Head di `origin/main` alla pubblicazione: `11432b5e0b692d580a26dc300950105d4e2f29c2`.
 PR del sigillo, aperta e non toccata da questa pubblicazione: #722, branch `governed/ocor-dev-rem-0063-cycle10-campaign`, commit `7b0b90ee79bdae51b22365faca2a54159502a44f`.
@@ -60,3 +60,19 @@ Opzione 1. È l'unica che consegna gli stessi identificativi, nello stesso ordin
 Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`. Finché la richiesta è aperta non si modifica `scripts/run_qualifying_campaign.py`, non si modifica `reports/tests/test_kind_teardown_observation.py`, non si aggiungono commit alla PR #722 e non la si mergia. Gli altri task non sono bloccati da questa richiesta. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CANONICAL-R1-HUMAN-GATE`.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist del validatore del piano per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione.
+## Disposition del Product Owner — 2026-11-20
+
+Decisa per conto del PO secondo `DECISIONI-A-FABLE (2026-11-17)`, modello `claude-fable-5-2`, effort `max`. `REM-0063-CI-ARGV-LAUNCHER (2026-11-20)`, **opzione 1**. Nota: decisa per conto del PO, modello claude-fable-5-2, effort max. Stato: `DECIDED_BY_PO`.
+
+L'opzione 1 non è applicata in questa registrazione. Il file al commit `984fdb328337be31dcc16f2e055bf6954dd896f1` ha sha256 `7e17f8d0498eda82cae5289c05975d0cf8126a54dc4f8cd3b13ed4bcefed5c99`, verificato prima di questa disposition. L'attuazione è l'unità successiva: si applica l'opzione 1 esattamente come è scritta a quel commit. Le opzioni 2 e 3 non si applicano. Nessun nuovo `DEC-*`. Claim invariati.
+
+La richiesta decisa è quel commit. Il testo della decisione è riportato qui sotto.
+
+### REM-0063-CI-ARGV-LAUNCHER (2026-11-20) — decisione del PO, su delega completa
+
+Decisa per conto del PO secondo `DECISIONI-A-FABLE (2026-11-17)`, dal modello `claude-fable-5-2` con effort `max`. Il PO risolve la decision request `REM-0063-CI-ARGV-LAUNCHER` (branch `governed/decision-request-rem0063-ci-argv-launcher`, commit `984fdb328337be31dcc16f2e055bf6954dd896f1`, file `reports/development/decision_requests/REM-0063-CI-ARGV-LAUNCHER.md`, sha256 `7e17f8d0498eda82cae5289c05975d0cf8126a54dc4f8cd3b13ed4bcefed5c99`) adottando l'**opzione 1**.
+
+1. Applica le opzioni adottate esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni adottate descrivono esplicitamente, fermati e apri una decision request: la deciderà lo stesso programma.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa per conto del PO, modello claude-fable-5-2, effort max») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione presa dal PO di persona.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni adottate cambiano esplicitamente.
