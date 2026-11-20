@@ -479,6 +479,9 @@ class _SchemaTree:
     anchors: Mapping[tuple[int, str], tuple[Mapping[str, Any], ...]]
 
 
+_RegistryIdentity = tuple[int, int, int, int]
+
+
 @dataclass(frozen=True)
 class _ResolutionContext:
     """The resolver state at one schema node, on its tree.
@@ -502,6 +505,19 @@ class _ResolutionContext:
         if registry is None:
             return self.tree.registry
         return cast(Registry[Any], registry)
+
+    @property
+    def registry_identity(self) -> _RegistryIdentity:
+        """Identity of the persistent state of the pinned library's registry.
+
+        All four fields of referencing 0.37.0 participate. An empty crawl
+        creates a wrapper around the same four objects. A crawl that indexes
+        resources or anchors changes the snapshot. Visits keep the resolver
+        alive, so its backing objects cannot have their identities reused.
+        """
+        registry = self.registry
+        return (id(registry._resources), id(registry._anchors),
+                id(registry._uncrawled), id(registry._retrieve))
 
     @property
     def anchors(self) -> Mapping[tuple[int, str], tuple[Mapping[str, Any], ...]]:
@@ -688,7 +704,7 @@ def _validate_tools(tools: list[Any], schema: Mapping[str, Any]) -> None:
         # must itself have the schema shape that was checked and cached.
         if schema != snapshot:
             raise McpProfileError("official MCP schema fixture is not a JSON Schema")
-    except (*_SCHEMA_LIBRARY_ERRORS, Unresolvable, re.error, RecursionError) as exc:
+    except (*_SCHEMA_LIBRARY_ERRORS, Unresolvable, re.error, RecursionError, ArithmeticError) as exc:
         raise McpProfileError(
             "official MCP schema fixture is not a JSON Schema"
         ) from exc
@@ -700,6 +716,10 @@ def _validate_tools(tools: list[Any], schema: Mapping[str, Any]) -> None:
                 validator.iter_errors(tool),
                 key=lambda item: tuple(str(part) for part in item.absolute_path),
             )
+        except ArithmeticError as exc:
+            raise McpProfileError(
+                f"MCP tool {index} is not a Tool of the pinned revision: arithmetic evaluation failed"
+            ) from exc
         except (*_SCHEMA_LIBRARY_ERRORS, Unresolvable, re.error, RecursionError) as exc:
             raise McpProfileError(
                 "official MCP schema fixture is not a JSON Schema"
@@ -1079,11 +1099,11 @@ _CHILD_VALUE_EDGES = frozenset({
     "prefixItems", "items", "contains", "unevaluatedItems",
 })
 _CONTAINER_EDGES = _CHILD_VALUE_EDGES | {"propertyNames", "dependentSchemas", "collectKeys", "collectIndexes"}
-_EvaluatorState = tuple[int, str, int, int, str]
+_EvaluatorState = tuple[int, str, int, _RegistryIdentity, str]
 
 
 def _evaluator_state(node: object, context: _ResolutionContext, mode: str) -> _EvaluatorState:
-    return id(node), context.base_uri, context.resource_id, id(context.registry), mode
+    return id(node), context.base_uri, context.resource_id, context.registry_identity, mode
 
 
 def _require_evaluation_progress(
@@ -1159,14 +1179,14 @@ def _resolve_graph(
 
     order: list[tuple[Any, _ResolutionContext]] = []
     static_failures: list[tuple[int, bool, McpProfileError]] = []
-    visited_static: set[tuple[int, str, int, bool]] = set()
+    visited_static: set[tuple[int, str, _RegistryIdentity, bool]] = set()
     inventory = deque((node, context, True) for node, context in roots)
     references: deque[tuple[object, _ResolutionContext]] = deque()
     while inventory:
         node, context, from_root = inventory.popleft()
         if not isinstance(node, Mapping):
             continue
-        static_state = (id(node), context.base_uri, id(context.registry), from_root)
+        static_state = (id(node), context.base_uri, context.registry_identity, from_root)
         if static_state in visited_static:
             continue
         visited_static.add(static_state)
@@ -1182,13 +1202,13 @@ def _resolve_graph(
 
     # Drain the transitive closure from every seed once per resolver state.
     # Keeping each resolver in order also keeps its registry identity live.
-    visited_ref: set[tuple[int, str, int]] = set()
+    visited_ref: set[tuple[int, str, _RegistryIdentity]] = set()
     ref_states: set[tuple[int, str]] = set()
     while references:
         target, context = references.popleft()
         if not isinstance(target, Mapping):
             continue
-        state = (id(target), context.base_uri, id(context.registry))
+        state = (id(target), context.base_uri, context.registry_identity)
         if state in visited_ref:
             continue
         visited_ref.add(state)
