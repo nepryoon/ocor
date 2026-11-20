@@ -7788,3 +7788,21 @@ def test_cycle13_evaluator_contexts(field, root, origin, reference, placement, m
     emitted, = [tool[field] for tool in descriptor["tools"] if "payload" in tool[field].get("properties", {})]
     assert emitted["properties"]["payload"] == expected_holder
     _validate(descriptor)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("mode,position", [("validate", "not"), ("keys", "dependentSchemas"), ("indexes", "nested")])
+def test_cycle13_evaluator_preserves_declared_parent_target(field, mode, position):
+    # The only symbol occurrence is in the nested resource. It is evaluated
+    # on the outer resource too. Both explicit declarations are used.
+    subject = {"$id": "https://evaluation.invalid/subject", "$ref": "x", "$defs": {"x": {"title": "inner"}}}
+    holder, instance = _cycle13_evaluator_carrier(mode, position, subject)
+    schema = {"type": "object", "properties": {"payload": holder}, "$defs": {"x": {"title": "outer"}}}
+    expect = copy.deepcopy(schema)
+    subject["$ref"] = "#/$defs/x"
+    missing, witness = _cycle13_evaluator_oracle(field, schema, subject, True, instance)
+    assert (missing, witness) == ([], False)
+    descriptor = _cycle13_restored(field, expect)
+    emitted, = [tool[field] for tool in descriptor["tools"] if "payload" in tool[field].get("properties", {})]
+    assert emitted == schema
+    _validate(descriptor)
