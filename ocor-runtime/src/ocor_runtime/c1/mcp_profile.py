@@ -7,6 +7,11 @@ for JSON Schema 2020-12 ``$ref`` resolution: same-document fragments only, no ne
 fetch, and a fixed bound on schema depth and node count. ADD v1.3 line 382: a
 top-level ``governed_context_ref`` is transport-origin and is not part of the tool
 input schema.
+
+REM-0063-RITORNO-AL-PROGETTO (2026-11-20), §2. Check each reference in the
+root context when structural descent reaches it without crossing a definition
+member, and in every context reached by reference. A definition reached only
+by inventory retains its existing checks. This is a static delivery decision.
 """
 
 from __future__ import annotations
@@ -14,6 +19,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections import deque
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
@@ -728,21 +734,24 @@ def contained_subschemas(node: Mapping[str, Any]) -> tuple[object, ...]:
     become a sequence of characters.
     """
 
+    return tuple(child for _, child in _schema_edges(node))
+
+
+def _schema_edges(node: Mapping[str, Any]) -> Iterator[tuple[str, object]]:
+    """Keep the keyword that introduces each child, independent of member names."""
     if not isinstance(node, Mapping):
-        return ()
-    found: list[object] = []
+        return
     for key, value in node.items():
         if key in _SCHEMA_MAP_KEYWORDS and isinstance(value, Mapping):
-            found.extend(value.values())
-            continue
-        if key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, Sequence) and not isinstance(
+            for child in value.values():
+                yield key, child
+        elif key in _SCHEMA_ARRAY_KEYWORDS and isinstance(value, Sequence) and not isinstance(
             value, (str, bytes)
         ):
-            found.extend(value)
-            continue
-        if key in _SCHEMA_OBJECT_KEYWORDS:
-            found.append(value)
-    return tuple(found)
+            for child in value:
+                yield key, child
+        elif key in _SCHEMA_OBJECT_KEYWORDS:
+            yield key, value
 
 
 def _iter_schema_children(node: Mapping[str, Any]) -> Iterator[object]:
@@ -998,25 +1007,13 @@ def _ref_target_context(
 def _resolve_graph(
     roots: Sequence[tuple[Any, _ResolutionContext]],
 ) -> tuple[list[tuple[Any, _ResolutionContext]], set[tuple[int, str]]]:
-    """Resolve every ``$ref`` path before any keyword is checked.
+    """Resolve root-applicable and reference-derived contexts before keyword checks.
 
-    ``referencing`` owns every lookup. The static descent records, for each
-    schema node, the state the crawl assigns it; a reference path records
-    the resolver its lookup returned. A reference that does not resolve
-    rejects the descriptor, so the outcome cannot depend on the order of
-    members or the order of visits.
-
-    The profile rule that static keyword descent applies only to nodes no
-    reference reaches is realized as a fixed point. A static ``$ref`` is
-    resolved for every statically reached node, but its failure only
-    rejects the descriptor when no reference path reaches that node; the
-    set of reference-reached nodes is recomputed until it stops growing,
-    because a reference path can reach a node whose own static ``$ref``
-    seeds further reference paths. Reference-path resolutions are never
-    suppressed and raise at once. Trees never share state: every path
-    starts from its tree's root context, the descriptor has no resolution
-    tree, and each tool schema is checked on its own, so a node of one tree
-    is reached only with contexts of that tree.
+    Static inspection seeds reference paths even from an unused definition.
+    Outside definition maps, its resolver is mandatory alongside all resolvers
+    reached by reference. Within a definition map the inventory's failure is
+    decisive only if no reference path reaches that node (§2 of
+    REM-0063-RITORNO-AL-PROGETTO). Reference-derived failures always reject.
     """
 
     for node, context in roots:
@@ -1025,107 +1022,60 @@ def _resolve_graph(
         except SchemaCalculationFailure as exc:
             raise _as_profile(exc) from exc
 
-    static_order: list[tuple[Any, _ResolutionContext]] = []
-    static_refs: list[tuple[Any, _ResolutionContext]] = []
-    visited_static: set[tuple[int, str, int]] = set()
-    queue: list[tuple[Any, _ResolutionContext]] = list(roots)
-    while queue:
-        node, context = queue.pop(0)
+    order: list[tuple[Any, _ResolutionContext]] = []
+    static_failures: list[tuple[int, bool, McpProfileError]] = []
+    visited_static: set[tuple[int, str, int, bool]] = set()
+    inventory = deque((node, context, True) for node, context in roots)
+    references: deque[tuple[object, _ResolutionContext]] = deque()
+    while inventory:
+        node, context, from_root = inventory.popleft()
         if not isinstance(node, Mapping):
             continue
-        # Depth belongs to ``assert_reference_path_bound``. This walk does not
-        # carry a depth. The visit key keeps the registry identity.
-        state = (id(node), context.base_uri, id(context.registry))
-        if state in visited_static:
+        static_state = (id(node), context.base_uri, id(context.registry), from_root)
+        if static_state in visited_static:
             continue
-        visited_static.add(state)
-        static_order.append((node, context))
+        visited_static.add(static_state)
+        order.append((node, context))
         if "$ref" in node:
-            static_refs.append((node, context))
-        for child in _iter_check_children(node):
-            queue.append((child, _descend(context, child)))
-
-    ref_states: set[tuple[int, str]] = set()
-    ref_reached: set[int] = set()
-    static_outcomes: dict[tuple[int, str], tuple[object, _ResolutionContext]] = {}
-
-    static_sequence: list[int] = []
-    static_failures: dict[tuple[int, str], McpProfileError] = {}
-    ref_queue: list[tuple[Any, _ResolutionContext]] = []
-    visited_ref: set[tuple[int, str, int]] = set()
-    ref_order: list[tuple[Any, _ResolutionContext]] = []
-
-    def seed_static() -> None:
-        for node, context in static_refs:
-            identity = id(node)
-            key = (identity, context.base_uri)
-            static_sequence.append(identity)
             try:
-                target, target_context = _resolve_reference(
-                    node["$ref"], context
-                )
+                references.append(_resolve_reference(node["$ref"], context))
             except McpProfileError as exc:
-                static_failures[key] = exc
-                continue
-            static_outcomes[key] = (target, target_context)
-        for node, _context in static_refs:
-            key = (id(node), _context.base_uri)
-            if id(node) in ref_reached:
-                continue
-            outcome = static_outcomes.get(key)
-            if outcome is None:
-                continue
-            target, target_context = outcome
-            if isinstance(target, Mapping):
-                ref_queue.append((target, target_context))
+                static_failures.append((id(node), from_root, exc))
+        for keyword, child in _schema_edges(node):
+            root_applies = from_root and keyword not in {"$defs", "definitions"}
+            inventory.append((child, _descend(context, child), root_applies))
 
-    def drain_refs() -> None:
-        while ref_queue:
-            node, context = ref_queue.pop(0)
-            if not isinstance(node, Mapping):
-                continue
-            state = (id(node), context.base_uri, id(context.registry))
-            if state in visited_ref:
-                continue
-            visited_ref.add(state)
-            ref_reached.add(id(node))
-            ref_states.add((id(node), context.base_uri))
-            ref_order.append((node, context))
-            if "$ref" in node:
-                target, target_context = _resolve_reference(
-                    node["$ref"], context
-                )
-                if isinstance(target, Mapping):
-                    ref_queue.append((target, target_context))
-            for child in _iter_check_children(node):
-                ref_queue.append((child, _descend(context, child)))
-
-    seed_static()
-    drain_refs()
-    previous: set[int] | None = None
-    iterations = 0
-    while previous != ref_reached:
-        previous = set(ref_reached)
-        seed_static()
-        drain_refs()
-        iterations += 1
-        if iterations > MAX_SCHEMA_NODES:
-            raise McpProfileError("MCP schema exceeds the revision bounds")
-
-    for identity in static_sequence:
-        if identity in ref_reached:
+    # Drain the transitive closure from every seed once per resolver state.
+    # Keeping each resolver in order also keeps its registry identity live.
+    visited_ref: set[tuple[int, str, int]] = set()
+    ref_states: set[tuple[int, str]] = set()
+    while references:
+        target, context = references.popleft()
+        if not isinstance(target, Mapping):
             continue
-        for key, error in static_failures.items():
-            if key[0] == identity:
-                raise error
-    return static_order + ref_order, ref_states
+        state = (id(target), context.base_uri, id(context.registry))
+        if state in visited_ref:
+            continue
+        visited_ref.add(state)
+        ref_states.add((id(target), context.base_uri))
+        order.append((target, context))
+        if "$ref" in target:
+            references.append(_resolve_reference(target["$ref"], context))
+        for child in _iter_check_children(target):
+            references.append((child, _descend(context, child)))
+
+    ref_reached = {identity for identity, _ in ref_states}
+    for identity, from_root, error in static_failures:
+        if from_root or identity not in ref_reached:
+            raise error
+    return order, ref_states
 
 
 def _check_reached_schemas(
     order: Sequence[tuple[Any, _ResolutionContext]],
     ref_states: set[tuple[int, str]],
 ) -> None:
-    """Check each reached state: static contexts only where no ref lands."""
+    """Check context-independent dialect and keyword restrictions after resolution."""
 
     ref_reached = {identity for identity, _base in ref_states}
     for node, context in order:
