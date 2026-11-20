@@ -1,6 +1,6 @@
 # REM-0063-CYCLE12C-NO-GO
 
-Stato: `DECIDED_BY_PO`.
+Status: `DECIDED_BY_PO`.
 Livello: operativo. Unità: `OCOR-DEV-REM-0063`.
 Verdetto: `OCOR-DEV-REM-0063-2e4a3e51220a-12`, esito `NO_GO`, sha256 `e70d58bed97c278a882ab70bd3325a987d20a0775936679aa95b316960f501f3`.
 Head verificato: `2e4a3e51220a35bfec8bbfd93202f52bbaca7f19` sul branch `governed/ocor-dev-rem-0063-cycle10-campaign`.
@@ -104,3 +104,5 @@ Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate
 L'attuazione si è fermata sulla clausola della stessa opzione: un test esistente che fallisce per una causa diversa dall'esenzione rimossa obbliga a fermarsi e ad aprire una sola richiesta. La regola strutturale, provata e poi annullata senza commit sul candidato `2e4a3e51220a35bfec8bbfd93202f52bbaca7f19`, fa fallire 192 test in `test_cycle8_depth_and_order_differential_matches_the_library` (160), `test_cycle8_anchor_ref_follows_the_referencing_crawl` (16) e `test_cycle10_preserves_existing_anchor_lookup_context` (16): le librerie accettano, il profilo rifiuta. Nessun commit di codice. Nessuna allowlist, nessun record, nessuna `prereview_request.json`.
 
 La sola richiesta nuova è `REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE`, commit `7ca292c4adb953bd2772d7852c390f7a66b27e2c`, sha256 `6d954208386ca4253e794ab4b68fae93f3a35530004b4fe0f520970700f0970b`, branch `governed/decision-request-rem0063-cycle13-static-library-divergence`, bozza PR #711, non si integra. Nessuna sua opzione è applicata.
+
+L'intestazione del file usa la riga `Status:` con `DECIDED_BY_PO`, perché DR-STATUS-CLOSURE-SYNC (2026-11-09) confronta quella riga con lo stato del registro. Il file originale al commit `08bfe9034db5cd6c0f625dc50c603d7550c22ff6` resta invariato.
