@@ -1136,7 +1136,7 @@ def test_cycle3_a_local_ref_inside_instance_data_resolves(location: str) -> None
 
 
 def test_cycle3_a_self_ref_through_const_stays_inside_the_visited_set() -> None:
-    """A cycle through instance data is one visited schema, not an unbounded walk.
+    """Lookup through instance data resolves, but evaluation returns to the same value.
 
     MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the cycle lives inside the tool
     schema, the only resource the ref can resolve.
@@ -1147,7 +1147,7 @@ def test_cycle3_a_self_ref_through_const_stays_inside_the_visited_set() -> None:
         raise AssertionError("input schema is not an object")
     body["$defs"] = {"holder": {"const": {"$ref": "#/$defs/holder/const"}}}
     body["properties"] = {"name": {"$ref": "#/$defs/holder/const"}}
-    _validate(document)
+    _cycle13_expect_historical_cycle(document, "inputSchema")
 
 
 def test_cycle3_a_long_data_position_chain_still_hits_the_depth_bound() -> None:
@@ -1507,12 +1507,13 @@ def test_cycle4_an_anchor_inside_instance_data_is_not_a_plain_name_target() -> N
 
 
 def test_cycle4_a_self_anchor_stays_inside_the_visited_set() -> None:
-    """An anchor that points at itself is one visited schema, not a recursive walk.
+    """A self-anchor resolves and then fails the B1 instance-progress check.
 
     MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15): the chain lives inside the tool
     schema resource, the only tree the ``$ref`` can resolve in.
     """
-    _validate(_with_ref("#part", {"part": {"$anchor": "part", "$ref": "#part"}}))
+    document = _with_ref("#part", {"part": {"$anchor": "part", "$ref": "#part"}})
+    _cycle13_expect_historical_cycle(document, "inputSchema")
 
 
 def test_cycle4_an_anchor_hop_does_not_lift_the_depth_bound() -> None:
@@ -1767,13 +1768,13 @@ def test_cycle4_a_local_anchor_target_that_is_not_a_schema_is_rejected() -> None
 
 
 def test_cycle4_a_self_anchor_inside_the_tool_schema_stays_visited() -> None:
-    """An anchor that points at itself inside the tool schema is one visited schema."""
+    """The field resolves its own anchor and reports the B1 evaluation-cycle error."""
     schema = {
         "type": "object",
         "$defs": {"part": {"$anchor": "part", "$ref": "#part"}},
         "properties": {"x": {"$ref": "#part"}},
     }
-    _validate(_cycle4_embedded_tool(schema))
+    _cycle13_expect_historical_cycle(_cycle4_embedded_tool(schema), "inputSchema")
 
 
 def test_cycle4_an_anchor_behind_an_id_is_not_a_parent_anchor() -> None:
@@ -5438,6 +5439,9 @@ def test_cycle10_delivered_cartesian_standalone_oracle(field: str, root: str, id
     # The governed profile's preexisting fragment-only rule is stricter than
     # JSON Schema URI resolution (module docstring; decision cycle 7 point 2).
     expected = oracle_accepts and ref != "resource-uri"
+    if expected and ref == "empty" and position == "allOf" and _cycle13_historical_cycle(schema, field):
+        _cycle13_expect_historical_cycle(_cycle10_delivered(schema, field), field)
+        expected = False
     try:
         _validate(_cycle10_delivered(schema, field))
     except McpProfileError as exc:
@@ -5894,6 +5898,9 @@ def test_cycle10_two_level_resource_product(field: str, root: str, outer_id: str
     """Cross both ID dimensions, including ancestor/no-op and repeated URIs."""
     schema = _cycle10_layers(field, root, outer_id, inner_id, position, reference)
     accepted, trace = _cycle10_standalone_oracle(schema, field)
+    if accepted and reference == "empty" and position == "allOf" and _cycle13_historical_cycle(schema, field):
+        _cycle13_expect_historical_cycle(_cycle10_delivered(schema, field), field)
+        accepted = False
     try:
         _cycle10_profile_expectation(schema, field, accepted)
     except (AssertionError, ValueError) as exc:
@@ -6265,6 +6272,9 @@ def test_cycle10_relative_root_behaviour_classes(
     pointer = "#/$defs/holder/$defs/inner/" + _cycle10_edge_place(inner, position, {"$ref": reference})
     schema["properties"] = {"entry": {"$ref": pointer}}
     accepted, trace = _cycle10_standalone_oracle(schema, field)
+    if accepted and reference == "#" and position in {"allOf", "not"} and _cycle13_historical_cycle(schema, field):
+        _cycle13_expect_historical_cycle(_cycle10_delivered(schema, field), field)
+        accepted = False
     try:
         _cycle10_profile_expectation(schema, field, accepted)
     except (AssertionError, ValueError) as exc:
@@ -7935,3 +7945,294 @@ def test_cycle13_static_progress(field, origin, first, second):
             with pytest.raises(McpProfileError) as exc:
                 _validate(descriptor)
             assert str(exc.value) == message
+
+
+def _cycle13_historical_cycle(schema, field):
+    """Find a same-instance return in the historical property, applicator and reference cases."""
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+    from urllib.parse import urldefrag
+
+    uri = urldefrag(schema.get("$id", ""))[0] or f"urn:ocor:embedded-tool:0:{field}"
+    root = Registry().with_resource(uri, DRAFT202012.create_resource(schema)).resolver(uri)
+    # Start fresh at each child value. Keep node, base and the crawled
+    # registry for every lookup in the path so resource collisions are visible.
+    def identity(node, resolver):
+        registry = resolver._registry
+        resources = frozenset((uri, id(res.contents)) for uri, res in registry._resources.items())
+        anchors = frozenset((key, id(anchor.resource.contents)) for key, anchor in registry._anchors.items())
+        return id(node), resolver._base_uri, resources, anchors, frozenset(registry._uncrawled)
+
+    children = [(schema, root)]
+    starts = set()
+    while children:
+        start, ctx = children.pop()
+        entry = identity(start, ctx)
+        if entry in starts:
+            continue
+        starts.add(entry)
+        pending = [(start, ctx, (), ())]
+        while pending:
+            node, ctx, ancestors, steps = pending.pop()
+            if not isinstance(node, dict):
+                continue
+            state = identity(node, ctx)
+            if state in ancestors:
+                return steps[ancestors.index(state):]
+            path = ancestors + (state,)
+            if "$ref" in node:
+                resolved = ctx.lookup(node["$ref"])
+                pending.append((resolved.contents, resolved.resolver, path,
+                                (*steps, (ctx._base_uri, node["$ref"]))))
+            if "not" in node:
+                pending.append((node["not"], ctx, path, (*steps, (ctx._base_uri, "not"))))
+            for index, sub in enumerate(node.get("allOf", ())):
+                resolver = ctx.in_subresource(DRAFT202012.create_resource(sub))
+                pending.append((sub, resolver, path, (*steps, (ctx._base_uri, f"allOf/{index}"))))
+            for sub in node.get("properties", {}).values():
+                children.append((sub, ctx.in_subresource(DRAFT202012.create_resource(sub))))
+    return ()
+
+
+def _cycle13_expect_historical_cycle(descriptor, field):
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    assert _cycle13_historical_cycle(descriptor["tools"][0][field], field)
+    with pytest.raises(McpProfileError) as caught:
+        _validate(descriptor)
+    assert str(caught.value) == "MCP schema contains a non-progressing evaluation cycle"
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("origin", ["delivery", "restored"])
+@pytest.mark.parametrize("case", [
+    "unused", "dead-condition", "after-child", "finite-child", "finite-name",
+    "from-name", "object-only-on-name", "array-only-on-name",
+])
+def test_cycle13_progress_reachability(field, origin, case):
+    from jsonschema import Draft202012Validator
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    # The outer false branch makes all specimens safe to evaluate. The B1
+    # decision still requires static inspection of that branch on both paths.
+    pointer = "#/$defs/first"
+    second = "#/$defs/second"
+    ref1, ref2 = (pointer, second) if origin == "delivery" else ("first", "second")
+    first, last = {"$ref": ref2}, {"$ref": ref1}
+    use = {"$ref": ref1}
+    if case == "after-child":
+        use = {"properties": {"entry": use}}
+    elif case in {"from-name", "object-only-on-name", "array-only-on-name"}:
+        use = {"propertyNames": use}
+    if case == "finite-child":
+        last = {"prefixItems": [last]}
+    elif case == "finite-name":
+        last = {"propertyNames": last}
+    elif case == "object-only-on-name":
+        last = {"dependentSchemas": {"entry": last}}
+    elif case == "array-only-on-name":
+        last = {"unevaluatedItems": False, "contains": last}
+    schema = {"type": "object", "$defs": {"first": first, "second": last}}
+    if case != "unused":
+        schema.update({"if": False, "then": use})
+
+    refused = case in {"dead-condition", "after-child", "from-name"}
+    message = "MCP schema contains a non-progressing evaluation cycle"
+    if origin == "restored":
+        if refused:
+            with pytest.raises(C1Error) as caught:
+                _cycle13_restored(field, schema)
+            diagnostic, = caught.value.diagnostics
+            assert (diagnostic.code, diagnostic.message) == (DiagnosticCode.TYPE_ERROR, message)
+            return
+        descriptor = _cycle13_restored(field, schema)
+        _validate(descriptor)
+        return
+    # On a finite instance the dormant path is never entered. The static
+    # refusal of exactly the three reachable same-instance cycles is stronger.
+    registry = Registry().with_resource("urn:progress", DRAFT202012.create_resource(schema))
+    evaluator = Draft202012Validator(schema, _resolver=registry.resolver("urn:progress"))
+    assert list(evaluator.iter_errors({"entry": {}})) == []
+    descriptor = _cycle10_delivered(schema, field)
+    if refused:
+        with pytest.raises(McpProfileError) as err:
+            _validate(descriptor)
+        assert str(err.value) == message
+    else:
+        _validate(descriptor)
+
+
+def test_cycle13_progress_oracle_in_isolation():
+    import subprocess
+    import sys
+
+    source = inspect.getsource(_cycle13_progress_oracle)
+    probe = """
+import sys
+assert _cycle13_progress_oracle({0: [(1, "child")], 1: [(0, "same")]})
+assert not _cycle13_progress_oracle({0: [(1, "child")], 1: [(1, "same")]})
+assert _cycle13_progress_oracle({0: [(1, "name")], 1: [(1, "object")]})
+assert not any(n == 'ocor_runtime' or n.startswith('ocor_runtime.') for n in sys.modules)
+"""
+    subprocess.run([sys.executable, "-I", "-c", source + probe], check=True, timeout=30)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("form", ("anchor", "pointer"))
+@pytest.mark.parametrize("chain", (26, 27, 28, 29))
+def test_cycle13_exact_graph_depth(field, form, chain):
+    from jsonschema import Draft202012Validator
+    from ocor_runtime.c1 import mcp_profile as profile
+
+    schema = _cycle12_depth_schema(form, chain, deep=4)
+    Draft202012Validator.check_schema(schema)
+    resolver = _cycle11_library_registry(schema, field).resolver(_cycle11_fixed_base(field))
+    target = resolver.lookup(_cycle12_deep_reference(schema, 4)).contents
+    assert target is schema["$defs"]["a"]
+    # The independent count for this construction is four schema steps plus
+    # one per 'not' on the target's chain. Both production paths must meet it.
+    exceeded = chain + 4 > 32
+    tree = profile._schema_tree(schema, _cycle11_fixed_base(field))
+    if exceeded:
+        with pytest.raises(profile.SchemaCalculationFailure) as bound:
+            profile.assert_reference_path_bound(schema, resolver)
+        assert (bound.value.code, bound.value.message) == ("BOUNDS", "MCP schema exceeds the revision bounds")
+        with pytest.raises(profile.McpProfileError) as graph:
+            profile._resolve_graph([(tree.root, profile._root_context(tree))])
+        assert str(graph.value) == "MCP schema exceeds the revision bounds"
+    else:
+        profile.assert_reference_path_bound(schema, resolver)
+        order, states = profile._resolve_graph([(tree.root, profile._root_context(tree))])
+        profile._check_reached_schemas(order, states)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("index", [0, 1])
+@pytest.mark.parametrize("fragment", ["", "#"])
+@pytest.mark.parametrize("origin", ["generated", "delivered"])
+def test_cycle13_exact_fixed_base_collision(field, index, fragment, origin):
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    schema = {"type": "object", "properties": {
+        "child": {"$id": f"urn:ocor:embedded-tool:{index}:{field}" + fragment, "type": "object"}
+    }}
+    message = "MCP schema base collides with a declared $id"
+    if origin == "delivered":
+        document = _cycle10_delivered(schema, field)
+        if index:
+            document["tools"].insert(0, {"name": "aaa-prefix", "inputSchema": {"type": "object"}})
+        with pytest.raises(McpProfileError) as caught:
+            _validate(document)
+        assert str(caught.value) == message
+    else:
+        documents = copy.deepcopy(_fleet().oac_documents())
+        if index:
+            documents["module.yaml"]["definitions"].append(_contract("urn:ocor:contract:aaa-prefix"))
+        with pytest.raises(C1Error) as rejected:
+            _cycle10_generated(field, schema, documents=documents)
+        diagnostic, = rejected.value.diagnostics
+        assert (diagnostic.code, diagnostic.message) == (DiagnosticCode.TYPE_ERROR, message)
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("reference,expected", [
+    ("#/$defs/okay", None),
+    ("#/$defs/absent", "MCP $ref does not resolve in the descriptor"),
+    ("#/const", "MCP $ref target is not a JSON Schema 2020-12 schema"),
+    ("#/examples/00", "MCP $ref fragment is not a valid JSON Pointer"),
+    ("https://example.invalid/elsewhere", "MCP $ref must be a same-document fragment"),
+])
+def test_cycle13_exact_reference_outcome(field, reference, expected):
+    from jsonschema import Draft202012Validator
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+    from referencing.exceptions import Unresolvable
+
+    schema = {"type": "object", "properties": {"entry": {"$ref": reference}},
+              "$defs": {"okay": {"type": "string"}}, "const": 7, "examples": [{"type": "number"}]}
+    Draft202012Validator.check_schema(schema)
+    resolve = _cycle11_library_registry(schema, field).resolver(_cycle11_fixed_base(field))
+    if reference in {"#/$defs/absent", "https://example.invalid/elsewhere"}:
+        with pytest.raises(Unresolvable):
+            resolve.lookup(reference)
+    else:
+        target = resolve.lookup(reference).contents
+        assert target == {"#/$defs/okay": {"type": "string"}, "#/const": 7,
+                          "#/examples/00": {"type": "number"}}[reference]
+    document = _cycle10_delivered(schema, field)
+    if expected is None:
+        _validate(document)
+    else:
+        with pytest.raises(McpProfileError) as caught:
+            _validate(document)
+        assert str(caught.value) == expected
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("origin", ["delivery", "restored"])
+@pytest.mark.parametrize("mode,position,uses_outer", [
+    ("validate", "not", True), ("validate", "oneOf-later", True),
+    ("validate", "properties", False), ("keys", "dependentSchemas", True),
+    ("keys", "properties", False), ("indexes", "nested", True),
+    ("indexes", "items-short-circuit", False),
+])
+def test_cycle13_progress_in_evaluation_context(field, origin, mode, position, uses_outer):
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    # Only the outer definition returns to itself. The nested definition
+    # terminates. The false condition keeps both paths dormant on every input.
+    ref = "#/$defs/x" if origin == "delivery" else "x"
+    subject = {"$id": "https://progress.invalid/inner", "$ref": ref, "$defs": {"x": {"title": "leaf"}}}
+    holder, _ = _cycle13_evaluator_carrier(mode, position, subject)
+    parent = {"$ref": ref}
+    schema = {"type": "object", "if": False, "then": {"properties": {"p": holder}}, "$defs": {"x": parent}}
+    uri = f"urn:ocor:embedded-tool:0:{field}"
+    resolver = Registry().with_resource(uri, DRAFT202012.create_resource(schema)).resolver(uri)
+    inner = resolver.in_subresource(DRAFT202012.create_resource(subject))
+    pointer = "#/$defs/x"
+    assert inner.lookup(pointer).contents == {"title": "leaf"}
+    outer = resolver.lookup(pointer)
+    assert outer.resolver.lookup(pointer).contents is parent
+    message = "MCP schema contains a non-progressing evaluation cycle"
+    if origin == "delivery":
+        descriptor = _cycle10_delivered(schema, field)
+        if uses_outer:
+            with pytest.raises(McpProfileError) as caught:
+                _validate(descriptor)
+            assert str(caught.value) == message
+        else:
+            _validate(descriptor)
+    elif uses_outer:
+        with pytest.raises(C1Error) as rejected:
+            _cycle13_restored(field, schema)
+        diagnostic, = rejected.value.diagnostics
+        assert (diagnostic.code, diagnostic.message) == (DiagnosticCode.TYPE_ERROR, message)
+    else:
+        _validate(_cycle13_restored(field, schema))
+
+
+@pytest.mark.parametrize("field", _CYCLE10_FIELDS)
+@pytest.mark.parametrize("present", [False, True])
+def test_cycle13_optional_child_progress_witness(field, present):
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.jsonschema import DRAFT202012
+
+    # Follow a child-consuming recursion on two finite witnesses. The oracle
+    # counts the member steps independently of OCOR before the real evaluation.
+    instance = {"entry": {"entry": {}}} if present else {}
+    schema = {"type": "object", "properties": {"entry": {"$ref": "#"}}}
+    base = _cycle11_fixed_base(field)
+    resolver = Registry().with_resource(base, DRAFT202012.create_resource(schema)).resolver(base)
+    cursor = instance
+    depth = 0
+    while "entry" in cursor:
+        cursor = cursor["entry"]
+        assert resolver.lookup(schema["properties"]["entry"]["$ref"]).contents is schema
+        depth += 1
+    assert depth == (2 if present else 0)
+    assert list(Draft202012Validator(schema, _resolver=resolver).iter_errors(instance)) == []
+    _validate(_cycle10_delivered(schema, field))
