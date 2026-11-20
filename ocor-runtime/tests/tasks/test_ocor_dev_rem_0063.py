@@ -7437,3 +7437,174 @@ def test_cycle13_boundary_unused_definition_characterization() -> None:
     assert (diagnostic.code, diagnostic.message) == (
         DiagnosticCode.TYPE_ERROR, "MCP schema dialect must be JSON Schema 2020-12"
     )
+
+
+_CYCLE13_POSITIONS = (
+    "properties", "patternProperties", "additionalProperties", "propertyNames",
+    "items", "prefixItems", "allOf", "anyOf", "oneOf", "not", "if", "then",
+    "else", "dependentSchemas", "contains", "unevaluatedItems",
+    "unevaluatedProperties", "contentSchema",
+)
+_CYCLE13_ROOT_URI = "https://context.invalid/dir/tool.json"
+
+
+def _cycle13_context_oracle(schema: dict, field: str, instances: list) -> tuple:
+    """Independently enumerate §2 on finite matrix graphs, using only the pinned libraries."""
+    from urllib.parse import urldefrag
+
+    from jsonschema import Draft202012Validator
+    from referencing import Registry
+    from referencing.exceptions import Unresolvable
+    from referencing.jsonschema import DRAFT202012
+
+    base = urldefrag(schema.get("$id", ""))[0] or f"urn:ocor:embedded-tool:0:{field}"
+    root = DRAFT202012.create_resource(schema)
+    resolver = Registry().with_resource(base, root).resolver(base)
+    Draft202012Validator.check_schema(schema)
+    validator = Draft202012Validator(schema, _resolver=resolver)
+    witness = False
+    for instance in instances:
+        try:
+            list(validator.iter_errors(instance))
+        except Unresolvable:
+            witness = True
+
+    # The generated graphs have no cycles. Walk each path independently. A
+    # successful static lookup also seeds paths from an unused definition.
+    incoming = set()
+    misses = []
+
+    def visit(node, context, origin, path):
+        if not isinstance(node, dict):
+            return
+        if origin == "reference":
+            incoming.add(id(node))
+        if "$ref" in node:
+            try:
+                target = context.lookup(node["$ref"])
+            except Unresolvable:
+                misses.append((id(node), origin, path, context._base_uri, node["$ref"]))
+            else:
+                visit(target.contents, target.resolver, "reference", (*path, node["$ref"]))
+        for keyword, value in node.items():
+            children = DRAFT202012.subresources_of({keyword: value})
+            for child in children:
+                child_origin = origin
+                if origin == "root" and keyword in {"$defs", "definitions"}:
+                    child_origin = "definition"
+                visit(child, context.in_subresource(DRAFT202012.create_resource(child)),
+                      child_origin, (*path, keyword))
+
+    visit(schema, resolver, "root", ())
+    deciding = tuple((origin, path, uri, ref) for identity, origin, path, uri, ref in misses
+                     if origin != "definition" or identity not in incoming)
+    return witness, deciding
+
+
+def _cycle13_carrier(position: str, node: dict[str, Any]) -> tuple[dict[str, Any], object]:
+    if position in {"properties", "patternProperties", "dependentSchemas"}:
+        # A property named '$defs' is an ordinary applicator edge.
+        member = "^\\$defs$" if position == "patternProperties" else "$defs"
+        return {position: {member: node}}, {"$defs": "value"}
+    if position in {"allOf", "anyOf", "oneOf", "prefixItems"}:
+        return {position: [node]}, ["value"] if position == "prefixItems" else {}
+    if position in {"then", "else"}:
+        return {"if": position == "then", position: node}, {}
+    if position in {"items", "contains", "unevaluatedItems"}:
+        return {position: node}, ["value"]
+    if position in {"additionalProperties", "propertyNames", "unevaluatedProperties"}:
+        return {position: node}, {"p": "value"}
+    return {position: node}, "value"
+
+
+def _cycle13_context_schema(position: str, anchor_entry: str, spelling: str, location: str,
+                            reverse: bool, root_target: bool) -> tuple[dict[str, Any], list[object]]:
+    subject = {"$ref": "#/$defs/x"}
+    carrier, instance = _cycle13_carrier(position, subject)
+    properties = {"carrier": carrier}
+    defs: dict[str, Any] = {"x": {}} if root_target else {}
+    if anchor_entry != "none":
+        anchor, entry = anchor_entry.split("/")
+        subject[anchor] = "subject"
+        (defs if entry == "definition" else properties)["entry"] = {"$ref": "#subject"}
+    duplicate = {"$id": spelling, "$defs": {"x": {}}}
+    schema: dict[str, Any] = {"type": "object", "$id": _CYCLE13_ROOT_URI, "properties": properties}
+    if location == "$defs":
+        defs["duplicate"] = duplicate
+    else:
+        schema[location] = duplicate if location == "not" else [duplicate]
+    schema["$defs"] = defs
+    if reverse:
+        schema = dict(reversed(schema.items()))
+        schema["$defs"] = dict(reversed(defs.items()))
+        schema["properties"] = dict(reversed(properties.items()))
+    return schema, [{"carrier": instance}, {"entry": {}}, {}]
+
+
+def _cycle13_assert_delivery(schema: dict[str, Any], field: str, refuse: bool) -> None:
+    from ocor_runtime.c1.mcp_profile import McpProfileError
+
+    document = _bare_descriptor()
+    document["tools"][0][field] = schema
+    if refuse:
+        with pytest.raises(McpProfileError) as error:
+            _validate(document)
+        assert str(error.value) == "MCP $ref does not resolve in the descriptor"
+    else:
+        _validate(document)
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("position", _CYCLE13_POSITIONS)
+@pytest.mark.parametrize("anchor_entry", ["none", "$anchor/property", "$anchor/definition",
+                                          "$dynamicAnchor/property", "$dynamicAnchor/definition"])
+@pytest.mark.parametrize("spelling", [_CYCLE13_ROOT_URI, _CYCLE13_ROOT_URI + "#", "tool.json"])
+@pytest.mark.parametrize("location", ["allOf", "anyOf", "not", "$defs"])
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("root_target", [False, True])
+def test_cycle13_context_root_and_incoming(field: str, position: str, anchor_entry: str, spelling: str,
+                                          location: str, reverse: bool, root_target: bool) -> None:
+    schema, probes = _cycle13_context_schema(position, anchor_entry, spelling, location, reverse, root_target)
+    witness, misses = _cycle13_context_oracle(schema, field, probes)
+    assert bool(misses) == (not root_target), misses
+    if misses:
+        assert any(origin == "root" and path[-1] == position and ref == "#/$defs/x"
+                   for origin, path, _, ref in misses), misses
+    # contentSchema is indexed by the draft but does not evaluate its content.
+    assert witness == (not root_target and position != "contentSchema")
+    _cycle13_assert_delivery(schema, field, witness or bool(misses))
+
+
+@pytest.mark.parametrize("field", ["inputSchema", "outputSchema"])
+@pytest.mark.parametrize("keyword", ["$defs", "definitions"])
+@pytest.mark.parametrize("referenced", [False, True])
+@pytest.mark.parametrize("deciding_target", [False, True])
+def test_cycle13_context_definition_only(field: str, keyword: str, referenced: bool, deciding_target: bool) -> None:
+    # Swap target availability between the uncrawled root and the resource
+    # selected after anchor lookup. Only the deciding lookup may reject.
+    root_has_x = deciding_target != referenced
+    schema: dict[str, Any] = {"type": "object", "$id": _CYCLE13_ROOT_URI,
+                              "$defs": {"x": {}} if root_has_x else {}}
+    schema.setdefault(keyword, {})["subject"] = {"$anchor": "subject", "$ref": "#/$defs/x"}
+    schema["allOf"] = [{"$id": _CYCLE13_ROOT_URI, "$defs": {} if root_has_x else {"x": {}}}]
+    if referenced:
+        schema["properties"] = {"used": {"$ref": "#subject"}}
+    witness, misses = _cycle13_context_oracle(schema, field, [{"used": {}}, {}])
+    assert witness == (referenced and not deciding_target)
+    assert bool(misses) == (not deciding_target)
+    if misses:
+        assert {entry[0] for entry in misses} == {"reference" if referenced else "definition"}
+    _cycle13_assert_delivery(schema, field, witness or bool(misses))
+
+
+def test_cycle13_context_oracle_runs_without_production_imports() -> None:
+    import subprocess
+    import sys
+
+    source = inspect.getsource(_cycle13_context_oracle)
+    probe = """
+import sys
+assert _cycle13_context_oracle({"type": "object"}, "inputSchema", [{}]) == (False, ())
+assert not any(n == 'ocor_runtime' or n.startswith('ocor_runtime.') for n in sys.modules)
+"""
+    subprocess.run([sys.executable, "-I", "-c", source + probe], check=True, timeout=30)
