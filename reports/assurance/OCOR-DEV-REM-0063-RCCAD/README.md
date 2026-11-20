@@ -500,6 +500,56 @@ The first complete task-module regression on the same code at `175f4e897959a8ce4
 
 The complete invocation selected the module without filters, with pytest `-q -p no:cacheprovider --tb=line --junitxml=<output>`, the candidate source on `PYTHONPATH` and a 45-minute limit. The independent collection used pytest `--collect-only -q -p no:cacheprovider` on the same module and commit. Host: Intel(R) Core(TM) Ultra 9 275HX, 24 logical threads, 64,199,668 KiB RAM, kernel `7.0.0-43-generic`, Python 3.12.11. The installed Codex CLI package was `0.170.0`. The module uses in-process compilation, release rendering and pinned schema libraries. These results have no live-backend or independent-verifier claim.
 
+### Cycle 13 root and incoming reference contexts
+
+Under REM-0063-RITORNO-AL-PROGETTO (2026-11-20) §2, a reference reached from the schema root through applicators must resolve on that route as well as on every incoming reference route. A definition member ends root applicability. Its inventory lookup still seeds reference paths, even from an unused definition. If no such path reaches a definition-only node, its inventory failure still decides admission. A member name such as `$defs` under `properties` is an ordinary property name.
+
+The diagnostic regression exercised both public delivery fields. The 18 schema positions include the 13 design positions and `additionalProperties`, `propertyNames`, `unevaluatedProperties`, `unevaluatedItems` and `contentSchema`. The full product contains 8,640 cells. Each combines a target position, both fields, five anchor/entry alternatives (including no anchor), three same-URI spellings, four repeated-resource placements, both insertion orders and presence or absence of the root target. The independent oracle checks the draft meta-schema, observes instance evaluation and enumerates root, incoming and definition-only paths using the pinned draft's subresources and lookup results. For `contentSchema`, instance evaluation completes and the test checks the static result separately. An isolated Python process executes the oracle and checks its imports.
+
+| Additional controls | Collected cells |
+| --- | ---: |
+| Unreached definition or incoming anchor, opposite target availability, both definition keywords and fields | 16 |
+| An unused definition seeds direct and transitive paths through pointers into instance data, in both member orders | 48 |
+| Oracle import isolation | 1 |
+
+At test-only commit `dcea7621d15090461ac7e46dbd076198cda40f6a`, 3456 failed, 5249 passed, 42295 deselected in 35.30s. All 3,456 failures expected the exact unresolved-reference error and received an acceptance. At `3d2dbe05bd994f1b90f3f5ccf5df2e6ba7d984d9`, 8705 passed, 42295 deselected in 31.08s. The complete task module on that commit reported 51000 passed in 903.21s (0:15:03). The JUnit identities matched all 51,000 collected identities exactly once, with zero failures, errors or skips. All bytes of the earlier test file at `20fce5e3b798cc17407c50a666a6f01f1fe482dd` are preserved as its prefix. The existing-expectation change ledger has zero rows at this checkpoint.
+
+The task-module runs used the worktree source on `PYTHONPATH`, Python 3.12.11, `python -m pytest -q -p no:cacheprovider --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py` and a 45-minute limit. Targeted runs added `-k cycle13_context`. The complete run wrote JUnit XML and used an independent `--collect-only -q` for the identity check. The project stack is unnecessary for this in-process module. The four-lane campaign, distinct regression and verifier are pending. The A1 and B1 disposition arrived during the module run and is set out below.
+
+| Raw diagnostic file | SHA-256 |
+| --- | --- |
+| `red-all.log` | `9ec59dd1e9a82fb1ca473548e4f80080543b08db0042ae46f6cb9e0c121f075a` |
+| `green.log` | `4f901f12304ab825ac24c1f0a06ec44e574c96faaec33c4cce1b293258cb2240` |
+| `module.log` | `b8302d3ad3b4efcd2861ebfd6c15e6eed8d7101fe89f116af1ba0ea9b72161bd` |
+| `module.xml` | `15ce51af3993d347438805ce4cc249be0dc150ae4a0449cdd4de3b27155b3c84` |
+| `collected.txt` | `03d3d5f4194e2b7e0644ae985b02d486bf5164b7b8380f1f8f7c68c427ff923a` |
+
+### Cycle 13 evaluation and recursion contract
+
+REM-0063-CYCLE13-EVALUATION-CONTEXTS (20 November 2026) adopts A1 and B1 at request commit `8a38ac5efab5d95cb9800bbcf246d341c6315ede`. Its SHA-256 is `a5903e9cc23f06b5cdb660f2b7a8bf574b034b696bf5f3d92a4915efd2166f40`. These clauses extend §2 of REM-0063-RITORNO-AL-PROGETTO. The diagnostic module results in the preceding checkpoint cover the original structural and incoming contexts. Implementation and qualification of the following criteria are pending.
+
+**A1.** For each autonomous field, check the resolver contexts used by the pinned validator and by its two annotation collectors. Keep the resolver returned by a lookup across all subsequent steps. In a position where the evaluator retains the parent resolver, check that parent context as well as the structural context. An unresolved reference in any required context refuses delivery, including on a branch that an instance cannot select. Ordinary instance-validation errors represent evaluation that completed.
+
+| Operation in jsonschema 4.26.0 | Resolver behaviour to exercise |
+| --- | --- |
+| Direct validation | `not`, the condition of `if`, `contains`, and members of `oneOf` after a valid member can be evaluated with the parent resolver. The usual `descend` path enters the child. Separate the two ways of reaching a later `oneOf` member. |
+| Collection of evaluated object keys | The collector recurses on applicable `dependentSchemas`, selected conditions and branches, and successful combinator members with the parent validator. Property and pattern names contribute keys. Its checks on values for `additionalProperties` and `unevaluatedProperties` use `descend`. |
+| Collection of evaluated array indices | The collector tests `contains` and `unevaluatedItems` with the parent resolver on an element, and follows applicable conditionals and successful combinator members with the parent validator. Account for its early return on `items` and index handling of `prefixItems`. |
+| References from either collector | Continue on the lookup result and its returned resolver. Annotation gathering can continue through nested combinators or references even when only an ancestor declares `unevaluatedProperties` or `unevaluatedItems`. |
+
+The inventory comes from `jsonschema._keywords`, `find_evaluated_property_keys_by_schema` and `find_evaluated_item_indexes_by_schema` in the pinned installation. Exercise the product of position (including position within a combinator), field, public origin, reference form, resource base (absent, relative, absolute) and target placement. Cover pointer and named-anchor lookup, targets in the child only and in both resources, and controls without a matching target. Distinguish the two annotation collectors from ordinary evaluation and carry their mode when they recurse. For each reachable position supply an instance that exercises it. For a dormant position record the independent static expectation. In generator cases, give the renderer IR symbols and inspect the resulting standalone field. Assert the actual admission stage and reference spelling for each producer row.
+
+**B1.** Start the evaluation graph at the field root. Follow applicable references and evaluator edges on a finite graph, retaining resolver and evaluation mode. Static inventory of an unused definition does not start an evaluation there. Distinguish edges on the same instance from steps to a child value. A property name changes the value from an object to a string, so that edge cannot repeat on the same name. An evaluation-reachable cycle that can traverse only same-instance edges refuses the field with `MCP schema contains a non-progressing evaluation cycle`. Delivery raises `McpProfileError`. Generation raises `C1Error` with `TYPE_ERROR` before returning bytes. Traversal must also inspect what happens after a consuming edge because a cycle may begin at the child. A potential cycle in an unsatisfiable branch still refuses. A recursive field that descends into finite input and a cycle confined to an unused definition pass this check.
+
+| Producer-to-consumer acceptance example | Required observation |
+| --- | --- |
+| A field places a nested resource under `not` with a pointer available only in that nested resource | Refusal on direct delivery and before the renderer returns the finished field. With the target present on the parent as well, both operations succeed. |
+| A restored field references a definition that returns to itself on the same instance | The renderer and direct delivery both produce the B1 diagnostic. The control advances through an object member and admits a finite nested instance. |
+
+The B1 matrix covers a direct cycle, a multi-reference cycle, an optional branch with and without an activating witness, an unreachable definition, a name transition and recursion that consumes an object property or an array element. Use a bounded, independent graph oracle. Record each changed historical expectation against its exact case and deciding context. The final candidate will provide collected row counts, RED/GREEN results and the existing review and qualification sequence.
+
+Eight diagnostic observations on `3d2dbe05` establish the starting point for the A1/B1 tests. In each field, delivery admitted both `not` examples. The pinned evaluator completed only when the parent also had the target. For the restored-release pair, the renderer emitted and delivery admitted both a self-referencing definition and its child-consuming twin. Two bounded library lookups identified the return to the same schema node in each output. Only the twin crossed a child property. Diagnostic output SHA-256 `5ef3991c3c74118241f9988f39550e3d560a903af2a2a75758442fc432e8ddac`.
+
 ## Cycle 12 record
 
 REM-0063-CYCLE11-NO-GO option 1 step 6. The production code stays the GREEN
