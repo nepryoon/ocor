@@ -10396,3 +10396,21 @@ Prossima unità: applicare l'opzione 1 di `REM-0063-CI-ARGV-LAUNCHER` esattament
 
 
 Prima del commit di stato, rilettura immediata del preambolo il 2026-11-20T22:29:34.702142+00:00, sha256 `86c17c558389ed28afef6adcce01d31e098bdd1aaab6bea095030c0472d8651e`, identica alla rilettura del 2026-11-20T22:21:39.692146+00:00. Ultima sezione invariata: `REM-0063-CI-ARGV-LAUNCHER (2026-11-20)`. `exact_next_action`, `next_task` e `phase` del handoff sono allineati a quella rilettura. `po_decisions_pending` resta solo `REM-0066-STATE-ONLY-IMPORT-EXIT`. `active_iteration.blocking_decision_request` è null: l'unità successiva non è bloccata. I valori precedenti sono nei campi `historical_*_before_argv_option1_not_applied`.
+
+Gate locali di state sync sul commit `44ae020b9ea4ab3c41c657e2411b59236941ca7e`, 13 comandi, tutti exit 0. Suite completa non eseguita. Stack non richiesto.
+
+- `sha256sum -c inputs/normative/SHA256SUMS` — exit 0 — stdout sha256 `0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34`
+- `python scripts/verify.py --json` — exit 0 — stdout sha256 `61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413`
+- `python scripts/validate_evidence_input_drift.py` — exit 0 — stdout sha256 `5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed`
+- `python scripts/validate_language_policy.py` — exit 0 — stdout sha256 `ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d`
+- `python -m mypy` — exit 0 — stdout sha256 `606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130`
+- `ruff check .` — exit 0 — stdout sha256 `82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18`
+- `python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main` — exit 0 — stdout sha256 `c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba`
+- `python scripts/validate_rccad.py --base-ref origin/main` — exit 0 — stdout sha256 `0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f`
+- `python scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/state-sync-rem0066-import-exit-20261120 --path reports/development/EXECUTION_STATE.json --path reports/development/ITERATION_LOG.md --path reports/development/MODEL_HANDOFF.json` — exit 0 — stdout sha256 `8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1`
+- `python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json` — exit 0 — stdout sha256 `47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2`
+- `python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json` — exit 0 — stdout sha256 `d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25`
+- `python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json` — exit 0 — stdout sha256 `dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be`
+- `python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json` — exit 0 — stdout sha256 `66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83`
+
+Controllo di registro prima del commit dei digest: `python3 /home/luca/.ocor-codex/rem-0063/cycle13-review-fix-20261120/registry-check.py`. Riferimenti confrontati: 122. Intestazioni di disposition confrontate: 35. Errori di integrità: 0, nessuno corretto. Discrepanze storiche differite: 7, lo stesso insieme del sync precedente (commit di disposition abbreviati, intestazioni ancora aperte su richieste già decise, un task integrato ancora elencato). Sha256 dello stdout del registro: `261a6947f269c5cd6c5969d35c54c4f5f4af125ecf1c0c098dd045000ba22e1d`.
