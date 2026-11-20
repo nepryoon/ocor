@@ -28,6 +28,7 @@ from .mcp_profile import (
     MAX_SCHEMA_NODES,
     McpProfileError,
     SchemaCalculationFailure,
+    UnsupportedJsonMapping,
     assert_reference_path_bound,
     assert_walkable_schema_resource,
     autonomous_registry,
@@ -270,6 +271,8 @@ def _mcp_error(code: DiagnosticCode, path: str, message: str) -> C1Error:
 def _mcp_calculation_error(exc: SchemaCalculationFailure, path: str) -> C1Error:
     """Map one shared-calculation failure onto the generator's public diagnostic."""
 
+    if isinstance(exc, UnsupportedJsonMapping):
+        return _mcp_error(DiagnosticCode.TYPE_ERROR, path, "MCP schema resource is not an object")
     if exc.code == "CRAWL":
         message = "unresolved MCP definition"
         code = DiagnosticCode.UNRESOLVED_REFERENCE

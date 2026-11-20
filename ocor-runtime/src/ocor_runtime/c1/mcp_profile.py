@@ -105,6 +105,13 @@ class SchemaCalculationFailure(Exception):
         self.message = message
 
 
+class UnsupportedJsonMapping(SchemaCalculationFailure):
+    """A Python mapping outside the native and frozen JSON object representations."""
+
+    def __init__(self) -> None:
+        super().__init__("NOT_JSON", "MCP descriptor contains a value that is not JSON")
+
+
 def _as_profile(exc: SchemaCalculationFailure) -> McpProfileError:
     if exc.code in {"CRAWL", "NOT_RESOLVABLE"}:
         message = "MCP schema resource index is not resolvable"
@@ -148,6 +155,8 @@ def json_bounds(document: object) -> None:
                 visit(item, depth + 1)
             return
         if not isinstance(node, (dict, MappingProxyType)):
+            if isinstance(node, Mapping):
+                raise UnsupportedJsonMapping()
             raise SchemaCalculationFailure(
                 "NOT_JSON", "MCP descriptor contains a value that is not JSON"
             )
