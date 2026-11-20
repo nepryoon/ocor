@@ -550,6 +550,36 @@ The B1 matrix covers a direct cycle, a multi-reference cycle, an optional branch
 
 Eight diagnostic observations on `3d2dbe05` establish the starting point for the A1/B1 tests. In each field, delivery admitted both `not` examples. The pinned evaluator completed only when the parent also had the target. For the restored-release pair, the renderer emitted and delivery admitted both a self-referencing definition and its child-consuming twin. Two bounded library lookups identified the return to the same schema node in each output. Only the twin crossed a child property. Diagnostic output SHA-256 `5ef3991c3c74118241f9988f39550e3d560a903af2a2a75758442fc432e8ddac`.
 
+### Cycle 13 validator and annotation contexts
+
+Codex (`gpt-6.2-astra`, OpenAI, ultra) implemented A1 of REM-0063-CYCLE13-EVALUATION-CONTEXTS. On both public boundaries the finished field must resolve each reference with the resolver used by the pinned validator and by each applicable annotation collector. For example, `not` retains the parent resolver on a child with its own identifier. A definition used only in this context survives the generator's pruning if the parent declared it. A missing parent definition produces a typed refusal before the renderer can return an artefact.
+
+| Diagnostic coverage | Cases |
+| --- | ---: |
+| 32 positions × 2 fields × 3 root bases × 3 target placements × 4 origin and reference pairs | 2,304 |
+| The sole symbol occurrence needs different, explicitly declared parent and child definitions | 6 |
+| Source compiler, renderer and consumer, with the registered type reached only in the child or also on the root | 12 |
+| Two successive lookups must retain different library resolvers for the inner and outer targets | 6 |
+
+Delivery admits pointer, named-anchor and percent-encoded pointer spellings into the calculation. The restored-release rows provide an IR symbol which renders to its canonical definition pointer. IR symbol rendering cannot emit the other two spellings. The independent oracle uses the field's unmodified draft resource, the two named resolver contexts for each position, and a concrete instance. A separate isolated interpreter exercised the oracle with zero OCOR modules imported. The `oneOf` dormant witness and the array collector's early return on `items` distinguish potential evaluation, instance evaluation and an inapplicable collector edge. The exact positive and negative results distinguish an ordinary data constraint from a schema resolution failure.
+
+The initial RED exposed a fixture assumption about named anchors on a relative root. The corrected oracle uses the pinned resolver at the declared base. At test-only commit `30bc47f31fe0657da85ba20247bb9097a981d870`, 598 failed, 1706 passed, 51000 deselected in 40.42s. All 598 failures were missing refusals, 460 in delivery and 138 in rendering. On the intermediate implementation, the 2,304 cases passed. At `0b3d40e38f67f3b60559da3932ea441e70508121`, all six new explicit-definition controls failed because the renderer pruned the parent definition. Their GREEN run and the matrix together passed all 2,310 cases. The 18 source and transitive lookup controls passed on the final code. Replaying those additional controls with the baseline production tree gave six missing generator refusals and 12 passes. This replay is a separate diagnostic.
+
+At code and test commit `71ecf3cd8243af62c0d2158c84ad523b7fd38d20`, 53328 passed in 1040.61s (0:17:20). JUnit matched all 53,328 collected identifiers exactly once, with zero skips, failures or errors. The original test module at `136b0eef9f1a647228098fecfcb2cacb968c598b` is a byte-for-byte prefix of this version. The ledger of changed historical expectations has zero entries for A1.
+
+The command was `ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py` with `--junitxml`, a separate `--collect-only -q`, Python 3.12.11, jsonschema 4.26.0 and referencing 0.37.0. The task time limit was 2,700 seconds. The diagnostic runs under this heading are outside the qualifying campaign. B1 and the pre-campaign review are pending.
+
+| Raw diagnostic | SHA-256 |
+| --- | --- |
+| `red2.log` | `f91736f973d635c5db62d36556aa9d04c90ded296b8879d757417703d0a7b9e7` |
+| `closure-red.log` | `93e55b71a0840cfd7526d987375ff6c0f5b68886c48a3f7c7b1b659da3f27920` |
+| `evaluator.log` | `8a3aa33ae0ad75e85d480d8fb9b005ce81fc0f246ec38cb99067092d663fae4d` |
+| `source-red.log` | `5e1beb837dfc9bb602242d9f29dafd1a7902d43f4d13a305ba06792cd9a2ae5a` |
+| `sources.log` | `6b7ded25d99e6621f9d89f25415db3d86e8efcba44e2b9ce10d41d9e9b3719f4` |
+| `module.log` | `ea97bcb560d0a93aeb7fa5093476a46d02922696b8d6251fa6debc829eb9c758` |
+| `module.xml` | `de4213ddae478fc9bb9814d6bd8fb367779588c0f250615a67c932e1bbb6de5b` |
+| `collected.txt` | `5fe2ae6de172ae14ad252f15f144ba516a4fde0c92238391efaa1cf4e5f237ca` |
+
 ## Cycle 12 record
 
 REM-0063-CYCLE11-NO-GO option 1 step 6. The production code stays the GREEN
