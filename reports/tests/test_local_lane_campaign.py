@@ -967,7 +967,13 @@ def test_a_selection_past_arg_max_is_executed_with_the_same_identifiers_and_a_sh
     command = LANES.lane_process_command(output, selection, env=env, spec_path=spec)
     completed = subprocess.run(command, cwd=suite, env=env, capture_output=True, text=True, timeout=180, check=False)
     assert completed.returncode == 0, completed.stderr
-    assert json.loads(observed.read_text(encoding='utf-8')) == LANES.lane_pytest_command(output, selection)
+    sealed = LANES.lane_pytest_command(output, selection)
+    # ``python -m pytest`` consumes ``-m`` and ``pytest``. The overflow launcher
+    # must hand pytest that same tail. Leaving ``-m`` in sys.argv is a marker
+    # expression and deselects the lane.
+    observed_argv = json.loads(observed.read_text(encoding='utf-8'))
+    assert observed_argv == ['pytest', *sealed[3:]]
+    assert '-m' not in observed_argv
     assert marker.read_text(encoding='utf-8') == 'ran'
 
 

@@ -1,0 +1,141 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0063-cycle10-campaign",
+    "decision": "REM-0063-CYCLE12-REGRESSION-DRIFT option 1",
+    "id": "OCOR-DEV-REM-0063",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line reports/tests/test_check_execution_commit_inputs.py reports/tests/test_validate_post_poc_plan.py",
+      "cwd": ".",
+      "duration_seconds": 0.63,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "9d4c552041bb98122c655269e6ace44d38433840",
+      "label": "regression-rem0063-cycle12b",
+      "not_executed": 0,
+      "passed": 25,
+      "raw_sha256": "1058eaa64fb687df3a446d29257a61a7d13806c08ec8e87a4c9d24220ccf36a3",
+      "skipped": 0,
+      "started_at": "2026-11-19T10:40:45Z",
+      "status": "PASS",
+      "subtests_passed": 13,
+      "xfailed": 0
+    }
+  ],
+  "commit": "9d4c552041bb98122c655269e6ace44d38433840",
+  "commit_role": "Allowlist fingerprint at which this regression command ran. The record itself is a later commit and does not change these inputs.",
+  "created_at": "2026-11-19T10:43:11Z",
+  "drift_basis": {
+    "compared_to": "inputs of the sealed record reports/assurance/OCOR-DEV-REM-0062-RCCAD/OCOR-DEV-REM-0062.json",
+    "entries": [
+      {
+        "current_sha256": "286b458aa06cc40d58165d0b64c035b47ca4f2d0042cb487940f61d6e067237f",
+        "path": "reports/tests/test_check_execution_commit_inputs.py",
+        "sealed_sha256": "a2e92a8e93a4bd293384ea8b848174c3d7ed6134b0d96e2f1cbee12a76af43fe"
+      },
+      {
+        "current_sha256": "d6218731052639d32a5c102bb7450a4a9d6cced4da4032b0291827d7ffb3fa7f",
+        "path": "scripts/check_execution_commit_inputs.py",
+        "sealed_sha256": "a6c67b9aa4b9426fadeae5aa2c39f8e848b58ad35198eb65415fb8c6771b89eb"
+      },
+      {
+        "current_sha256": "a284aa5fa5127181ab40158c892a207c70256925835ed835f6bc3115a66166cc",
+        "path": "scripts/validate_ocor_development_plan.py",
+        "sealed_sha256": "138d4eaba706433b89975d0d88b3dc4af310d4ea9b659bfe3a98155a0f87f731"
+      }
+    ]
+  },
+  "drifted_inputs": [
+    "reports/tests/test_check_execution_commit_inputs.py",
+    "scripts/check_execution_commit_inputs.py",
+    "scripts/validate_ocor_development_plan.py"
+  ],
+  "environment": {
+    "branch": "governed/ocor-dev-rem-0063-cycle10-campaign",
+    "clean_shell": false,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "nep-LEGION",
+    "implementer_cli": "Grok Build (grok-4.7)",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "qualification_source_commit": "9d4c552041bb98122c655269e6ace44d38433840",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal from /proc/meminfo at the cycle-12 regression-drift session",
+    "threads": 24
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/tests/test_check_execution_commit_inputs.py": "286b458aa06cc40d58165d0b64c035b47ca4f2d0042cb487940f61d6e067237f",
+    "reports/tests/test_validate_post_poc_plan.py": "5a6efcc279b737ad1b3567bf8d38199c4e356f66cb0d74ae3ed0ef0d097a7fa8",
+    "scripts/check_execution_commit_inputs.py": "d6218731052639d32a5c102bb7450a4a9d6cced4da4032b0291827d7ffb3fa7f",
+    "scripts/validate_ocor_development_plan.py": "a284aa5fa5127181ab40158c892a207c70256925835ed835f6bc3115a66166cc",
+    "scripts/validate_post_poc_plan.py": "8f4e92142fa9d458b752a5cd2c9786423482fc0098b5657a023b39ea48f341a5"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "previous_record": {
+    "record_id": "OCOR-DEV-REM-0062-requalified-rem0063-cycle12-43fdba6d6bfd",
+    "record_path": "reports/evidence/G2/OCOR-DEV-REM-0062.requalified-rem0063-cycle12.json",
+    "record_sha256": "198126107ba568e8542776fedc2834f9dbdd7bb74a4ae095c89f5405ea61e9fd",
+    "status": "CANDIDATE"
+  },
+  "qualification_limits": "Regression-only requalification after REM-0063-CYCLE12-REGRESSION-DRIFT option 1. The command ran at 9d4c552041bb98122c655269e6ace44d38433840. The only input whose measured hash differs from the superseded record is scripts/validate_ocor_development_plan.py (a284aa5fa5127181ab40158c892a207c70256925835ed835f6bc3115a66166cc). It is not evidence of a requirement. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO. tests_unchanged_from_base is false: the sealed module at 7e9c16b4ebb36c79c26d39bd3dd05ab91ef940e5 still has eleven unchanged functions and three added functions, remeasured on this head. The cycle-12 record is superseded because the allowlist commit changed the validator hash, and it is not rewritten.",
+  "qualifies_requirements": false,
+  "raw_output_format": "command header, pytest -q stdout, and the wrapper line EXIT:0",
+  "raw_output_sha256": "1058eaa64fb687df3a446d29257a61a7d13806c08ec8e87a4c9d24220ccf36a3",
+  "record_id": "OCOR-DEV-REM-0062-requalified-rem0063-cycle12b-9d4c552041bb",
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only; REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "residual_risks": [
+    "Regression-only requalification. Not runtime conformance and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only requalification of OCOR-DEV-REM-0062 at the cycle 12 regression-drift allowlist fingerprint; not a re-assessment of conformance",
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 12 regression-drift requalification of OCOR-DEV-REM-0062"
+      }
+    ]
+  },
+  "schema_version": "1.0",
+  "status": "CANDIDATE",
+  "supersedes": "OCOR-DEV-REM-0062-requalified-rem0063-cycle12-43fdba6d6bfd",
+  "supersession_scope": "Regression-only after the REM-0063-CYCLE12-REGRESSION-DRIFT option 1 allowlist. Not a re-assessment of conformance and never evidence of a requirement.",
+  "syntax_tree_comparison": {
+    "added": [
+      "ExecutionCommitInputTests.test_artifact_digest_must_match_the_evidence_file",
+      "ExecutionCommitInputTests.test_artifact_path_escape_fails",
+      "ExecutionCommitInputTests.test_matching_artifact_digest_passes"
+    ],
+    "bodies_changed": [],
+    "current_sha256": "286b458aa06cc40d58165d0b64c035b47ca4f2d0042cb487940f61d6e067237f",
+    "functions_current": 14,
+    "functions_sealed": 11,
+    "module": "reports/tests/test_check_execution_commit_inputs.py",
+    "removed": [],
+    "sealed_commit": "7e9c16b4ebb36c79c26d39bd3dd05ab91ef940e5",
+    "sealed_sha256": "a2e92a8e93a4bd293384ea8b848174c3d7ed6134b0d96e2f1cbee12a76af43fe",
+    "unchanged": 11
+  },
+  "syntax_tree_method": "python3 /home/luca/.ocor-codex/rem-0063/cycle12/ast_compare_check_execution.py (outside Git, sha256 182b0e6db9ce45d7ef263ce8077b0af80c1137fb2539aff3985ea065147d19ca) on ocor-runtime/.venv Python 3.12.11, re-executed on this head: ast.dump of every function and method. Stdout sha256 dde3a13c07f67c6e5556c26870904a9be963b7b5c578cc20d6ed2902a0604728. Eleven sealed functions are byte-identical as syntax trees. Three functions are added. None are removed or rewritten.",
+  "task_id": "OCOR-DEV-REM-0062",
+  "tests_unchanged_from_base": false
+}

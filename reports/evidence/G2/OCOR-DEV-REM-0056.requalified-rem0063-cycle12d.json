@@ -1,0 +1,442 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0063-cycle10-campaign",
+    "decision": "REM-0063-RITORNO-AL-PROGETTO \u00a77; REM-0063-CYCLE12C-NO-GO option 1",
+    "id": "OCOR-DEV-REM-0063",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line reports/tests/test_local_lane_campaign.py",
+      "cwd": ".",
+      "duration_seconds": 1.425,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "049a64961b8074e6aef55f0cf2a1127ed9031f60",
+      "label": "regression-rem0063-cycle12d",
+      "not_executed": 0,
+      "passed": 324,
+      "raw_sha256": "55025e5bdfd60289987a5933f98887940c150b3c8698d6dc1f8fecac4fe74136",
+      "skipped": 0,
+      "source_command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line reports/tests/test_local_lane_campaign.py",
+      "started_at": "2026-11-20T15:31:43.481176Z",
+      "status": "PASS",
+      "stdout_sha256": "6b56ef665a7b4131d4148706bc5677e3610aec813d4ece3f084f817aaca9f892",
+      "xfailed": 0
+    }
+  ],
+  "commit": "049a64961b8074e6aef55f0cf2a1127ed9031f60",
+  "commit_role": "Regression execution on the frozen cycle 13 tree following the authorised allowlist and its planning hash settle.",
+  "created_at": "2026-11-20T15:31:44.920872Z",
+  "drifted_inputs": [
+    "reports/planning/OCOR_PLAN_RUN_STATE.json",
+    "scripts/validate_ocor_development_plan.py"
+  ],
+  "environment": {
+    "branch": "governed/ocor-dev-rem-0063-cycle10-campaign",
+    "clean_shell": true,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "nep-LEGION",
+    "implementer_cli": "codex-cli 0.170.0",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "Python 3.12.11",
+    "qualification_source_commit": "049a64961b8074e6aef55f0cf2a1127ed9031f60",
+    "ram_bytes": 65740460032,
+    "threads": 24
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md": "d020b18e3ca09aff6ea34f2890067db1a6450f6b9153ba1f464551401787d7b1",
+    "reports/planning/OCOR_PLAN_RUN_STATE.json": "a9b523fa50b7cce5dc3f9d476a81fe4aa08d0f3cfd3d3b5d7531256641c25c78",
+    "reports/tests/test_local_lane_campaign.py": "8080958f98b2fef2ebf6ba760ce13201ed5b2d7218ef6a55594793edd596564a",
+    "scripts/run_local_lane_campaign.py": "ef733248766e81e93d9785acfedbc73382f3ef2fe142659a0b0d71c9321941a2",
+    "scripts/validate_ocor_development_plan.py": "9e0f29d7805955c465a847c17b687fa31329ff2008ed725937285d5d2d255806"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "previous_record": {
+    "record_id": "OCOR-DEV-REM-0056-requalified-rem0063-cycle12c-673656f343d7",
+    "record_path": "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0063-cycle12c.json",
+    "record_sha256": "74d3b597f3b0570b5c7f1ff3d6501d46ea4d4ba5ecfe50c1304e963dc5be1ff8",
+    "status": "CANDIDATE"
+  },
+  "qualification_limits": "Every registered pytest selection was measured from this tree using the locked Python environment. Historical absolute interpreter and PYTHONPATH locations were rebound to this worktree. Test inputs match the preceding record.",
+  "qualifies_requirements": false,
+  "raw_output_format": "For each recorded invocation: execution commit, actual start and end, working directory, argv, combined pytest output and observed exit code.",
+  "raw_output_sha256": "55025e5bdfd60289987a5933f98887940c150b3c8698d6dc1f8fecac4fe74136",
+  "record_id": "OCOR-DEV-REM-0056-requalified-rem0063-cycle12d-049a64961b80",
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only; REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "residual_risks": [
+    "Regression-only requalification. Not runtime conformance and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "Regression-only requalification of OCOR-DEV-REM-0056 on the frozen candidate.",
+  "roles": {
+    "assigned_final_verifier": {
+      "agent": "Claude Code",
+      "assignment": "VERIFIER-CLAUDE-REM0063 (2026-11-16)",
+      "effort": "max",
+      "independence_limits": "The preventive reviewer and final verifier are Anthropic models with different model identities. No Anthropic implementation. VERIFIER-CLAUDE-REM0063, no fallback.",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "status": "COMPLETED_GO_FOR_EVIDENCE_SEAL",
+      "request_id": "OCOR-DEV-REM-0063-d9bfb35367e6-13",
+      "verdict": "GO_FOR_EVIDENCE_SEAL"
+    },
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "effort": "not stated for this entry",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 original cycle and repair cycles 1, 2, 3, 4, 5 and 6. Implementer Grok Build, grok-4.7, xAI. Cycle 7 is Codex CLI, deepseek-flash, DeepSeek, effort max. Cycle 8 is Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The verifier is not xAI, not Google, not DeepSeek and not Anthropic."
+      },
+      {
+        "agent": "Codex CLI",
+        "effort": "max",
+        "model": "deepseek-flash",
+        "provider": "DeepSeek",
+        "scope": "OCOR-DEV-REM-0063 repair cycle 7. Implementer Codex CLI, deepseek-flash, DeepSeek, effort max. The preventive reviewer of this cycle is Claude Code, claude-fable-5-2, Anthropic. The final verifier is Codex, OpenAI, in a separate context."
+      },
+      {
+        "agent": "Codex CLI",
+        "effort": "max",
+        "model": "deepseek-v4-pro",
+        "provider": "DeepSeek",
+        "scope": "OCOR-DEV-REM-0063 repair cycle 8 through a3965ed45cd41435226fd338c3da7697e4e846bf. Implementer Codex CLI, deepseek-v4-pro, DeepSeek, effort max. The preventive reviewer of this cycle was the loop reserve Cursor CLI, cursor-grok-4.6-xhigh, xAI. The final verifier is Codex, OpenAI, in a separate context."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 repair cycle 8 completion from a3965ed45cd41435226fd338c3da7697e4e846bf to 53c2e3d50f7d3d74677dde695dd89bdd079961f0. Implementer Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the cycle. The preventive review already returned by the loop is OCOR-DEV-REM-0063-23e92ef60dd8-pre; PRE-CAMPAIGN-REVIEW (2026-10-26) point 3 does not require another review after the correction. The final verifier is Codex, OpenAI."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 repair cycle 9. Implementer Grok Build, grok-4.7, xAI, effort xhigh, per REM-0063-CICLI-8-9-GROK (2026-11-16). DeepSeek remains an implementer of the task. The preventive review OCOR-DEV-REM-0063-3c1fa6fa53a6-pre returned BLOCKING_FINDINGS and is corrected at 3c2a95f4f00553b181e4ba2d54f69a7d7bd76d4c. PRE-CAMPAIGN-REVIEW (2026-10-26) point 3: no further preventive review. The final verifier is Codex, OpenAI."
+      },
+      {
+        "agent": "Codex",
+        "effort": "max",
+        "model": "gpt-6.1-sol",
+        "provider": "OpenAI",
+        "scope": "Cycle 10 phase A: contract, full Cartesian RED matrix, both contract-review dispositions, normative questions and checkpoint record. gpt-6.1-sol, OpenAI, effort max. No production change."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "not stated in this scope entry",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "Cycle 10 from REM-0063-CALCOLO-UNICO (2026-11-17): code owner and author of the Single calculation design at 4e481c3e23e9191c05a334f2b36fe12c7ec1a888. Codex gpt-6.1-sol, OpenAI, remains the phase-A author. No production change in the design commit. Preventive reviewer Claude Code claude-fable-5-2. Final verifier Claude Code claude-opus-5-5, same provider as the reviewer and a different model, as the PO assigned."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 10 implementation under REM-0063-CALCOLO-UNICO (2026-11-17). Grok Build, grok-4.7, xAI, effort xhigh, wrote the shared calculation. Phase A implementer remains Codex, gpt-6.1-sol, OpenAI, effort max. Earlier implementers remain Grok Build, grok-4.7, xAI, and Codex CLI, deepseek-flash and deepseek-v4-pro, DeepSeek. Reviewer Claude Code, claude-fable-5-2, Anthropic, effort max. Verifier Claude Code, claude-opus-5-5, Anthropic, effort max. No Anthropic implementer."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 10 evidence candidate for campaign 3ae284727c98-1794946686. Grok Build, grok-4.7, xAI, effort xhigh, recorded the PASS campaign and the distinct check. No production file changes in this commit. Phase A implementer remains Codex, gpt-6.1-sol, OpenAI. Earlier implementers remain Grok Build, grok-4.7, xAI, and Codex CLI, deepseek-flash and deepseek-v4-pro, DeepSeek. Preventive reviewer Claude Code, claude-fable-5-2, Anthropic, effort max. Verifier Claude Code, claude-opus-5-5, Anthropic, effort max. Same provider as the preventive reviewer, different model, assigned by VERIFIER-CLAUDE-REM0063 (2026-11-16). No Anthropic implementer."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 11 record alignment for REM-0063-CYCLE10-NO-GO option 1 steps 4 and 5, then regeneration of the four input fingerprints cycle 11 changed, so check_execution_commit_inputs.py matches commit 801a7293ea8ec469e93f416c4b3298678db70608. Code head c03073f7dfad399f6e07ae45ac9a8780ee0f8f97. No production file changes in this commit. Earlier implementers remain in roles.implementers."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 12 step 6 of REM-0063-CYCLE11-NO-GO option 1: self-check rows, one regression record, role alignment and the VF-009 record. Production code stays the GREEN b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. No production file changes in this commit. VF-008 is not corrected. Earlier implementers remain in roles.implementers."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 12 review disposal of OCOR-DEV-REM-0063-49fc2d1adf0b-pre. Grok Build, grok-4.7, xAI, effort xhigh, realigns this assurance record only. The code behaviour head is da754e862a2c2fba621cf5d4534fcc5396299b6a. The GREEN of the shared bound remains b1cd08324fa3f64a2c5f95fd4c4a9596a9c302ac. No production file changes in this commit. The fingerprint commit stays 43fdba6d6bfd93bd215ea37cc3d28ea462341839. P5 is not applied. VF-008 is not corrected. The plan-validator allowlist is not extended. Earlier implementers remain in roles.implementers."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 repair cycle 12 qualifying campaign on a3bd36d3ab51ba79e5ca8cec795237206c0944ce. Implementer Grok Build, grok-4.7, xAI, effort xhigh. PRE-CAMPAIGN-GATE passed, 51 steps, 0 failed. Campaign a3bd36d3ab51-1795089861 PASS, 48013 tests, 3324.281 s, below the 3600 s notification. Distinct check a3bd36d3ab51-1795093212 PASS, 410 tests, non-qualifying. The preventive reviewer of the cycle remains Claude Code, claude-fable-5-2, Anthropic. The final verifier is Claude Code, claude-opus-5-5, Anthropic, effort max, per VERIFIER-CLAUDE-REM0063."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 12c evidence realignment of VF-002 and VF-004. Grok Build, grok-4.7, xAI, effort xhigh. No production file changes in this commit. The code-behaviour head stays da754e862a2c2fba621cf5d4534fcc5396299b6a. REM-0063-CYCLE12-REGRESSION-DRIFT option 1 is decided. The cycle12c record of OCOR-DEV-REM-0062 supersedes cycle12b. VF-003 is not corrected. VF-008 is not corrected. The lone-surrogate refusal of P5 is not applied. The sixteen cycle12c allowlist paths are commit 2b8a9c333c95b6a12608fd7973413d5f56e99843, not this commit. Earlier implementers remain in roles.implementers."
+      },
+      {
+        "agent": "Grok Build",
+        "effort": "xhigh",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0063 cycle 12 qualifying execution after REM-0063-CYCLE12-NO-GO option 1. Grok Build, grok-4.7, xAI, effort xhigh, recorded the PRE-CAMPAIGN-GATE, campaign 698b944a1de4-1795114196 and distinct check 698b944a1de4-1795117669 measured on 698b944a1de4ef78a39346a034bed1a5e6fe4b10. No production file changes in this commit. The code-behaviour head stays da754e862a2c2fba621cf5d4534fcc5396299b6a. The eight cycle12c records are not regenerated. Campaign a3bd36d3ab51-1795089861 stays historical and does not transfer counts. VF-003 is not corrected. VF-008 is not corrected. The isolated-surrogate refusal of P5 is not applied. Earlier implementers remain in roles.implementers."
+      },
+      {
+        "agent": "Codex",
+        "effort": "ultra",
+        "model": "gpt-6.2-astra",
+        "provider": "OpenAI",
+        "scope": "Cycle 13 design, entry-point repairs, static root and incoming contexts, A1 validator contexts and B1 evaluation progress, tests and expectation ledger. Implemented the post-review correction and measured the cycle 13 self-check."
+      }
+    ],
+    "regression_operator": {
+      "agent": "Codex",
+      "effort": "ultra",
+      "model": "gpt-6.2-astra",
+      "provider": "OpenAI"
+    },
+    "integration_agent": {
+      "agent": "Grok Build",
+      "model": "grok-4.7",
+      "provider": "xAI",
+      "scope": "metadata-only evidence sealing after GO_FOR_EVIDENCE_SEAL; implementation, tests and raw logs unchanged"
+    }
+  },
+  "schema_version": "1.0",
+  "status": "SEALED",
+  "supersedes": "OCOR-DEV-REM-0056-requalified-rem0063-cycle12c-673656f343d7",
+  "supersession_scope": "Regression on the cycle 13 tree under REM-0063-RITORNO-AL-PROGETTO \u00a77 and REM-0063-CYCLE12C-NO-GO option 1.",
+  "task_id": "OCOR-DEV-REM-0056",
+  "tests_unchanged_from_base": true,
+  "historical_status_before_seal": "CANDIDATE",
+  "independent_verification": {
+    "candidate_json_sha256": "a6175666f3d52ba168483f2a325c238863c83ea1bd6373ff94a5969ca883ce01",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "All inputs/normative files OK; git diff 2e4a3e5..d9bfb35 -- inputs/ is empty."
+      },
+      {
+        "command": "python3 -I /tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/tools/toolcheck.py <worktree> (verifier script: locked tools on the env.sh PATH vs infra/toolchain.lock.json and infra/qualification_tools.lock.json)",
+        "exit_code": 0,
+        "summary": "docker 29.7.2, git 2.53.0, gh 2.99.0, node 20.20.2, python 3.12.11, ruff 0.13.1, tsc 7.0.2, uv 0.12.5, helm, kind, kubectl: sha256 and version MATCH; java pinned by container digest. Output sha256 41dc2a2ccda8b9746116c6c6dbef0646d9c480d392e72ad1ce160f2ee215661c."
+      },
+      {
+        "command": "env -i ... bash --noprofile --norc; source env.sh; python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "PASS, errors [], docker READY, ports free, no secret names present. Output sha256 24fc17aa34c9890a2e2bc98784c33e89ef1cf0ddd0d164e5e575447404f80bc0."
+      },
+      {
+        "command": "ruff check . --no-cache",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy (cache in /tmp)",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 156 source files."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_rccad_methodology",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_validate_language_policy && ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "Both PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/ocor-dev-rem-0063-cycle10-campaign",
+        "exit_code": 0,
+        "summary": "PASS: 128 changed path(s); immutable surfaces untouched; task ledger stable."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root . ; python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "Both PASS, findings []."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task <T> --non-skipped --manifest <G>/MANIFEST.json for the six G0 tasks and OCOR-DEV-0050 (G5), 0082, REM-0037, REM-0047, REM-0056, REM-0062, REM-0064 (G2); ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped",
+        "exit_code": 0,
+        "summary": "All 14 invocations exit 0."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit <record.commit> --record <path> for every evidence record added or modified by the branch vs merge-base 3c11b612 with origin/main (verifier driver gates/exec_inputs.py)",
+        "exit_code": 0,
+        "summary": "50 records: 12 pass directly (unit record and the eleven cycle12d/cycle12d-orphan records); each of the 38 failing historical records is superseded, within the same task_id, by a passing record; uncovered []. Matches the record (50/12/[]). Output sha256 0d01f60ea72573355b75af05d44e5c2fd89148e8d3e2972bd553f15f36f4e6d5."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension (CI invocation)",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (markdownlint and mmdc unavailable, deterministic fallbacks executed). The two planning files the validator rewrites were restored to HEAD bytes afterwards. An earlier run without --authorized-extension exited 1 only on the 'authorized planning-only diff' check, which CI never runs without that flag."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/ocor_autonomous_delivery.py --validate",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "env -i clean shell; source env.sh; python -m pytest -q -p no:cacheprovider --tb=short --junitxml=<tmp> ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py",
+        "exit_code": 0,
+        "summary": "53597 passed in 1728.06s; JUnit tests 53597, failures 0, errors 0, skipped 0 (sha256 dc9b62afaa32dba69d4f2672b21d72858582594305cf10515411fc224f48eb40). Count equals the record final run and lane 1 of both campaigns."
+      },
+      {
+        "command": "env -i clean shell; source env.sh; python -u scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/campaign --expected-head d9bfb35367e66006038dcf64855948a514cfac7a --tool-bin /home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0063-d9bfb35367e6-13/bin",
+        "exit_code": 0,
+        "summary": "Campaign d9bfb35367e6-1795196812 PASS, FOUR_LANE (MemAvailable 52685676 kB >= 25681.2 MiB threshold), 59423 tests, 0 failures, 0 errors, 0 skipped; exact union (collected 59423 = executed 59423, missing/duplicated/unexpected empty), lanes 53597/972/2423/2431; collected_sha256 e39d130c... and partition_sha256 947b2fcf... identical to the implementer's campaign; test_ocor_dev_0048 196 cases and test_ocor_dev_0049 390 cases, none skipped or failed; 4835.933 s, margin 564.067 s under the 5400 s cap, 1235.933 s over the 3600 s notification threshold, under the 85-minute decision threshold; MAINS at start and end; teardown PASS on 4 lanes; host residue empty. campaign_result.json sha256 e30a2e54d61ac2eca85d0b3b8afc690acd413f53b29b9fbf3108cd81169b5ed4, merged JUnit sha256 5c973a13eeb6c248164f910b212fdc05984a7f18df6879dec2a0051a3cb45f8b."
+      },
+      {
+        "command": "env -i clean shell; source env.sh; python -u scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/distinct --expected-head d9bfb35367e66006038dcf64855948a514cfac7a --tool-bin <verifier bin> --select tests/tasks/test_ocor_dev_0048.py --select tests/tasks/test_ocor_dev_0005.py --select tests/tasks/test_ocor_dev_0050.py --select tests/tasks/test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "summary": "Campaign d9bfb35367e6-1795201724 PASS, EXPLICIT_NON_QUALIFYING, 410 tests (0048: 196, 0050: 198, 0082: 10, 0005: 6), 0 failures/errors/skipped, exact union, 382.506 s, MAINS, teardown PASS, host residue empty. Sha256 89c9e8c4295ac865262b8234b9af76d0f573bc5bfd14f65278011653fb36319c. This is the CI-0048-REAL-BACKEND compensating control on real lane stacks."
+      },
+      {
+        "command": "python3 -I <verifier>/embedded-report check: sha256 of json.dumps(repair_cycle_13.{qualifying_campaign,distinct_check}.embedded_campaign_report, indent=2, sort_keys=True)+LF",
+        "exit_code": 0,
+        "summary": "aaac2952... and e1a27227... equal the request campaign_sha256 and distinct_sha256."
+      },
+      {
+        "command": "/tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/probes/vf_diff.py <worktree> 20261120 300 and <worktree> 7 2304 (oracle vf_oracle.py imports only stdlib, jsonschema 4.26.0, referencing 0.37.0)",
+        "exit_code": 0,
+        "summary": "Delivery versus pinned libraries on the standalone field with B1 base plus an independent section-2/A1/B1 enumerator. Seed 7: family A (root context with crawl-dependent registry, 18 positions x anchors x root spellings x duplicate locations x orders x entry x target x fields) 2304 sampled cells, family B (A1 parent-resolver positions, exhaustive) 2304 cells, family C (22 B1 classes x 2 fields), family E (14 non-enumerated classes x 2 fields): 0 cases where the profile accepts and the libraries reject or fail on an instance, 0 escapes, 0 refusals with an undeclared cause, 0 accepts despite an unresolved context. Outputs sha256 5c6a7368... (seed 20261120) and 90a05924... (seed 7)."
+      },
+      {
+        "command": "/tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/probes/gen_fuzz.py <worktree> (restored release -> render -> deliver -> pinned libraries; 13 positions x 3 child ids x 4 placements x 2 symbol kinds x 3 root ids x 2 fields)",
+        "exit_code": 0,
+        "summary": "1872 cells: 864 returned, delivered and library-clean, 1008 refused fail-closed (C1Error UNRESOLVED_REFERENCE); 0 artefacts returned that delivery refuses; 0 escapes. Sha256 ed55cc4f..."
+      },
+      {
+        "command": "/tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/probes/robust_fuzz.py <worktree> 4242 3000 and 991 30000",
+        "exit_code": 0,
+        "summary": "33000 random schemas on delivery and 11000 on rendering: 0 escaped exceptions, 0 delivered accepts on which the libraries fail for a witness instance, 0 rendered artefacts refused by delivery."
+      },
+      {
+        "command": "/tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/probes/five_defects.py on the extracted 2e4a3e5 source and on HEAD (module path asserted)",
+        "exit_code": 0,
+        "summary": "RITORNO point 3: all five defects reproduce at 2e4a3e5 (ValueError escape for http://[x#frag, dangling local/anchor ref and minLength -1 accepted and re.error escape in a damaged fixture, empty tool name rendered, restored minProperties -1/non-object outputSchema rendered, range/memoryview admitted) and are closed at HEAD with the typed errors; positive controls still accepted. Sha256 base 9f5a79ce..., head 87945656..."
+      },
+      {
+        "command": "pytest -p vf_b1_capture (verifier plugin outside the repo) on the six realigned historical functions",
+        "exit_code": 0,
+        "summary": "32835 passed; exactly 397 cells take the B1 path; they match the 397 rows of README 'Historical expectation changes under B1' one to one; for all 397 check_schema passes, every lookup resolves and the verifier oracle finds a same-instance cycle; the pinned validator raises RecursionError on a witness for all 397. Sha256 calls 86649889..., analysis b8ca0be9..."
+      },
+      {
+        "command": "pytest -o pythonpath=<extracted pre-fix tree> on HEAD tests for b9c2c489 (post-review), 0b3d40e3 (closure), 0ec40aaa (B1), dcea7621 (section 2) and 30bc47f3 (A1)",
+        "exit_code": 1,
+        "summary": "Expected RED reproduced on every pre-fix tree: 14 failed/4 passed, 6 failed, 36 failed/108 passed, 3456 failed/5249 passed, 598 failed/1706 passed; all GREEN at HEAD. The 18 supplemental controls of 71ecf3cd give 6 failed/12 passed on the 2e4a3e5 baseline, as the record states."
+      },
+      {
+        "command": "/tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/probes/bounds.py <worktree>",
+        "exit_code": 0,
+        "summary": "Both fields, delivery and restored rendering: 4096 values and depth 32 accepted, 4097 values and depth 33 refused with the bounds error (independent counter)."
+      },
+      {
+        "command": "python3 -I /tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13/tools/pull_budget.py (anonymous token + HEAD on ratelimitpreview/test)",
+        "exit_code": 0,
+        "summary": "17:44:07Z 100, 17:46:51Z 100 before the campaign (threshold 95, no wait), 18:21:40Z 100, 19:08:37Z 100 before the distinct control (threshold 50, no wait)."
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "Verifier probe with only jsonschema 4.26.0 and referencing 0.37.0, standalone field, B1 base: schema {\"type\":\"object\",\"properties\":{\"n\":{\"multipleOf\":0.5}}}. check_schema passes; Draft202012Validator.iter_errors({\"n\": 10**400}) raises OverflowError (jsonschema/_keywords.py multipleOf computes instance / dB before its try block). validate_mcp_descriptor accepts the descriptor; rendering the same field from a restored release returns it. Read literally, RITORNO-AL-PROGETTO section 2 ('dove ... falliscono su un'istanza, il profilo rifiuta') and verifier control 1 would make this blocking. I classify it non-blocking: section 2 and the decided REM-0063-CYCLE13-EVALUATION-CONTEXTS (A1/B1) scope the static rule to reference resolution and non-progressing evaluation, and the contract (README:444, 'A library resolution exception on an instance requires refusal'; README:1025, 'The A1/B1 static checks cover resolution and progress') records that boundary. The failure depends on the magnitude of the instance, not on the schema structure. Refusing every float multipleOf would be a new normative semantic that no PO decision covers. No resolution- or recursion-related counterexample was found (see commands).",
+        "id": "VF-001",
+        "path": "ocor-runtime/src/ocor_runtime/c1/mcp_profile.py:739 (require_tool_field); reports/assurance/OCOR-DEV-REM-0063-RCCAD/README.md:444",
+        "required_fix": "Open one decision request so the PO confirms the boundary. The matrix dimension to add or exclude is: numeric keyword with a float divisor (multipleOf) x instance outside the float range (and NaN). If the PO confirms the exclusion, record in the contract that non-resolution library failures caused by out-of-range instance values are outside section 2, with this example. If the PO includes them, add that dimension to the matrix and refuse the class on both public paths.",
+        "severity": "medium"
+      },
+      {
+        "blocking": false,
+        "evidence": "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09) point 1: none of the 24 cycle-13 rows of input_robustness_self_check.table names which text-form cases apply and with which tests: non-ASCII, empty or malformed text, lone surrogate from an escape, malformed answer. Affected paths receive fixed-form text or decoded JSON: operational_base ($id), require_tool_name, _resolve_reference ($ref), _official_tool_validator/_validate_tools (fixture JSON), validate_mcp_descriptor and json_bounds. Behaviour is correct under my probe: non-ASCII and empty $id accepted as by the libraries; escaped lone surrogates in $id, $ref and name refused; malformed authority refused with the typed error; no exception escapes.",
+        "id": "VF-002",
+        "path": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json:3095 (first of the 24 rows with review_cycle 13; e.g. operational_base at line 3131)",
+        "required_fix": "Add to each cycle-13 row for those paths the applicable text-form cases with the test node IDs that cover them, or the reason a case cannot reach the path.",
+        "severity": "low"
+      },
+      {
+        "blocking": false,
+        "evidence": "EVIDENCE-PATHS-ALLOWLIST-PRECHECK (2026-11-09): the record's allowlist_precheck still describes the cycle-12c run (head 0c48624c879e3c898de146e8da5fb2a88aee1263, the sixteen cycle12c paths). For the cycle-13 campaign, regression_successors lists the 22 cycle12d paths, the allowlist commit and the validator sha256, but no head, result or validator-log digest. It omits the three modified manifests reports/evidence/G0, G2 and G5 MANIFEST.json. The pre-campaign gate 'plan' step on 91487708 is PASS, and my CI-style run of validate_ocor_development_plan.py --authorized-extension at HEAD is PASS, so there is no substantive allowlist defect.",
+        "id": "VF-003",
+        "path": "reports/assurance/OCOR-DEV-REM-0063-RCCAD/OCOR-DEV-REM-0063.json:2 (allowlist_precheck) and :12037 (repair_cycle_13.regression_successors)",
+        "required_fix": "Record for the cycle-13 campaign the allowlist precheck with head, result and log sha256, listing all 22 record/log paths and the three manifests the candidate modifies.",
+        "severity": "low"
+      }
+    ],
+    "findings_disposition": "GO_FOR_EVIDENCE_SEAL with three non-blocking findings. VF-001 (medium), VF-002 (low) and VF-003 (low) are registered and left uncorrected: no code, test, contract, workflow, lock or raw log changes, so the verified tree stays intact. VF-001 asks for one decision request on a numeric multipleOf keyword with an instance outside the float range; that request follows this seal and is not applied here. VF-002 and VF-003 ask for additional record text and stay open for the same reason.",
+    "head_sha": "d9bfb35367e66006038dcf64855948a514cfac7a",
+    "integration_alignment": {
+      "metadata_merge_commit": "969806fe35c5a4a6ea04321567842330f8587bc3",
+      "non_state_diff_against_qualified_head": "empty",
+      "origin_main": "b004b139bc8f70948c205e8c5d15fc3ee2ccd909",
+      "qualified_head": "d9bfb35367e66006038dcf64855948a514cfac7a",
+      "state_files_only": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ]
+    },
+    "not_executed": [
+      "G15 scripts/validate_alignment_invariants.py: absent from the repository at d9bfb353 and at origin/main b004b139, so it cannot be run (pre_verify_gate reports it NOT_EXECUTED). It is not one of the mandatory controls of this request and is not declared passed.",
+      "GitHub required checks: there is no PR for governed/ocor-dev-rem-0063-cycle10-campaign (gh pr list returns []), so the 13 required checks were not evaluated. The qualifying evidence of this verification is local.",
+      "markdownlint and mmdc inside validate_ocor_development_plan.py: executables unavailable; the validator ran its deterministic fallbacks (NOT_EXECUTED, never counted as PASS).",
+      "Clean-clone ADVERSARIAL_CONFORMANCE procedure: not applicable (review_type REMEDIATION); the four-lane orchestrator provisions a fresh sandbox, daemon and volumes per lane from a clone of the exact head."
+    ],
+    "observations": [
+      "My first plan-validator run (without --authorized-extension, at about 19:03 local, during the campaign) rewrote the tracked files reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md and OCOR_PLAN_RUN_STATE.json. Within about three minutes I restored them with git checkout to the HEAD bytes (side-effect diff sha256 60e338172721505549afba94f8cd5ec86c09994ffb154f78ae3e2c8db4b24309). Lanes run from their own clones, and the campaign's final revision check found a clean tree. No evidence was affected. The worktree is clean at the end (git status empty)."
+    ],
+    "repair_cycle": 13,
+    "review_scope": "Regression-only successor of OCOR-DEV-REM-0063 cycle 13. This record qualifies no requirement. The same verdict covers the frozen execution tree.",
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-20T19:23:11Z",
+    "verdict_file_sha256": "f3f4443fb4156a22cf2a8e242f7b8a33adb7fed5b42927c4edcfd06a2e3075fd",
+    "verdict_head_sha": "d9bfb35367e66006038dcf64855948a514cfac7a",
+    "verdict_request_id": "OCOR-DEV-REM-0063-d9bfb35367e6-13",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Claude Code (Anthropic), model claude-opus-5-5, effort max",
+    "verifier_configuration": {
+      "independence_limits": "Verifier: Claude Code, claude-opus-5-5, Anthropic, effort max (the request and VERIFIER-CLAUDE-REM0063 say max; the 'Ruoli' section says high). Implementers: Grok Build grok-4.7 (xAI); Codex CLI deepseek-flash and deepseek-v4-pro (DeepSeek); Codex gpt-6.1-sol and gpt-6.2-astra (OpenAI). The loop preflight lists the same providers. No Anthropic implementer appears in the request, the unit record, or the authors and trailers of 2e4a3e5..d9bfb35 (all commits authored by the repository account, no Anthropic trailer). The preventive reviewer, Claude Code claude-fable-5-2, is Anthropic: same provider as the verifier, different model, authorised by VERIFIER-CLAUDE-REM0063 (2026-11-16). The preventive review was not read. The originating programme decision, FABLE52-POST-POC-PROGRAMME, comes from an audit by an Anthropic model; this is a data point, not an implementation. Admitted verifiers for this request: claude. Separate process and clean context.",
+      "model": "claude-opus-5-5",
+      "process": "Claude Code, non-interactive session, clean context, loop-prepared verify-env worktree at the exact head"
+    },
+    "verifier_environment": {
+      "clean_shell": "Preflight, gates, task module, campaign and distinct control each started with env -i HOME USER LOGNAME LANG=C.UTF-8 bash --noprofile --norc, then source env.sh. The only OCOR_* variable present is OCOR_VERIFIER_WORKTREE, set by env.sh. No credential was exported. .ocor/bootstrap.env was never sourced. Each lane generated its own bootstrap environment inside its sandbox.",
+      "environment_json": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0063-d9bfb35367e6-13/environment.json",
+      "environment_json_sha256": "c2e78d1ccf8b923ecd40ee7d29e2aad35ba50813a3c87d59ca0103b96cdb8d85",
+      "host_profile": "Intel(R) Core(TM) Ultra 9 275HX, 24 threads, MemTotal 64199668 kB, kernel 7.0.0-43-generic, Python 3.12.11, jsonschema 4.26.0, referencing 0.37.0",
+      "implementer_tools": "No script, wrapper or kit from ~/.ocor-codex (implementer areas) was executed. The prereviews directories were not read. Implementer instructions and decision text were read as data only.",
+      "power": "MAINS (ADP0 online=1) at the start and end of both lane campaigns",
+      "provisioning": "Four lanes via scripts/run_local_lane_campaign.py, which runs the versioned bootstrap_ci_environment procedure in each sandbox. Each lane bootstrap.log reports fuseki_max_heap_bytes 1073741824, the control-plane SVID step with exit 0, and 11 services READY with pinned digests. No ocor-bootstrap stack existed on the host before the runs. Host residue is empty after both runs (0 containers, 5 pre-existing anonymous volumes unchanged, networks bridge/host/kind/none unchanged).",
+      "verifier_artifacts": "/tmp/ocor-verify-OCOR-DEV-REM-0063-d9bfb35367e6-13"
+    }
+  },
+  "updated_at": "2026-11-20T19:30:59.185624Z"
+}
