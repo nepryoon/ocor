@@ -1,0 +1,53 @@
+# REM-0066-STATE-ONLY-REM0031-GUARD
+
+Stato: `OPEN_PO_DECISION_REQUIRED`.
+Livello: operativo. Nessun nuovo `DEC-*`.
+Head di `origin/main` alla pubblicazione: `f86bc02aa3a27f84d279a9f6c616af83894d3fcf`.
+Unità: `OCOR-DEV-REM-0066`. Branch `governed/ocor-dev-rem-0066-state-only-ci`, HEAD `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`.
+Richiesta già decisa e applicata, il cui passo non esce 0: `REM-0066-STATE-ONLY-IMPORT-EXIT (2026-11-21)`, opzione 1, file al commit `34053edb0c4d9167598b649c46cc84a893094d36`, sha256 `c180b11ef72957a9b66cc066ec2c2da8f9f28d0c0ef7f0a79a6ba2bfcf65791d`.
+Implementatore di questa pubblicazione e dei due commit dell'opzione 1: Grok Build, modello `grok-4.7`, fornitore xAI. Nessun verifier è stato avviato. Nessuna opzione di questa richiesta è applicata da chi la apre.
+
+## Contesto
+
+`REM-0066-STATE-ONLY-IMPORT-EXIT (2026-11-21)` adotta l'opzione 1. Il testo, a quel commit, autorizza un commit sopra `fe913c06a22d6fd48915dff177d6145de69b0a40` che aggiunge esattamente cinque `--ignore=` al pytest di `reports/tests` e poi esegue i cinque script. Non autorizza altri ignore, non autorizza di modificare `reports/tests/test_rem0031_consumer_registry_scope.py` né i sei file consumer che quel guard confronta con il baseline `60afecfb0428350b552f77861455b695ebbd24f1`, e non autorizza di allentare il guard. Il punto 2 della decisione dice di fermarsi e aprire una richiesta se l'attuazione deve andare oltre quel testo.
+
+L'opzione 1 è applicata. Rosso `5e559b8223cd0a5b8c47170fb0916a9975da4d9f`. Verde `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`. La raccolta con i cinque ignore esce 0. I quattro script v12 escono 0, il referto dello schema è solo quello noto e i cinque JSON tornano ai byte fotografati. `PRE-CAMPAIGN-GATE` su `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1` è FAIL solo a `state-only-ci-path`, exit 1. Pytest di `reports/tests` con i cinque ignore ha eseguito i test e ne ha fallito uno: `reports/tests/test_rem0031_consumer_registry_scope.py::ConsumerRegistryScope::test_exact_seeding_only_diff`. I cinque script non sono partiti, perché il passo li esegue solo dopo pytest a codice 0. Non si scrive `prereview_request.json`. La suite completa non è partita.
+
+## Prove
+
+`PRE-CAMPAIGN-GATE` su `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`, base `eaed84dad757ce8a9fdbfda624a719d6d7917a37`. `gates.json` sha256 `e71c207647a3cee8e629dd29d6fcd5bc3b414c1637f94612bccfaf8c974c5683`. 51 passi eseguiti, 50 `PASS`, 1 `FAIL`: `state-only-ci-path`, exit 1, `duration_seconds` 101.797, `tracked_dirt_restored` true. `supply-chain-scanner` non è eseguito: il runner si ferma al primo codice diverso da 0. Restano `NOT_EXECUTED`: `mandatory-gates`, `integration-postgresql`, `qualifying-campaign-shards`, `fuseki-actions-cache`, `conditional-0049-aggregator`, `auto-merge`. Nel log del passo, pytest stampa `1 failed, 975 passed, 1 skipped, 3 deselected, 1216 subtests passed in 99.83s`. L'unico fallito è `ConsumerRegistryScope.test_exact_seeding_only_diff`, asserzione `test/assert/pytest.raises/decorator changed` sul percorso `ocor-runtime/tests/tasks/test_ocor_dev_0043.py`.
+
+Il guard fissa `BASE = 60afecfb0428350b552f77861455b695ebbd24f1` e `PINNED_DIFF_SHA256 = e06ea00b6b3c4c5eddecc0214a741693087cadd48e4f5dfee10c7f9c280a6a05`. Confronta sei file con `git show` di quel baseline. La misura isolata sullo stesso HEAD, working tree pulito, interprete `ocor-runtime/.venv/bin/python` (Python 3.12.11), chiama `compare()` su tutti e sei. Tutti e sei falliscono. Il digest del diff attuale è `a0fb4e77e6cf36d5ef4e184e1e803321e30e8981f1ad753a2fcbb6915208b203`, diverso dal pin.
+
+- `ocor-runtime/tests/tasks/test_ocor_dev_0043.py`: `pytest.raises` 10 nel baseline, 11 nel file attuale; le asserzioni restano 16 ma il loro albero non coincide. Il primo scarto che pytest stampa è questo file.
+- `ocor-runtime/tests/tasks/test_ocor_dev_0044.py`: inventario delle funzioni diverso. Nel file attuale c'è `_evidence`, assente nel baseline.
+- `ocor-runtime/tests/tasks/test_ocor_dev_0058.py`: asserzioni 100 nel baseline, 105 nel file attuale. Funzioni presenti solo nel file attuale: `Controls.action`, `Controls.put_action`, `RivalAfterFenceC3.__init__`, `RivalAfterFenceC3.commit`.
+- `ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py`: funzioni non autorizzate da `ALLOWED`, fra cui `controller`, `stop`, `_directory_controller` e cinque test sul tempo e sull'emergency stop.
+- `ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py`: `pytest.raises` 31 nel baseline e 32 nel file attuale; asserzioni 124 e 125. L'inventario sostituisce `consume` con `charge` e aggiunge `Harness.grant`.
+- `ocor-runtime/tests/tasks/test_ocor_dev_rem_0028.py`: funzioni non autorizzate da `ALLOWED`, fra cui cinque test su reset e attributi di autorità.
+
+I blob dei sei file e di `reports/tests/test_rem0031_consumer_registry_scope.py` sono identici fra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1` e `origin/main` `f86bc02aa3a27f84d279a9f6c616af83894d3fcf`. I due commit dell'opzione 1 non li toccano: il diff `fe913c06a22d6fd48915dff177d6145de69b0a40..6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1` contiene solo `scripts/run_state_only_ci_path.py` e `reports/tests/test_classify_pull_request_ci_route.py`. `60afecfb0428350b552f77861455b695ebbd24f1` è antenato dell'HEAD. Il fallimento è già nel tree di `origin/main`. Prima dell'opzione 1 pytest di `reports/tests` usciva 3 durante l'import e non eseguiva questo test. I cinque ignore fanno arrivare l'esecuzione al guard.
+
+`scripts/validate_evidence_input_drift.py` sui due file dell'opzione 1 è `PASS`, `drifted_inputs` 0. Non è stato rieseguito su altri file: questa pubblicazione non li modifica.
+
+## Quesito
+
+Pytest di `reports/tests` con i cinque ignore autorizzati non esce 0, perché `ConsumerRegistryScope.test_exact_seeding_only_diff` rifiuta i sei file consumer già presenti su `origin/main` rispetto al baseline `60afecfb0428350b552f77861455b695ebbd24f1`. Si lascia il passo FAIL, si sposta il punto di congelamento del guard sul tree attuale senza modificare i sei file, oppure si esclude il guard dal pytest del passo?
+
+## Opzioni
+
+1. **Lasciare il passo FAIL.** Nessun commit sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1` per questa causa. Non si modifica `reports/tests/test_rem0031_consumer_registry_scope.py`. Non si modificano i sei file consumer. Non si aggiunge un `--ignore`. Non si riscrive `scripts/run_state_only_ci_path.py`. Non si riesegue `PRE-CAMPAIGN-GATE`. Non si scrive `prereview_request.json`. Non si avvia la suite completa. `OCOR-DEV-REM-0066` resta bloccato da questa richiesta. L'integrazione del branch resta comunque dopo la chiusura di `OCOR-DEV-REM-0063`, come dispone `CONFINE-G6 (2026-11-20)`. Claim invariati. Costo onesto: il passo state-only resta a codice 1 e il guard continua a rifiutare un tree già su `origin/main`.
+
+2. **Spostare il congelamento del guard sul tree già presente in `origin/main`.** Sul branch `governed/ocor-dev-rem-0066-state-only-ci`, un commit nuovo sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`, senza rebase, reset o force-push. L'unico file modificato è `reports/tests/test_rem0031_consumer_registry_scope.py`. `BASE` diventa `f86bc02aa3a27f84d279a9f6c616af83894d3fcf`. Se `origin/main` è avanzato, `BASE` è l'HEAD di `origin/main` letto al momento del commit e i sei blob devono coincidere con quell'HEAD; se non coincidono, ci si ferma e si apre una richiesta nuova. Non si modificano i sei file consumer, `inputs/`, gli script v12, `reports/tests/test_schema_conformance.py`, `scripts/run_state_only_ci_path.py` né `reports/tests/test_classify_pull_request_ci_route.py`. Non si aggiunge un `--ignore`. `ALLOWED` resta l'insieme attuale: con il baseline nuovo il diff di ciascun file è vuoto, quindi l'insieme delle funzioni cambiate è vuoto. `PINNED_DIFF_SHA256` diventa il digest di quel diff vuoto, calcolato dalla stessa funzione `diff_digest` del file. I test che rifiutano una mutazione restano e devono fallire su ciascuna mutazione che il file già elenca. Se `scripts/validate_evidence_input_drift.py` segnala questo file come input sigillato, ci si ferma e si apre una richiesta nuova: non si riqualifica dentro questa opzione. Poi si riesegue `PRE-CAMPAIGN-GATE` su quel HEAD. Se pytest fallisce su un altro test, ci si ferma senza un altro ignore e si apre una richiesta nuova. La suite completa non parte nella stessa iterazione del gate. La revisione preventiva si chiede solo dopo un gate `PASS`. L'integrazione resta dopo la chiusura di `OCOR-DEV-REM-0063`. Claim invariati. Costo onesto: il guard smette di rifiutare gli scarti già presenti su `origin/main` e da quel commit rifiuta ogni scarto nuovo degli stessi sei file. Non si riscrivono i test consumer.
+
+3. **Escludere il guard dal pytest del passo.** Si aggiunge `--ignore=reports/tests/test_rem0031_consumer_registry_scope.py` e non si esegue quel file. Il guard resta falso sul tree e il passo può uscire 0 senza leggerlo. Non è la raccomandazione: nasconde un test che oggi fallisce e allenta il passo oltre i cinque ignore già decisi. Claim invariati.
+
+## Raccomandazione
+
+Opzione 2. Il guard è già falso su `origin/main`: tenerlo rosso non protegge i sei file, perché il tree che rifiuta è quello pubblicato. Spostare `BASE` sull'HEAD di `origin/main` lascia i test di rifiuto e non modifica i sei file. L'opzione 1 lascia il passo a codice 1. L'opzione 3 non esegue il guard. Chi apre questa richiesta non ne applica nessuna opzione.
+
+## Impatto
+
+Finché questa richiesta è aperta, `OCOR-DEV-REM-0066` è bloccato. Non si aggiunge un commit sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`. Non si modifica il guard, i sei file consumer, `scripts/run_state_only_ci_path.py` né `reports/tests/test_classify_pull_request_ci_route.py`. Non si aggiunge un `--ignore`. Non si riesegue `PRE-CAMPAIGN-GATE`, non si scrive `prereview_request.json` e non si avvia la suite completa. `OCOR-DEV-REM-0063` resta bloccato da `FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO`, non da questa richiesta. Non si avvia il repair cycle 3. Non si modifica `governed/fuseki-rebuild-identity-20261121`. Non si tocca la PR #722. Non si apre un `repair_cycle` 14. L'integrazione di `OCOR-DEV-REM-0066` resta dopo la chiusura di `OCOR-DEV-REM-0063`, come dispone `CONFINE-G6 (2026-11-20)`.
+
+Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist del validatore del piano per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione.
