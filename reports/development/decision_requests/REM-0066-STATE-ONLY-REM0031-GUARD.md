@@ -1,6 +1,7 @@
 # REM-0066-STATE-ONLY-REM0031-GUARD
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `CLOSED_WITHOUT_ADOPTED_OPTION`.
+Disposition: rinviata per riformulazione, modello claude-fable-5-2, effort max. Nessuna opzione è adottata. Il file pubblicato a `08e4149180f96ac08273bd5e4ee0963214b34ed8` resta sha256 `5f2a013eccf70f3033d1480b7e1a2b84ea9c4cd2c6464d0603837ee5ef43b23c`. La richiesta successiva è `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION`, commit `2814c1a7053e36b7c00956954155d4592a7fdec5`, sha256 `577c27c772366b0b88cf41b16f61b29ccfecfdb39c693060214abd133fdac73a`, bozza PR #736. Nessuna sua opzione è applicata. Non si aggiunge un commit sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`. Non si scrive `prereview_request.json`. La suite completa non parte. Claim invariati. Questa PR si chiude come rinviata e non si integra.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `f86bc02aa3a27f84d279a9f6c616af83894d3fcf`.
 Unità: `OCOR-DEV-REM-0066`. Branch `governed/ocor-dev-rem-0066-state-only-ci`, HEAD `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`.
