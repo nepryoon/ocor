@@ -776,13 +776,31 @@ REM0066_STATE_ONLY_STEPS = r"""      - name: Set up Python for the state-only pa
           uv sync --frozen --extra test --extra lint
           .venv/bin/python --version
 
+      - name: Set up pinned Node oracle for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20.20.2"
+
+      - name: Build pinned TypeScript SDK and oracle for the state-only path
+        if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        working-directory: ocor-runtime/sdk/typescript
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          echo "$(pwd)/node_modules/.bin" >> "$GITHUB_PATH"
+
       - name: Run state-only local gates and non-stack tests
         if: success() && needs.classify-ci-route.outputs.route == 'state_only'
+        env:
+          OCOR_CI_BASE_REF: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+          OCOR_CI_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python scripts/run_state_only_ci_path.py \
-            --base-ref "${{ github.event.pull_request.base.sha || 'origin/main' }}" \
-            --branch "${{ github.head_ref || github.ref_name }}"
+            --base-ref "$OCOR_CI_BASE_REF" \
+            --branch "$OCOR_CI_BRANCH"
 """
 REM0066_STATE_ONLY_AT_EOF = "\n" + REM0066_STATE_ONLY_STEPS
 REM0066_CLASSIFY_JOB = r"""  classify-ci-route:
@@ -796,18 +814,28 @@ REM0066_CLASSIFY_JOB = r"""  classify-ci-route:
           fetch-depth: 0
       - name: Classify pull request CI route
         id: classify
+        env:
+          OCOR_CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          OCOR_CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           route_file="$RUNNER_TEMP/ci-route.env"
-          set +e
-          python3 scripts/classify_pull_request_ci_route.py \
-            --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}" \
-            --github-output "$route_file"
-          status=$?
-          set -e
-          if [ "$status" -ne 0 ] || ! grep -Eq '^route=(full|state_only)$' "$route_file"; then
-            echo "route=full" > "$route_file"
+          classifier="$RUNNER_TEMP/classify_pull_request_ci_route.py"
+          echo "route=full" > "$route_file"
+          if printf '%s' "$OCOR_CI_BASE_SHA" | grep -Eq '^[0-9a-f]{40}$' \
+            && printf '%s' "$OCOR_CI_HEAD_SHA" | grep -Eq '^[0-9a-f]{40}$' \
+            && git cat-file -e "${OCOR_CI_BASE_SHA}:scripts/classify_pull_request_ci_route.py"; then
+            git --no-pager show "${OCOR_CI_BASE_SHA}:scripts/classify_pull_request_ci_route.py" > "$classifier"
+            set +e
+            python3 "$classifier" \
+              --base "$OCOR_CI_BASE_SHA" \
+              --head "$OCOR_CI_HEAD_SHA" \
+              --github-output "$route_file"
+            status=$?
+            set -e
+            if [ "$status" -ne 0 ] || ! grep -Eq '^route=(full|state_only)$' "$route_file"; then
+              echo "route=full" > "$route_file"
+            fi
           fi
           cat "$route_file" >> "$GITHUB_OUTPUT"
 

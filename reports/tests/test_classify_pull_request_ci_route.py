@@ -59,6 +59,17 @@ def _schema_stdout(
     return "\n".join(lines) + "\n"
 
 
+def _canonical_schema_stdout(module: Any) -> str:
+    """Return the one schema report the runner accepts."""
+    lines = [
+        *module.EXPECTED_SCHEMA_PASS_LINES,
+        module.KNOWN_SCHEMA_FAIL,
+        module.KNOWN_SCHEMA_TOTAL,
+        module.KNOWN_SCHEMA_RESULTS,
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def _load(path: Path, name: str) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
@@ -465,7 +476,9 @@ class FastPathCommandTests(unittest.TestCase):
 
     def test_known_schema_report_is_accepted(self) -> None:
         module = _load(RUNNER, "run_state_only_schema_report")
-        self.assertTrue(module.schema_report_accepted(_schema_stdout()))
+        self.assertTrue(
+            module.schema_report_accepted(_canonical_schema_stdout(module))
+        )
 
     def test_extra_fail_is_rejected(self) -> None:
         module = _load(RUNNER, "run_state_only_extra_fail")
@@ -492,9 +505,12 @@ class FastPathCommandTests(unittest.TestCase):
 
     def test_schema_process_code_does_not_decide_and_v12_code_does(self) -> None:
         module = _load(RUNNER, "run_state_only_process_codes")
-        accepted = self._script_step(module, [(1, _schema_stdout()), (0, ""), (0, ""), (0, ""), (0, "")])
+        report = _canonical_schema_stdout(module)
+        accepted = self._script_step(
+            module, [(1, report), (0, ""), (0, ""), (0, ""), (0, "")]
+        )
         self.assertEqual(accepted, 0)
-        rejected = self._script_step(module, [(1, _schema_stdout()), (5, "")])
+        rejected = self._script_step(module, [(1, report), (5, "")])
         self.assertEqual(rejected, 5)
 
     def test_invalid_script_stdout_fails_closed(self) -> None:
@@ -514,12 +530,13 @@ class FastPathCommandTests(unittest.TestCase):
                 photos[relative] = payload
             self.assertEqual(module.snapshot_tracked_json(root), photos)
             calls: list[list[str]] = []
+            report = _canonical_schema_stdout(module).encode("utf-8")
 
             def runner(command: list[str]) -> subprocess.CompletedProcess[bytes]:
                 calls.append(list(command))
                 for relative in module.TRACKED_JSON:
                     (root / relative).write_bytes(b"changed")
-                stdout = _schema_stdout().encode("utf-8") if len(calls) == 1 else b""
+                stdout = report if len(calls) == 1 else b""
                 code = 1 if len(calls) == 1 else 0
                 return subprocess.CompletedProcess(command, code, stdout=stdout)
 
@@ -539,7 +556,7 @@ class FastPathCommandTests(unittest.TestCase):
         module = _load(RUNNER, "run_state_only_restore_mismatch")
         code = self._script_step(
             module,
-            [(1, _schema_stdout()), (0, ""), (0, ""), (0, ""), (0, "")],
+            [(1, _canonical_schema_stdout(module)), (0, ""), (0, ""), (0, ""), (0, "")],
             restore_result=False,
         )
         self.assertNotEqual(code, 0)
@@ -672,6 +689,16 @@ class RepairCycle1Tests(unittest.TestCase):
         self.assertEqual(len(pass_lines), len(set(pass_lines)))
         self.assertFalse(module.schema_report_accepted(mutated))
 
+
+    def test_frozen_catalogue_matches_the_live_script(self) -> None:
+        module = _load(RUNNER, "run_state_only_catalogue_lock")
+        authentic = _live_schema_stdout()
+        passes = [line for line in authentic.splitlines() if line.startswith("PASS ")]
+        self.assertEqual(passes, list(module.EXPECTED_SCHEMA_PASS_LINES))
+        self.assertEqual(len(passes), len(set(passes)))
+        self.assertTrue(module.schema_report_accepted(authentic))
+        self.assertTrue(module.schema_report_accepted(_canonical_schema_stdout(module)))
+
     def test_fast_path_installs_node_and_does_not_interpolate_the_ref(self) -> None:
         for path in WORKFLOWS:
             text = path.read_text(encoding="utf-8")
@@ -770,6 +797,26 @@ class RepairCycle1Tests(unittest.TestCase):
         )
         self.assertEqual(scope[-1], malicious)
         self.assertFalse(module.ref_is_data(malicious, module.BRANCH_PATTERN))
+        scope_module = _load(
+            ROOT / "scripts" / "validate_ocor_change_scope.py",
+            "change_scope_branch_lock",
+        )
+        samples = (
+            "governed/ocor-dev-rem-0066-state-only-ci",
+            "governed/a",
+            "task/OCOR-DEV-0003-state-only",
+            "main",
+            "governed/ok; echo pwned",
+            "governed/../x",
+            "origin/main",
+            "",
+        )
+        for sample in samples:
+            observed = module.ref_is_data(sample, module.BRANCH_PATTERN) and sample != "main"
+            self.assertEqual(observed, bool(scope_module.valid_change_branch(sample)), sample)
+        self.assertTrue(module.ref_is_data("origin/main", module.BASE_REF_PATTERN))
+        self.assertTrue(module.ref_is_data("ab" * 20, module.BASE_REF_PATTERN))
+        self.assertFalse(module.ref_is_data("origin/main; echo pwned", module.BASE_REF_PATTERN))
         self.assertEqual(
             module.main(["--base-ref", "origin/main", "--branch", malicious]),
             1,

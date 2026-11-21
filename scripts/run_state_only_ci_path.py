@@ -11,6 +11,7 @@ The marker is mechanical: the file list is not written here.
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from collections.abc import Callable, Sequence
@@ -40,6 +41,179 @@ KNOWN_SCHEMA_TOTAL = "TOTAL 98 PASS 97 FAIL 1"
 KNOWN_SCHEMA_FAIL = (
     "FAIL urn:ocor:schema:action-type-contract:1.0 — negativo semantico: "
     "CANONICAL_COMMIT R1 senza Human Gate [ACCEPT]"
+)
+KNOWN_SCHEMA_RESULTS = "RESULTS reports/tests/conformance_results.json"
+BASE_REF_PATTERN = re.compile(r"^(?:[0-9a-f]{40}|origin/main)$")
+BRANCH_PATTERN = re.compile(
+    r"^(?:task/OCOR-DEV-[0-9]{4}-[a-z0-9][a-z0-9-]*|"
+    r"governed/[a-z0-9][a-z0-9._/-]*)$"
+)
+EXPECTED_SCHEMA_PASS_LINES: tuple[str, ...] = (
+    "PASS urn:ocor:schema:signed-canonical-ir:1.0 — baseline positivo [ACCEPT]",
+    "PASS urn:ocor:schema:signed-canonical-ir:1.0 — digest malformato [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo "
+    "ingest_mode=BATCH [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo "
+    "ingest_mode=STREAM [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo ingest_mode=CDC "
+    "[ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo ramo BATCH: "
+    "transport STREAM [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo ramo STREAM: "
+    "transport BATCH [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo ramo ingest CDC: "
+    "semantic_class non CDC_CHANGE [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo ramo ingest CDC: "
+    "transport non CDC [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo ramo semantic "
+    "CDC_CHANGE: ingest non CDC [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "effective_time.to='2026-08-30T10:00:00Z' [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "effective_time.to=None [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo oneOf "
+    "effective_time.to [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "causation_id='11111111-1111-4111-8111-111111111111' [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "causation_id=None [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo oneOf "
+    "causation_id [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "before_digest='sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "aaaa' [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "before_digest=None [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo oneOf "
+    "before_digest [REJECT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "after_digest='sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "aaa' [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — positivo oneOf "
+    "after_digest=None [ACCEPT]",
+    "PASS urn:ocor:schema:canonical-ingestion-envelope:1.1 — negativo oneOf "
+    "after_digest [REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo retry_safe=false "
+    "[ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo retry_safe=false "
+    "[REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo HIGH/CRITICAL [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo HIGH/CRITICAL quorum "
+    "[REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo "
+    "EXECUTE_APPROVED_ACTION (vincoli 1) [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo "
+    "EXECUTE_APPROVED_ACTION (vincoli 2) [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo EXECUTE: tier mancante "
+    "[REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo EXECUTE: approval NONE "
+    "[REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo EXECUTE: key_required false "
+    "[REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo EXECUTE: EXECUTION_UNKNOWN "
+    "mancante [REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo DUAL_CONTROL [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo DUAL_CONTROL [REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo compensation "
+    "HUMAN_AUTHORIZED [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo compensation "
+    "HUMAN_AUTHORIZED [REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo HUMAN_GATE [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo HUMAN_GATE [REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo PROPOSE_ACTION "
+    "[ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo PROPOSE_ACTION "
+    "[REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo SIMULATE [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo SIMULATE [REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo ANALYZE [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo ANALYZE [REJECT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — positivo ramo READ_ONLY [ACCEPT]",
+    "PASS urn:ocor:schema:mcp-tool-contract:1.1 — negativo ramo READ_ONLY con execute "
+    "[REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo target "
+    "CANONICAL_COMMIT [ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo produced "
+    "CanonicalAssertion [ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo canonical: binding "
+    "assente [REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo canonical: effect errato "
+    "[REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo canonical: "
+    "accepted_from_claim false [REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo target "
+    "EXTERNAL_ADAPTER [ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo external con canonical "
+    "binding [REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo R3_HIGH_IMPACT "
+    "[ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo ramo R3_HIGH_IMPACT "
+    "[REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo R2_CONTROLLED "
+    "[ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo ramo R2_CONTROLLED "
+    "[REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo compensation "
+    "HUMAN_AUTHORIZED [ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo ramo compensation "
+    "HUMAN_AUTHORIZED [REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo IRREVERSIBLE "
+    "[ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo ramo IRREVERSIBLE risk "
+    "R2 [REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo retry_safe=false "
+    "annidato [ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — positivo ramo retry_safe=false "
+    "root [ACCEPT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo retry_safe=false "
+    "max_attempts [REJECT]",
+    "PASS urn:ocor:schema:action-type-contract:1.0 — negativo retry_safe=false error "
+    "code [REJECT]",
+    "PASS urn:ocor:schema:event-subscription-contract:1.0 — baseline positivo [ACCEPT]",
+    "PASS urn:ocor:schema:event-subscription-contract:1.0 — negativo exactly once "
+    "vietato [REJECT]",
+    "PASS urn:ocor:schema:event-subscription-contract:1.0 — negativo cursor non opaco "
+    "[REJECT]",
+    "PASS urn:ocor:schema:event-subscription-contract:1.0 — negativo predicate "
+    "arbitrario [REJECT]",
+    "PASS urn:ocor:schema:event-subscription-contract:1.0 — negativo marking non "
+    "propagato [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo request GetObjectRequest [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo required request GetObjectRequest [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo request ObjectSetRequest [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo required request ObjectSetRequest [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo request SearchRequest [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo required request SearchRequest [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo request TraverseRequest [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo required request TraverseRequest [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo request ExplainRequest [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo required request ExplainRequest [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo request ProvenanceRequest [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo required request ProvenanceRequest [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo ramo Consistency AT_LEAST_COMMIT [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — positivo ramo Consistency EXACT_AT_COMMIT [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo ramo Consistency senza required_commit [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo Consistency BEST_AVAILABLE senza commit [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — positivo ramo Problem version-sensitive [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo ramo Problem version-sensitive [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo ramo Problem CAPABILITY_DEFERRED [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo ramo Problem CAPABILITY_DEFERRED [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo oneOf TemporalInterval.to='2026-08-30T10:00:00Z' "
+    "[ACCEPT]",
+    "PASS OpenAPI 1.1.0 — positivo oneOf TemporalInterval.to=None [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo oneOf TemporalInterval.to [REJECT]",
+    "PASS OpenAPI 1.1.0 — positivo oneOf "
+    "EpistemicStatus.accepting_decision_ref='urn:ocor:test:decision' [ACCEPT]",
+    "PASS OpenAPI 1.1.0 — positivo oneOf EpistemicStatus.accepting_decision_ref=None "
+    "[ACCEPT]",
+    "PASS OpenAPI 1.1.0 — negativo oneOf EpistemicStatus.accepting_decision_ref "
+    "[REJECT]",
+    "PASS suite — conteggio if/then estratti "
+    "[{'urn:ocor:schema:signed-canonical-ir:1.0': 0, "
+    "'urn:ocor:schema:canonical-ingestion-envelope:1.1': 4, "
+    "'urn:ocor:schema:mcp-tool-contract:1.1': 11, "
+    "'urn:ocor:schema:action-type-contract:1.0': 9, "
+    "'urn:ocor:schema:event-subscription-contract:1.0': 0, 'OpenAPI 1.1.0': 3}]",
 )
 ScriptRunner = Callable[[list[str]], subprocess.CompletedProcess[bytes]]
 
@@ -101,18 +275,41 @@ def gate_commands(python: str, base_ref: str, branch: str) -> list[list[str]]:
     return commands
 
 
-def schema_report_accepted(stdout: str) -> bool:
-    """Return whether stdout is the one known schema conformance report.
+def ref_is_data(value: str, pattern: re.Pattern[str]) -> bool:
+    """Return whether value is one complete governed token and nothing else."""
+    return pattern.fullmatch(value) is not None
 
-    The schema script's process status is not an acceptance signal. Only this
-    report is accepted: one exact total line, 97 lines that start with
-    ``PASS ``, and one exact ``FAIL`` line.
+
+def schema_report_accepted(stdout: str) -> bool:
+    """Accept only the known schema report, case by case.
+
+    A PASS line is accepted only when it is one frozen case identity and it
+    appears once, in the script order. Replacing a missing case with a
+    duplicate PASS line leaves 97 PASS lines and 96 identities, and is
+    refused. The one known FAIL line stays the sole authorized exception.
+    The schema script process status is not an acceptance signal.
     """
-    lines = stdout.splitlines()
-    totals = [line for line in lines if line == KNOWN_SCHEMA_TOTAL]
-    passes = [line for line in lines if line.startswith("PASS ")]
-    fails = [line for line in lines if line.startswith("FAIL")]
-    return len(totals) == 1 and len(passes) == 97 and fails == [KNOWN_SCHEMA_FAIL]
+    passes: list[str] = []
+    fails: list[str] = []
+    totals: list[str] = []
+    results: list[str] = []
+    for line in stdout.splitlines():
+        if line.startswith("PASS "):
+            passes.append(line)
+        elif line.startswith("FAIL"):
+            fails.append(line)
+        elif line == KNOWN_SCHEMA_TOTAL:
+            totals.append(line)
+        elif line == KNOWN_SCHEMA_RESULTS:
+            results.append(line)
+        else:
+            return False
+    return (
+        passes == list(EXPECTED_SCHEMA_PASS_LINES)
+        and fails == [KNOWN_SCHEMA_FAIL]
+        and totals == [KNOWN_SCHEMA_TOTAL]
+        and results == [KNOWN_SCHEMA_RESULTS]
+    )
 
 
 def snapshot_tracked_json(root: Path | None = None) -> dict[str, bytes]:
@@ -223,8 +420,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--branch", required=True)
     parser.add_argument("--python", default=sys.executable)
     args = parser.parse_args(list(argv) if argv is not None else None)
+    base_ref = str(args.base_ref)
+    branch = str(args.branch)
+    if branch == "main" or not ref_is_data(branch, BRANCH_PATTERN):
+        return 1
+    if not ref_is_data(base_ref, BASE_REF_PATTERN):
+        return 1
     python = str(args.python)
-    commands = gate_commands(python, str(args.base_ref), str(args.branch))
+    commands = gate_commands(python, base_ref, branch)
     scripts = [[python, path] for path in SCRIPT_PATHS]
     if commands[-len(scripts) :] != scripts:
         return 1
