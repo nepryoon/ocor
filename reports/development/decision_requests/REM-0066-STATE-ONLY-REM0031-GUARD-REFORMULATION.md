@@ -1,6 +1,7 @@
 # REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `2814c1a7053e36b7c00956954155d4592a7fdec5` resta sha256 `577c27c772366b0b88cf41b16f61b29ccfecfdb39c693060214abd133fdac73a`. L'attuazione si è fermata prima di ogni commit sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`: il ripristino dei sei blob da `693c5691` fa divergere gli input di `OCOR-DEV-0043`, `OCOR-DEV-0044` e `OCOR-DEV-0058`, e i test pinnati non passano sul runtime attuale. Per `test_ocor_dev_0043.py` l'asserzione pinnata chiede un effetto dove il file attuale chiede `APPROVAL_MISSING`. Non si allenta un nodo protetto. Aperta la sola richiesta `REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP`, commit `78aa9b3b9c3328d4d7db25f1bfcabfa88f8993cc`, sha256 `42d1ab64b65db79f49c6d23f61c0466558c7545ddec0591be87bbaae7b647991`, bozza PR #739, non si integra. Nessuna sua opzione è applicata. Il branch `governed/ocor-dev-rem-0066-state-only-ci` resta `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`. Non si tocca la PR #722 né il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un repair_cycle 14. Claim invariati. Questa PR si chiude come risolta e non si integra.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `127e6f46253aa20bac58d57fb631db9b939d49d7`.
 Unità: `OCOR-DEV-REM-0066`. Branch `governed/ocor-dev-rem-0066-state-only-ci`, HEAD `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`.
