@@ -1871,6 +1871,18 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-guard.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-guard.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-guard.log",
+        # Candidate evidence after the qualifying campaign on
+        # e737df83f1c855ee93bccefa603193c1ff6ef02c. These paths are declared
+        # before the records exist so this commit already contains the
+        # allowlist the records will hash. The task tests are unchanged.
+        # These records do not qualify requirements.
+        "reports/assurance/OCOR-DEV-REM-0066-RCCAD/OCOR-DEV-REM-0066.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-evidence.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-evidence.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-evidence.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-evidence.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-evidence.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-evidence.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
