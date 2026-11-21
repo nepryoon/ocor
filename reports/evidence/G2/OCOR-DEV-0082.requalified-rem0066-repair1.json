@@ -1,0 +1,106 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0066-state-only-ci",
+    "decision": "repair cycle 1 of verdict OCOR-DEV-REM-0066-3d6b2fd72bb7-0",
+    "id": "OCOR-DEV-REM-0066",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0066-RCCAD/OCOR-DEV-REM-0066.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+      "cwd": ".",
+      "duration_seconds": 4.86,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "639054125620bb4c9043c1f1f4238151a000afe5",
+      "label": "regression-rem0066-repair1",
+      "not_executed": 0,
+      "passed": 214,
+      "raw_sha256": "8895ad3e9c4821668cfb8b49ff7087716070324224deb89a646be05706a78a7f",
+      "skipped": 0,
+      "started_at": "2026-11-21T23:05:43Z",
+      "status": "PASS",
+      "xfailed": 0
+    }
+  ],
+  "commit": "639054125620bb4c9043c1f1f4238151a000afe5",
+  "commit_role": "code and tests at which this regression command ran; the record itself is a later commit and does not change these inputs",
+  "created_at": "2026-11-21T23:07:47Z",
+  "drifted_inputs": [
+    "scripts/validate_ocor_development_plan.py"
+  ],
+  "environment": {
+    "branch": "governed/ocor-dev-rem-0066-state-only-ci",
+    "clean_shell": true,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "nep-LEGION",
+    "implementer_cli": "Grok Build (grok-4.7)",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "python_executable": "/home/luca/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/bin/python3.12",
+    "python_executable_sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+    "qualification_source_commit": "639054125620bb4c9043c1f1f4238151a000afe5",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal 64199668 kB read on nep-LEGION in the repair cycle 1 regression session",
+    "threads": 24
+  },
+  "independent_verification": {
+    "note": "not yet performed",
+    "status": "PENDING"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/tests/qualify_rem0029_teardown.py": "e2c3d205283166528be54e81cc5a90176fc2073e028321660369ee9f917361a0",
+    "reports/tests/test_reset_teardown_residue.py": "8a0a2e491d01acf78acdc135781cd21f47c2dfa74af2a18077557ae434ab2064",
+    "scripts/reset_test_environment.py": "063e66ae0841fec992b62b21315e54da4b8b77ee3418e80646459988909a786c",
+    "scripts/validate_ocor_development_plan.py": "1d48d889b37ae032de7f8d334317090ec79e19618a485ea6055a4414664a43cf"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "previous_record": {
+    "record_id": "OCOR-DEV-0082-requalified-rem0066-evidence-f95a7baba880",
+    "record_path": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-evidence.json",
+    "record_sha256": "9c9a6b18d3c93a272337044e48fc8c997a4f91384cfad51ae3534582b7098536",
+    "status": "PASS_AWAITING_INDEPENDENT_VERIFICATION"
+  },
+  "qualification_limits": "Regression-only requalification after repair cycle 1 of OCOR-DEV-REM-0066 changed .github/workflows/ocor-validation-closure.yml, reports/tests/test_kind_teardown_observation.py and scripts/validate_ocor_development_plan.py. The same command reran the unchanged task tests of 0005, 0050 and 0082 on Python 3.12.11 at 639054125620bb4c9043c1f1f4238151a000afe5. It is not evidence of a requirement and it does not transfer the four-lane campaign. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.",
+  "qualifies_requirements": false,
+  "raw_output_format": "interpreter identity lines python_version, python_executable and python_executable_sha256, then pytest -q stdout, then the wrapper line EXIT:0",
+  "raw_output_sha256": "8895ad3e9c4821668cfb8b49ff7087716070324224deb89a646be05706a78a7f",
+  "record_id": "OCOR-DEV-0082-requalified-rem0066-repair1-639054125620",
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "residual_risks": [
+    "Regression-only requalification after repair cycle 1 changed sealed inputs. Not runtime conformance, not the four-lane campaign, and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only: the task tests of 0005, 0050 and 0082 passed together on Python 3.12.11 at 639054125620bb4c9043c1f1f4238151a000afe5 after repair cycle 1; not a re-assessment of conformance and not the four-lane campaign",
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0066 repair cycle 1 regression requalification of OCOR-DEV-0082 on Python 3.12.11 after the workflow, teardown observation test and allowlist change. Not a requirement and not the four-lane campaign."
+      }
+    ]
+  },
+  "schema_version": "1.0",
+  "status": "PASS_AWAITING_INDEPENDENT_VERIFICATION",
+  "supersedes": "OCOR-DEV-0082-requalified-rem0066-evidence-f95a7baba880",
+  "supersession_scope": "Regression-only after repair cycle 1 changed the validation-closure workflow, the teardown observation test and the plan-validator allowlist. The task tests are unchanged. Not a re-assessment of conformance, not the four-lane campaign, and never evidence of a requirement.",
+  "task_id": "OCOR-DEV-0082",
+  "tests_unchanged_from_base": true
+}
