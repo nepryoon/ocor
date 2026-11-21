@@ -1251,6 +1251,7 @@
     "historical_blocking_decision_request_before_fuseki_cycle2_nogo_20261121": null,
     "historical_blocking_decision_request_before_fuseki_rebuild_identity_20261121": null,
     "historical_blocking_decision_request_before_fuseki_repair2_20261121": "FUSEKI-REBUILD-IDENTITY-20261121",
+    "historical_blocking_decision_request_before_rem0066_import_exit_20261121": "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO",
     "historical_candidate_head_before_cycle12_nogo": "8394d359b3fd2568b828d8d43a3ec68e1973e442",
     "historical_candidate_head_before_cycle12_regression_drift": "da754e862a2c2fba621cf5d4534fcc5396299b6a",
     "historical_candidate_head_before_cycle12_review_disposal": "d823326cff43e0666d9c1a9bfbd5e5b476961f96",
@@ -2243,6 +2244,27 @@
     "production_code_changed": true,
     "production_code_changed_this_unit": true,
     "ready_scope_audit_sha256": "fd61d03d4c2924b7fad98688bc060c4516b6690bfa257994f9a2058ddd8c5704",
+    "rem0066_blocking_decision_request": "REM-0066-STATE-ONLY-REM0031-GUARD",
+    "rem0066_state_only_import_exit": {
+      "adopted_option": "1",
+      "applied": true,
+      "branch": "governed/ocor-dev-rem-0066-state-only-ci",
+      "disposition_commit": "ccfcc8070ccf056df6eede52c933aad26c1c5201",
+      "disposition_sha256": "9444761ce69fdb5daa025129617ea60d067b8a1e541c5b1961f009465af4bfc8",
+      "gate": "FAIL",
+      "gate_failed_step": "state-only-ci-path",
+      "gates_json_sha256": "e71c207647a3cee8e629dd29d6fcd5bc3b414c1637f94612bccfaf8c974c5683",
+      "green_commit": "6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1",
+      "note": "decisa per conto del PO, modello claude-fable-5-2, effort max",
+      "prereview_request": "NOT_WRITTEN",
+      "red_commit": "5e559b8223cd0a5b8c47170fb0916a9975da4d9f",
+      "request_commit": "34053edb0c4d9167598b649c46cc84a893094d36",
+      "request_sha256": "c180b11ef72957a9b66cc066ec2c2da8f9f28d0c0ef7f0a79a6ba2bfcf65791d",
+      "successor": "REM-0066-STATE-ONLY-REM0031-GUARD",
+      "successor_commit": "08e4149180f96ac08273bd5e4ee0963214b34ed8",
+      "successor_pr": 734,
+      "successor_sha256": "5f2a013eccf70f3033d1480b7e1a2b84ea9c4cd2c6464d0603837ee5ef43b23c"
+    },
     "repair_cycle": 13,
     "single_calculation_design": {
       "decision": "REM-0063-CALCOLO-UNICO (2026-11-17)",
@@ -2831,7 +2853,7 @@
     },
     "unit": "OCOR-DEV-REM-0063",
     "unit_head": "d9bfb35367e66006038dcf64855948a514cfac7a",
-    "updated_at": "2026-11-21T05:13:49Z",
+    "updated_at": "2026-11-21T06:32:00Z",
     "verdict_sha256": null,
     "verify_request_id": "OCOR-DEV-REM-0063-d9bfb35367e6-13",
     "worktree": ".ocor/worktrees/rem-0063"
@@ -13291,6 +13313,7 @@
       ],
       "blocked_tasks_after_decision": [],
       "created_at": "2026-11-20T22:19:34.139074+00:00",
+      "decided_option": "option 1",
       "decision_level": "OPERATIVE",
       "evidence": {
         "branch": "governed/decision-request-rem0066-state-only-import-exit",
@@ -13303,25 +13326,47 @@
         "sha256": "c180b11ef72957a9b66cc066ec2c2da8f9f28d0c0ef7f0a79a6ba2bfcf65791d"
       },
       "finding": "Option 2 of REM-0066-CANONICAL-R1-HUMAN-GATE does not name the other reports/tests modules that call sys.exit at import. After --ignore=reports/tests/test_schema_conformance.py, pytest of reports/tests exits 3 at reports/tests/test_v12_approval_readiness.py:70, SystemExit 0. Collection with the five measured ignores exits 0: 968/971 tests collected, 3 deselected.",
+      "historical_latest_observation_before_option1": "2026-11-20T22:19:34.139074+00:00 OPEN_PO_DECISION_REQUIRED. Draft PR 726, commit 34053edb0c4d9167598b649c46cc84a893094d36, sha256 c180b11ef72957a9b66cc066ec2c2da8f9f28d0c0ef7f0a79a6ba2bfcf65791d. No option applied. Not an integration path.",
+      "historical_status_before_option1": "OPEN_PO_DECISION_REQUIRED",
+      "historical_summary_before_option1": "Il passo state-only non esce 0 con il solo ignore dello schema. Nessuna opzione e applicata.",
       "id": "REM-0066-STATE-ONLY-IMPORT-EXIT",
-      "latest_observation": "2026-11-20T22:19:34.139074+00:00 OPEN_PO_DECISION_REQUIRED. Draft PR 726, commit 34053edb0c4d9167598b649c46cc84a893094d36, sha256 c180b11ef72957a9b66cc066ec2c2da8f9f28d0c0ef7f0a79a6ba2bfcf65791d. No option applied. Not an integration path.",
+      "latest_observation": "2026-11-21T06:32:00Z SECTION_PRESENT. Opzione 1 applicata. decisa per conto del PO, modello claude-fable-5-2, effort max. Disposition ccfcc8070ccf056df6eede52c933aad26c1c5201. PRE-CAMPAIGN-GATE FAIL a state-only-ci-path exit 1, gates.json e71c207647a3cee8e629dd29d6fcd5bc3b414c1637f94612bccfaf8c974c5683. Successore REM-0066-STATE-ONLY-REM0031-GUARD, commit 08e4149180f96ac08273bd5e4ee0963214b34ed8, bozza PR 734, nessuna opzione applicata.",
       "options": [
         "1",
         "2",
         "3"
       ],
+      "po_decision": "REM-0066-STATE-ONLY-IMPORT-EXIT (2026-11-21)",
+      "po_decision_note": "decisa per conto del PO, modello claude-fable-5-2, effort max",
+      "po_decision_ref": {
+        "branch": "governed/decision-request-rem0066-state-only-import-exit",
+        "commit": "ccfcc8070ccf056df6eede52c933aad26c1c5201",
+        "path": "reports/development/decision_requests/REM-0066-STATE-ONLY-IMPORT-EXIT.md",
+        "pr": 726,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "9444761ce69fdb5daa025129617ea60d067b8a1e541c5b1961f009465af4bfc8"
+      },
       "question": "Come fa il passo di scripts/run_state_only_ci_path.py a uscire 0, conservando il referto noto di reports/tests/test_schema_conformance.py, se pytest di reports/tests esce 3 anche dopo aver escluso solo quel file?",
       "recommendation": "Option 1: separare da pytest i cinque script raccolti e accettare solo gli esiti misurati su fe913c06a22d6fd48915dff177d6145de69b0a40.",
-      "status": "OPEN_PO_DECISION_REQUIRED",
+      "resolution": "Opzione 1 applicata. Rosso 5e559b8223cd0a5b8c47170fb0916a9975da4d9f, verde 6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1. PRE-CAMPAIGN-GATE FAIL fuori opzione sul guard REM-0031. Successore REM-0066-STATE-ONLY-REM0031-GUARD.",
+      "resolved_at": "2026-11-21T06:32:00Z",
+      "status": "DECIDED_BY_PO",
       "status_history": [
         {
           "status": "OPEN_PO_DECISION_REQUIRED",
           "updated_at": "2026-11-20T22:19:34.139074+00:00"
+        },
+        {
+          "decision": "REM-0066-STATE-ONLY-IMPORT-EXIT (2026-11-21)",
+          "note": "decisa per conto del PO, modello claude-fable-5-2, effort max",
+          "status": "DECIDED_BY_PO",
+          "updated_at": "2026-11-21T06:32:00Z"
         }
       ],
-      "summary": "Il passo state-only non esce 0 con il solo ignore dello schema. Nessuna opzione e applicata.",
+      "successor_decision_request": "REM-0066-STATE-ONLY-REM0031-GUARD",
+      "summary": "Opzione 1 applicata sul branch governed/ocor-dev-rem-0066-state-only-ci. Il gate e FAIL fuori opzione. Il successore e aperto e nessuna sua opzione e applicata.",
       "title": "State-only pytest still exits on other import-time sys.exit scripts",
-      "updated_at": "2026-11-20T22:19:34.139074+00:00"
+      "updated_at": "2026-11-21T06:32:00Z"
     },
     {
       "blocked_scope": "Finche questa richiesta e aperta non si aggiorna infra/services.lock.json, non si modifica infra/fuseki/local_identity.lock.json, non si modifica scripts/bootstrap_development_environment.py, non si cancella ne si rietichetta ocor/jena-fuseki:6.2.0 e non si scrivono i record di regressione del launcher. OCOR-DEV-REM-0066 resta fuori da questa richiesta.",
@@ -13419,6 +13464,45 @@
       "summary": "Il repair cycle 2 e NO_GO. Nessuna opzione e applicata. Il ciclo 3 non parte.",
       "title": "Budget esaurito dopo il NO_GO del repair cycle 2 di Fuseki",
       "updated_at": "2026-11-21T05:13:49Z"
+    },
+    {
+      "blocked_scope": "Finche questa richiesta e aperta non si aggiunge un commit sopra 6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1, non si modifica il guard REM-0031, non si modificano i sei file consumer, non si aggiunge un ignore, non si riesegue PRE-CAMPAIGN-GATE, non si scrive prereview_request.json e non si avvia la suite completa. OCOR-DEV-REM-0063 resta bloccato da FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0066"
+      ],
+      "blocked_tasks_after_decision": [],
+      "created_at": "2026-11-21T06:32:00Z",
+      "decision_level": "OPERATIVE",
+      "evidence": {
+        "branch": "governed/decision-request-rem0066-state-only-rem0031-guard",
+        "commit": "08e4149180f96ac08273bd5e4ee0963214b34ed8",
+        "format_check": "grep -cE '^[A-Z]?[0-9]{1,2}\\. \\*\\*' = 3, options 1..3 under ## Opzioni",
+        "measured_head": "6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1",
+        "path": "reports/development/decision_requests/REM-0066-STATE-ONLY-REM0031-GUARD.md",
+        "pr": 734,
+        "pr_disposition": "DRAFT_NOT_FOR_MERGE_PATH_NOT_ON_ALLOWLIST",
+        "sha256": "5f2a013eccf70f3033d1480b7e1a2b84ea9c4cd2c6464d0603837ee5ef43b23c"
+      },
+      "finding": "PRE-CAMPAIGN-GATE on 6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1 failed only at state-only-ci-path, exit 1. pytest of reports/tests with the five authorized ignores failed ConsumerRegistryScope.test_exact_seeding_only_diff. compare() fails on all six consumer files against baseline 60afecfb0428350b552f77861455b695ebbd24f1. Those blobs match origin/main f86bc02aa3a27f84d279a9f6c616af83894d3fcf. No option is applied.",
+      "id": "REM-0066-STATE-ONLY-REM0031-GUARD",
+      "latest_observation": "2026-11-21T06:32:00Z OPEN_PO_DECISION_REQUIRED. Draft PR 734, commit 08e4149180f96ac08273bd5e4ee0963214b34ed8, sha256 5f2a013eccf70f3033d1480b7e1a2b84ea9c4cd2c6464d0603837ee5ef43b23c. No option applied. Not an integration path. Gate FAIL outside option 1 of REM-0066-STATE-ONLY-IMPORT-EXIT.",
+      "options": [
+        "1",
+        "2",
+        "3"
+      ],
+      "question": "Pytest di reports/tests con i cinque ignore autorizzati non esce 0, perche ConsumerRegistryScope.test_exact_seeding_only_diff rifiuta i sei file consumer gia presenti su origin/main rispetto al baseline 60afecfb0428350b552f77861455b695ebbd24f1. Si lascia il passo FAIL, si sposta il congelamento del guard sul tree attuale, oppure si esclude il guard dal pytest del passo?",
+      "recommendation": "2",
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "status_history": [
+        {
+          "status": "OPEN_PO_DECISION_REQUIRED",
+          "updated_at": "2026-11-21T06:32:00Z"
+        }
+      ],
+      "summary": "Il passo state-only esegue il guard REM-0031 e fallisce su un tree gia pubblicato. Nessuna opzione e applicata.",
+      "title": "State-only pytest fails the REM-0031 consumer-registry guard",
+      "updated_at": "2026-11-21T06:32:00Z"
     }
   ],
   "checkpoint_consolidation": {
@@ -14203,6 +14287,7 @@
   "historical_next_executable_action_before_inotify_recheck2": "PREAMBLE-RECHECK-BEFORE-STOP (2026-11-08): rilettura di ~/.ocor-codex/openhands_preamble.md il 2026-11-17T17:17:14.814960+00:00, sha256 a6918522662f1c6dd560ffaae25d4b906b1cc9ec7ade85793a87e7b9a0c8e107, identico alla registrazione del 2026-11-17T16:23:27.267900+00:00. Esito SECTION_ABSENT. L'ultima sezione \u00e8 REM-0063-CYCLE10-LANE-ARGV-LIMIT (2026-11-17). Nessuna sezione decide REM-0063-CYCLE10-INOTIFY-INSTANCES. Il file della richiesta al commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c ha sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233, verificato con git cat-file -e, git merge-base --is-ancestor e sha256sum. PR #666 resta aperta e non mergiata. REM-0063-CYCLE10-INOTIFY-INSTANCES \u00e8 aperta, stato OPEN_PO_DECISION_REQUIRED, livello operativo. Branch governed/decision-request-rem0063-cycle10-inotify, commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c, file reports/development/decision_requests/REM-0063-CYCLE10-INOTIFY-INSTANCES.md, sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233, PR #666, non mergiata. Nessuna opzione applicata. L'allowlist del piano non \u00e8 estesa in questa pubblicazione. Il gate sullo head 3ae284727c9829902e72bea25c2f07373e60d969 \u00e8 PASS: 51 passi, 0 fallimenti, 6 NOT_EXECUTED, gates.json sha256 50ee856e76341d1cc1528a02e20c7ea9e2977e693a303d035815920862c6ed7b. Non rieseguirlo finch\u00e9 la sezione che decide la richiesta non lo chiede. Non rieseguire il gate sullo head 5a1a8aaff6af95470171c1add7f9e85f1ec997a8. Non rilanciare le campagne 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 e 3ae284727c98-1794931254: restano FAIL diagnostiche e non sono un PASS. La campagna 3ae284727c98-1794931254 \u00e8 FAIL, exit 1, 498.974 s, dal 2026-11-17T16:00:54Z al 2026-11-17T16:09:13Z, FOUR_LANE, alimentazione MAINS all'inizio e alla fine, pull rimanente 100 prima dell'avvio. Errore: kubelet del nodo d658ba79d6b52b65a74d7c60cc8292a75eba1c44d38a4458568586e863aaaaee con restarts 2 dopo failed to create fsnotify watcher: too many open files. fs.inotify.max_user_instances vale 128 e non \u00e8 scrivibile dal processo della campagna. Non alzarlo in questa attesa. Non modificare file sotto ocor-runtime/src. Non modificare scripts/run_qualifying_campaign.py, scripts/run_local_lane_campaign.py n\u00e9 reports/tests/test_local_lane_campaign.py. Non spostare governed/ocor-dev-rem-0063-mcp-profile da 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Nessuna verify_request e nessuna seconda revisione preventiva. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Non aprire una seconda richiesta sullo stesso punto. Se compare la sezione che decide REM-0063-CYCLE10-INOTIFY-INSTANCES, applica l'opzione scelta esattamente come scritta al commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c, sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233. Se il file a quel commit non ha quello sha256, non applicarla e apri una richiesta, secondo la regola vigente per le decision request. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_inotify_recheck3": "PREAMBLE-RECHECK-BEFORE-STOP (2026-11-08): rilettura di ~/.ocor-codex/openhands_preamble.md il 2026-11-17T18:15:21.676788+00:00, sha256 a6918522662f1c6dd560ffaae25d4b906b1cc9ec7ade85793a87e7b9a0c8e107, identico alla registrazione del 2026-11-17T17:17:14.814960+00:00. Esito SECTION_ABSENT. L'ultima sezione \u00e8 REM-0063-CYCLE10-LANE-ARGV-LIMIT (2026-11-17). Nessuna sezione decide REM-0063-CYCLE10-INOTIFY-INSTANCES. Il file della richiesta al commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c ha sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233, verificato con git cat-file -e, git merge-base --is-ancestor e sha256sum. PR #666 resta aperta e non mergiata. REM-0063-CYCLE10-INOTIFY-INSTANCES \u00e8 aperta, stato OPEN_PO_DECISION_REQUIRED, livello operativo. Branch governed/decision-request-rem0063-cycle10-inotify, commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c, file reports/development/decision_requests/REM-0063-CYCLE10-INOTIFY-INSTANCES.md, sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233, PR #666, non mergiata. Nessuna opzione applicata. L'allowlist del piano non \u00e8 estesa in questa pubblicazione. Il gate sullo head 3ae284727c9829902e72bea25c2f07373e60d969 \u00e8 PASS: 51 passi, 0 fallimenti, 6 NOT_EXECUTED, gates.json sha256 50ee856e76341d1cc1528a02e20c7ea9e2977e693a303d035815920862c6ed7b. Non rieseguirlo finch\u00e9 la sezione che decide la richiesta non lo chiede. Non rieseguire il gate sullo head 5a1a8aaff6af95470171c1add7f9e85f1ec997a8. Non rilanciare le campagne 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 e 3ae284727c98-1794931254: restano FAIL diagnostiche e non sono un PASS. La campagna 3ae284727c98-1794931254 \u00e8 FAIL, exit 1, 498.974 s, dal 2026-11-17T16:00:54Z al 2026-11-17T16:09:13Z, FOUR_LANE, alimentazione MAINS all'inizio e alla fine, pull rimanente 100 prima dell'avvio. Errore: kubelet del nodo d658ba79d6b52b65a74d7c60cc8292a75eba1c44d38a4458568586e863aaaaee con restarts 2 dopo failed to create fsnotify watcher: too many open files. fs.inotify.max_user_instances vale 128 e non \u00e8 scrivibile dal processo della campagna. Non alzarlo in questa attesa. Non modificare file sotto ocor-runtime/src. Non modificare scripts/run_qualifying_campaign.py, scripts/run_local_lane_campaign.py n\u00e9 reports/tests/test_local_lane_campaign.py. Non spostare governed/ocor-dev-rem-0063-mcp-profile da 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Nessuna verify_request e nessuna seconda revisione preventiva. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Non aprire una seconda richiesta sullo stesso punto. Se compare la sezione che decide REM-0063-CYCLE10-INOTIFY-INSTANCES, applica l'opzione scelta esattamente come scritta al commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c, sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233. Se il file a quel commit non ha quello sha256, non applicarla e apri una richiesta, secondo la regola vigente per le decision request. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_rem0066_guard_disposition": "Verdetto OCOR-DEV-REM-0063-3b4894d181b7-10: NO_GO, sha256 f1d509cbcc61a0857b43014287ad9acd0eccc889012c140a730b4944cd9dbdf3, head 3b4894d181b7dfbfbc929f54a83ae320bcf73666, commit di esecuzione 3ae284727c9829902e72bea25c2f07373e60d969. Nessun ciclo 11. OCOR-DEV-REM-0063 \u00e8 bloccato da REM-0063-CYCLE10-NO-GO, stato OPEN_PO_DECISION_REQUIRED, commit e8db497fe45df05b44569c50757751837fa3a2eb, sha256 c1106610cd737b1458f7440d52370497aabdd8bef550169492879dae58ca7c96, PR #673 bozza, non si integra. Il branch di produzione resta 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Non rilanciare le campagne diagnostiche 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 e 3ae284727c98-1794931254. Prossima unit\u00e0 eseguibile: registrare la disposition e applicare l'opzione 1 di REM-0066-GUARD-ADMISSION (2026-11-15). Il file al commit d57732f5345636ff9ca2e819e037f345af26679c ha sha256 56f50622954689e1913c73fc0d3bac5c111cb9d19b740b67799bef96c2a1d476, PR #647 bozza. Verificare lo sha256 prima di applicare. Se coincide, registrare la disposition e applicare l'opzione come descritta, senza suite completa nella stessa iterazione del nuovo PRE-CAMPAIGN-GATE. Se non coincide, non applicare e aprire una sola richiesta nuova. Poi OCOR-DEV-REM-0065 all'HEAD 583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c. AGENTIC-RISK-MAP-PARTIAL-GAPS resta aperta e non blocca alcun task. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
+  "historical_next_executable_action_before_rem0066_import_exit_20261121": "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO e OPEN_PO_DECISION_REQUIRED. Il verdetto FUSEKI-REBUILD-IDENTITY-20261121-fe9ab6c09cd3-2 e NO_GO sull'HEAD fe9ab6c09cd3c7ed314e994a830d6d0c39e47237. Il budget ordinario di due riparazioni materialmente diverse e esaurito: ciclo 0 aee6ef0dcced NO_GO, ciclo 1 dd0467f18816 NO_GO, ciclo 2 fe9ab6c09cd3c7ed314e994a830d6d0c39e47237 NO_GO. Nessuna opzione e applicata. Non avviare il repair cycle 3. Non applicare alcuna opzione finche la sezione FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO non e presente in ~/.ocor-codex/openhands_preamble.md e lo sha256 del file coincide con quello di questa sincronizzazione. Rilettura 2026-11-21T05:13:49Z, sha256 10f8d206a90ea08756f777fedf06fe6acd0fbb8921032a8f5ecfc3683f5bb00b, 573929 byte, 220 sezioni, esito SECTION_ABSENT. Ultima sezione ## FUSEKI-REBUILD-IDENTITY-20261121 (2026-11-21) \u2014 decisione del PO, su delega completa. Non modificare il branch governed/fuseki-rebuild-identity-20261121, che resta all'HEAD fe9ab6c09cd3c7ed314e994a830d6d0c39e47237. Non aggiornare il lock su origin/main: output_sha256 resta f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875. Non cancellare, non ricostruire e non rietichettare l'immagine sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. Non eseguire scripts/bootstrap_ci_environment.py --execute. Non scrivere i record di regressione del launcher. Non riprendere il launcher sul branch governed/rem-0063-ci-argv-launcher finche il change set Fuseki non e sigillato dopo un futuro GO_FOR_EVIDENCE_SEAL. Non applicare REM-0066-STATE-ONLY-IMPORT-EXIT: CONFINE-G6 (2026-11-20) la tiene dopo la chiusura di OCOR-DEV-REM-0063. Non toccare la PR 722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. La bozza PR #732 non si integra. Se la sezione compare e lo sha256 coincide, l'iterazione successiva applica l'opzione scelta esattamente come scritta; questa sincronizzazione non la anticipa. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_route_option1": "Verdetto OCOR-DEV-REM-0063-5defee743612-11: NO_GO, sha256 525aa958f33c28544ce01d6fa83af955c2e126ac74245d593f097159b3040df4, head 5defee7436120e9a5f51191113b5995467bacaf2, commit di esecuzione d29a42706a927d6b3fa2bbedf69aa7c2601423ab. Nessun ciclo 12 automatico. OCOR-DEV-REM-0063 \u00e8 bloccato da REM-0063-CYCLE11-NO-GO, stato OPEN_PO_DECISION_REQUIRED, branch governed/decision-request-rem0063-cycle11-nogo, commit 391ff177a5c0e25fbbdbe4840a0d4c14612ae03e, sha256 c8ae68e98a1455591761726be8f85575d857faa3a3a20ce6be866e383d89403f, PR #682 bozza, non si integra. Non modificare il candidato. Non spostare il branch di produzione 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Non rilanciare le campagne diagnostiche 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 e 3ae284727c98-1794931254. Prossima unit\u00e0 eseguibile: registrare la disposition di REM-0066-ROUTE-TEST-TRACEABILITY (2026-11-18), opzione 1, file al commit f68e0640764f8c6a4847ca2a814d04c3d313f128, sha256 b22651b7970f8c34df8e3297fa4affbe8da9797cbe9427267c743b463ea6ef78, e applicare quell'opzione esattamente come descritta nel file. Il blocker nel registro \u00e8 ancora OPEN_PO_DECISION_REQUIRED: la sezione nel preambolo c'\u00e8 gi\u00e0. AGENTIC-RISK-MAP-PARTIAL-GAPS resta aperta e non blocca alcun task. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_ready_set_observation_before_ci_argv_launcher": {
     "backlog_ready": [
@@ -18150,6 +18235,238 @@
     "stack": "NOT_REQUIRED_STATE_SYNC",
     "status": "PASS"
   },
+  "historical_state_sync_local_gates_before_rem0066_import_exit_20261121": {
+    "claims_unchanged": true,
+    "commands": [
+      {
+        "command": [
+          "sha256sum",
+          "-c",
+          "inputs/normative/SHA256SUMS"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+        "seconds": 0.002,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/verify.py",
+          "--json"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+        "seconds": 0.297,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_evidence_input_drift.py"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
+        "seconds": 0.133,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_language_policy.py"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+        "seconds": 0.024,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python",
+          "-m",
+          "mypy"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130",
+        "seconds": 4.822,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0063-2e4a3e51220a-12/bin/ruff",
+          "check",
+          "."
+        ],
+        "exit_code": 0,
+        "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+        "seconds": 0.037,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_ocor_development_plan.py",
+          "--authorized-extension",
+          "--base-ref",
+          "origin/main"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+        "seconds": 0.097,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_rccad.py",
+          "--base-ref",
+          "origin/main"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+        "seconds": 0.934,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_ocor_change_scope.py",
+          "--base",
+          "origin/main",
+          "--head",
+          "HEAD",
+          "--branch",
+          "governed/state-sync-fuseki-cycle2-nogo-20261121",
+          "--path",
+          "reports/development/EXECUTION_STATE.json",
+          "--path",
+          "reports/development/ITERATION_LOG.md",
+          "--path",
+          "reports/development/MODEL_HANDOFF.json"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
+        "seconds": 0.026,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_runtime_evidence.py",
+          "--task",
+          "OCOR-DEV-0005",
+          "--non-skipped",
+          "--manifest",
+          "reports/evidence/G0/MANIFEST.json"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2",
+        "seconds": 0.028,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_runtime_evidence.py",
+          "--task",
+          "OCOR-DEV-0049",
+          "--non-skipped",
+          "--manifest",
+          "reports/evidence/G4/MANIFEST.json"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25",
+        "seconds": 0.03,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_runtime_evidence.py",
+          "--task",
+          "OCOR-DEV-0050",
+          "--non-skipped",
+          "--manifest",
+          "reports/evidence/G5/MANIFEST.json"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
+        "seconds": 0.028,
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
+          "scripts/validate_runtime_evidence.py",
+          "--task",
+          "OCOR-DEV-0082",
+          "--non-skipped",
+          "--manifest",
+          "reports/evidence/G2/MANIFEST.json"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83",
+        "seconds": 0.027,
+        "status": "PASS"
+      }
+    ],
+    "full_suite": "NOT_EXECUTED_ON_STATE_SYNC",
+    "registry_check": {
+      "checked_disposition_headers": 36,
+      "checked_references": 125,
+      "historical_discrepancies": [
+        [
+          "NCP-U08-RISK-CLASS-NAME-ADAPTATION",
+          "abbreviated disposition commit",
+          "f32f394"
+        ],
+        [
+          "NCP-U11-ADMISSION-QUOTA-COMPOSITION",
+          "lists integrated task",
+          "OCOR-DEV-REM-0059"
+        ],
+        [
+          "REM-0066-GUARD-ADMISSION",
+          "disposition header",
+          "Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.",
+          "DECIDED_BY_PO"
+        ],
+        [
+          "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION",
+          "disposition header",
+          "Stato: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`.",
+          "DECIDED_BY_PO"
+        ],
+        [
+          "REM-0063-CYCLE10-LANE-ARGV-LIMIT",
+          "disposition header",
+          "Stato: `OPEN_PO_DECISION_REQUIRED`.",
+          "DECIDED_BY_PO"
+        ],
+        [
+          "REM-0063-CYCLE10-INOTIFY-INSTANCES",
+          "disposition header",
+          "Stato: `OPEN_PO_DECISION_REQUIRED`.",
+          "DECIDED_BY_PO"
+        ],
+        [
+          "REM-0063-CYCLE10-NO-GO",
+          "disposition header",
+          "Stato: `OPEN_PO_DECISION_REQUIRED`.",
+          "DECIDED_BY_PO"
+        ]
+      ],
+      "integrity_errors": [],
+      "new_discrepancies": 0,
+      "open_decision_requests": [
+        "REM-0066-STATE-ONLY-IMPORT-EXIT",
+        "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO"
+      ],
+      "stdout_sha256": "385e0e49e8659a8c5d978a1f32864198a9f84dad024d8e3289246437420ee89e"
+    },
+    "stack": "NOT_REQUIRED_STATE_SYNC",
+    "status": "PASS"
+  },
   "historical_status_before_ci_argv_launcher": "CYCLE13_GO_SEAL_PR_CI_ARGV_BLOCKED",
   "historical_status_before_cycle11_nogo": "REM0063_CYCLE11_PREREVIEW_REQUESTED",
   "historical_status_before_cycle11_record_alignment": "REM0063_CYCLE11_RED_RECORDED",
@@ -19836,7 +20153,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO e OPEN_PO_DECISION_REQUIRED. Il verdetto FUSEKI-REBUILD-IDENTITY-20261121-fe9ab6c09cd3-2 e NO_GO sull'HEAD fe9ab6c09cd3c7ed314e994a830d6d0c39e47237. Il budget ordinario di due riparazioni materialmente diverse e esaurito: ciclo 0 aee6ef0dcced NO_GO, ciclo 1 dd0467f18816 NO_GO, ciclo 2 fe9ab6c09cd3c7ed314e994a830d6d0c39e47237 NO_GO. Nessuna opzione e applicata. Non avviare il repair cycle 3. Non applicare alcuna opzione finche la sezione FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO non e presente in ~/.ocor-codex/openhands_preamble.md e lo sha256 del file coincide con quello di questa sincronizzazione. Rilettura 2026-11-21T05:13:49Z, sha256 10f8d206a90ea08756f777fedf06fe6acd0fbb8921032a8f5ecfc3683f5bb00b, 573929 byte, 220 sezioni, esito SECTION_ABSENT. Ultima sezione ## FUSEKI-REBUILD-IDENTITY-20261121 (2026-11-21) \u2014 decisione del PO, su delega completa. Non modificare il branch governed/fuseki-rebuild-identity-20261121, che resta all'HEAD fe9ab6c09cd3c7ed314e994a830d6d0c39e47237. Non aggiornare il lock su origin/main: output_sha256 resta f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875. Non cancellare, non ricostruire e non rietichettare l'immagine sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. Non eseguire scripts/bootstrap_ci_environment.py --execute. Non scrivere i record di regressione del launcher. Non riprendere il launcher sul branch governed/rem-0063-ci-argv-launcher finche il change set Fuseki non e sigillato dopo un futuro GO_FOR_EVIDENCE_SEAL. Non applicare REM-0066-STATE-ONLY-IMPORT-EXIT: CONFINE-G6 (2026-11-20) la tiene dopo la chiusura di OCOR-DEV-REM-0063. Non toccare la PR 722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. La bozza PR #732 non si integra. Se la sezione compare e lo sha256 coincide, l'iterazione successiva applica l'opzione scelta esattamente come scritta; questa sincronizzazione non la anticipa. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
+  "next_executable_action": "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO (2026-11-21) adotta l'opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file al commit 85251f9691e5ead7df68f2f16c1d3f639d1776e6 resta sha256 4761ae0d027334a7666c467c7efba45c9ef3638508fa1d7d060d8395d2937c68, verificato. Rilettura di ~/.ocor-codex/openhands_preamble.md il 2026-11-21T06:34:49Z, sha256 497716d1d3a8967ae4b9c5678699157a3a89fc32cde06208d560595718afc620, 575460 byte, 3657 righe, 221 sezioni. Esito SECTION_PRESENT. Ultima sezione ## FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO (2026-11-21) \u2014 decisione del PO, su delega completa. Questa sincronizzazione non applica l'opzione: l'unita di questa iterazione e la disposition di REM-0066-STATE-ONLY-IMPORT-EXIT. L'iterazione successiva applica l'opzione 1 esattamente come scritta a quel commit. REM-0066-STATE-ONLY-REM0031-GUARD resta OPEN_PO_DECISION_REQUIRED, commit 08e4149180f96ac08273bd5e4ee0963214b34ed8, sha256 5f2a013eccf70f3033d1480b7e1a2b84ea9c4cd2c6464d0603837ee5ef43b23c, bozza PR #734. Nessuna sua opzione e applicata. Non aggiungere un commit sopra 6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1 per quella richiesta. Non scrivere prereview_request.json di REM-0066. Non avviare la suite completa. Non toccare la PR #722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -51330,7 +51647,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
-        "seconds": 0.002,
+        "seconds": 0.004,
         "status": "PASS"
       },
       {
@@ -51341,7 +51658,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
-        "seconds": 0.297,
+        "seconds": 0.296,
         "status": "PASS"
       },
       {
@@ -51351,7 +51668,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
-        "seconds": 0.133,
+        "seconds": 0.13,
         "status": "PASS"
       },
       {
@@ -51361,7 +51678,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
-        "seconds": 0.024,
+        "seconds": 0.026,
         "status": "PASS"
       },
       {
@@ -51372,18 +51689,18 @@
         ],
         "exit_code": 0,
         "raw_sha256": "606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130",
-        "seconds": 4.822,
+        "seconds": 4.716,
         "status": "PASS"
       },
       {
         "command": [
-          "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0063-2e4a3e51220a-12/bin/ruff",
+          "/home/luca/.local/bin/ruff",
           "check",
           "."
         ],
         "exit_code": 0,
         "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
-        "seconds": 0.037,
+        "seconds": 0.041,
         "status": "PASS"
       },
       {
@@ -51396,7 +51713,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
-        "seconds": 0.097,
+        "seconds": 0.093,
         "status": "PASS"
       },
       {
@@ -51408,7 +51725,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
-        "seconds": 0.934,
+        "seconds": 0.935,
         "status": "PASS"
       },
       {
@@ -51420,7 +51737,7 @@
           "--head",
           "HEAD",
           "--branch",
-          "governed/state-sync-fuseki-cycle2-nogo-20261121",
+          "governed/state-sync-rem0066-import-exit-20261121",
           "--path",
           "reports/development/EXECUTION_STATE.json",
           "--path",
@@ -51430,7 +51747,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
-        "seconds": 0.026,
+        "seconds": 0.028,
         "status": "PASS"
       },
       {
@@ -51475,7 +51792,7 @@
         ],
         "exit_code": 0,
         "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
-        "seconds": 0.028,
+        "seconds": 0.031,
         "status": "PASS"
       },
       {
@@ -51490,66 +51807,19 @@
         ],
         "exit_code": 0,
         "raw_sha256": "66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83",
-        "seconds": 0.027,
+        "seconds": 0.031,
         "status": "PASS"
       }
     ],
     "full_suite": "NOT_EXECUTED_ON_STATE_SYNC",
     "registry_check": {
-      "checked_disposition_headers": 36,
-      "checked_references": 125,
-      "historical_discrepancies": [
-        [
-          "NCP-U08-RISK-CLASS-NAME-ADAPTATION",
-          "abbreviated disposition commit",
-          "f32f394"
-        ],
-        [
-          "NCP-U11-ADMISSION-QUOTA-COMPOSITION",
-          "lists integrated task",
-          "OCOR-DEV-REM-0059"
-        ],
-        [
-          "REM-0066-GUARD-ADMISSION",
-          "disposition header",
-          "Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.",
-          "DECIDED_BY_PO"
-        ],
-        [
-          "REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION",
-          "disposition header",
-          "Stato: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`.",
-          "DECIDED_BY_PO"
-        ],
-        [
-          "REM-0063-CYCLE10-LANE-ARGV-LIMIT",
-          "disposition header",
-          "Stato: `OPEN_PO_DECISION_REQUIRED`.",
-          "DECIDED_BY_PO"
-        ],
-        [
-          "REM-0063-CYCLE10-INOTIFY-INSTANCES",
-          "disposition header",
-          "Stato: `OPEN_PO_DECISION_REQUIRED`.",
-          "DECIDED_BY_PO"
-        ],
-        [
-          "REM-0063-CYCLE10-NO-GO",
-          "disposition header",
-          "Stato: `OPEN_PO_DECISION_REQUIRED`.",
-          "DECIDED_BY_PO"
-        ]
-      ],
-      "integrity_errors": [],
-      "new_discrepancies": 0,
-      "open_decision_requests": [
-        "REM-0066-STATE-ONLY-IMPORT-EXIT",
-        "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO"
-      ],
-      "stdout_sha256": "385e0e49e8659a8c5d978a1f32864198a9f84dad024d8e3289246437420ee89e"
-    },
-    "stack": "NOT_REQUIRED_STATE_SYNC",
-    "status": "PASS"
+      "checked_disposition_headers": 37,
+      "checked_references": 127,
+      "command": "python3 /home/luca/.ocor-codex/rem-0063/cycle13-review-fix-20261120/registry-check.py",
+      "historical_discrepancies": 7,
+      "integrity_errors": 0,
+      "stdout_sha256": "5f7f662b2418bb7e3c61f3acdcb69bd0e9a9487ed7060df0eb6eda9afad3af50"
+    }
   },
   "status": "FUSEKI_REBUILD_IDENTITY_20261121_CYCLE2_NO_GO_DECISION_REQUEST",
   "terminal_loop_disposition": {
