@@ -1883,6 +1883,18 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-evidence.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-evidence.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-evidence.log",
+        # Repair cycle 1 of OCOR-DEV-REM-0066 changed
+        # .github/workflows/ocor-validation-closure.yml and
+        # reports/tests/test_kind_teardown_observation.py. These paths are
+        # declared before the records exist so the execution commit already
+        # contains the allowlist the records will hash. The task tests are
+        # unchanged. These records do not qualify requirements.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-repair1.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-repair1.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-repair1.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-repair1.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-repair1.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-repair1.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
