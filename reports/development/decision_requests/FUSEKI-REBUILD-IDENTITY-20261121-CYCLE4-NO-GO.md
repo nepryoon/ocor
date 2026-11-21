@@ -1,0 +1,88 @@
+# FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO
+
+Stato: `OPEN_PO_DECISION_REQUIRED`.
+Livello: operativo. Nessun nuovo `DEC-*`.
+Head di `origin/main` alla pubblicazione: `628fd7a3ac80f18120137f4a2225c8bf12f4e056`.
+Unità fermata da questo scarto: il change set `FUSEKI-REBUILD-IDENTITY-20261121` sul branch `governed/fuseki-rebuild-identity-20261121`, e con esso la chiusura di `OCOR-DEV-REM-0063` che attende il sigillo e l'integrazione di quel change set.
+PR del sigillo, aperta e non toccata da questa pubblicazione: #722, commit `7b0b90ee79bdae51b22365faca2a54159502a44f`.
+
+## Contesto e perimetro
+
+`FUSEKI-REBUILD-IDENTITY-20261121-CYCLE3-NO-GO (2026-11-21)` adotta l'opzione 1 sul file `reports/development/decision_requests/FUSEKI-REBUILD-IDENTITY-20261121-CYCLE3-NO-GO.md` al commit `9a29816684f668688c045c4c36bdb996b3aab69f`, sha256 `e77d0296b4dab98cad11ad774166d14ea0ae1ab09255a8287db8eeaa98446495`. Quell'opzione autorizza un solo `repair_cycle` 4 e stabilisce che, se il ciclo 4 è `NO_GO`, non c'è un ciclo 5: una sola richiesta nuova. Questa è quella richiesta. Nessuna sua opzione è applicata da chi la apre. Il candidato non si modifica e non si mergia.
+
+Il ciclo 4 è pubblicato e non integrato. Branch `governed/fuseki-rebuild-identity-20261121`. Commit di esecuzione `dd0467f1881649ba0ca90c76b0867b84d95e544e`. Commit di evidenza `24dcb6874c6e3686f9e92748ea845397c0d6e391`, parent `569af1c4cbbc35ddf8945eec48755096c767cd6c`. Base `5344565521e8f7db701073cd5554e49834781598`. Su `origin/main` il valore governato di `services[id=fuseki].build.output_sha256` in `infra/services.lock.json` resta `f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875`. Questa pubblicazione non lo cambia. L'immagine `ocor/jena-fuseki:6.2.0` autorizzata dai cicli precedenti è `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1`. Rimisurata il 2026-11-21T14:37:44Z con `docker image inspect ocor/jena-fuseki:6.2.0 --format {{.Id}}` e senza `docker build`: stesso id, Created `2026-11-21T00:48:03.243041815+01:00`. Non si cancella e non si rietichetta.
+
+## Prove
+
+Verdetto `FUSEKI-REBUILD-IDENTITY-20261121-24dcb6874c6e-4`, `NO_GO`, head `24dcb6874c6e3686f9e92748ea845397c0d6e391`, creato `2026-11-21T14:31:03Z`, sha256 del documento di verdetto `9774452be3ebb06c1e4987e53ea677a9834537ef703df7ef474fe47382e9367a`. Implementatore dei cicli 0, 1, 2, 3 e 4: Grok Build, grok-4.7, xAI. Il verifier del ciclo 4 è Codex, fornitore OpenAI, diverso da xAI.
+
+VF-001, severità alta, bloccante. In `reports/development/ITERATION_LOG.md` del candidato, riga 10514, la voce del ciclo 4 registra soltanto un «Comando concettuale» e lo stdout sha256 `c34b0eacd030c2a133a586170a69ed1e252a7564b7c56cd291b9d9e64530a09d`. L'opzione 1 già adottata chiedeva, se la prova su `reports/evidence/G2/MANIFEST.json` passa, di registrare il comando e lo sha256 dello stdout. Il controllo sostanziale passa. Il programma eseguibile della libreria standard, non committato, rieseguito sul candidato contro la base, esce 0 e il suo stdout ha sha256 `f49aa0ff684fc0ab8a35156286d15791d51732df156ff8a2598dbc41fb4b4a40`. Esito stampato: `reports/evidence/G0/MANIFEST.json` pure_insertion 391; `reports/evidence/G2/MANIFEST.json` pure_insertion 4740; `reports/evidence/G5/MANIFEST.json` pure_insertion 798. Il digest registrato non è lo stdout di quel comando. Il programma è questo, con gli argomenti `5344565521e8f7db701073cd5554e49834781598` e `24dcb6874c6e3686f9e92748ea845397c0d6e391`:
+
+```text
+python3 -c '
+import json, subprocess, sys
+base, head = sys.argv[1], sys.argv[2]
+def show(rev, path):
+    return subprocess.check_output(["git","show",f"{rev}:{path}"])
+def start(blob, path_bytes):
+    pos = blob.find(path_bytes)
+    marker = blob.rfind(b"\n    {", 0, pos)
+    return marker + 1
+names = subprocess.check_output(["git","diff","--name-only",base,head,"--","reports/evidence/G0/MANIFEST.json","reports/evidence/G2/MANIFEST.json","reports/evidence/G5/MANIFEST.json"], text=True).split()
+assert names, "no manifests"
+for path in names:
+    b, h = show(base, path), show(head, path)
+    if b == h:
+        print(path, "identical")
+        continue
+    first = json.loads(b)["artifacts"][0]["path"].encode()
+    sb, sh = start(b, first), start(h, first)
+    ok = h[:sb] == b[:sb] and h[sh:] == b[sb:]
+    print(path, "pure_insertion" if ok else "FAIL", sh - sb)
+    if not ok:
+        sys.exit(1)
+' 5344565521e8f7db701073cd5554e49834781598 24dcb6874c6e3686f9e92748ea845397c0d6e391
+```
+
+VF-002, severità media, non bloccante. La suite eseguita nella snapshot dell'HEAD ha 97 PASS e 1 FAIL. Il caso `CANONICAL_COMMIT` R1 senza Human Gate in `reports/tests/test_schema_conformance.py` attende `REJECT` e riceve `ACCEPT`. Il diff di `inputs/` e del test dalla base all'HEAD è vuoto. È il divario preesistente che l'opzione del ciclo 4 chiama VF-003 ed esclude dalla correzione. Il caso negativo resta. Non si segna `PASS` e non si indebolisce il test.
+
+VF-003, severità bassa, non bloccante. In 14 dei 15 record `raw_output_format` descrive una sezione di sonda heap o SPIFFE assente dal log omonimo. I digest e le associazioni comando/sezione sono corretti. Il record `reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json` è già allineato, digest `a783ffbaf6bb0453e47ae0aabc534ece63eeadeffb10ea320802d90038f04cb5`, e l'opzione del ciclo 4 limita quella modifica a quel record. I log restano byte-identici al ciclo 3. Le intestazioni `===` osservate al commit di evidenza, e soltanto quelle, sono:
+
+- `reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.log`: `regression-rem0064`.
+- `reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`.
+- `reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`.
+- `reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`, `identity`.
+- `reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`.
+- `reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`.
+- `reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`.
+- `reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`, `pytest-0079`.
+- `reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.log`: `regression-rem0064`.
+- `reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`, `pytest-rem0018`.
+- `reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`, `pytest-rem0022`.
+- `reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`, `pytest-rem0038`.
+- `reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.log`: `regression-rem0064`.
+- `reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.log`: `bootstrap`, `verify-manifest-only`, `verify-typed-execute`, `pytest-rem0023`.
+
+`infra/services.lock.json`, `infra/fuseki/Dockerfile`, `infra/fuseki/local_identity.lock.json`, `scripts/bootstrap_development_environment.py` e `scripts/reset_test_environment.py` del candidato restano quelli di `569af1c4cbbc35ddf8945eec48755096c767cd6c`. Il codice del launcher resta sul branch `governed/rem-0063-ci-argv-launcher`, commit `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b`, senza PR. I record di regressione del launcher non sono scritti. `REM-0066-STATE-ONLY-REM0031-GUARD` è chiusa senza opzione adottata. `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION` è decisa e la sua opzione 1 è già ferma prima di ogni commit sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`. `REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP` resta una richiesta distinta e aperta, bozza PR #739, commit `78aa9b3b9c3328d4d7db25f1bfcabfa88f8993cc`, sha256 `42d1ab64b65db79f49c6d23f61c0466558c7545ddec0591be87bbaae7b647991`. Questa richiesta non la applica.
+
+## Quesito
+
+Il ciclo 4 di `FUSEKI-REBUILD-IDENTITY-20261121` è `NO_GO` per VF-001. L'opzione 1 già adottata non autorizza un ciclo 5. Si autorizza un solo ciclo 5 che chiude VF-001 e VF-003, un solo ciclo 5 che chiude solo VF-001, si lascia il candidato non integrato, oppure si integra il candidato nonostante il `NO_GO`?
+
+## Opzioni
+
+1. **Un solo ciclo 5 che chiude VF-001 e VF-003.** Raccomandata. Un solo ciclo di riparazione, `repair_cycle` 5, sul branch `governed/fuseki-rebuild-identity-20261121`, con commit nuovi in avanti a partire da `24dcb6874c6e3686f9e92748ea845397c0d6e391`. Nessun rebase, nessun reset e nessun force-push. Non si ricostruisce, non si cancella e non si rietichetta `ocor/jena-fuseki:6.2.0`: prima di scrivere, `docker image inspect ocor/jena-fuseki:6.2.0 --format {{.Id}}` deve essere `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1`. Se non lo è, non si scrive un altro id e si apre una richiesta nuova. `infra/services.lock.json`, `infra/fuseki/Dockerfile`, `infra/fuseki/local_identity.lock.json`, `scripts/bootstrap_development_environment.py` e `scripts/reset_test_environment.py` non cambiano rispetto all'HEAD `24dcb6874c6e3686f9e92748ea845397c0d6e391`. Non si esegue `scripts/bootstrap_ci_environment.py --execute`. Non si riesegue il bootstrap di sviluppo e non si riscrivono i raw log: i byte dei log del ciclo 3 restano, comprese le intestazioni elencate nelle prove. Non si aggiunge un file di test. Se la prova richiede un file nuovo sotto il repository, ci si ferma e si apre una sola richiesta nuova. Per VF-001 si riesegue il programma delle prove, invariato salvo il secondo argomento, che è l'HEAD di evidenza finale del ciclo 5, contro la base `5344565521e8f7db701073cd5554e49834781598`. Nel log di iterazione del change set si registrano il testo integrale del comando, le due revisioni usate e lo sha256 dello stdout effettivo di quella esecuzione. La frase «Comando concettuale» e il digest `c34b0eacd030c2a133a586170a69ed1e252a7564b7c56cd291b9d9e64530a09d` restano nel paragrafo storico del ciclo 4. Non si copia `f49aa0ff684fc0ab8a35156286d15791d51732df156ff8a2598dbc41fb4b4a40` se il comando non è stato rieseguito su quelle revisioni. Se il programma esce diverso da 0, non si riscrivono i byte storici per farlo passare: ci si ferma e si apre una sola richiesta nuova. Per VF-003, nei soli quattordici record elencati nelle prove, `raw_output_format` nomina, nell'ordine, soltanto le intestazioni `===` di quel log, con la stessa frase iniziale già usata per `OCOR-DEV-0070` («concatenated command output in command order; each section ends with EXIT:0 and DURATION.») e senza le parole heap, SPIFFE, spiffe o probe. `reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json` non cambia e il suo digest resta `a783ffbaf6bb0453e47ae0aabc534ece63eeadeffb10ea320802d90038f04cb5`. `raw_output_sha256` e `commands[]` dei quindici record restano quelli del ciclo 4. Nei manifest si riallinea soltanto lo `sha256` della voce il cui `path` è il json di ciascuno dei quattordici record; le voci dei log e ogni voce già presente nella base restano. Togliere il blocco inserito deve ancora restituire il blob della base, compresi i due `§` letterali delle voci storiche di `OCOR-DEV-0051` e `OCOR-DEV-0055`. VF-002 non si corregge: il log di iterazione registra il divario, il diff vuoto e il fatto che `inputs/` non si modifica. Non si segna quel caso come `PASS` e non si indebolisce il test. Sul candidato, `active_iteration.next_action`, `active_iteration.phase`, `next_task` e `phase` del handoff, e ogni altro campo operativo che nomina ancora il ciclo 4 come ciclo corrente, nominano il ciclo 5, il commit di esecuzione `dd0467f1881649ba0ca90c76b0867b84d95e544e` e il commit di evidenza effettivo. I valori precedenti restano nei campi historical. Prima della pubblicazione, `git merge-tree` contro `origin/main` può confliggere solo nei tre file di stato. Un conflitto su un altro percorso ferma il ciclo senza publish e apre una sola richiesta nuova. Poi si scrive la richiesta di verifica con `review_type` `REMEDIATION`, `repair_cycle` 5, base `5344565521e8f7db701073cd5554e49834781598` e head il commit di evidenza. L'implementatore del ciclo 5 è lo stesso dei cicli 0–4, Grok Build grok-4.7, xAI. Il verifier non è xAI e non lo avvia l'implementatore. Non si mergia prima di `GO_FOR_EVIDENCE_SEAL`. All'integrazione autorizzata, il merge con `origin/main` risolve soltanto i tre file di stato: `git diff` fra l'HEAD qualificato e il risultato del merge, esclusi quei tre file, è vuoto. Dopo il sigillo e il merge si riprende il launcher sul branch `governed/rem-0063-ci-argv-launcher` con un merge di `origin/main`, senza rebase e senza force-push. Non si aggiungono commit alla PR #722, non si apre un `repair_cycle` 14 e non si applica alcuna opzione di `REM-0066-STATE-ONLY-REM0031-GUARD` né di `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION`. Se il ciclo 5 è `NO_GO`, non c'è un ciclo 6: una sola richiesta nuova. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Costo onesto: un commit di evidenza che registra il comando eseguibile e allinea i quattordici `raw_output_format`, e una verifica indipendente. Nessuna nuova build dell'immagine e nessuna suite completa. Nessuna opzione è applicata da questa pubblicazione.
+
+2. **Un solo ciclo 5 che chiude solo VF-001.** Stessi vincoli, stessi file vietati e la stessa richiesta di verifica dell'opzione 1, ma `raw_output_format` dei quattordici record non cambia e le voci di manifest di quei record restano quelle di `24dcb6874c6e3686f9e92748ea845397c0d6e391`. Il programma delle prove si riesegue comunque sull'HEAD finale e il log registra comando, revisioni e stdout sha256 effettivo. VF-002 non si corregge. Lascia incompleta la descrizione dei quattordici record: continuano a nominare una sonda heap o SPIFFE che il log non contiene. Claim invariati. Nessuna opzione è applicata da questa pubblicazione.
+
+3. **Nessun ciclo 5.** Il branch `governed/fuseki-rebuild-identity-20261121` resta a `24dcb6874c6e3686f9e92748ea845397c0d6e391` e non si mergia. `infra/services.lock.json` su `origin/main` resta con `output_sha256` `f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875`. L'immagine `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1` si conserva. Il bootstrap `--execute` sull'albero di `origin/main` continua a uscire per identità diversa. I record del launcher non si scrivono. La PR #722 non riceve commit e non si mergia. Non si apre un `repair_cycle` 14. Non si applica `REM-0066-STATE-ONLY-REM0031-GUARD` né `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION`. Claim invariati. Lascia incompleti VF-001, VF-003 e la chiusura di `OCOR-DEV-REM-0063`.
+
+4. **Integrare il candidato nonostante il NO_GO.** Si sigilla e si mergia `24dcb6874c6e3686f9e92748ea845397c0d6e391` trattando il digest `c34b0eacd030c2a133a586170a69ed1e252a7564b7c56cd291b9d9e64530a09d` come non bloccante perché il programma delle prove esce 0, e la descrizione dei quattordici record come testo da sistemare dopo il merge. I file di produzione, i quindici record e i log restano quelli del ciclo 4. Poi il launcher riprende come nell'opzione 1 già adottata. Non è la raccomandazione: integra un candidato che la verifica ha rifiutato e lascia nel log un comando che non è riproducibile. Claim invariati.
+
+## Raccomandazione
+
+Opzione 1. Chiude la causa del rifiuto e la classe di metadato rimasta nello stesso change set: il log cita il comando che produce lo stdout misurato, e ogni `raw_output_format` nomina soltanto le sezioni presenti nel log invariato. L'opzione 2 chiude il finding bloccante e lascia quattordici descrizioni false. L'opzione 3 lascia il lock di `origin/main` divergente dall'immagine presente e ferma il launcher e `OCOR-DEV-REM-0063`. L'opzione 4 integra un candidato rifiutato e non rende riproducibile la prova.
+
+## Impatto
+
+Task bloccato da questa richiesta: `OCOR-DEV-REM-0063`, finché il change set Fuseki non è sigillato e integrato. Finché la richiesta è aperta non si apre il ciclo 5, non si modifica il branch `governed/fuseki-rebuild-identity-20261121`, non si aggiorna `infra/services.lock.json` su `origin/main`, non si cancella né si rietichetta `ocor/jena-fuseki:6.2.0`, non si scrivono i record di regressione del launcher, non si tocca la PR #722 e non si applica `REM-0066-STATE-ONLY-REM0031-GUARD` né `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION`. `REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP` resta una richiesta distinta: questa pubblicazione non la applica e non la chiude. Gli altri task non sono bloccati da questa richiesta, salvo quelli che dipendono dalla chiusura di `OCOR-DEV-REM-0063`.
