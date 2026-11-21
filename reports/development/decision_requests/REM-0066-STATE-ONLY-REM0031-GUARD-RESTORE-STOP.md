@@ -1,6 +1,7 @@
 # REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `78aa9b3b9c3328d4d7db25f1bfcabfa88f8993cc` resta sha256 `42d1ab64b65db79f49c6d23f61c0466558c7545ddec0591be87bbaae7b647991`. L'attuazione si è fermata prima di ogni commit sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`: il confronto delle istruzioni di modulo contro il baseline `60afecfb0428350b552f77861455b695ebbd24f1` fallisce sui sei file e non è nominato dall'opzione 1. Sostituirlo o toglierlo va oltre il testo adottato. La regola vigente per le decision request chiede una sola richiesta nuova. Aperta la sola richiesta `REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL`, commit `81cef19c356096b6417c9ee5ac664ddb6ddf398e`, sha256 `3e8ed5068e4826702e9a485bd3a648ef629e4910d39eec1fd65b4beafa352f2c`, bozza PR #744, non si integra. Nessuna sua opzione è applicata. Il branch `governed/ocor-dev-rem-0066-state-only-ci` resta `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`. Non si tocca la PR #722 né il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un repair_cycle 14. Claim invariati. Questa PR si chiude come risolta e non si integra.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `f909ca1f342de416235db04f49ee22d56d915f42`.
 Unità: `OCOR-DEV-REM-0066`. Branch `governed/ocor-dev-rem-0066-state-only-ci`, HEAD `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`. Nessun commit è stato aggiunto sopra quell'HEAD.
