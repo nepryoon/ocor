@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,31 @@ STATE_FILES = (
     "reports/development/ITERATION_LOG.md",
     "reports/development/TERMINAL_BLOCKED_REPORT.json",
 )
+IMPORT_EXIT_SCRIPTS = (
+    "reports/tests/test_schema_conformance.py",
+    "reports/tests/test_v12_approval_readiness.py",
+    "reports/tests/test_v12_candidate.py",
+    "reports/tests/test_v12_release_gate.py",
+    "reports/tests/test_v12_semantics.py",
+)
+KNOWN_SCHEMA_TOTAL = "TOTAL 98 PASS 97 FAIL 1"
+KNOWN_SCHEMA_FAIL = (
+    "FAIL urn:ocor:schema:action-type-contract:1.0 — negativo semantico: "
+    "CANONICAL_COMMIT R1 senza Human Gate [ACCEPT]"
+)
+
+
+def _schema_stdout(
+    *,
+    pass_count: int = 97,
+    fails: list[str] | None = None,
+    total: str = KNOWN_SCHEMA_TOTAL,
+) -> str:
+    fail_lines = [KNOWN_SCHEMA_FAIL] if fails is None else fails
+    lines = [f"PASS case-{index:02d}" for index in range(pass_count)]
+    lines.extend(fail_lines)
+    lines.append(total)
+    return "\n".join(lines) + "\n"
 
 
 def _load(path: Path, name: str) -> Any:
@@ -421,12 +447,140 @@ class FastPathCommandTests(unittest.TestCase):
                 "reports/tests",
                 "-m",
                 "not requires_live_stack",
+                *[f"--ignore={path}" for path in IMPORT_EXIT_SCRIPTS],
                 "-q",
             ],
         )
+        self.assertEqual(
+            commands[-len(IMPORT_EXIT_SCRIPTS) :],
+            [["/opt/venv/bin/python", path] for path in IMPORT_EXIT_SCRIPTS],
+        )
         self.assertNotIn("bootstrap_ci_environment.py", joined)
         self.assertNotIn("run_qualifying_campaign.py", joined)
-        self.assertNotRegex(joined, r"reports/tests/test_[A-Za-z0-9_]+\.py")
+        residual = joined
+        for path in IMPORT_EXIT_SCRIPTS:
+            self.assertEqual(residual.count(path), 2)
+            residual = residual.replace(path, "")
+        self.assertNotRegex(residual, r"reports/tests/test_[A-Za-z0-9_]+\.py")
+
+    def test_known_schema_report_is_accepted(self) -> None:
+        module = _load(RUNNER, "run_state_only_schema_report")
+        self.assertTrue(module.schema_report_accepted(_schema_stdout()))
+
+    def test_extra_fail_is_rejected(self) -> None:
+        module = _load(RUNNER, "run_state_only_extra_fail")
+        stdout = _schema_stdout(fails=[KNOWN_SCHEMA_FAIL, "FAIL urn:ocor:schema:extra"])
+        self.assertFalse(module.schema_report_accepted(stdout))
+        self.assertNotEqual(self._script_step(module, [(1, stdout)]), 0)
+
+    def test_missing_case_is_rejected(self) -> None:
+        module = _load(RUNNER, "run_state_only_missing_case")
+        stdout = _schema_stdout(pass_count=96, total="TOTAL 97 PASS 96 FAIL 1")
+        self.assertFalse(module.schema_report_accepted(stdout))
+        self.assertNotEqual(self._script_step(module, [(1, stdout)]), 0)
+
+    def test_different_observation_is_rejected(self) -> None:
+        module = _load(RUNNER, "run_state_only_different_observation")
+        stdout = _schema_stdout(
+            fails=[
+                "FAIL urn:ocor:schema:action-type-contract:1.0 — negativo semantico: "
+                "CANONICAL_COMMIT R1 senza Human Gate [REJECT]"
+            ]
+        )
+        self.assertFalse(module.schema_report_accepted(stdout))
+        self.assertNotEqual(self._script_step(module, [(0, stdout)]), 0)
+
+    def test_schema_process_code_does_not_decide_and_v12_code_does(self) -> None:
+        module = _load(RUNNER, "run_state_only_process_codes")
+        accepted = self._script_step(module, [(1, _schema_stdout()), (0, ""), (0, ""), (0, ""), (0, "")])
+        self.assertEqual(accepted, 0)
+        rejected = self._script_step(module, [(1, _schema_stdout()), (5, "")])
+        self.assertEqual(rejected, 5)
+
+    def test_invalid_script_stdout_fails_closed(self) -> None:
+        module = _load(RUNNER, "run_state_only_invalid_stdout")
+        self.assertNotEqual(self._script_step(module, [(0, b"\xff")]), 0)
+
+    def test_tracked_json_bytes_are_restored(self) -> None:
+        module = _load(RUNNER, "run_state_only_restore_bytes")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            photos = {}
+            for relative in module.TRACKED_JSON:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                payload = b"photo-" + relative.encode("ascii")
+                path.write_bytes(payload)
+                photos[relative] = payload
+            self.assertEqual(module.snapshot_tracked_json(root), photos)
+            calls: list[list[str]] = []
+
+            def runner(command: list[str]) -> subprocess.CompletedProcess[bytes]:
+                calls.append(list(command))
+                for relative in module.TRACKED_JSON:
+                    (root / relative).write_bytes(b"changed")
+                stdout = _schema_stdout().encode("utf-8") if len(calls) == 1 else b""
+                code = 1 if len(calls) == 1 else 0
+                return subprocess.CompletedProcess(command, code, stdout=stdout)
+
+            def snapshot() -> dict[str, bytes]:
+                return module.snapshot_tracked_json(root)
+
+            def restore(saved: dict[str, bytes]) -> bool:
+                return bool(module.restore_tracked_json(saved, root))
+
+            code = module.run_tracked_scripts("/opt/venv/bin/python", runner, snapshot, restore)
+            self.assertEqual(code, 0)
+            self.assertEqual(calls, [["/opt/venv/bin/python", path] for path in IMPORT_EXIT_SCRIPTS])
+            for relative, payload in photos.items():
+                self.assertEqual((root / relative).read_bytes(), payload)
+
+    def test_restore_mismatch_fails_closed(self) -> None:
+        module = _load(RUNNER, "run_state_only_restore_mismatch")
+        code = self._script_step(
+            module,
+            [(1, _schema_stdout()), (0, ""), (0, ""), (0, ""), (0, "")],
+            restore_result=False,
+        )
+        self.assertNotEqual(code, 0)
+
+    def test_snapshot_oserror_does_not_run_scripts(self) -> None:
+        module = _load(RUNNER, "run_state_only_snapshot_oserror")
+        calls: list[list[str]] = []
+
+        def runner(command: list[str]) -> subprocess.CompletedProcess[bytes]:
+            calls.append(list(command))
+            return subprocess.CompletedProcess(command, 0, stdout=b"")
+
+        def snapshot() -> dict[str, bytes]:
+            raise OSError("snapshot unreadable")
+
+        code = module.run_tracked_scripts("/opt/venv/bin/python", runner, snapshot, lambda _photos: True)
+        self.assertNotEqual(code, 0)
+        self.assertEqual(calls, [])
+
+    def _script_step(
+        self,
+        module: Any,
+        results: list[tuple[int, str | bytes]],
+        *,
+        restore_result: bool = True,
+    ) -> int:
+        pending = list(results)
+
+        def runner(command: list[str]) -> subprocess.CompletedProcess[bytes]:
+            code, stdout = pending.pop(0)
+            return subprocess.CompletedProcess(command, code, stdout=stdout)
+
+        photos = {"reports/tests/conformance_results.json": b"photo"}
+        return int(
+            module.run_tracked_scripts(
+                "/opt/venv/bin/python",
+                runner,
+                lambda: dict(photos),
+                lambda _photos: restore_result,
+            )
+        )
 
     def test_a_failing_command_fails_closed(self) -> None:
         module = _load(RUNNER, "run_state_only_ci_path_exec")
