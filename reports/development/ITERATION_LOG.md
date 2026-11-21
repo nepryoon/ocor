@@ -10522,3 +10522,47 @@ VF-003 non si corregge. Il caso di `reports/tests/test_schema_conformance.py` ch
 Non si tocca la PR #722 ne il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un `repair_cycle` 14. Non si applica `REM-0066-STATE-ONLY-REM0031-GUARD` ne `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION`. La suite completa non e avviata. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
 
 Prossima azione: il loop avvia la verifica indipendente `REMEDIATION`, `repair_cycle` 4, base `5344565521e8f7db701073cd5554e49834781598`, head l'HEAD pubblicato. Implementatore dei cicli 0, 1, 2, 3 e 4: Grok Build, grok-4.7, xAI. Il verifier non e xAI e non lo avvia l'implementatore. Nessuna PR del candidato e nessun merge prima di `GO_FOR_EVIDENCE_SEAL`.
+
+## 2026-11-21T16:50:39Z — FUSEKI-REBUILD-IDENTITY-20261121, repair cycle 5
+
+Esecutore: Grok Build, grok-4.7, xAI. Decisione `FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO (2026-11-21)`, opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. File al commit `4cb391425de5dbfb0dd30c66448b5b22279fca9b`, sha256 `442d3b676a6ee51d10f90d8f214dabcea11e4b3841efa8cca3111c491d3f28e6`. I cicli 0, 1, 2, 3 e 4 restano storici. Nessun rebase, reset o force-push. Se questo ciclo e `NO_GO` non c'e un ciclo 6: una sola richiesta nuova.
+
+Prima della scrittura, `docker image inspect ocor/jena-fuseki:6.2.0 --format {{.Id}}` il 2026-11-21T16:50:39Z era `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1`, Created `2026-11-21T00:48:03.243041815+01:00`. Non e stata ricostruita, cancellata o rietichettata. `scripts/bootstrap_ci_environment.py --execute` non e stato eseguito. Il bootstrap di sviluppo non e stato rieseguito. I raw log del ciclo 3 restano byte-identici, comprese le intestazioni `===` elencate nella richiesta. `infra/services.lock.json`, `infra/fuseki/Dockerfile`, `infra/fuseki/local_identity.lock.json`, `scripts/bootstrap_development_environment.py` e `scripts/reset_test_environment.py` restano quelli di `24dcb6874c6e3686f9e92748ea845397c0d6e391`. Il commit di esecuzione resta `dd0467f1881649ba0ca90c76b0867b84d95e544e`. Questo commit non modifica `services[id=fuseki].build.output_sha256` su `origin/main`, che resta `f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875`. Il log pubblicato del bootstrap resta quello del ciclo 3 e continua a registrare 13 servizi acquisiti.
+
+VF-001: il programma della libreria standard, invariato salvo il secondo argomento, e stato eseguito sul commit dei record e dei manifest `f8e88420984f49666b6d156bbe665424e5f01c1a` contro la base `5344565521e8f7db701073cd5554e49834781598`. Exit 0. Stdout sha256 `f49aa0ff684fc0ab8a35156286d15791d51732df156ff8a2598dbc41fb4b4a40`. Righe dello stdout: `reports/evidence/G0/MANIFEST.json pure_insertion 391`; `reports/evidence/G2/MANIFEST.json pure_insertion 4740`; `reports/evidence/G5/MANIFEST.json pure_insertion 798`. Questo commit di stato non cambia i blob dei tre `MANIFEST.json`. Un commit non puo contenere il proprio hash, quindi il comando registrato qui usa le due revisioni di quell'esecuzione. Prima del push lo stesso programma e rieseguito con il secondo argomento uguale all'HEAD che contiene questo paragrafo; quella riesecuzione, e il comando che la nomina, stanno nel log di state sync perche solo un altro commit puo citare questo HEAD. La frase «Comando concettuale» e il digest `c34b0eacd030c2a133a586170a69ed1e252a7564b7c56cd291b9d9e64530a09d` restano nel paragrafo storico del ciclo 4. Comando eseguito:
+
+```text
+python3 -c '
+import json, subprocess, sys
+base, head = sys.argv[1], sys.argv[2]
+def show(rev, path):
+    return subprocess.check_output(["git","show",f"{rev}:{path}"])
+def start(blob, path_bytes):
+    pos = blob.find(path_bytes)
+    marker = blob.rfind(b"\n    {", 0, pos)
+    return marker + 1
+names = subprocess.check_output(["git","diff","--name-only",base,head,"--","reports/evidence/G0/MANIFEST.json","reports/evidence/G2/MANIFEST.json","reports/evidence/G5/MANIFEST.json"], text=True).split()
+assert names, "no manifests"
+for path in names:
+    b, h = show(base, path), show(head, path)
+    if b == h:
+        print(path, "identical")
+        continue
+    first = json.loads(b)["artifacts"][0]["path"].encode()
+    sb, sh = start(b, first), start(h, first)
+    ok = h[:sb] == b[:sb] and h[sh:] == b[sb:]
+    print(path, "pure_insertion" if ok else "FAIL", sh - sb)
+    if not ok:
+        sys.exit(1)
+' 5344565521e8f7db701073cd5554e49834781598 f8e88420984f49666b6d156bbe665424e5f01c1a
+```
+
+VF-003: nei soli quattordici record elencati nella richiesta, `raw_output_format` nomina, nell'ordine, soltanto le intestazioni `===` di quel log, con la frase iniziale gia usata per `OCOR-DEV-0070` e senza le parole heap, SPIFFE, spiffe o probe. `reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json` non cambia e il suo digest resta `a783ffbaf6bb0453e47ae0aabc534ece63eeadeffb10ea320802d90038f04cb5`. `raw_output_sha256` e `commands[]` dei quindici record restano quelli del ciclo 4. Nei manifest e riallineato soltanto lo `sha256` della voce il cui `path` e il json di ciascuno dei quattordici record. Togliere il blocco inserito restituisce ancora il blob della base, compresi i due `§` letterali delle voci storiche di `OCOR-DEV-0051` e `OCOR-DEV-0055`. Il campo `repair_cycle` dei record resta 3.
+
+VF-002 non si corregge. Il caso `CANONICAL_COMMIT` R1 senza Human Gate in `reports/tests/test_schema_conformance.py` attende `REJECT` e riceve `ACCEPT`. La suite citata dal verdetto del ciclo 4 ha 97 PASS e 1 FAIL. Il diff di `inputs/` e del test fra `5344565521e8f7db701073cd5554e49834781598` e `569af1c4cbbc35ddf8945eec48755096c767cd6c` e vuoto, e questo ciclo non tocca quei file. `inputs/` non si modifica. Il caso non e segnato `PASS` e il test non e indebolito.
+
+`active_iteration.next_action`, `active_iteration.phase`, `next_executable_action`, `next_task`, `exact_next_action`, `phase` e `current_task` nominano il ciclo 5, il commit di esecuzione `dd0467f1881649ba0ca90c76b0867b84d95e544e` e il commit di evidenza dei record `f8e88420984f49666b6d156bbe665424e5f01c1a`. I valori precedenti restano nei campi historical. Lo status del blocco `fuseki_cycle4_20261121` diventa `NO_GO_SUPERSEDED_BY_REPAIR_CYCLE_5` e il valore precedente resta in `historical_status_before_cycle5`.
+
+Non si tocca la PR #722 ne il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un `repair_cycle` 14. Non si applica `REM-0066-STATE-ONLY-REM0031-GUARD`, ne `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION`, ne `REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL`. La suite completa non e avviata. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
+
+Prossima azione: il loop avvia la verifica indipendente `REMEDIATION`, `repair_cycle` 5, base `5344565521e8f7db701073cd5554e49834781598`, head l'HEAD pubblicato di questo branch. Implementatore dei cicli 0, 1, 2, 3, 4 e 5: Grok Build, grok-4.7, xAI. Il verifier non e xAI e non lo avvia l'implementatore. Nessuna PR del candidato e nessun merge prima di `GO_FOR_EVIDENCE_SEAL`.
