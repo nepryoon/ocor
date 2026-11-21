@@ -1,6 +1,7 @@
 # REM-0066-STATE-ONLY-IMPORT-EXIT
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `34053edb0c4d9167598b649c46cc84a893094d36` resta sha256 `c180b11ef72957a9b66cc066ec2c2da8f9f28d0c0ef7f0a79a6ba2bfcf65791d`. Rosso `5e559b8223cd0a5b8c47170fb0916a9975da4d9f`, verde `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1`, sul branch `governed/ocor-dev-rem-0066-state-only-ci`. La raccolta con i cinque ignore esce 0. I quattro script v12 escono 0, il referto dello schema è solo quello noto e i cinque JSON tornano ai byte fotografati. `PRE-CAMPAIGN-GATE` su quel verde è FAIL solo a `state-only-ci-path`, exit 1: `gates.json` sha256 `e71c207647a3cee8e629dd29d6fcd5bc3b414c1637f94612bccfaf8c974c5683`. Pytest esegue `ConsumerRegistryScope.test_exact_seeding_only_diff` e fallisce. Quel guard è fuori dall'opzione. La richiesta nuova è `REM-0066-STATE-ONLY-REM0031-GUARD`, commit `08e4149180f96ac08273bd5e4ee0963214b34ed8`, sha256 `5f2a013eccf70f3033d1480b7e1a2b84ea9c4cd2c6464d0603837ee5ef43b23c`, bozza PR #734, non si integra e nessuna sua opzione è applicata. Non si scrive `prereview_request.json`. La suite completa non parte. Claim invariati. Questa PR si chiude come risolta e non si integra.
 Livello: operativo. Unità: `OCOR-DEV-REM-0066`.
 Head di `origin/main` alla pubblicazione: `51cfe1f0041fb24c9a83eba4a82324099cd06337`.
 Branch dell'unità, senza commit nuovi: `governed/ocor-dev-rem-0066-state-only-ci`, HEAD `fe913c06a22d6fd48915dff177d6145de69b0a40`.
