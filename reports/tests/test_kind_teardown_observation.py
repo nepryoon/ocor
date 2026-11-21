@@ -848,6 +848,7 @@ REM0066_ALWAYS_IF = "        if: always() && needs.classify-ci-route.outputs.rou
 REM0066_ALWAYS_IF_BASELINE = '        if: always()\n'
 REM0066_SUBSTITUTIONS = {
     '.github/workflows/ocor-delivery-activation.yml': [
+        ("      - governed/rem0066-ci-probe-base\n", "", 1),
         (REM0066_STATE_ONLY_AT_EOF, "", 1),
         (REM0066_CLASSIFY_JOB, "", 1),
         (REM0066_PART_PREAMBLE, "", 1),
@@ -857,6 +858,7 @@ REM0066_SUBSTITUTIONS = {
         ("    needs: [classify-ci-route, delivery-activation-part]\n", "    needs: delivery-activation-part\n", 1),
     ],
     '.github/workflows/ocor-rccad.yml': [
+        ("      - governed/rem0066-ci-probe-base\n", "", 1),
         (REM0066_STATE_ONLY_AT_EOF, "", 1),
         (REM0066_CLASSIFY_JOB, "", 1),
         (REM0066_PART_PREAMBLE, "", 1),
@@ -866,6 +868,7 @@ REM0066_SUBSTITUTIONS = {
         ("    needs: [classify-ci-route, rccad-methodology-part]\n", "    needs: rccad-methodology-part\n", 1),
     ],
     '.github/workflows/ocor-validation-closure.yml': [
+        ("      - governed/rem0066-ci-probe-base\n", "", 1),
         (REM0066_STATE_ONLY_STEPS, "", 1),
         (REM0066_CLASSIFY_JOB, "", 1),
         (REM0066_PART_PREAMBLE, "", 2),
@@ -900,9 +903,10 @@ def normalize_rem0066_workflow(path, text):
     substitutions remove the classify-ci-route job, the if conditions that select
     the state_only route or keep the full route, and the classify-ci-route entry in
     needs of conditional-infrastructure-0049 together with the same job edge on the
-    part and aggregator jobs that wire it. Each fragment must occur the declared
-    number of times. Any other byte still fails the current proof. Baselines do not
-    move and no other normalisation is added.
+    part and aggregator jobs that wire it. On this probe base they also remove the
+    single extra pull_request branch ``governed/rem0066-ci-probe-base``, which is
+    not part of the candidate. Each fragment must occur the declared number of
+    times. Any other byte still fails the current proof. Baselines do not move.
     """
     substitutions = REM0066_SUBSTITUTIONS.get(path)
     if substitutions is None:
