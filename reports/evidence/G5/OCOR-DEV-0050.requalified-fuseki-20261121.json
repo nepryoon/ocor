@@ -18,23 +18,23 @@
     {
       "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
       "cwd": ".",
-      "duration_seconds": 5.075,
+      "duration_seconds": 5.036,
       "exit_code": 0,
       "failed": 0,
-      "head_sha": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
+      "head_sha": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
       "label": "regression-rem0064",
       "not_executed": 0,
       "passed": 214,
-      "raw_sha256": "cf08850fd7e620866fdca0aff1c29c5363b692a678f8bea4d38c377dcfde0e26",
+      "raw_sha256": "482534c27acc6ca5d84342c9ea073cdbe7c4110561ad936af94b5472f2ca1766",
       "skipped": 0,
-      "started_at": "2026-11-21T01:59:05Z",
+      "started_at": "2026-11-21T02:49:59Z",
       "status": "PASS",
       "xfailed": 0
     }
   ],
   "commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
-  "commit_role": "lock and allowlist head at which these regression commands ran; the record itself is a later commit and does not change these inputs",
-  "created_at": "2026-11-21T02:04:54Z",
+  "commit_role": "lock and allowlist head whose inputs these regression commands use; repair cycle 1 re-executed the commands at checkout aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79 without changing those inputs",
+  "created_at": "2026-11-21T02:57:47Z",
   "drifted_inputs": [
     "scripts/validate_ocor_development_plan.py"
   ],
@@ -45,16 +45,19 @@
     "host": "nep-LEGION",
     "implementer_cli": "Grok Build (grok-4.7)",
     "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "pytest_shell": "HOME, PATH=/usr/bin:/bin, LANG=C.UTF-8, LC_ALL=C.UTF-8, OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN only",
     "python": "3.12.11",
     "qualification_source_commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
     "ram_bytes": 65740460032,
     "ram_source": "MemTotal 64199668 kB read on nep-LEGION in the regression session",
     "threads": 24,
-    "uv": "0.13.5"
+    "uv": "0.12.5",
+    "uv_executable": "/home/luca/.ocor-codex/c5resume/toolchain/bin/uv",
+    "uv_executable_sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46"
   },
   "full_campaign": {
     "executed": false,
-    "reason": "The commands of the current record were rerun on the real local stack. The full suite is not a prerequisite of FUSEKI-REBUILD-IDENTITY-20261121 option 1."
+    "reason": "Repair cycle 1 of FUSEKI-REBUILD-IDENTITY-20261121 option 1 reran the record commands on the real local stack. The full suite is not a prerequisite."
   },
   "inputs": {
     ".github/workflows/ocor-validation-closure.yml": "eb60126c95614d02c8b67a3b9a3ddf64086dfd5869fd4f4235dc399e06ea1109",
@@ -68,18 +71,168 @@
     "scripts/validate_ocor_development_plan.py": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827"
   },
   "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "pre_campaign_gate": {
+    "before_replays": true,
+    "decision": "PRE-CAMPAIGN-GATE (2026-10-26)",
+    "head_sha": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
+    "not_executed": [
+      {
+        "name": "ci-bootstrap-execute",
+        "reason": "scripts/bootstrap_ci_environment.py docker-builds ocor/jena-fuseki:6.2.0 and would replace the authorized image id; FUSEKI option 1 forbids that build, a retag to the previous id, and deletion of the image"
+      },
+      {
+        "name": "qualifying-full-suite",
+        "reason": "FUSEKI-REBUILD-IDENTITY-20261121 option 1 does not require the full suite"
+      },
+      {
+        "name": "github-actions-cache",
+        "reason": "GitHub Actions cache has no local credential"
+      },
+      {
+        "name": "auto-merge",
+        "reason": "GitHub auto-merge is not a local step"
+      },
+      {
+        "name": "integration-postgresql-campaign",
+        "reason": "runtime campaign, not a fast step; option 1 exempts the full suite"
+      }
+    ],
+    "output_sha256": "d848cdee5cab8e7e7fa96d437f95087a2edd27b4fcc89a73887a8c812831b950",
+    "plan_validator_side_effect": "validate_ocor_development_plan.py exited 0 and rewrote the report digest inside OCOR_PLAN_RUN_STATE.json. Those two planning files were restored to the candidate HEAD so the settled self-hash and the execution commit inputs stay unchanged.",
+    "started_at": "2026-11-21T02:46:20Z",
+    "steps": [
+      {
+        "exit_code": 0,
+        "name": "prove-head",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "inputs-checksum",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "report-checksum",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "inputs-immutable",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "uv-pin",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "mypy",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "ruff",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "lock-schemas",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "tooling-acceptance",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "preflight-contract",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "bootstrap-check",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "compose-config",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "plan",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "rccad",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "language-tests",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "language",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "drift",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "scope",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "verify-json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "lld-add-alignment",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "node-tsc-pin",
+        "status": "PASS"
+      }
+    ]
+  },
   "previous_record": {
     "record_id": "OCOR-DEV-0050-requalified-rem0064-8314663c44c2",
     "record_path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
     "record_sha256": "7633d05aa3582a6810d8d9636f2b976009e6f48ba8c9e1aac15ff6700c958419",
     "status": "SEALED"
   },
-  "qualification_limits": "Regression-only requalification after FUSEKI-REBUILD-IDENTITY-20261121 option 1 updated services[id=fuseki].build.output_sha256 to the inspected local image id f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. qualifies_requirements is false. tests_unchanged_from_base is true.",
+  "qualification_limits": "Regression-only requalification after FUSEKI-REBUILD-IDENTITY-20261121 option 1 updated services[id=fuseki].build.output_sha256 to sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. qualifies_requirements is false. tests_unchanged_from_base is true. Repair cycle 1 re-executed the commands with uv 0.12.5 (executable sha256 b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46) first on PATH. Development bootstrap did not rebuild Fuseki. The CI heap was applied afterwards with docker compose up --no-build and JVM_ARGS=-Xms128m -Xmx1G. The running JVM arguments are exactly those two heap flags and the flag probe reports MaxHeapSize = 1073741824. The control-plane SVID spiffe://ocor.test/ocor/control-plane was registered on the attested agent. Image id remained sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. test_ocor_dev_rem_0023.py passed 105 with zero skips. test_ocor_dev_0048.py, after initialize_services.py and load_fixtures.py, passed 196 with zero skips, zero failures and zero errors. scripts/bootstrap_ci_environment.py --execute was not run because it docker-builds the preserved tag.",
   "qualifies_requirements": false,
   "raw_output_format": "concatenated stdout of the commands in order, each section ending with EXIT:0",
-  "raw_output_sha256": "a35748c7b3ac260d8620afd0cf5c89a0f1f9a741639eed138d1ca85c135dc78f",
+  "raw_output_sha256": "0b153b1c0f9439a4e1fb45e1567e221052f2ef7d205afad8ae25ad0d06b5b6be",
   "record_id": "OCOR-DEV-0050-requalified-fuseki-20261121-0dbb3541a7cc",
+  "repair_cycle": 1,
   "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_digest_check": {
+    "captured_head": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
+    "checked_inputs": 100,
+    "checked_records": 15,
+    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit 0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851 --record reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json",
+    "execution_commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
+    "exit_code": 0,
+    "findings": 0,
+    "note": "The stdout sha256 is the canonical JSON printed by that command at captured_head aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79, after the repair-cycle command logs were written and before the evidence-only commit that stores this object. Embedding this object does not change the checker output. A later run prints the new HEAD inside the payload and therefore a different stdout sha256. The input findings stay empty while the declared inputs still match execution commit 0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851.",
+    "result": "PASS",
+    "stdout_sha256": "6504a48d936dc30dd37ad4baa98b0c175fe1bc8db3a9c9bd36e662d294e52d2a"
+  },
   "requalification_kind": "regression",
   "requirement_classification": {
     "bindable_requirements": [],
@@ -91,6 +244,19 @@
   ],
   "result": "PASS",
   "review_scope": "regression-only rerun for OCOR-DEV-0050 after the Fuseki local identity reacquisition; not a re-assessment of conformance",
+  "role_coherence": {
+    "command": "python3 roles coherence scan over the fifteen fuseki-20261121 records",
+    "corrections": [],
+    "decision": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+    "errors_corrected": 0,
+    "errors_found": 0,
+    "fields_compared": 120,
+    "note": "Mechanical scan of the fifteen fuseki-20261121 records at scanned_head aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79, before the evidence-only commit that stores this object. Compared facts are implementers, the excluded verifier provider, the verifier-started flag, verifier status, the pre-campaign head, every command head, the execution commit, and the pinned uv version and digest. No correction was required. Embedding this object does not change the scan output.",
+    "records": 15,
+    "scanned_head": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
+    "status": "PASS",
+    "stdout_sha256": "7388c756d2505360f7a1b408f5f1fc0eefa0185d38d2410768ddf75f893f4953"
+  },
   "roles": {
     "implementers": [
       "Grok Build (xAI), grok-4.7"
