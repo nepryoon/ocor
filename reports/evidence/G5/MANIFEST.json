@@ -2,22 +2,22 @@
   "artifacts": [
     {
       "path": "OCOR-DEV-0050.requalified-fuseki-20261121.json",
-      "sha256": "21449f3015683be2584688dcba16a7306dc2a38f6c2e43c09f915959beee6654",
+      "sha256": "17233c78e500ed27805fe5322be970fdafd2ab665f82033dea90e48501ca6044",
       "task_id": "OCOR-DEV-0050"
     },
     {
       "path": "OCOR-DEV-0050.requalified-fuseki-20261121.log",
-      "sha256": "0b153b1c0f9439a4e1fb45e1567e221052f2ef7d205afad8ae25ad0d06b5b6be",
+      "sha256": "6e73f4fdca55dd837edcbbada381834bef7fa85b0516b90c5c163d753cd17f3a",
       "task_id": "OCOR-DEV-0050-RAW"
     },
     {
       "path": "OCOR-DEV-REM-0023.requalified-fuseki-20261121.json",
-      "sha256": "3ac6a4e07081eb253c7ebf956fd5f7cb626c352735a100c3d882a7bf26362c91",
+      "sha256": "ceab9494c6a947182584b1b43ef23997edaa432b59eb536b3ac6bb4a51eb5324",
       "task_id": "OCOR-DEV-REM-0023"
     },
     {
       "path": "OCOR-DEV-REM-0023.requalified-fuseki-20261121.log",
-      "sha256": "fe91e0b9ff0a1d9bb04581b56ce936a9d348625bd7bc30e5aeabc291a7369e68",
+      "sha256": "be4d8923f495ef6d84b2bcc01e8e1e463e4a7823b3c6b575e7fbe08c66b5a719",
       "task_id": "OCOR-DEV-REM-0023-RAW"
     },
     {
@@ -1148,7 +1148,7 @@
     },
     {
       "case_id": "OCOR-DEV-0051-COMPARTMENT-PARTITIONS-PHYSICAL-AND-LOGICAL",
-      "command": "every attribute of the ADD \u00a72.6 isolation tuple changes the partition; separate content addresses, PostgreSQL tables and Qdrant collections per partition; identical text/vectors never cross partitions; out-of-partition reads indistinguishable from absent; ciphertext moved across partitions does not open",
+      "command": "every attribute of the ADD §2.6 isolation tuple changes the partition; separate content addresses, PostgreSQL tables and Qdrant collections per partition; identical text/vectors never cross partitions; out-of-partition reads indistinguishable from absent; ciphertext moved across partitions does not open",
       "evidence_path": "OCOR-DEV-0051.requalified.json",
       "raw_output_path": "OCOR-DEV-0051.requalified.log",
       "requirement_id": "FR-119",
@@ -1301,7 +1301,7 @@
     },
     {
       "case_id": "OCOR-DEV-0055-REVOCATION-AND-EXPIRY-DETERMINISTICALLY-EXCLUDE",
-      "command": "FGM-10 on real PostgreSQL 16 (metadata, encrypted content, full-text index, representation descriptors), Qdrant 1.15.1 (native and parallel vector indexes) and OpenBao 2.6.2 transit: a revocation is version n+1 (supersedes_ref = head, same content, lifecycle_status REVOKED) committed through the real 0053 coordinator; version n stays byte-identical; the item leaves STRUCTURED, FULL_TEXT, VECTOR, HYBRID and the parallel v2 representation (descriptor invalidated) while every other hit is unchanged; expiry sweeps select by expires_at then item id, are bounded by a limit (rest deferred), are idempotent and identical on a twin world; REVOKED/EXPIRED never re-open (FSM of ADD v1.3 Part II \u00a72.10 parsed from the normative text and compared exactly); re-opening a QUARANTINED item needs a readable stop epoch that is unchanged when re-read after the content read, right before the append (an epoch changed inside read_version refuses with nothing written), while an exclusion never waits on the stop state; REVOKED, EXPIRED or SUPERSEDED committed by this coordinator while retrieval reads the item's content leaves no hit in any mode (CANDIDATE_CHANGED, audited denial, no receipt) and a read without changes returns the unchanged result",
+      "command": "FGM-10 on real PostgreSQL 16 (metadata, encrypted content, full-text index, representation descriptors), Qdrant 1.15.1 (native and parallel vector indexes) and OpenBao 2.6.2 transit: a revocation is version n+1 (supersedes_ref = head, same content, lifecycle_status REVOKED) committed through the real 0053 coordinator; version n stays byte-identical; the item leaves STRUCTURED, FULL_TEXT, VECTOR, HYBRID and the parallel v2 representation (descriptor invalidated) while every other hit is unchanged; expiry sweeps select by expires_at then item id, are bounded by a limit (rest deferred), are idempotent and identical on a twin world; REVOKED/EXPIRED never re-open (FSM of ADD v1.3 Part II §2.10 parsed from the normative text and compared exactly); re-opening a QUARANTINED item needs a readable stop epoch that is unchanged when re-read after the content read, right before the append (an epoch changed inside read_version refuses with nothing written), while an exclusion never waits on the stop state; REVOKED, EXPIRED or SUPERSEDED committed by this coordinator while retrieval reads the item's content leaves no hit in any mode (CANDIDATE_CHANGED, audited denial, no receipt) and a read without changes returns the unchanged result",
       "evidence_path": "OCOR-DEV-0055.json",
       "raw_output_path": "OCOR-DEV-0055.log",
       "requirement_id": "FR-118",

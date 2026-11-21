@@ -2,7 +2,7 @@
   "change_set": {
     "branch": "governed/fuseki-rebuild-identity-20261121",
     "decision": "FUSEKI-REBUILD-IDENTITY-20261121 (2026-11-21) option 1; decisa per conto del PO, modello claude-fable-5-2, effort max",
-    "execution_commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
+    "execution_commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
     "id": "FUSEKI-REBUILD-IDENTITY-20261121",
     "lock_commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851"
   },
@@ -18,23 +18,23 @@
     {
       "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
       "cwd": ".",
-      "duration_seconds": 5.036,
+      "duration_seconds": 5.084,
       "exit_code": 0,
       "failed": 0,
-      "head_sha": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
+      "head_sha": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
       "label": "regression-rem0064",
       "not_executed": 0,
       "passed": 214,
-      "raw_sha256": "482534c27acc6ca5d84342c9ea073cdbe7c4110561ad936af94b5472f2ca1766",
+      "raw_sha256": "3ca8ce20320e250d0f26e138cf025dac5c17cbbc8beac912caf278977f154da9",
       "skipped": 0,
-      "started_at": "2026-11-21T02:49:59Z",
+      "started_at": "2026-11-21T03:26:36Z",
       "status": "PASS",
       "xfailed": 0
     }
   ],
-  "commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
-  "commit_role": "lock and allowlist head whose inputs these regression commands use; repair cycle 1 re-executed the commands at checkout aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79 without changing those inputs",
-  "created_at": "2026-11-21T02:57:47Z",
+  "commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+  "commit_role": "execution checkout dd0467f1881649ba0ca90c76b0867b84d95e544e, which already contains the Fuseki lock, the plan allowlist and the settled plan state. Repair cycle 2 executed every cited command on that checkout. The evidence commit that stores this record does not change those inputs.",
+  "created_at": "2026-11-21T03:47:38Z",
   "drifted_inputs": [
     "scripts/validate_ocor_development_plan.py"
   ],
@@ -45,9 +45,9 @@
     "host": "nep-LEGION",
     "implementer_cli": "Grok Build (grok-4.7)",
     "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
-    "pytest_shell": "HOME, PATH=/usr/bin:/bin, LANG=C.UTF-8, LC_ALL=C.UTF-8, OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN only",
+    "pytest_shell": "uv 0.12.5 is first on PATH for the development bootstrap. pytest of test_ocor_dev_0048.py and test_ocor_dev_rem_0023.py used env -i with HOME, PATH=/usr/bin:/bin, LANG=C.UTF-8, LC_ALL=C.UTF-8, OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN. The other cited commands used that uv-prepended shell without env -i. clean_shell is false.",
     "python": "3.12.11",
-    "qualification_source_commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
+    "qualification_source_commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
     "ram_bytes": 65740460032,
     "ram_source": "MemTotal 64199668 kB read on nep-LEGION in the regression session",
     "threads": 24,
@@ -57,7 +57,7 @@
   },
   "full_campaign": {
     "executed": false,
-    "reason": "Repair cycle 1 of FUSEKI-REBUILD-IDENTITY-20261121 option 1 reran the record commands on the real local stack. The full suite is not a prerequisite."
+    "reason": "Repair cycle 2 of FUSEKI-REBUILD-IDENTITY-20261121 option 1 reran the record commands on the real local stack at execution commit dd0467f1881649ba0ca90c76b0867b84d95e544e. The full suite is not a prerequisite."
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -210,24 +210,24 @@
     "record_sha256": "e5f28ef09ee1f27dc73e38fe03daaf7bc3f035ccf969dffe51c8f337981e0e15",
     "status": "SEALED"
   },
-  "qualification_limits": "Regression-only requalification after FUSEKI-REBUILD-IDENTITY-20261121 option 1 updated services[id=fuseki].build.output_sha256 to sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. qualifies_requirements is false. tests_unchanged_from_base is true. Repair cycle 1 re-executed the commands with uv 0.12.5 (executable sha256 b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46) first on PATH. Development bootstrap did not rebuild Fuseki. The CI heap was applied afterwards with docker compose up --no-build and JVM_ARGS=-Xms128m -Xmx1G. The running JVM arguments are exactly those two heap flags and the flag probe reports MaxHeapSize = 1073741824. The control-plane SVID spiffe://ocor.test/ocor/control-plane was registered on the attested agent. Image id remained sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. test_ocor_dev_rem_0023.py passed 105 with zero skips. test_ocor_dev_0048.py, after initialize_services.py and load_fixtures.py, passed 196 with zero skips, zero failures and zero errors. scripts/bootstrap_ci_environment.py --execute was not run because it docker-builds the preserved tag.",
+  "qualification_limits": "Regression-only requalification after FUSEKI-REBUILD-IDENTITY-20261121 option 1 updated services[id=fuseki].build.output_sha256 to sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. qualifies_requirements is false. tests_unchanged_from_base is true. Repair cycle 2 executed every cited command at checkout dd0467f1881649ba0ca90c76b0867b84d95e544e with uv 0.12.5 (executable sha256 b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46) first on PATH. Development bootstrap did not rebuild Fuseki. That bootstrap attested a new SPIRE agent that had no workload entry, so the control-plane SPIFFE ID spiffe://ocor.test/ocor/control-plane was registered with entry create on that agent, the same registration CI bootstrap performs, without running scripts/bootstrap_ci_environment.py. Development bootstrap does not set JVM_ARGS, so the recreated Fuseki process used the image default -Xmx4G. The CI heap was then applied with docker compose up --no-build --no-deps --force-recreate and JVM_ARGS=-Xms128m -Xmx1G, without building, retagging or deleting the image. The probe after that recreate shows the running arguments -Xms128m -Xmx1G and MaxHeapSize = 1073741824. The image id remained sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. test_ocor_dev_0048.py passed 196 with zero skips. test_ocor_dev_rem_0023.py passed 105 with zero skips. The shared regression of OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 passed 214 with zero skips. scripts/bootstrap_ci_environment.py --execute was not run because it docker-builds the preserved tag. VF-004 in reports/tests/test_schema_conformance.py is unchanged and out of scope.",
   "qualifies_requirements": false,
-  "raw_output_format": "concatenated stdout of the commands in order, each section ending with EXIT:0",
-  "raw_output_sha256": "0b153b1c0f9439a4e1fb45e1567e221052f2ef7d205afad8ae25ad0d06b5b6be",
-  "record_id": "OCOR-DEV-0082-requalified-fuseki-20261121-0dbb3541a7cc",
-  "repair_cycle": 1,
+  "raw_output_format": "concatenated command output in command order; each section ends with EXIT:0 and DURATION. The probe section is the redacted observation (image id, process list, three heap lines, agent health, SPIFFE ids) of the executed docker chain.",
+  "raw_output_sha256": "6e73f4fdca55dd837edcbbada381834bef7fa85b0516b90c5c163d753cd17f3a",
+  "record_id": "OCOR-DEV-0082-requalified-fuseki-20261121-dd0467f18816",
+  "repair_cycle": 2,
   "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
   "requalification_digest_check": {
-    "captured_head": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
+    "captured_head": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
     "checked_inputs": 100,
     "checked_records": 15,
-    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit 0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851 --record reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json",
-    "execution_commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851",
+    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit dd0467f1881649ba0ca90c76b0867b84d95e544e --record reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json",
+    "execution_commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
     "exit_code": 0,
     "findings": 0,
-    "note": "The stdout sha256 is the canonical JSON printed by that command at captured_head aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79, after the repair-cycle command logs were written and before the evidence-only commit that stores this object. Embedding this object does not change the checker output. A later run prints the new HEAD inside the payload and therefore a different stdout sha256. The input findings stay empty while the declared inputs still match execution commit 0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851.",
+    "note": "The stdout sha256 is the canonical JSON printed by that command at captured_head dd0467f1881649ba0ca90c76b0867b84d95e544e, after these repair-cycle records were written and before the evidence-only commit. Embedding this object does not change the checker output. A later evidence-only commit prints the new HEAD inside the payload and therefore a different stdout sha256. The findings stay empty while the declared inputs still match execution commit dd0467f1881649ba0ca90c76b0867b84d95e544e.",
     "result": "PASS",
-    "stdout_sha256": "6504a48d936dc30dd37ad4baa98b0c175fe1bc8db3a9c9bd36e662d294e52d2a"
+    "stdout_sha256": "e36b41657166366d244282914a7be2846f221ad825cc03b4b369a5376cddc4f0"
   },
   "requalification_kind": "regression",
   "requirement_classification": {
@@ -241,17 +241,17 @@
   "result": "PASS",
   "review_scope": "regression-only rerun for OCOR-DEV-0082 after the Fuseki local identity reacquisition; not a re-assessment of conformance",
   "role_coherence": {
-    "command": "python3 roles coherence scan over the fifteen fuseki-20261121 records",
+    "command": "python3 -c \"import json\\nfrom pathlib import Path\\npaths = [\\n    \\\"reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json\\\",\\n]\\nrows = []\\nfor path in paths:\\n    data = json.loads(Path(path).read_text())\\n    roles = data[\\\"roles\\\"]\\n    env = data[\\\"environment\\\"]\\n    rows.append({\\n        \\\"command_heads\\\": [item[\\\"head_sha\\\"] for item in data[\\\"commands\\\"]],\\n        \\\"commit\\\": data[\\\"commit\\\"],\\n        \\\"execution_commit\\\": data[\\\"change_set\\\"][\\\"execution_commit\\\"],\\n        \\\"implementers\\\": roles[\\\"implementers\\\"],\\n        \\\"path\\\": path,\\n        \\\"repair_cycle\\\": data[\\\"repair_cycle\\\"],\\n        \\\"uv\\\": env[\\\"uv\\\"],\\n        \\\"uv_executable_sha256\\\": env[\\\"uv_executable_sha256\\\"],\\n        \\\"verifier_excluded_providers\\\": roles[\\\"verifier_excluded_providers\\\"],\\n        \\\"verifier_started_by_implementer\\\": roles[\\\"verifier_started_by_implementer\\\"],\\n        \\\"verifier_status\\\": roles[\\\"verifier_status\\\"],\\n    })\\nerrors = []\\nfirst = rows[0]\\nfact_keys = [key for key in first if key != \\\"path\\\"]\\ncompared = 0\\nfor row in rows:\\n    for key in fact_keys:\\n        if key == \\\"command_heads\\\":\\n            compared += len(row[\\\"command_heads\\\"])\\n            continue\\n        compared += 1\\n        if row[key] != first[key]:\\n            errors.append(row[\\\"path\\\"] + \\\" \\\" + key)\\n    heads = row[\\\"command_heads\\\"]\\n    compared += 1\\n    if not heads or len(set(heads)) != 1 or heads[0] != row[\\\"commit\\\"] or row[\\\"commit\\\"] != row[\\\"execution_commit\\\"]:\\n        errors.append(row[\\\"path\\\"] + \\\" alignment\\\")\\npayload = {\\n    \\\"errors\\\": errors,\\n    \\\"execution_commit\\\": first[\\\"commit\\\"],\\n    \\\"fields_compared\\\": compared,\\n    \\\"records\\\": len(rows),\\n    \\\"status\\\": \\\"PASS\\\" if not errors else \\\"FAIL\\\",\\n}\\nprint(json.dumps(payload, indent=2, sort_keys=True))\"",
     "corrections": [],
     "decision": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
     "errors_corrected": 0,
     "errors_found": 0,
-    "fields_compared": 120,
-    "note": "Mechanical scan of the fifteen fuseki-20261121 records at scanned_head aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79, before the evidence-only commit that stores this object. Compared facts are implementers, the excluded verifier provider, the verifier-started flag, verifier status, the pre-campaign head, every command head, the execution commit, and the pinned uv version and digest. No correction was required. Embedding this object does not change the scan output.",
+    "fields_compared": 200,
+    "note": "Executable scan of the fifteen fuseki-20261121 records. It ignores role_coherence and requalification_digest_check, so embedding this object does not change the stdout. scanned facts are the commit, the execution commit, every command head, repair_cycle, implementers, verifier fields, and the pinned uv version and digest. The scan stdout names execution commit dd0467f1881649ba0ca90c76b0867b84d95e544e.",
     "records": 15,
-    "scanned_head": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
+    "scanned_head": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
     "status": "PASS",
-    "stdout_sha256": "7388c756d2505360f7a1b408f5f1fc0eefa0185d38d2410768ddf75f893f4953"
+    "stdout_sha256": "3a2f358a3df2c279c45434d4101f300057db98a3284c279b6da80c03f24675b0"
   },
   "roles": {
     "implementers": [
