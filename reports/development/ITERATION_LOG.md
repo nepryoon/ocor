@@ -10681,3 +10681,67 @@ Controllo di registro prima del commit, sul working tree che già cita il commit
 - `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json` — exit 0 — stdout sha256 `dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be` — 0.029 s
 - `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json` — exit 0 — stdout sha256 `66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83` — 0.028 s
 - Rilettura immediatamente prima del commit di questo state sync, 2026-11-21T15:56:59Z. Sha256 `d9d716ad6523022ceb2cd50b2f1d442a33b6e5ea8acf7fc0cb854a0a15409bb0`, 589357 byte, 3721 newline, 3721 righe, 227 sezioni. L'ultima sezione è `## FUSEKI-ETICHETTA-CI-ORDINE (2026-11-21) — decisione del PO`. Esito `SECTION_PRESENT` per `REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP`, opzione 1 già registrata come non attuata. Esito `SECTION_ABSENT` per `FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO`. Esito `SECTION_ABSENT` per `REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL`. Nessuna opzione nuova da applicare in questo commit.
+## 2026-11-21T17:08:12Z — FUSEKI-REBUILD-IDENTITY-20261121, repair cycle 5, state sync
+
+Esecutore: Grok Build, grok-4.7, xAI. Decisione `FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO (2026-11-21)`, opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. File pubblicato al commit `4cb391425de5dbfb0dd30c66448b5b22279fca9b`, sha256 `442d3b676a6ee51d10f90d8f214dabcea11e4b3841efa8cca3111c491d3f28e6`. Disposition sul branch `governed/decision-request-fuseki-rebuild-identity-20261121-cycle4-nogo`, commit `c23733a9fa784d401d8e465fb3679baa20e7cccc`, sha256 del file disposto `2b3f9a39b07f684d7d5ed40b9c2bcae5edb059a9619fa3e9a8f2e2d092423186`. PR #742 chiusa come risolta, senza merge, `closedAt` `2026-11-21T16:54:35Z`. Il percorso della richiesta non è nell'allowlist di integrazione.
+
+Repair cycle 5 sul branch `governed/fuseki-rebuild-identity-20261121`. Commit dei record e dei manifest `f8e88420984f49666b6d156bbe665424e5f01c1a`. Commit di evidenza pubblicato `aa718782eaefeb9b516c798c1e4c1098a116dd15`. Commit di esecuzione `dd0467f1881649ba0ca90c76b0867b84d95e544e`. Base `5344565521e8f7db701073cd5554e49834781598`. Nessun rebase, reset o force-push. Questo state sync non mergia il candidato.
+
+Prima della scrittura dei record, `docker image inspect ocor/jena-fuseki:6.2.0 --format {{.Id}}` il 2026-11-21T16:50:39Z era `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1`, Created `2026-11-21T00:48:03.243041815+01:00`. Questo state sync non ricostruisce, non cancella e non rietichetta l'immagine. `scripts/bootstrap_ci_environment.py --execute` non è stato eseguito. Il bootstrap di sviluppo non è stato rieseguito. `infra/services.lock.json`, `infra/fuseki/Dockerfile`, `infra/fuseki/local_identity.lock.json`, `scripts/bootstrap_development_environment.py` e `scripts/reset_test_environment.py` non sono in questo diff. Su `origin/main` `services[id=fuseki].build.output_sha256` resta `f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875`.
+
+VF-001: il programma della libreria standard, invariato salvo il secondo argomento, è rieseguito in questo state sync con secondo argomento l'HEAD pubblicato `aa718782eaefeb9b516c798c1e4c1098a116dd15` contro la base `5344565521e8f7db701073cd5554e49834781598`. Exit 0. Stdout sha256 `f49aa0ff684fc0ab8a35156286d15791d51732df156ff8a2598dbc41fb4b4a40`. Righe: `reports/evidence/G0/MANIFEST.json pure_insertion 391`; `reports/evidence/G2/MANIFEST.json pure_insertion 4740`; `reports/evidence/G5/MANIFEST.json pure_insertion 798`. La stessa impronta è quella dell'esecuzione sul commit dei record `f8e88420984f49666b6d156bbe665424e5f01c1a`, perché i tre blob dei manifest non cambiano nel commit di stato. La frase «Comando concettuale» e il digest `c34b0eacd030c2a133a586170a69ed1e252a7564b7c56cd291b9d9e64530a09d` restano nel paragrafo storico del ciclo 4. Comando eseguito:
+
+```text
+python3 -c '
+import json, subprocess, sys
+base, head = sys.argv[1], sys.argv[2]
+def show(rev, path):
+    return subprocess.check_output(["git","show",f"{rev}:{path}"])
+def start(blob, path_bytes):
+    pos = blob.find(path_bytes)
+    marker = blob.rfind(b"\n    {", 0, pos)
+    return marker + 1
+names = subprocess.check_output(["git","diff","--name-only",base,head,"--","reports/evidence/G0/MANIFEST.json","reports/evidence/G2/MANIFEST.json","reports/evidence/G5/MANIFEST.json"], text=True).split()
+assert names, "no manifests"
+for path in names:
+    b, h = show(base, path), show(head, path)
+    if b == h:
+        print(path, "identical")
+        continue
+    first = json.loads(b)["artifacts"][0]["path"].encode()
+    sb, sh = start(b, first), start(h, first)
+    ok = h[:sb] == b[:sb] and h[sh:] == b[sb:]
+    print(path, "pure_insertion" if ok else "FAIL", sh - sb)
+    if not ok:
+        sys.exit(1)
+' 5344565521e8f7db701073cd5554e49834781598 aa718782eaefeb9b516c798c1e4c1098a116dd15
+```
+
+VF-003: nei soli quattordici record del commit `f8e88420984f49666b6d156bbe665424e5f01c1a`, `raw_output_format` nomina soltanto le intestazioni `===` del log. `reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json` non cambia e il digest resta `a783ffbaf6bb0453e47ae0aabc534ece63eeadeffb10ea320802d90038f04cb5`. `raw_output_sha256` e `commands[]` dei quindici record restano quelli del ciclo 4. `repair_cycle` dei record resta 3.
+
+VF-002 non si corregge. Il caso `CANONICAL_COMMIT` R1 senza Human Gate in `reports/tests/test_schema_conformance.py` attende `REJECT` e riceve `ACCEPT`: 97 PASS e 1 FAIL, come nel verdetto del ciclo 4. `git diff --name-only` di `inputs/` e di quel test fra `5344565521e8f7db701073cd5554e49834781598` e `f8e88420984f49666b6d156bbe665424e5f01c1a`, e fra la stessa base e `569af1c4cbbc35ddf8945eec48755096c767cd6c`, è vuoto. `inputs/` non si modifica. Il caso non è segnato `PASS` e il test non è indebolito.
+
+Controllo meccanico sul candidato `aa718782eaefeb9b516c798c1e4c1098a116dd15`, prima di `verify_request.json`: `scripts/validate_evidence_input_drift.py` exit 0, 75 task, 241 input, 0 finding, stdout sha256 `5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed`. `scripts/check_execution_commit_inputs.py --execution-commit dd0467f1881649ba0ca90c76b0867b84d95e544e` sui quindici record `*.requalified-fuseki-20261121.json` exit 0, 15 record, 100 input, 0 finding, stdout sha256 `40afd99b28cce72f7bbbb45145ebe5c53b41f7717a50a7272b999166bec5b526`.
+
+`active_iteration.repair_cycle` resta 13. `baseline_commit` resta `f55ce3377a091ddf621ae475ae1116cfa1d7157e`. I campi operativi di `fuseki_rebuild_identity_20261121` nominano il ciclo 5. I valori precedenti restano nei campi historical. `cycle4_manifest_proof_stdout_sha256` resta `c34b0eacd030c2a133a586170a69ed1e252a7564b7c56cd291b9d9e64530a09d`.
+
+Non si tocca la PR #722 né il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un `repair_cycle` 14. Non si applica `REM-0066-STATE-ONLY-REM0031-GUARD`, né `REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION`, né `REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL`. La richiesta di modulo resta `OPEN_PO_DECISION_REQUIRED` nel registro. Nessun commit sopra `6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1` finché quella voce è aperta. La suite completa non è avviata. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
+
+Prossima azione: il loop avvia la verifica indipendente `FUSEKI-REBUILD-IDENTITY-20261121-aa718782eaef-5`, `review_type` `REMEDIATION`, `repair_cycle` 5, base `5344565521e8f7db701073cd5554e49834781598`, head `aa718782eaefeb9b516c798c1e4c1098a116dd15`. Implementatore dei cicli 0, 1, 2, 3, 4 e 5: Grok Build, grok-4.7, xAI. Il verifier non è xAI e non lo avvia l'implementatore. Nessun merge del candidato prima di `GO_FOR_EVIDENCE_SEAL`. Se il verdetto è `NO_GO` non c'è un ciclo 6: una sola richiesta nuova.
+
+- Controllo di registro dopo la disposition, come chiede `DR-STATUS-CLOSURE-SYNC (2026-11-09)`: `python3 /home/luca/.ocor-codex/rem-0063/cycle13-review-fix-20261120/registry-check.py`, 138 riferimenti, 43 intestazioni di disposition, 0 errori di integrità, 7 discrepanze storiche differite, lo stesso insieme del sync precedente. Sha256 dello stdout: `15541cdf90c65fd5ecd2533af936a6144708f85675c608b59cfb526b95da314a`. `FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO` è `DECIDED_BY_PO`. `REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL` resta `OPEN_PO_DECISION_REQUIRED`. Suite completa NOT_EXECUTED: change set di solo stato.
+- Gate locali di questo state sync, 13 comandi, tutti exit 0, sul tree che include la disposition e prima delle righe di questo elenco. Suite completa non eseguita. Stack non richiesto. `reports/verify_report.json` non è stato modificato.
+- `sha256sum -c inputs/normative/SHA256SUMS` — exit 0 — stdout sha256 `0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34` — 0.004 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/verify.py --json` — exit 0 — stdout sha256 `61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413` — 0.323 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py` — exit 0 — stdout sha256 `5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed` — 0.142 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py` — exit 0 — stdout sha256 `ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d` — 0.027 s
+- `/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0063/ocor-runtime/.venv/bin/python -m mypy` — exit 0 — stdout sha256 `606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130` — 4.739 s
+- `/home/luca/.local/bin/ruff check .` — exit 0 — stdout sha256 `82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18` — 0.033 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main` — exit 0 — stdout sha256 `c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba` — 0.099 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main` — exit 0 — stdout sha256 `0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f` — 0.963 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/state-sync-fuseki-cycle5-20261121 --path reports/development/EXECUTION_STATE.json --path reports/development/ITERATION_LOG.md --path reports/development/MODEL_HANDOFF.json` — exit 0 — stdout sha256 `8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1` — 0.029 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json` — exit 0 — stdout sha256 `47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2` — 0.031 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json` — exit 0 — stdout sha256 `d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25` — 0.033 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json` — exit 0 — stdout sha256 `dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be` — 0.031 s
+- `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json` — exit 0 — stdout sha256 `66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83` — 0.031 s
+- Rilettura immediatamente prima del commit di questo state sync, 2026-11-21T17:10:20Z. Sha256 `dfd41c97045e26601b9f7b59fffda175426315d4e3dda6e6033239cf3376c455`, 592423 byte, 3739 newline, 3739 righe, 229 sezioni. L'ultima sezione è `## REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL (2026-11-21) — decisione del PO, su delega completa`. Esito `SECTION_PRESENT` per `FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO`, opzione 1 applicata in questa unità. Esito `SECTION_PRESENT` per `REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL`, opzione 1 adottata nel preambolo e non attuata in questo commit. Esito `SECTION_PRESENT` per `REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP`, opzione 1 già registrata come non attuata. Nessuna seconda opzione è applicata in questo commit.
