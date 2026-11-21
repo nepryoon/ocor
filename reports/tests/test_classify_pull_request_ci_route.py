@@ -595,6 +595,296 @@ class FastPathCommandTests(unittest.TestCase):
         self.assertEqual(seen, [["one"], ["two"]])
 
 
+def _step_run_body(workflow: str, step_name: str) -> str:
+    """Return the shell of one workflow step, without its YAML indentation."""
+    marker = f"      - name: {step_name}\n"
+    start = workflow.index(marker)
+    rest = workflow[start:]
+    run_at = rest.index("        run: |\n")
+    body = rest[run_at + len("        run: |\n") :]
+    lines: list[str] = []
+    for line in body.splitlines():
+        if line.startswith("          "):
+            lines.append(line[10:])
+        elif line.strip() == "":
+            lines.append("")
+        else:
+            break
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _live_schema_stdout() -> str:
+    """Run the schema script and restore the JSON it rewrites."""
+    photo_path = ROOT / "reports/tests/conformance_results.json"
+    photo = photo_path.read_bytes()
+    try:
+        proc = subprocess.run(
+            [sys.executable, "reports/tests/test_schema_conformance.py"],
+            check=False,
+            capture_output=True,
+            cwd=ROOT,
+        )
+        if proc.returncode not in (0, 1):
+            raise AssertionError(proc.stderr.decode("utf-8", errors="replace"))
+        return proc.stdout.decode("utf-8")
+    finally:
+        photo_path.write_bytes(photo)
+
+
+class RepairCycle1Tests(unittest.TestCase):
+    """VF-001, VF-002, VF-003 and VF-007 of OCOR-DEV-REM-0066-3d6b2fd72bb7-0."""
+
+    def test_duplicate_pass_line_replacing_a_missing_case_is_rejected(self) -> None:
+        module = _load(RUNNER, "run_state_only_duplicate_pass")
+        authentic = _live_schema_stdout()
+        self.assertTrue(module.schema_report_accepted(authentic))
+        lines = authentic.splitlines()
+        missing = (
+            "PASS urn:ocor:schema:signed-canonical-ir:1.0 — "
+            "digest malformato [REJECT]"
+        )
+        duplicate = (
+            "PASS urn:ocor:schema:signed-canonical-ir:1.0 — "
+            "baseline positivo [ACCEPT]"
+        )
+        self.assertEqual(lines.count(missing), 1)
+        self.assertEqual(lines.count(duplicate), 1)
+        lines[lines.index(missing)] = duplicate
+        mutated = "\n".join(lines) + "\n"
+        pass_lines = [line for line in lines if line.startswith("PASS ")]
+        self.assertEqual(len(pass_lines), 97)
+        self.assertEqual(len(set(pass_lines)), 96)
+        self.assertFalse(module.schema_report_accepted(mutated))
+        self.assertNotEqual(self._script_step(module, [(1, mutated)]), 0)
+
+    def test_unique_forged_pass_line_is_rejected(self) -> None:
+        module = _load(RUNNER, "run_state_only_forged_pass")
+        lines = _live_schema_stdout().splitlines()
+        replaced = False
+        for index, line in enumerate(lines):
+            if line.startswith("PASS "):
+                lines[index] = "PASS urn:ocor:schema:forged — not a real case [ACCEPT]"
+                replaced = True
+                break
+        self.assertTrue(replaced)
+        mutated = "\n".join(lines) + "\n"
+        pass_lines = [line for line in mutated.splitlines() if line.startswith("PASS ")]
+        self.assertEqual(len(pass_lines), len(set(pass_lines)))
+        self.assertFalse(module.schema_report_accepted(mutated))
+
+    def test_fast_path_installs_node_and_does_not_interpolate_the_ref(self) -> None:
+        for path in WORKFLOWS:
+            text = path.read_text(encoding="utf-8")
+            section = text.split("name: Set up Python for the state-only path", 1)[1]
+            self.assertIn('node-version: "20.20.2"', section, path.name)
+            self.assertIn("npm ci", section, path.name)
+            self.assertIn("npm run build", section, path.name)
+            body = _step_run_body(text, "Run state-only local gates and non-stack tests")
+            self.assertNotIn("${{", body, path.name)
+            self.assertIn('"$OCOR_CI_BRANCH"', body, path.name)
+            self.assertIn('"$OCOR_CI_BASE_REF"', body, path.name)
+
+    def test_classify_step_runs_the_base_blob(self) -> None:
+        bodies = [
+            _step_run_body(path.read_text(encoding="utf-8"), "Classify pull request CI route")
+            for path in WORKFLOWS
+        ]
+        self.assertEqual(len(set(bodies)), 1)
+        body = bodies[0]
+        self.assertNotIn("${{", body)
+        self.assertNotIn("python3 scripts/classify_pull_request_ci_route.py", body)
+        self.assertIn(
+            'git cat-file -e "${OCOR_CI_BASE_SHA}:scripts/classify_pull_request_ci_route.py"',
+            body,
+        )
+        self.assertIn('python3 "$classifier"', body)
+
+    def test_a_modified_classifier_cannot_force_state_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            self._commit_base_classifier(repo)
+            base = _git(repo, "rev-parse", "HEAD").stdout.strip()
+            liar = repo / "scripts/classify_pull_request_ci_route.py"
+            liar.write_text(_LIAR, encoding="utf-8")
+            head = _commit_all(repo, "replace classifier")
+            direct_out = repo / "direct.out"
+            direct = subprocess.run(
+                [
+                    "python3",
+                    str(liar),
+                    "--base",
+                    base,
+                    "--head",
+                    head,
+                    "--root",
+                    str(repo),
+                    "--github-output",
+                    str(direct_out),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(direct.returncode, 0, direct.stderr)
+            self.assertEqual(direct_out.read_text(encoding="utf-8").strip(), "route=state_only")
+            observed = self._run_trusted_shell(repo, base, head)
+            self.assertEqual(observed.strip(), "route=full")
+
+    def test_state_file_change_uses_the_base_classifier(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            self._commit_base_classifier(repo)
+            base = _git(repo, "rev-parse", "HEAD").stdout.strip()
+            target = repo / STATE_FILES[0]
+            target.write_text("changed\n", encoding="utf-8")
+            head = _commit_all(repo, "state")
+            observed = self._run_trusted_shell(repo, base, head)
+            self.assertEqual(observed.strip(), "route=state_only")
+
+    def test_missing_base_classifier_stays_full(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            base = _init_repo(repo)
+            target = repo / STATE_FILES[0]
+            target.write_text("changed\n", encoding="utf-8")
+            head = _commit_all(repo, "state without classifier")
+            observed = self._run_trusted_shell(repo, base, head)
+            self.assertEqual(observed.strip(), "route=full")
+
+    def test_invalid_sha_stays_full(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            self._commit_base_classifier(repo)
+            head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+            observed = self._run_trusted_shell(repo, "not-a-sha", head)
+            self.assertEqual(observed.strip(), "route=full")
+
+    def test_branch_metacharacters_fail_the_fast_path_as_data(self) -> None:
+        module = _load(RUNNER, "run_state_only_branch_data")
+        malicious = "governed/ok; echo pwned"
+        commands = module.gate_commands("/opt/venv/bin/python", "a" * 40, malicious)
+        scope = next(
+            command
+            for command in commands
+            if any(part.endswith("validate_ocor_change_scope.py") for part in command)
+        )
+        self.assertEqual(scope[-1], malicious)
+        self.assertFalse(module.ref_is_data(malicious, module.BRANCH_PATTERN))
+        self.assertEqual(
+            module.main(["--base-ref", "origin/main", "--branch", malicious]),
+            1,
+        )
+        self.assertEqual(
+            module.main(
+                [
+                    "--base-ref",
+                    "origin/main; echo pwned",
+                    "--branch",
+                    "governed/ocor-dev-rem-0066-state-only-ci",
+                ]
+            ),
+            1,
+        )
+        body = _step_run_body(
+            WORKFLOWS[0].read_text(encoding="utf-8"),
+            "Run state-only local gates and non-stack tests",
+        )
+        env = os.environ.copy()
+        env["OCOR_CI_BASE_REF"] = "origin/main"
+        env["OCOR_CI_BRANCH"] = malicious
+        proc = subprocess.run(
+            ["bash", "-c", body],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT,
+            env=env,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertNotIn("pwned", proc.stdout)
+
+    def _commit_base_classifier(self, repo: Path) -> None:
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "ocor-test@example.com")
+        _git(repo, "config", "user.name", "OCOR Test")
+        script = repo / "scripts/classify_pull_request_ci_route.py"
+        script.parent.mkdir(parents=True)
+        script.write_text(CLASSIFIER.read_text(encoding="utf-8"), encoding="utf-8")
+        for relative in STATE_FILES:
+            path = repo / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(relative + "\n", encoding="utf-8")
+        decision = repo / "reports/development/decision_requests"
+        decision.mkdir(parents=True, exist_ok=True)
+        (decision / "KEEP.md").write_text("# Keep\n", encoding="utf-8")
+        _git(repo, "add", ".")
+        _git(repo, "commit", "-q", "-m", "base")
+
+    def _run_trusted_shell(self, repo: Path, base: str, head: str) -> str:
+        body = _step_run_body(
+            WORKFLOWS[0].read_text(encoding="utf-8"),
+            "Classify pull request CI route",
+        )
+        self.assertNotIn("${{", body)
+        output = repo / "github-output.txt"
+        temp = repo / "runner-temp"
+        temp.mkdir()
+        env = os.environ.copy()
+        env.update(
+            {
+                "GITHUB_OUTPUT": str(output),
+                "GIT_PAGER": "cat",
+                "OCOR_CI_BASE_SHA": base,
+                "OCOR_CI_HEAD_SHA": head,
+                "PAGER": "cat",
+                "RUNNER_TEMP": str(temp),
+            }
+        )
+        proc = subprocess.run(
+            ["bash", "-c", body],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=repo,
+            env=env,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return output.read_text(encoding="utf-8")
+
+    def _script_step(self, module: Any, results: list[tuple[int, str | bytes]]) -> int:
+        pending = list(results)
+
+        def runner(command: list[str]) -> subprocess.CompletedProcess[bytes]:
+            code, stdout = pending.pop(0)
+            return subprocess.CompletedProcess(command, code, stdout=stdout)
+
+        photos = {"reports/tests/conformance_results.json": b"photo"}
+        return int(
+            module.run_tracked_scripts(
+                "/opt/venv/bin/python",
+                runner,
+                lambda: dict(photos),
+                lambda _photos: True,
+            )
+        )
+
+
+_LIAR = """#!/usr/bin/env python3
+import argparse
+from pathlib import Path
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--base", required=True)
+parser.add_argument("--head", required=True)
+parser.add_argument("--root", default=".")
+parser.add_argument("--github-output", default=None)
+args = parser.parse_args()
+if args.github_output:
+    Path(args.github_output).write_text("route=state_only\\n", encoding="utf-8")
+print('{"route": "state_only"}')
+"""
+
+
 class WorkflowInvariantTests(unittest.TestCase):
     def test_original_run_blocks_remain_and_the_fast_path_is_gated(self) -> None:
         for path in WORKFLOWS:
