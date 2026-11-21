@@ -1,6 +1,7 @@
 # FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `85251f9691e5ead7df68f2f16c1d3f639d1776e6` resta sha256 `4761ae0d027334a7666c467c7efba45c9ef3638508fa1d7d060d8395d2937c68`. Repair cycle 3 sul branch `governed/fuseki-rebuild-identity-20261121`, commit di evidenza `569af1c4cbbc35ddf8945eec48755096c767cd6c`, commit di esecuzione `dd0467f1881649ba0ca90c76b0867b84d95e544e`, base `5344565521e8f7db701073cd5554e49834781598`. Il record `OCOR-DEV-0070` torna ai quattro comandi del predecessore. Reset governato exit 0, inventario posseduto vuoto, report sha256 `111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d`. Immagine `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1` conservata. La richiesta di verifica è `FUSEKI-REBUILD-IDENTITY-20261121-569af1c4cbbc-3`, review_type `REMEDIATION`, repair_cycle 3. Non si mergia prima di `GO_FOR_EVIDENCE_SEAL`. Non si tocca la PR #722 né il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un repair_cycle 14. Non si applica `REM-0066-STATE-ONLY-IMPORT-EXIT` né `REM-0066-STATE-ONLY-REM0031-GUARD`. Claim invariati. Questa PR si chiude come risolta e non si integra.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `23f315847a50cdbfcae929b7782a1148343154e9`.
 Unità fermata da questo scarto: il change set `FUSEKI-REBUILD-IDENTITY-20261121` sul branch `governed/fuseki-rebuild-identity-20261121`, e con esso la ripresa del launcher di `OCOR-DEV-REM-0063` prevista dopo il merge di quel change set.
