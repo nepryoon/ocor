@@ -1,7 +1,8 @@
 # FUSEKI-REBUILD-IDENTITY-20261121
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
 Livello: operativo. Nessun nuovo `DEC-*`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `374d0227b6d73fb94472465c3669fe148597f57b` resta sha256 `a6799c1f06422dbc5a4545737e41e3cbcbb725a32495413b6c8ba5a9dd6572ee`. Change set `governed/fuseki-rebuild-identity-20261121`, commit di esecuzione `0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851`. Questa PR si chiude come risolta e non si integra.
 Head di `origin/main` alla pubblicazione: `5a2c505152c070e9bc08f6346e467f32ba0c5eda`.
 Unità fermata da questo scarto: `OCOR-DEV-REM-0063`, opzione 1 di `REM-0063-CI-ARGV-LAUNCHER (2026-11-20)`, codice pubblicato e non chiuso sul branch `governed/rem-0063-ci-argv-launcher`, commit `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b`.
 PR del sigillo, aperta e non toccata da questa pubblicazione: #722, commit `7b0b90ee79bdae51b22365faca2a54159502a44f`.
