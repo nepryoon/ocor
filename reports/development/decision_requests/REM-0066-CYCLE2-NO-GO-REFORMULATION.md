@@ -1,6 +1,7 @@
 # REM-0066-CYCLE2-NO-GO-REFORMULATION
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `40d5e5f86c7ad38ed034e835c237326c41f90e06` resta sha256 `b65f4afdc7c56e5b9c9a96dc4bc06b962a08fe3687511cd9932d2b08c5a7f783`. L'opzione 1 è applicata sul branch `governed/ocor-dev-rem-0066-state-only-ci` all'HEAD `b359b603efe8174a78a18c9e332898200c7ec2f2`. Questa PR resta una bozza e non si integra. Il testo delle opzioni non cambia. Claim invariati.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `c410adf2007146f6b1df3e33ad55cd9ace6fee86`.
 Richiesta precedente: `REM-0066-CYCLE2-NO-GO`, branch `governed/decision-request-rem0066-cycle2-nogo`, commit `562e8e2cb5dddbcaf1915b0b711a134a6318112d`, file `reports/development/decision_requests/REM-0066-CYCLE2-NO-GO.md`, sha256 `b5faebbb4729f94152e1e2561d7377864b867a361823a9d916cac9659f650b00`, bozza PR #757. Nessuna sua opzione è adottata e nessuna è applicata.
