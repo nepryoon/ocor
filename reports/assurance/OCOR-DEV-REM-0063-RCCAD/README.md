@@ -1,0 +1,1033 @@
+# OCOR-DEV-REM-0063
+
+MCP profile for FABLE52-POST-POC-PROGRAMME (2026-11-11) point 1.
+Protocol revision 2026-07-28. The Tool Contract schema in ADD v1.3 section 3.5 is unchanged.
+FR-047, FR-169 and NFR-022 are not verified by this unit; OCOR-DEV-0065 verifies them.
+Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+The cycle-2 decoder commit is `3dd37e29222ae2c85f400f4fc7573def127f6a53`.
+The class-coverage execution commit is `a284c11238063760c471d80cd9e0f7b6c957e42b`.
+This record supersedes `OCOR-DEV-REM-0063-d215c7d2c1dc`.
+The four-lane campaign at `c28cd9c411c466f38e9671d2774939bb9a910a30` does not qualify the cycle-2 head.
+The qualifying four-lane campaign is `fbe0200c24c0-1794612781` on `fbe0200c24c07340b67430a3b0a24a3cac65ba82`: 6014 tests, 0 failures, 0 errors, 0 skipped, 1719.366 s, MAINS.
+The class-coverage pre-campaign gate ran on `a284c11238063760c471d80cd9e0f7b6c957e42b`: 51 PASS, 6 NOT_EXECUTED, 97.897 s.
+The same gate ran on the evidence commit `a756fb9faf6860d218096d39fb10678dc9135b08`: 51 PASS, 6 NOT_EXECUTED, 99.195 s.
+The gate on the campaign head `fbe0200c24c07340b67430a3b0a24a3cac65ba82` is 51 PASS, 6 NOT_EXECUTED, 98.198 s. That log was pre-campaign.log for cycle 2. Its bytes remain at `aec75cd69010a29fe0997cd3dd15e5c89c639633`. Cycle 3 replaced the working-tree file.
+The evidence commits do not change the execution-commit inputs.
+The plan validator is unchanged, so the regression requalifications stay on their declared commit.
+
+Preventive review OCOR-DEV-REM-0063-9dc963f40644-pre found that the malformed-fragment rows do not plant the undecoded token, so they pass on the resolver before the decoder. The class-coverage tests at a284c11238063760c471d80cd9e0f7b6c957e42b plant that key. The cycle-2 red.log keeps the previous RED as a byte prefix (sha256 67868a1e29c59e4e42c5197874e15d89c2e3f0094c97b35c8d1dcbabbb511bec) and appends the planted-key RED and the identity-decode mutation. Those bytes remain at `aec75cd69010a29fe0997cd3dd15e5c89c639633`. GREEN of that cycle is 188 passed. The four-lane campaign at c28cd9c411c466f38e9671d2774939bb9a910a30 does not qualify the cycle-2 head. The qualifying cycle-2 campaign is fbe0200c24c0-1794612781, and it does not qualify the cycle-3 head.
+
+Cycle 3 code and tests are `aec75cd69010a29fe0997cd3dd15e5c89c639633`. RED `51a3b58ecda1e52aaab47c97269e45170562a6c1` on `19f63aeec7d16c7d329aff3421415bcb5e5dd43a`: 46 failed, 42 passed, 188 deselected. GREEN of the task module: 276 passed. The qualifying four-lane campaign is `aec75cd69010-1794649854`: 6102 tests, 0 failures, 0 errors, 0 skipped, 1674.782 s, MAINS. `fbe0200c24c0-1794612781` qualified cycle 2 and does not qualify this head. VF-004 is not closed by this suite. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+Cycle 4 code is `d849a827fae51d56e371357812b453a7082d4e59`. RED `0914a61bcb78b0e1710b9fbc43df205450921005`: 22 failed, 6 passed, 293 deselected. GREEN of the task module: 321 passed. The qualifying four-lane campaign is `d849a827fae5-1794672102`: 6147 tests, 0 failures, 0 errors, 0 skipped, 1748.014 s, MAINS. `aec75cd69010-1794649854` qualified cycle 3 and does not qualify this head. Preventive review `OCOR-DEV-REM-0063-fed65a3b0b8f-pre` returned BLOCKING_FINDINGS. The blocking rows were fixed in the code commit above. No second preventive review was requested. The gate on this head is 51 PASS, 0 failed, 6 NOT_EXECUTED. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+Cycle 5 code is `3305ab4cf85ea8aabca0aad58c3d3ff60c770306`. RED `b3a0b5c0fa9fcef6b3189959cfd589a349515316` of the new tests: 4 failed, 1 passed. GREEN of the task module: 431 passed. Oracle referencing 0.37.0, 105 generated cases, result PASS. The qualifying four-lane campaign is `3305ab4cf85e-1794700091`: 6257 tests, 0 failures, 0 errors, 0 skipped, 1656.782 s, MAINS. `d849a827fae5-1794672102` qualified cycle 4 and does not qualify this head. Preventive review `OCOR-DEV-REM-0063-3305ab4cf85e-pre` returned NO_BLOCKING_FINDINGS. The one advisory was evidence-only and this record is regenerated on this head. No second preventive review was requested. The gate on this head is 51 PASS, 0 failed, 6 NOT_EXECUTED. The distinct check `3305ab4cf85e-1794701778` passed: 410 tests, exact union, empty residue. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+Cycle 6 code is `265f6ad2ced262999bd23c35c9dea3fc94caf988`. RED of the cycle-6 tests on `2018893ae8f37a9a6428c8c2b785055c763bbeec` before the production edit: 76 failed, 293 passed. GREEN of the task module: 800 passed. Oracle referencing 0.37.0, 240 generated cases, result PASS. The qualifying four-lane campaign is `265f6ad2ced2-1794717879`: 6626 tests, 0 failures, 0 errors, 0 skipped, 1642.715 s, MAINS. `3305ab4cf85e-1794700091` qualified cycle 5 and does not qualify this head. Preventive review `OCOR-DEV-REM-0063-2018893ae8f3-pre` returned BLOCKING_FINDINGS. P1, P2 and P3 are fixed on this head. P4 is the inventory realignment in this record. No second preventive review was requested. The gate on this head is 51 PASS, 0 failed, 6 NOT_EXECUTED. The distinct check `265f6ad2ced2-1794719545` passed: 410 tests, exact union, empty residue. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+Cycle 7 code is `0c8bf777f363fffc42234d14b239e4f0b0a8e652`. Every `$ref` is resolved by referencing 0.37.0 with DRAFT202012, the current resource and base URI; the manual resolver is removed. RED of the cycle-7 tests on `d70920ea901ffa5b06b2c28fd1fdd785b2f7b125` before the production edit: 39 failed, 33 passed. GREEN of the task module: 934 passed, three consecutive runs. Oracle referencing 0.37.0: 36 differential cases and 32 empty-pointer cases, result PASS. The qualifying serial campaign is `0c8bf777f363-1794742597`: 6760 tests, 0 failures, 0 errors, 0 skipped, 4267.300933112041 s, SERIAL_FALLBACK, exact JUnit/collection union. Power state was not recorded. `265f6ad2ced2-1794717879` qualified cycle 6 and does not qualify this head. Preventive review `OCOR-DEV-REM-0063-baef056e5bf6-pre` returned BLOCKING_FINDINGS. The blocking findings are fixed on this head. No second preventive review was requested. The gate on this head is 51 PASS, 0 failed, 6 NOT_EXECUTED. The distinct check `0c8bf777f363-1794746955` passed: 410 tests, exact union, empty residue. Implementers: Grok Build, grok-4.7, xAI (original and cycles 1-6); Codex CLI, deepseek-flash, DeepSeek (cycle 7). Preventive reviewer cycle 7: Claude Code, claude-fable-5-2, Anthropic. Final verifier: Codex, OpenAI, separate context. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+Cycle 8 code is `8a4893df052b04f3e357490e1e83c64288bb5603` with the RED, GREEN and pre-campaign logs at `f72a324e25ed72fd58f688bf365058bc40555f11`; the preventive review `OCOR-DEV-REM-0063-5356e0d3eb7b-pre` returned BLOCKING_FINDINGS (P1-P3 blocking, P4-P9 advisory) and the repair head is `271bdaf561ab99a6b8b96c58f067f6aa096b6f2f`. VF-001 of `OCOR-DEV-REM-0063-07eb4fd2040b-7` is closed: every embedded tool schema gets its own local registry keyed by the effective base, so a no-op `$id` reached through const/default/examples keeps the embedded resource, the document fallback survives and the documented ambiguity check stays active; the anchor crawl (P1) and the repeated nested `$id` across schema trees (P2) now follow referencing 0.37.0 as well. RED of the cycle-8 tests on `07eb4fd2040b4081f577c80dcfb1641d09a4da7c` before the production edit: 60 failed, 96 passed, 934 deselected. RED of the anchor repair on `5356e0d3eb7b7168192afec98ea7685f00f641bb` before the production edit: 38 failed, 18 passed, 1090 deselected. GREEN of the task module on the repair head: 1146 passed, three consecutive runs. Oracle referencing 0.37.0: 104 generated cases query the pinned library (48 of the local matrix, 56 of the anchor and repeated-`$id` matrices), result PASS; the outer and ambiguous matrices (96 cases) and the 12 missing-target cases assert profile rules without calling the library. The qualifying serial campaign is `f72a324e25ed-1794759063`: 6916 tests, 0 failures, 0 errors, 0 skipped, 3985.283470831986 s, SERIAL_FALLBACK, exact JUnit/collection union, power not recorded by the serial runner; it qualified the pre-repair head only, and a new qualifying campaign and distinct check are required on the repair head after the new preventive review. `0c8bf777f363-1794742597` qualified cycle 7 and does not qualify this head. The distinct check `f72a324e25ed-1794763318` passed: 410 tests, exact union, empty residue; the anonymous-pull rate-limit reading for that execution was not performed and the deficit is recorded in the record instead of fabricated. VF-002 is NOT closed: the explicit gate `git diff --check <base>..<head>` exits 2 because the pinned byte-exact official fixture schema.json ends with a blank line at EOF (schema.json:3963: new blank line at EOF.); the committed red.log strips the trailing whitespace of the pytest progress lines and the raw bytes are preserved content-addressed at `~/.ocor-codex/rem-0063/preserved/8a4893df052b/red.log.cycle8.raw` (sha256 `6ae5073a2a67fd062c4314618f9fe0cd8144e70f2a63cda9cdcbaf3258a1d3c7`); the real gate outcome is recorded without claiming it green. Implementers: Grok Build, grok-4.7, xAI (original and cycles 1-6); Codex CLI, deepseek-flash, DeepSeek (cycle 7); Codex CLI, deepseek-v4-pro, DeepSeek (cycle 8). Preventive reviewer cycle 8: Claude Code, claude-fable-5-2, Anthropic (per REM-0063-CYCLE7-NO-GO point 4). Final verifier: Codex, OpenAI, separate context. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+Cycle 8 prereview-fix code is `edfe829322d57875c2bd0685a50f9710b4636726`, closing P1, P2 and P3 of the preventive review `OCOR-DEV-REM-0063-e2efce6f3dfa-pre` (BLOCKING_FINDINGS on the repair head `271bdaf561ab99a6b8b96c58f067f6aa096b6f2f`). RED of the prereview-fix tests on `e2efce6f3dfa996dada7374694cf7b20719cd7b5` before the production edit: 102 failed, 134 passed, 934 deselected, with the library-order failure `[props_first-b_first]`; the raw bytes are preserved content-addressed at `~/.ocor-codex/rem-0063/preserved/edfe829/red.log.cycle8-prereview.raw` (sha256 `84b2f853ab6370d0f3ebba7f560ed08fcbff6550e70df400934aa85ffaba1d79`). GREEN of the task module on the fix head: 1170 passed, three consecutive runs (raw logs sha256 `f6aac01a7fdcb919e356551cf7a6bc4c789a57787807ba5ae8ddb12f04e71d42`, `e7f536fceda69ff056d22cb66cd2c7c0400485e54146da12487789d2fe5ade72`, `7747cda9e9d64aa82397e12b1fc8cdcf1dfc46a70444b66b03cba8a45a3aeac9`). The cycle-6/cycle-7 regression selection on the same head passes 503 tests; the REM-0047 task module passes 25 tests. Oracle referencing 0.37.0: 112 differential cases (48 no-op `$id` reached through const/default/examples, 56 anchor and repeated-`$id`, 8 pointer/anchor member orders), result PASS. P4 (advisory) is OPEN_PO_DECISION_REQUIRED: the explicit gate `git diff --check <base>..<head>` exits 2 because the pinned byte-exact official fixture `ocor-runtime/tests/fixtures/mcp/2026-07-28/schema.json` ends with a blank line at EOF, kept byte-exact per DEPENDENCY.md; the real gate outcome is recorded and never declared green. P5 (advisory) is FIXED_RECORD. The new preventive review on this head is PENDING; a new qualifying campaign and distinct check are required on this head after the review. Implementers: Grok Build, grok-4.7, xAI (original and cycles 1-6); Codex CLI, deepseek-flash, DeepSeek (cycle 7); Codex CLI, deepseek-v4-pro, DeepSeek (cycle 8). Preventive reviewer: Claude Code, claude-fable-5-2, Anthropic. Final verifier: Codex, OpenAI, separate context. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC NO-GO, Production NO-GO.
+
+## Cycle 10 contract
+
+Phase A, completed after the second and final contract review, stays valid.
+The phase-A production tree was byte-identical to
+`f485dc964e47bde83842ecd5ba2627d8342612f9`. The implementation commit is the
+production edit. This derived contract implements
+**REM-0063-CICLO-10-CONTRATTO (2026-11-16)**, points 1–3, and the single
+calculation required by **REM-0063-CALCOLO-UNICO (2026-11-17)**. Codex
+(`gpt-6.1-sol`, OpenAI, effort `max`) authored phase A and does not own the
+cycle-10 code. From **REM-0063-CALCOLO-UNICO (2026-11-17)** point 1, Grok
+Build (`grok-4.7`, xAI, effort `xhigh`) owns the code and wrote this
+implementation. Earlier implementers remain Grok Build (`grok-4.7`, xAI) and
+Codex CLI (`deepseek-flash`, `deepseek-v4-pro`, DeepSeek). The preventive
+reviewer is Claude Code (`claude-fable-5-2`, Anthropic, effort `max`). The
+design review `OCOR-DEV-REM-0063-3bad5d6ff394-pre` returned
+`BLOCKING_FINDINGS`; that review is the only design review, its findings are
+integrated here, and no further design review is requested. Final verifier:
+Claude Code (`claude-opus-5-5`, Anthropic, effort `max`), assigned by
+**VERIFIER-CLAUDE-REM0063 (2026-11-16)**. The PO declares the same-provider,
+different-model limit between reviewer and verifier. No implementer is Anthropic.
+
+### Producer and consumer obligations
+
+Every emitted `inputSchema` and `outputSchema` is an autonomous JSON Schema
+2020-12 resource. Its registry contains only that schema and its contained
+resources. The base follows B1 below: a root `$id` with a non-empty
+pre-fragment part, otherwise the fixed tool/field URI. No lookup falls back
+to the descriptor, another schema or network retrieval.
+The oracle never rewrites schema bytes or reference spellings. Sources:
+**MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, points 1–2.
+
+The generator includes all and only transitively reachable IR definitions in
+each resource's `$defs`, using `#/$defs/<Name>`. Unreachable user definitions are
+omitted; a same-name/different-content definition is a typed error. No top-level
+`$defs` is emitted or accepted by the profile. `without_context_overwrite` and
+byte-identical repeated generation remain mandatory. Sources:
+**MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**, points 1–3.
+The existing producer restriction on distinct resource roots claiming one URI
+remains `C1Error`/`DUPLICATE_RESOURCE`; it is stricter than the library-selected
+winner. Both orders and repeated ancestor/descendant IDs are covered.
+
+Every emitted descriptor must pass the public profile. Each final schema used
+alone must pass `Draft202012Validator.check_schema` and resolve its references
+with unmodified `referencing` 0.37.0. An unresolvable closure causes
+`C1Error`/`UNRESOLVED_REFERENCE` before artefacts are returned. A fixed base
+colliding with a declared ID inside that same schema causes `C1Error`/`TYPE_ERROR`
+or `McpProfileError`, without suffix selection. A final empty fragment does not
+make a different identity. An equal `$id` in another field, tool or descriptor
+metadata is not a collision of this registry (C1). Sources:
+**REM-0063-CICLO-10-CONTRATTO**, point 2;
+**REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)**, A1+B1
+(request `0531a438f0d68637d8a7221507080a7c672c0847`, sha256
+`35259990c43e2e2def484b7d763bdc691feb25e262e661d9a5323fa06fdeec41`;
+disposition `7320dc93051aff01edcf242a78e790acae9ad60f`, sha256
+`5c68feee5a9dc955eb93532b9348d6b8a3ed710dc4178dbbc0fd91e865bbdcfe`);
+**REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)**, C1.
+
+The profile validates every tool against the pinned official `Tool` definition,
+then checks each schema's dialect, keywords and resolved targets. Missing or
+non-schema targets cause typed refusal. Existing ambiguous-anchor and canonical
+array-index restrictions remain. Percent-encoded anchors and the encoded leading
+slash follow the original libraries, without helper substitutions (A1 above).
+A1 of **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS (2026-11-17)** extends that
+realignment to the single omitted case `encoded-slash` of
+`test_percent_encoded_fragments_resolve_before_the_pointer`: same name, inputs
+and 19 cases; only `encoded-slash` expects `McpProfileError`. The old and new
+expectation of every authorized realignment is the table
+`repair_cycle_10.implementation.authorized_realignments` in the assurance
+record. No other existing test changes in that cycle.
+
+Cycle 11 (`REM-0063-CYCLE10-NO-GO` option 1) realigns the planted-key rows,
+the pre-cycle-10 `~` rows, and the cycle-10 `malformed-escape` cells other
+than the leading-zero array index `02`. Names, inputs and case counts stay.
+The table is `repair_cycle_11.implementation.cycle11_library_realignment`.
+The library-only probe is `reports/tests/cycle11_library_probe.py`. Its captured output remains `cycle11_library_probe.out.json` in this directory. The script is not stored here: the language policy authorizes a Python harness under `reports/tests/`.
+
+Only reference spellings starting with `#` are accepted, even when an URI naming
+a contained resource resolves without network access. The generator emits only
+the prescribed local pointers and refuses a final schema requiring forbidden
+spellings. The library outcome and this additional refusal are recorded separately.
+Source: **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1,
+request `620f56ba3206affd15679f0394c16c7a4eb0fa33`, sha256
+`98827faf39c35d71dd3570e90baea7faa6c9e1539c2909d94bfb26bb1eb13acb`.
+
+Bounds apply after the complete definition closure: 4096 JSON values and depth
+32; the root counts as one, keys do not count. At 4097 or depth 33, generator and
+profile refuse with their typed errors. Direct and transitive type growth counts.
+Sources: **REM-0063-CICLO-10-CONTRATTO**, point 2 and VF-002;
+**REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2. No bound changes.
+
+Resource, base, reference target, closure placement and bounds are one
+calculation, specified in **Single calculation design** and required by
+**REM-0063-CALCOLO-UNICO (2026-11-17)** point 3. Agreement is still proved on
+both public paths: independent library resolution, exact closure trees,
+positive/negative instance twins and identical repeated render bytes. No
+expected answer uses a production helper, including the shared one.
+
+### Deterministic case matrix
+
+| Dimension | Values and explicit representatives |
+| --- | --- |
+| Field | `inputSchema`, `outputSchema` |
+| Root | absent, absolute; `root.json`, `./root.json`, `../up/root.json`, `relative/root.json`, `rel/dir/`; fragment-only and empty roots use the fixed base under decided B1 |
+| Independent outer/inner IDs | absent, empty, `#`, root-relative, root-absolute, new relative/absolute, repeated URI; exact literal root repetition in the added product |
+| Reference | `#`, pointer, anchor, percent segment/leading slash/anchor, contained-resource URI; parent/root/child/missing targets |
+| Target | present, missing, invalid schema, non-schema; duplicate anchor; foreign field/tool/descriptor |
+| Position | `properties`, `$defs`, `allOf`, `const`, `default`, `examples`; `not`, `items` in the added product |
+| Duplicate order | both sibling orders and ancestor/descendant repetition |
+| Origin/closure | delivered; public compiler/generator; direct/transitive types; unused sibling absent/present |
+| Tokens/bounds | `~0`, `~1`, malformed escape, non-ASCII percent segments, array 2/02; 4096/4097 nodes, depth 32/33 |
+| Fixed base | tool indices 0/1, both fields/origins, collision/noncollision, ID with/without final `#` |
+| Static descent (C1) | 24 added cells: field × root absent/absolute/relative × plain, empty-descendant, hash-descendant, fragment. The node is reached only by static descent inside a nested resource. The original 40180 cells stay |
+
+The unchanged first 29746 cells remain: original delivered/generated 5184/576,
+bounds/collision 30, two-level delivered/generated 18432/4608, sibling orders 288,
+form/target state 216, isolation 108, ambiguous anchor 48, tokens 144,
+both-origin collisions 4, library-state controls 24, root-fragment twins 12,
+generated duplicate orders 72. Additions: root-class delivered **9216**
+(2×6×2×6×8×8), public generation **1152** (2×6×2×6×8), data-target validity 18,
+indexed fixed-base collision/twin 32, preserved anchor-context instances 16.
+The original total stays **40180** cells in 23 test functions. Option C1 of
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)** adds 24 cells in
+`test_cycle10_static_descent_inside_a_nested_resource`. A guard asserts that
+the original delivered product is still 5184 and the generated product is
+still 576. Each product is fully enumerated,
+without sampling. They are factored products, not a claim to execute their full
+mutual cross-product. Their restrictions are:
+
+- G1: generated OaC references are IR symbols. Arbitrary fragment spellings,
+  pointer grammar, foreign targets and malformed schema targets belong to the
+  delivered products; they are not generated-source cells.
+- G2: an OaC definition without an incoming reference is omitted. Generated
+  `$defs` target cells assert omission, not resolution of an unreachable node.
+- G3: the original generated product varies unused siblings; its two-level
+  extension varies direct/transitive reachability instead. Duplicate sibling
+  orders have separate generated and delivered products. The added root-class
+  generator product uses direct types; transitivity remains in the unchanged
+  4608-cell product.
+- I1: the old same-relative/absolute aliases are preserved in their original
+  products. They do not represent literal relative-root repetition. The added
+  product crosses each of the six explicit root spellings with exact literal
+  repetition and five other nested-ID modes, under same-resource/new-absolute
+  ancestors, in both origins. No root-class exclusion is hidden in an alias.
+- F1: the original two-level product uses eight literal references. Encoded
+  forms, invalid targets and URI spellings use separate products; root-class
+  additions cross encoded-pointer forms with the extra root/ID classes.
+  Form/target-state uses an absolute root/holder; isolation, token grammar and
+  ambiguous-anchor products use their original no-root-ID construction.
+- F2: `not` and `items` represent single-schema keywords; other single-schema,
+  map/list keywords and `enum` data are not multiplied into these products.
+  They follow the same pinned `Resource.subresources` and pointer machinery;
+  no coverage of every keyword Cartesian combination is claimed. Invalid
+  resolved schemas under `const/default/examples` are tested separately:
+  the root passes `check_schema`, but the selected target must fail it.
+- V1: cyclic `allOf/$ref:'#'` may not terminate instance validation. Their
+  schema validity/resolution checks remain; recursive instance execution is
+  `NOT_EXECUTED`, never a passing instance. Nonrecursive entry probes really run.
+- B1/C1: empty and fragment-only roots use the fixed base; collision rows
+  cover only the same schema, including index 1 and final-empty-fragment
+  identity. The unsealed phase-A oracle `_cycle10_base` previously used
+  `urldefrag(schema.get("$id") or fixed)[0]`, so `"#"` became the empty
+  string. The implementation commit aligns it to B1: absent, non-string,
+  `""` and an empty pre-fragment use the fixed URI. No cell is removed.
+
+The static matrix oracle uses `Resource.subresources`, `Resolver.in_subresource`
+and `Resolver.lookup` on the original resource, preserving registry crawl state.
+It checks `entry` with the same resolver/base. The cycle 13 rule below governs which resolver contexts are mandatory. The added 16-cell public
+characterisation uses real positive/negative `Draft202012Validator` instances,
+without the stricter static oracle. No original matrix assertion is weakened.
+
+### Decisions, questions and stopping conditions
+
+Q1/Q2: A1+B1 of **REM-0063-CYCLE10-ORACLE-CONFLICT (2026-11-16)** are decided.
+The request file at `0531a438f0d68637d8a7221507080a7c672c0847` has sha256
+`35259990c43e2e2def484b7d763bdc691feb25e262e661d9a5323fa06fdeec41`. The
+disposition file at `7320dc93051aff01edcf242a78e790acae9ad60f` has sha256
+`5c68feee5a9dc955eb93532b9348d6b8a3ed710dc4178dbbc0fd91e865bbdcfe`.
+Q3: option 1 of **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)** is decided.
+The request file at `620f56ba3206affd15679f0394c16c7a4eb0fa33` has sha256
+`98827faf39c35d71dd3570e90baea7faa6c9e1539c2909d94bfb26bb1eb13acb`. The
+disposition file at `1a369324cd9c722772244afcdd890798d3c62b18` has sha256
+`e1233e6b99ccbf9c9a68c2031b2f4cd4f64bdd31ffcc640a86ddfa555dc8d449`.
+Q4/Q5/Q6, the questions **REM-0063-CYCLE10-REMAINING-CONTRACT-QUESTIONS**
+collected, are decided by the Product Owner in person on 2026-11-17: A1, B1
+and C1. A2, B2 and C2 are not applied. The file at
+`99d93da7a481c44841d9d8003044aed37c026ce6` has sha256
+`edc7fe84762a5f6fa2f512209df099bb72f0b8040da374974bc03f4f1dbb29d8`.
+Nested-resource resolution is decided by the Product Owner in person on
+2026-11-17: A1, B1 and C1 of
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION**. A2, B2 and C2 are not
+applied. The request file at
+`99172353fc2ac6b2a56aadf54321339d6ea9a4a4` has sha256
+`66e7e5b2a5dab5b21064fd118484687aa95c6bfab40bc8ee47db844406ddf729`.
+The target is what `referencing` 0.37.0 and `Draft202012Validator` obtain
+on the tool schema alone. The 39 named cycle-6 cases keep their names and
+inputs and take that expectation. The hand registration and the
+`PointerToNowhere` retry are removed. The 24 static-descent cells are the
+C1 extension. No matrix cell is removed. There is no third contract review
+and no second pre-campaign review.
+
+The official fixture remains byte-identical. **REM-0063-PINNED-FIXTURE-DIFF-CHECK
+(2026-11-16)**, option 1, leaves its whitespace check `NOT_GREEN` with a recorded
+exception; every other file retains the check. The design review is integrated
+in the implementation. On the previous head, which still registered a nested
+resource by hand, the task module passed 41896 tests, with 0 failures,
+0 errors and 0 skipped, in 829.49 s (JUnit time 829.323 s). Raw log sha256
+`1b5b9de216e6fb52c93e88a990674d0ddf2f8e18ec8d17d457ae4093a550c803`; JUnit
+sha256 `5a1f1d541cdd3475a990188f7556c0d3010fc93147fb0bc01b3db4e2a86569ef`.
+Both files are preserved as `matrix-task.raw.log` and `matrix-task.junit.xml`
+under `~/.ocor-codex/rem-0063/cycle10-implementation/`. An earlier run stopped
+by `--maxfail=20` is not green: 20 failed, 41534 passed, exit 1, raw sha256
+`17a76e58dd4fdf5a4b6a52f2ee1d78609fdd1cb4f1f45a2eefd8d6824b8cf618`
+(`matrix-green.raw.log`). Those runs kept the hand registration and do not
+qualify this head. On this head the task module passed 41953 tests, with
+0 failures, 0 errors and 0 skipped, in 842.95 s. Raw log sha256
+`d552bd9b02e89529ee739762c5d123d7e98d7602b528e574f1e9c4c7a007026b`, preserved
+as `task-module.raw.log` under `~/.ocor-codex/rem-0063/cycle10-nested/`.
+No JUnit file was emitted for that run. It is not a qualifying campaign.
+The original 40180 cells remain; C1 adds 24. The pre-campaign preventive
+review `OCOR-DEV-REM-0063-cce3ba8ba7ab-pre` returned `BLOCKING_FINDINGS`
+(6 blocking, 2 advisory). Reviewer: Claude Code, `claude-fable-5-2`,
+Anthropic, effort max. Outcome-file sha256
+`13effc01c0ba02480b457c2f0fe215910c7f3136211c1423903ab2d18e1c3421`.
+The repairs that do not choose a normative reading stay on
+`eebbe0c7825d2c77a4d0cc611b2d455a9773ce7a`. Nested-resource behaviour is
+`7cc393a55b42e91af34e4cfe0f31beecd35e0fdb`. Annotation alignment with mypy
+2.3.1, with no execution-branch change, is
+`6c1d5c805fab9fff784db5ddfcd419c92790a597`. No second pre-campaign review is
+requested. Two official pre-campaign gates on that annotation head failed at
+mermaid: ProtocolError Network.enable timed out, 180.765 s and 180.829 s,
+CLI `@mermaid-js/mermaid-cli` 11.12.0, config `.github/mermaid-puppeteer.json`.
+The diagram and that config were not changed. Neither run is a PASS.
+The official gate on tip `5a1a8aaff6af95470171c1add7f9e85f1ec997a8` is PASS:
+51 steps, 0 failures, 6 NOT_EXECUTED, mermaid 4.412 s, unit step 800.021 s,
+from `2026-11-17T09:15:03Z` to `2026-11-17T09:30:01Z`. `gates.json` sha256
+`860c48da950bf65a27573b71875dd55b8db8780c9b510804d13c0047ef7fa54e`.
+The four-lane campaign `5a1a8aaff6af-1794907944` on that same head is FAIL,
+exit 1, 227.898 s, from `2026-11-17T09:32:24Z` to `2026-11-17T09:36:12Z`.
+Lane 1 stopped before pytest with `Errno 7 Argument list too long`
+(41953 node ids). Collected 47779. Host residue empty. Teardown of the four
+sandboxes PASS. It is not a qualifying result. The distinct check was not run.
+The repair leaves the files allowed for this unit. Decision request
+`REM-0063-CYCLE10-LANE-ARGV-LIMIT` is open (PR 662, commit
+`1ffdbaaf23a82753df87c136989c51e23bffe40b`, sha256
+`fa95ed2da8c67ae6d967ace3cc59ad527f554be3e950166e1ad31cf5c96ac4e1`).
+No option is applied. Fence unchanged: E1=0, E2=0, Verified=0,
+runtime NOT_ESTABLISHED, PoC and Production NO-GO.
+
+### Single calculation design
+
+**REM-0063-CALCOLO-UNICO (2026-11-17)** points 3 and 5, superseding the
+pre-implementation text of this subsection. Shared functions live in
+`ocor-runtime/src/ocor_runtime/c1/mcp_profile.py`. `codegen.py` imports them.
+No new file under `ocor-runtime/src/`. No dependency or version change.
+Matrix expectations stay the pinned libraries on the original schema bytes.
+
+Nested-resource resolution is no longer open.
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)** adopts A1, B1
+and C1. The hand registration and the `PointerToNowhere` retry are removed.
+The checked object is the library object for that spelling. Q4/A1 refuses a percent-encoded plain-name
+anchor and the encoded-slash pointer before a successful literal resolve.
+Q5/B1 is `operational_base`: absent, non-string, `""` and an empty
+pre-fragment (`"#"`, `"###"`) use `urn:ocor:embedded-tool:{index}:{field}`;
+every other root `$id` uses `urldefrag(...)[0]`. Q6/C1 scans every string
+`$id` in that schema, including `const`, `default`, `examples` and `enum`,
+and only against the fixed base. A trailing empty fragment is the same
+identity. No suffix.
+
+`SchemaCalculationFailure` carries `code` and `message`. The profile maps
+`CRAWL` and `NOT_RESOLVABLE` to `MCP schema resource index is not resolvable`,
+`INVALID_ID` to `MCP $id is not a valid URI reference`, and every other code
+to `message`. The generator maps `CRAWL` to `C1Error`/`UNRESOLVED_REFERENCE`
+(`unresolved MCP definition`), `NOT_RESOLVABLE` to `TYPE_ERROR` (`MCP schema
+resource is not resolvable`), `INVALID_ID` and `COLLISION` and `BOUNDS` to
+`TYPE_ERROR` with the shared message.
+
+1. `json_bounds(document) -> None`. One walk. The root counts as one JSON
+   value; keys do not count; depth starts at 1. `BOUNDS` above 4096 values
+   or depth 32. Lone surrogates, non-finite numbers and non-JSON values fail
+   on this walk. The profile calls it on the whole descriptor after the
+   existing top-level `$defs` check and before the registry. `_mcp` calls
+   the same function on the final descriptor after every closure and before
+   `_json`. The call inside `_mcp_attach_definitions` is an early exit on
+   that schema, not a second limit.
+2. `operational_base(schema, *, index, field) -> str`. No suffix. `COLLISION`
+   message `MCP schema base collides with a declared $id`.
+3. `autonomous_registry(schema, base_uri, *, registry_factory=Registry, translate_null_applicator=False) -> Registry`.
+   Two registries are built with `registry_factory`. `probe.crawl()` is
+   discarded. The returned registry is never crawled and pins only the root
+   passed to `with_resource`. `registry_factory` is the `codegen.Registry`
+   global, read at the call inside `_mcp_attach_definitions`. Non-string
+   `$id` values in schema position are `NOT_RESOLVABLE` before the resource
+   is built. `Unresolvable` from the probe is `CRAWL`. `TypeError` from the
+   probe is `NOT_RESOLVABLE`. `AttributeError` on `NoneType.values` or
+   `rstrip` is `NOT_RESOLVABLE`. On the generator only, `NoneType.get` is
+   `CRAWL`. Any other `AttributeError` is not remapped here: a scalar inside
+   `$defs` still reaches the non-schema target check. `ValueError` is
+   `INVALID_ID`. An unreferenced `$id` in instance data is not this refusal.
+4. `enter_subschema(resolver, child) -> tuple[Resolver, bool]`. The boundary
+   is `in_subresource` changing the base. The returned resolver is that
+   library resolver. A changed base is not registered with `with_resource`,
+   and a `PointerToNowhere` is not retried by removing a URI. Source:
+   **REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)**, option A1.
+5. `assert_reference_path_bound(schema, resolver) -> None`. Reference-path
+   depth uses the profile graph's static-first breadth-first bound. A chain
+   of named definitions is not a generator-only limit. Depth above 32 is
+   `BOUNDS`. `json_bounds` remains the JSON value count and JSON depth.
+   `_resolve_graph` and `_mcp_post_check` both call this function.
+   Anchor-chain depth tests are unchanged.
+
+Lookup uses the original reference spelling. An encoded fragment whose
+decoded form does not start with `/` is refused before lookup. A plain-name
+anchor with more than one owner of the same resource, keyed by `id` of the
+resource root, is `MCP $ref anchor is ambiguous`; one node that declares both
+`$anchor` and `$dynamicAnchor` with the same name is one owner. Pointer
+indexes are checked on the decoded tokens; the primary lookup stays the
+original spelling. `AttributeError` from a scalar target is recovered by
+walking the original `#/` pointer on `lookup("#").contents`. A
+`PointerToNowhere` is the library result for that spelling. It is not
+retried. The object the profile checks is the object the library returns
+for that spelling. Equal acceptance of a different object is not agreement.
+Source: options A1 and B1 of
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)**. The resolver
+`lookup` returns is the one an anchor chain continues with.
+
+The generator walks with the resolver `enter_subschema` returns. It does not
+enter the child a second time, because that resolver is not pinned. Two
+different nodes that receive one base are `DUPLICATE_RESOURCE`. The closure is written on
+the unpinned `lookup("#").contents`, or on the boundary node when that
+lookup cannot retrieve a relative base. References are scanned from the
+boundary as well as from that owner, so a reference that sits on the
+boundary is not dropped when a descendant rejoins the URI. `$defs` are
+placed on the owner. The earlier rule that treated every base change as its
+own closure root is superseded: a joined URI whose unpinned crawl returns
+an ancestor keeps the reachable references on that ancestor, and unreachable
+`$defs` on the descendant are omitted.
+`additionalItems` is not a JSON Schema 2020-12 keyword. The shared
+enumeration does not index it, and a `$id` under it is not a resource and
+is not reported as `MCP schema resource is not crawled`. A `$ref` on that
+value is still closed on the current resource.
+`_mcp_attach_definitions` keeps its signature. `_mcp_ref`, `_mcp_defs_name`,
+`_mcp_select_body`, the name-clash error and `without_context_overwrite` stay.
+There is no cross-schema identifier union and no suffix loop.
+
+Historical rows for the deleted helpers stay in the record. This implementation
+deletes `_declared_id`, `_resource_uri`, `_changes_resource`,
+`_synthetic_tool_uri`, `_collect_declared_ids`, `_walk_json`,
+`_crawl_document_resources`, `_same_uri_resource_ancestors`,
+`_collect_node_uris`, `_canonical_resource_contents`, the hand-written
+resolver and `_PROFILE_SPECIFICATION`. The generator deletes `_mcp_bounds`,
+`_mcp_declared_id`, `_mcp_resource_uri`, `_mcp_changes_resource`,
+`_mcp_collect_ids`, `_mcp_synthetic_uri`, `_mcp_base_uri` and
+`_mcp_seed_refs`. The profile `_reject_surrogate` is deleted; lone
+surrogates stay on `json_bounds`. The `c8` helper of the same name is
+unchanged. `_recover_scalar_target` remains: it recovers a scalar pointer
+target after the library lookup has failed, and it is not a second resolver.
+`_registered_subresource` and `_lookup_past_registered_boundary` are
+deleted. The generator replaces `_mcp_unpinned_crawl_owner` with
+`_mcp_library_resource`, which reads `lookup("#")` on the resolver
+`enter_subschema` returned. Source:
+**REM-0063-CYCLE10-NESTED-RESOURCE-RESOLUTION (2026-11-17)**, option A1.
+
+Rules stricter than the libraries, each with its own typed error:
+
+1. A reference must start with `#`. Profile: `MCP $ref must be a same-document fragment`. Generator: `C1Error`/`UNRESOLVED_REFERENCE`. Source: **REM-0063-CYCLE10-INTERNAL-RESOURCE-URI (2026-11-16)**, option 1.
+2. A target that is not a JSON Schema is `MCP $ref target is not a JSON Schema`. Source: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
+3. A `$schema` outside draft 2020-12, and `$dynamicRef` / `$recursiveRef`, keep their existing typed refusals. Source: **MCP-TOOL-SCHEMA-AUTONOMO (2026-11-15)**, point 2.
+4. Ambiguous anchors and non-canonical array indexes stay profile refusals. Encoded plain-name anchors do not resolve. Source: the tested profile rules, **ORACLE-CONFLICT** A1 and Q4/A1.
+5. Fixed-base collision. Source: **ORACLE-CONFLICT** B1 and Q6/C1.
+6. Generator duplicate URI. Source: the producer rule; stricter than library last-wins.
+7. No descriptor `$defs`. Name clash: `MCP definition name clash`. Source: **MCP-TOOL-SCHEMA-AUTONOMO-GENERATORE (2026-11-15)**.
+8. `without_context_overwrite` on the input schema. Source: **GENERATORE**, point 1.
+9. `json_bounds` is the only value-count limit. Reference-path depth 32 is a separate rule. Source: **REM-0063-CICLO-10-CONTRATTO**, point 2, and **REM-0063-CYCLE7-NO-GO (2026-11-15)**, point 2.
+
+`validate_mcp_descriptor` calls `json_bounds` on the descriptor, then builds one uncrawled registry per tool schema and resolves every `$ref` with the shared lookup. `_mcp` calls `json_bounds` and then `operational_base` on each tool schema field before `_mcp_attach_definitions`, then `json_bounds` on the assembled descriptor. Cycle 13 retains the root context at every applicable node and checks every incoming reference context. The implementation adds no dependency and accepts no spelling these decisions refuse. After a `NO_GO` of this cycle there is no further cycle.
+
+
+## Cycle 11 record alignment
+
+REM-0063-CYCLE10-NO-GO (2026-11-18) option 1, steps 4 and 5, at code head
+`c03073f7dfad399f6e07ae45ac9a8780ee0f8f97`. The production commits are
+`82a3318fd895e97d6b221384f0ddd60625bbe4dd` and the separate realignment
+`c03073f7dfad399f6e07ae45ac9a8780ee0f8f97`. This section does not replace the
+cycle-10 contract above.
+
+`git diff --check f485dc964e47bde83842ecd5ba2627d8342612f9 c03073f7dfad399f6e07ae45ac9a8780ee0f8f97`
+exits 0 and prints nothing. The official-fixture whitespace exemption is not
+used. The trailing blank line of `mcp_profile.py` is gone.
+
+REM-0063-CYCLE10-LANE-ARGV-LIMIT and REM-0063-CYCLE10-INOTIFY-INSTANCES are
+decided and applied. Option 1 of each. The diagnostic campaign
+`8037040f14cc-1794928763` stays FAIL: pytest collected nothing on lane 1
+because `-m` was read as a marker expression (41953 deselected, exit 5).
+Commit `3ae284727c9829902e72bea25c2f07373e60d969` is the follow-up that assigns
+the argv tail. It is not a passing campaign.
+
+The self-check table adds the VF-010 parsers and the cycle-11 enumeration
+paths. The phase-A inventory text is kept as history and is not the current
+inventory. Preventive review, the four-lane campaign and `verify_request.json`
+are not this commit.
+
+### Cycle 13 design
+
+**Authority and baseline.** Under REM-0063-RITORNO-AL-PROGETTO (20 November 2026), the MCP profile decides whether a descriptor can be delivered before any instance is available. Each tool field has its own draft 2020-12 resource, its B1 base and a local-only registry. The new static rule supersedes the whole of REM-0063-CYCLE13-STATIC-LIBRARY-DIVERGENCE option 1, including its instance-based exception. Revert `90f9639f` restored the exact published tree of `2e4a3e51220a` after six local commits. Their results and review request are historical. The worktree contained no uncommitted files.
+
+**Which contexts count (§2).**
+
+1. Walk the existing schema positions from the autonomous root using the initial uncrawled registry. Carry the resolver returned on entry to each subresource. Mark a visit as applicable from the root only while the path has crossed no member of a `$defs` or `definitions` map. Distinguish the keyword edge from a property *named* `$defs`. Keep the existing inspection of definitions, nested resources and keyword validity.
+2. At every reference follow the library lookup with the resolver at that occurrence. Retain its returned resolver at the target, including the registry after an anchor crawl. Enumerate reference paths and their existing schema-child descent to a fixed point. The applicable root visit and visits reached by reference are cumulative. Keep origin, node, base and registry identity distinct during traversal. Equal URI strings alone cannot merge visits. For a definition-only node record the existing static inspection separately. If no reference reaches it, its existing checks and failures still apply. If reached, check every incoming reference context without assigning it a root context merely because the static inventory listed it.
+3. Require lookup success in **every** applicable context. A success on a crawled registry cannot discard a failure on the initial one. Preserve local-only retrieval, target, dialect, keyword, depth and node checks. The unresolved-reference result is `McpProfileError("MCP $ref does not resolve in the descriptor")`. A normal instance validation error (e.g. wrong data type) demonstrates constraint enforcement. A library resolution exception on an instance requires refusal. Static refusal can additionally occur when an applicable context fails lookup and no instance selects it. Production does not search for a satisfying instance.
+
+**Public inputs and expected results (§§2–5).** Each count below is a planned number of labelled cells. Rows share fixtures but have distinct assertions. The original matrix remains part of the suite.
+
+| Entry | Generated input classes and expected outcome | Cells |
+| --- | --- | ---: |
+| Delivered descriptor, VF-001 | 13 applicators × 2 anchor types × 3 spellings of a repeated root URI × 4 duplicate locations × 2 member orders × 2 fields × 2 anchor-entry locations × 2 root-target variants. Accept when every applicable lookup resolves. A missing target in any applicable context gives the exact unresolved-reference error. | 4,992 |
+| Delivered descriptor, anchor-free control | Same applicators, spellings, duplicate locations, orders, fields and target variants. Remove both the anchor declaration and the referencing entry. | 1,248 |
+| Delivered descriptor, definition-only control | `$defs` or `definitions` × both fields × incoming reference present/absent × resolvable/unresolvable in the deciding context. Exercise a definition reached only through an anchor and an unreferenced definition in each map. | 16 |
+| Delivered descriptor, URI parsing | Each field with a valid absolute URI or `http://[x#frag`. Accept the valid control. Translate malformed authority to `McpProfileError("MCP $id is not a valid URI reference")`. | 4 |
+| Official fixture via descriptor validation | One valid tool × the pinned fixture or a copy declaring the draft with a dangling local `Tool` reference, an invalid `patternProperties` expression or `minLength: -1`. Accept the original. Each damaged fixture gives `McpProfileError("official MCP schema fixture is not a JSON Schema")`. | 4 |
+| Source → compile → render → deliver | Compiler-admitted contract ending in a name or a colon. Normal name yields a deliverable artifact. Empty derived name yields `C1Error` / `TYPE_ERROR` before bytes are returned. | 2 |
+| Stored core → recreate release → render → deliver | Change either field of an otherwise valid core to an object schema, an object schema with `minProperties: -1`, or the JSON boolean `true`. Accept the first. Reject the others with `C1Error` / `TYPE_ERROR` before returning artifacts. | 6 |
+| Shared JSON bound | List, tuple, dictionary and immutable mapping as positive controls. Reject `range` and `memoryview` with `SchemaCalculationFailure.code == "NOT_JSON"`. | 6 |
+| Source → render, follow-up characterisation | Retain the transformed pointer under an opaque extension without adding a closure definition. Retain the dialect error for an unused foreign-dialect definition before pruning. Component-name collisions remain a separate follow-up. | 2 |
+
+The **6,280 cells** use these axes: `properties`, `patternProperties`, `items`, `prefixItems`, `allOf`, `anyOf`, `oneOf`, `not`, `if`, `then`, `else`, `dependentSchemas`, `contains`; `$anchor` and `$dynamicAnchor`; literal absolute root URI, trailing empty fragment or equivalent relative spelling; duplicate in `allOf`, `anyOf`, `not` or `$defs`; both insertion orders; input and output; referencing entry in an applicator or an unreferenced definition. The target exists only in the duplicated resource in one variant and in both resources in the other. Supply companion keywords for conditional branches, object or array carriers for their applicators, and probes that demonstrate when evaluation actually enters the node. Keep a separate lookup observation for branches a probe cannot enter. Generator references in source are IR type symbols. Counting an arbitrary delivered JSON Pointer as compiler input would test a different operation.
+
+**Oracle and error ownership.** Use a test-only enumerator with imports limited to the standard library, `referencing` 0.37.0 and `jsonschema` 4.26.0. Exercise it in isolation with zero production imports, including transitive imports. It accepts only the original schema, field/index and probes. It constructs the B1 registry independently, records schema paths and the provenance of every resolver, crosses definition boundaries explicitly and follows library-returned lookup contexts. Compare permutations by canonical case identity. A meta-schema rejection or library resolution failure on a selected instance takes precedence. On library acceptance, derive the expected result from the enumerated contexts, including the existing unreferenced-definition rule. Capture the failing path and resolver provenance. Assert the precise diagnostic independently for every negative cell. Mixed-message and production-as-oracle historical tests retain their original assertions and gain exact independent twins.
+
+In `mcp_profile.py`, protect base-URI parsing, validate the supplied fixture's meta-schema and the local references reachable from `Tool`, and translate library failures at the fixture boundary. A malformed tool in a valid fixture keeps its own diagnostic. Share the non-empty name predicate and validation of the finished field object and its draft schema with `codegen.py`. Render checks the fields after closure and before returning bytes, including on restored releases. Keep the existing bounds (4,096 values, depth 32) and supported internal tuple and immutable mapping representations.
+
+**Producer-to-consumer examples.** Compile the fleet fixture with a named MCP request whose two schemas are `{"type":"object"}`. Render its descriptor and deliver it under revision `2026-07-28` against the pinned fixture. Both fields pass. For the negative twin, restore that core with `output_schema: true` using `CanonicalIrRelease.create`. Rendering must raise `C1Error` with `TYPE_ERROR` before publishing bytes. Presenting the equivalent hand-delivered boolean to the consumer must independently fail its Tool/field check.
+
+**Observations and handoff.** On the restored tree the library raised `PointerToNowhere` for the direct `properties.p` witness while delivery accepted it. Malformed authority and the two invalid fixture operations escaped as library exceptions. The negative minimum passed. The compiler emitted an empty name, both invalid restored fields reached delivery, and both non-JSON sequences passed the bound. The positive tool and frozen mapping passed. These are diagnostic observations before RED, separate from the planned matrix. Local observation output SHA-256: `9465f3fd3821dc5a10655a7f92ecb201883d8212916e8dcc432c63b3ec5e3878`.
+
+Codex (`gpt-6.2-astra`, OpenAI, ultra) owns cycle 13 from this decision. Grok Build (`grok-4.7`, xAI) implemented the original, repairs 1–6, completion of 8, 9, 10 after phase A, 11 and 12. DeepSeek supplied `deepseek-flash` in 7 and `deepseek-v4-pro` for part of 8. Codex (`gpt-6.1-sol`, OpenAI) wrote cycle 10 phase A. The loop assigns design and pre-campaign review to Claude Code `claude-fable-5-2` and final verification to Claude Code `claude-opus-5-5`, both Anthropic, max effort. They share a provider and use separate models. The preventive review is outside the verification inputs.
+
+After design review, record each authorised expectation change with case ID, old and new results, library outcome and failing context. After RED, GREEN and the pre-campaign review, §7 retains the 22-path allowlist, settle, eleven new `cycle12d` records including the orphan group, and VF-003 alignment. Compare REM-0062 tests with both its sealed and preceding records. Check execution inputs on the frozen HEAD before requesting verification. Final counts come from collection on that candidate.
+
+### Cycle 13 entry-point checkpoint
+
+On 20 November, design review of `010f1f6faba36f37f985406e9c0c915d7990eeae` returned one blocking question and five advisory findings. The normative question is recorded in `REM-0063-CYCLE13-EVALUATION-CONTEXTS`, draft PR #716, request commit `8a38ac5efab5d95cb9800bbcf246d341c6315ede`. Eight independent observations cover two schema fields and four situations. With a nested resource under `not`, the pinned validator looked up a local pointer on the parent and raised `PointerToNowhere`; delivery accepted. Providing the target on both resources allowed evaluation to complete. A same-instance self-reference led to `RecursionError`; descent to a finite child instance completed. Output SHA-256 `b6bc06d328c84ff3d3738f45986dbb3623da502934190f8a7e0ae52edb519eb3`. The interpretation of evaluation contexts and non-progressing recursion awaits disposition. The remaining static-context matrix, expectation ledger, pre-campaign review and qualification are pending.
+
+Codex (`gpt-6.2-astra`, OpenAI) implemented the independent entry-point corrections under §3. The historical implementer and review assignments above also apply to this checkpoint. The 108 cases added in `86220c30361ffdde129eb62c91a7efad80487d07` check names, root URIs, restored fields, official fixtures, JSON containers and both deferred behaviours. They exercise public delivery and rendering. The source compiler separately rejects non-empty identifier fragments at grammar admission. Fixture checks use the pinned draft meta-schema and a registry with local resources. Tool fields in a restored release are checked as finished fields. Native dictionaries and lists plus internal tuples and read-only mapping proxies remain supported. Seven non-JSON container forms are exercised both as roots and as children.
+
+| Boundary check | Independent expectation or control | Cases |
+| --- | --- | ---: |
+| Root URI | Two valid spellings and five malformed authorities on three paths for both fields; early grammar rejections have their own exact diagnostic | 42 |
+| Restored field | Pinned Tool field and draft meta-schema decide admission on eleven values for each field | 22 |
+| Derived name | Named source compiles, renders and delivers; an empty suffix fails before rendering returns bytes | 2 |
+| JSON container | Closed list of admitted normal and frozen representations; embedding a value in a JSON object and array preserves its admission result | 22 |
+| Official fixture | Nine fixture variants on an absent or present optional property; draft, local lookup, regex and minimum errors belong to the fixture | 18 |
+| Follow-up characterisation | Opaque extension retains its transformed pointer, unused foreign dialect still fails before pruning | 2 |
+
+The targeted command was `ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py -k cycle13_boundary` with the worktree source on `PYTHONPATH`. The RED had 65 failures and 43 passes, SHA-256 `1c1b1b76c7333ab05ed5477ee9299c81e2a9823adf8f7070737bbd41cd917008`. All 108 passed at `175f4e897959a8ce462c0dec90ddc763894f6493`, SHA-256 `e457c1ea41291c3e9a6f0f00654822a8bbc2c82d6c8616a2f1336d7db4ca9042`. Both selections reported 42,187 deselected. The targeted run does not contribute qualifying campaign counts. All earlier test cases and expectations are intact.
+
+The first complete task-module regression on the same code at `175f4e897959a8ce462c0dec90ddc763894f6493` reported 1 failed, 42294 passed in 964.94s (0:16:04). The existing cycle 9 case for a custom mapping reached the new JSON check before its historical generator diagnostic. Commit `5ccc3606866f1424bab9172e65cf7b2996e33335` preserves that diagnostic at the generator boundary while the shared JSON check retains its typed rejection. The targeted rerun of the 108 new cases plus the historical case passed. Full module on the corrected commit: 42295 passed in 969.09s (0:16:09). The JUnit case identities match all 42,295 collected identities exactly, each occurring once, with zero skips, failures or errors. This is the diagnostic task module; the four-lane campaign and distinct check await the remaining cycle 13 work.
+
+| Raw output | SHA-256 |
+| --- | --- |
+| Initial complete module | `591bf7bfd19d3753008cb23239b98a853e38d3054a321e766366eaea8ce3cde7` |
+| Corrected targeted run | `0ef1aa81b833074ff8463dc148e7d5799a97b20ab01a1eb5ee7702949b10722b` |
+| Complete module on the corrected code | `913d6d79e693c63ee8f7b2128fbb9c48a85b9ae8bd363e48b4062e9dce35bf8f` |
+| Corrected JUnit XML | `3f99d2e2f0dad09f0f2442556222b15dc38b27e4d91dd568cac49a805f1c622f` |
+| Collection on the corrected code | `5e2eb5356b27a5ec9291daee17b437cb92c992e4d66795cb6987c9cdd80a9ee1` |
+
+The complete invocation selected the module without filters, with pytest `-q -p no:cacheprovider --tb=line --junitxml=<output>`, the candidate source on `PYTHONPATH` and a 45-minute limit. The independent collection used pytest `--collect-only -q -p no:cacheprovider` on the same module and commit. Host: Intel(R) Core(TM) Ultra 9 275HX, 24 logical threads, 64,199,668 KiB RAM, kernel `7.0.0-43-generic`, Python 3.12.11. The installed Codex CLI package was `0.170.0`. The module uses in-process compilation, release rendering and pinned schema libraries. These results have no live-backend or independent-verifier claim.
+
+### Cycle 13 root and incoming reference contexts
+
+Under REM-0063-RITORNO-AL-PROGETTO (2026-11-20) §2, a reference reached from the schema root through applicators must resolve on that route as well as on every incoming reference route. A definition member ends root applicability. Its inventory lookup still seeds reference paths, even from an unused definition. If no such path reaches a definition-only node, its inventory failure still decides admission. A member name such as `$defs` under `properties` is an ordinary property name.
+
+The diagnostic regression exercised both public delivery fields. The 18 schema positions include the 13 design positions and `additionalProperties`, `propertyNames`, `unevaluatedProperties`, `unevaluatedItems` and `contentSchema`. The full product contains 8,640 cells. Each combines a target position, both fields, five anchor/entry alternatives (including no anchor), three same-URI spellings, four repeated-resource placements, both insertion orders and presence or absence of the root target. The independent oracle checks the draft meta-schema, observes instance evaluation and enumerates root, incoming and definition-only paths using the pinned draft's subresources and lookup results. For `contentSchema`, instance evaluation completes and the test checks the static result separately. An isolated Python process executes the oracle and checks its imports.
+
+| Additional controls | Collected cells |
+| --- | ---: |
+| Unreached definition or incoming anchor, opposite target availability, both definition keywords and fields | 16 |
+| An unused definition seeds direct and transitive paths through pointers into instance data, in both member orders | 48 |
+| Oracle import isolation | 1 |
+
+At test-only commit `dcea7621d15090461ac7e46dbd076198cda40f6a`, 3456 failed, 5249 passed, 42295 deselected in 35.30s. All 3,456 failures expected the exact unresolved-reference error and received an acceptance. At `3d2dbe05bd994f1b90f3f5ccf5df2e6ba7d984d9`, 8705 passed, 42295 deselected in 31.08s. The complete task module on that commit reported 51000 passed in 903.21s (0:15:03). The JUnit identities matched all 51,000 collected identities exactly once, with zero failures, errors or skips. All bytes of the earlier test file at `20fce5e3b798cc17407c50a666a6f01f1fe482dd` are preserved as its prefix. The existing-expectation change ledger has zero rows at this checkpoint.
+
+The task-module runs used the worktree source on `PYTHONPATH`, Python 3.12.11, `python -m pytest -q -p no:cacheprovider --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py` and a 45-minute limit. Targeted runs added `-k cycle13_context`. The complete run wrote JUnit XML and used an independent `--collect-only -q` for the identity check. The project stack is unnecessary for this in-process module. The four-lane campaign, distinct regression and verifier are pending. The A1 and B1 disposition arrived during the module run and is set out below.
+
+| Raw diagnostic file | SHA-256 |
+| --- | --- |
+| `red-all.log` | `9ec59dd1e9a82fb1ca473548e4f80080543b08db0042ae46f6cb9e0c121f075a` |
+| `green.log` | `4f901f12304ab825ac24c1f0a06ec44e574c96faaec33c4cce1b293258cb2240` |
+| `module.log` | `b8302d3ad3b4efcd2861ebfd6c15e6eed8d7101fe89f116af1ba0ea9b72161bd` |
+| `module.xml` | `15ce51af3993d347438805ce4cc249be0dc150ae4a0449cdd4de3b27155b3c84` |
+| `collected.txt` | `03d3d5f4194e2b7e0644ae985b02d486bf5164b7b8380f1f8f7c68c427ff923a` |
+
+### Cycle 13 evaluation and recursion contract
+
+REM-0063-CYCLE13-EVALUATION-CONTEXTS (20 November 2026) adopts A1 and B1 at request commit `8a38ac5efab5d95cb9800bbcf246d341c6315ede`. Its SHA-256 is `a5903e9cc23f06b5cdb660f2b7a8bf574b034b696bf5f3d92a4915efd2166f40`. These clauses extend §2 of REM-0063-RITORNO-AL-PROGETTO. The diagnostic module results in the preceding checkpoint cover the original structural and incoming contexts. Implementation and qualification of the following criteria are pending.
+
+**A1.** For each autonomous field, check the resolver contexts used by the pinned validator and by its two annotation collectors. Keep the resolver returned by a lookup across all subsequent steps. In a position where the evaluator retains the parent resolver, check that parent context as well as the structural context. An unresolved reference in any required context refuses delivery, including on a branch that an instance cannot select. Ordinary instance-validation errors represent evaluation that completed.
+
+| Operation in jsonschema 4.26.0 | Resolver behaviour to exercise |
+| --- | --- |
+| Direct validation | `not`, the condition of `if`, `contains`, and members of `oneOf` after a valid member can be evaluated with the parent resolver. The usual `descend` path enters the child. Separate the two ways of reaching a later `oneOf` member. |
+| Collection of evaluated object keys | The collector recurses on applicable `dependentSchemas`, selected conditions and branches, and successful combinator members with the parent validator. Property and pattern names contribute keys. Its checks on values for `additionalProperties` and `unevaluatedProperties` use `descend`. |
+| Collection of evaluated array indices | The collector tests `contains` and `unevaluatedItems` with the parent resolver on an element, and follows applicable conditionals and successful combinator members with the parent validator. Account for its early return on `items` and index handling of `prefixItems`. |
+| References from either collector | Continue on the lookup result and its returned resolver. Annotation gathering can continue through nested combinators or references even when only an ancestor declares `unevaluatedProperties` or `unevaluatedItems`. |
+
+The inventory comes from `jsonschema._keywords`, `find_evaluated_property_keys_by_schema` and `find_evaluated_item_indexes_by_schema` in the pinned installation. Exercise the product of position (including position within a combinator), field, public origin, reference form, resource base (absent, relative, absolute) and target placement. Cover pointer and named-anchor lookup, targets in the child only and in both resources, and controls without a matching target. Distinguish the two annotation collectors from ordinary evaluation and carry their mode when they recurse. For each reachable position supply an instance that exercises it. For a dormant position record the independent static expectation. In generator cases, give the renderer IR symbols and inspect the resulting standalone field. Assert the actual admission stage and reference spelling for each producer row.
+
+**B1.** Start the evaluation graph at the field root. Follow applicable references and evaluator edges on a finite graph, retaining resolver and evaluation mode. Static inventory of an unused definition does not start an evaluation there. Distinguish edges on the same instance from steps to a child value. A property name changes the value from an object to a string, so that edge cannot repeat on the same name. An evaluation-reachable cycle that can traverse only same-instance edges refuses the field with `MCP schema contains a non-progressing evaluation cycle`. Delivery raises `McpProfileError`. Generation raises `C1Error` with `TYPE_ERROR` before returning bytes. Traversal must also inspect what happens after a consuming edge because a cycle may begin at the child. A potential cycle in an unsatisfiable branch still refuses. A recursive field that descends into finite input and a cycle confined to an unused definition pass this check.
+
+| Producer-to-consumer acceptance example | Required observation |
+| --- | --- |
+| A field places a nested resource under `not` with a pointer available only in that nested resource | Refusal on direct delivery and before the renderer returns the finished field. With the target present on the parent as well, both operations succeed. |
+| A restored field references a definition that returns to itself on the same instance | The renderer and direct delivery both produce the B1 diagnostic. The control advances through an object member and admits a finite nested instance. |
+
+The B1 matrix covers a direct cycle, a multi-reference cycle, an optional branch with and without an activating witness, an unreachable definition, a name transition and recursion that consumes an object property or an array element. Use a bounded, independent graph oracle. Record each changed historical expectation against its exact case and deciding context. The final candidate will provide collected row counts, RED/GREEN results and the existing review and qualification sequence.
+
+Eight diagnostic observations on `3d2dbe05` establish the starting point for the A1/B1 tests. In each field, delivery admitted both `not` examples. The pinned evaluator completed only when the parent also had the target. For the restored-release pair, the renderer emitted and delivery admitted both a self-referencing definition and its child-consuming twin. Two bounded library lookups identified the return to the same schema node in each output. Only the twin crossed a child property. Diagnostic output SHA-256 `5ef3991c3c74118241f9988f39550e3d560a903af2a2a75758442fc432e8ddac`.
+
+### Cycle 13 validator and annotation contexts
+
+Codex (`gpt-6.2-astra`, OpenAI, ultra) implemented A1 of REM-0063-CYCLE13-EVALUATION-CONTEXTS. On both public boundaries the finished field must resolve each reference with the resolver used by the pinned validator and by each applicable annotation collector. For example, `not` retains the parent resolver on a child with its own identifier. A definition used only in this context survives the generator's pruning if the parent declared it. A missing parent definition produces a typed refusal before the renderer can return an artefact.
+
+| Diagnostic coverage | Cases |
+| --- | ---: |
+| 32 positions × 2 fields × 3 root bases × 3 target placements × 4 origin and reference pairs | 2,304 |
+| The sole symbol occurrence needs different, explicitly declared parent and child definitions | 6 |
+| Source compiler, renderer and consumer, with the registered type reached only in the child or also on the root | 12 |
+| Two successive lookups must retain different library resolvers for the inner and outer targets | 6 |
+
+Delivery admits pointer, named-anchor and percent-encoded pointer spellings into the calculation. The restored-release rows provide an IR symbol which renders to its canonical definition pointer. IR symbol rendering cannot emit the other two spellings. The independent oracle uses the field's unmodified draft resource, the two named resolver contexts for each position, and a concrete instance. A separate isolated interpreter exercised the oracle with zero OCOR modules imported. The `oneOf` dormant witness and the array collector's early return on `items` distinguish potential evaluation, instance evaluation and an inapplicable collector edge. The exact positive and negative results distinguish an ordinary data constraint from a schema resolution failure.
+
+The initial RED exposed a fixture assumption about named anchors on a relative root. The corrected oracle uses the pinned resolver at the declared base. At test-only commit `30bc47f31fe0657da85ba20247bb9097a981d870`, 598 failed, 1706 passed, 51000 deselected in 40.42s. All 598 failures were missing refusals, 460 in delivery and 138 in rendering. On the intermediate implementation, the 2,304 cases passed. At `0b3d40e38f67f3b60559da3932ea441e70508121`, all six new explicit-definition controls failed because the renderer pruned the parent definition. Their GREEN run and the matrix together passed all 2,310 cases. The 18 source and transitive lookup controls passed on the final code. Replaying those additional controls with the baseline production tree gave six missing generator refusals and 12 passes. This replay is a separate diagnostic.
+
+At code and test commit `71ecf3cd8243af62c0d2158c84ad523b7fd38d20`, 53328 passed in 1040.61s (0:17:20). JUnit matched all 53,328 collected identifiers exactly once, with zero skips, failures or errors. The original test module at `136b0eef9f1a647228098fecfcb2cacb968c598b` is a byte-for-byte prefix of this version. The ledger of changed historical expectations has zero entries for A1.
+
+The command was `ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider --tb=line ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py` with `--junitxml`, a separate `--collect-only -q`, Python 3.12.11, jsonschema 4.26.0 and referencing 0.37.0. The task time limit was 2,700 seconds. The diagnostic runs under this heading are outside the qualifying campaign. B1 and the pre-campaign review are pending.
+
+| Raw diagnostic | SHA-256 |
+| --- | --- |
+| `red2.log` | `f91736f973d635c5db62d36556aa9d04c90ded296b8879d757417703d0a7b9e7` |
+| `closure-red.log` | `93e55b71a0840cfd7526d987375ff6c0f5b68886c48a3f7c7b1b659da3f27920` |
+| `evaluator.log` | `8a3aa33ae0ad75e85d480d8fb9b005ce81fc0f246ec38cb99067092d663fae4d` |
+| `source-red.log` | `5e1beb837dfc9bb602242d9f29dafd1a7902d43f4d13a305ba06792cd9a2ae5a` |
+| `sources.log` | `6b7ded25d99e6621f9d89f25415db3d86e8efcba44e2b9ce10d41d9e9b3719f4` |
+| `module.log` | `ea97bcb560d0a93aeb7fa5093476a46d02922696b8d6251fa6debc829eb9c758` |
+| `module.xml` | `de4213ddae478fc9bb9814d6bd8fb367779588c0f250615a67c932e1bbb6de5b` |
+| `collected.txt` | `5fe2ae6de172ae14ad252f15f144ba516a4fde0c92238391efaa1cf4e5f237ca` |
+
+## Cycle 12 record
+
+REM-0063-CYCLE11-NO-GO option 1 step 6. The cycle 12 code head was
+`da754e862a2c2fba621cf5d4534fcc5396299b6a`.
+
+Rule 4 applies to every array index after the `referencing` 0.37.0 token
+split. A loose segment is not an early return. The generator enters resources
+only through `contained_subschemas` and `enter_subschema`, and
+`_check_schema_keywords` calls `enforce_emitted_schema_rules`. The visit key
+in `_resolve_graph` stays `(node, base, registry identity)`. The two depth
+checks that lived in that function are gone. `assert_reference_path_bound`
+remains the only reference-path depth counter.
+
+VF-008 is not corrected. It stays the separate unit already reserved for after
+`GO_FOR_EVIDENCE_SEAL`. The cycle-12 preventive review, the four-lane campaign
+and `verify_request.json` are not this record.
+
+### Cycle 13 evaluation progress and historical expectations
+
+Under B1 of REM-0063-CYCLE13-EVALUATION-CONTEXTS, the renderer and direct consumer inspect the same finite evaluator graph. They reject a reachable cycle whose edges leave the instance unchanged. After an object-member or array-element step, evaluation continues with a new value. After a property-name step the value is a string. An unreachable definition is outside this graph. Potential cycles in dormant conditions are checked statically.
+
+The primary product crosses six applicator positions before and after a return, both fields and both public origins. Its 144 cells use an independent path enumerator. At test-only commit `0ec40aaa8effc81579fb5ff0768459e861d4803f`, 36 cells missed the required refusal. All other 108 passed. On `d257887f20745ce4c68e8b5780bdaeeabfa10af3` all 144 passed. The supplemental controls cover reachability beyond a consuming edge, unused definitions and name-only paths, the outer and inner resolvers of the validator and both annotation collectors. The 60 supplemental cells replayed against baseline `b020e62306489924fded18bb20290f29233112ff` had 28 missing refusals and 32 passes. The optional child witnesses exercise both absent and present members with finite data.
+
+The diagnostic twins assert exact results for depth on the library-resolved target, fixed-base collisions at both tool indices, missing and non-schema targets, a noncanonical array index and an external reference. In the depth family the independent measure is four schema steps plus the target chain length. The family tests both the shared depth checker and the schema graph against the limit of 32. Public descriptor JSON bounds remain a separate check.
+
+At `a1bb900b194a53754378887621054710c7609b8c`, all 53,579 collected task cases passed in 1079.82 s. JUnit contains each case exactly once, with zero skips, errors or failures. The command was `ocor-runtime/.venv/bin/python -m pytest -q --tb=line -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0063.py` with `--junitxml`. A separate `--collect-only` run supplied the expected identifiers. Codex (`gpt-6.2-astra`, OpenAI) performed this diagnostic. The four-lane campaign, distinct check and independent verification remain pending.
+
+| Diagnostic | SHA-256 |
+| --- | --- |
+| Primary RED JUnit | `7a961f1d1800a1220ebf74240c86a1a9cda0d3dceee7a9562538bcc569e8f4ab` |
+| Supplemental baseline JUnit | `445c5d25424c8cd98c13aa327221bd3cdd478e17f4a52fd29c858de0bec2e192` |
+| Historical expectations on the corrected production tree | `b46e3dcfb2a0b24d92a10596560d1d1b3e2ea239f374cdc9d08457d529204497` |
+| Exact refusals on all changed historical cells | `b0ca4c23a45dd861c54005d77c74cd83190efaf093f6b840f49be8fd106985b6` |
+| Independent context ledger | `f444b3e90f3f52e2a3ac45ba27b16434f8494667adebac89baa7e0f12d31c23d` |
+| Complete diagnostic JUnit | `25627a8bbf1001ee5c19b215dc35ee509a0a9c7d0046b2cc3ce1cd91e6c125ce` |
+
+#### Historical expectation changes under B1
+
+Each row formerly admitted the field. B1 now requires `McpProfileError` with the exact message `MCP schema contains a non-progressing evaluation cycle`. For each original input the pinned meta-schema check passed and the pinned resolver returned every target on the recorded cycle. The finite independent walk followed properties, applicators and returned resolvers on the standalone schema. The row gives the actual resolver base and same-instance steps. Validity and successful lookup describe the schema and resolver. If instance evaluation enters a same-instance cycle, the pinned evaluator recurses. The table does not assert that a witness instance was run for each of the 397 rows. This changed 397 expectations. Original case identifiers, inputs, parametrisations and the other checks were retained.
+
+| Test function | Case | Previous | Current | Library result | Same-instance context (base, steps) |
+| --- | --- | --- | --- | --- | --- |
+| `test_cycle3_a_self_ref_through_const_stays_inside_the_visited_set` | `(unparameterised)` | Admit | B1 refusal | Valid, lookups resolved | `(urn:ocor:embedded-tool:0:inputSchema, #/$defs/holder/const)` |
+| `test_cycle4_a_self_anchor_stays_inside_the_visited_set` | `(unparameterised)` | Admit | B1 refusal | Valid, lookups resolved | `(urn:ocor:embedded-tool:0:inputSchema, #part)` |
+| `test_cycle4_a_self_anchor_inside_the_tool_schema_stays_visited` | `(unparameterised)` | Admit | B1 refusal | Valid, lookups resolved | `(urn:ocor:embedded-tool:0:inputSchema, #part)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absent-relative-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absent-relative-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absent-absolute-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absent-absolute-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absent-duplicate-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absent-duplicate-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absolute-relative-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absolute-relative-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absolute-absolute-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absolute-absolute-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absolute-duplicate-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-absolute-duplicate-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-relative-absolute-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-relative-absolute-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-relative-duplicate-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `inputSchema-relative-duplicate-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absent-relative-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absent-relative-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absent-absolute-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absent-absolute-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absent-duplicate-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absent-duplicate-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absolute-relative-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absolute-relative-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absolute-absolute-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absolute-absolute-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absolute-duplicate-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-absolute-duplicate-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-relative-absolute-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-relative-absolute-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-relative-duplicate-allOf-empty-False` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_delivered_cartesian_standalone_oracle` | `outputSchema-relative-duplicate-allOf-empty-True` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absent-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absent-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absent-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-empty-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-empty-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-empty-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-fragment-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-fragment-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-fragment-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-same-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-same-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-same-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-same-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-same-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-same-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-relative-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-relative-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-relative-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-relative-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/sub/branch.json, allOf/0) → (sub/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absolute-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absolute-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absolute-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absolute-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-duplicate-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-duplicate-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-duplicate-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-duplicate-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-duplicate-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-duplicate-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absent-duplicate-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absent-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absent-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absent-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-empty-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-empty-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-empty-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-fragment-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-fragment-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-fragment-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-same-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-same-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-same-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-same-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-same-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-same-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-relative-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-relative-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-relative-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/root.json, allOf/0) → (https://cycle10.invalid/sub/root.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absolute-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absolute-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-duplicate-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-duplicate-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-duplicate-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-duplicate-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-absolute-duplicate-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absent-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absent-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-empty-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-empty-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-fragment-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-fragment-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-same-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-same-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-same-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-same-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absolute-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absolute-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absolute-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absolute-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-duplicate-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-duplicate-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-duplicate-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-duplicate-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-duplicate-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-duplicate-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `inputSchema-relative-duplicate-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absent-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absent-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absent-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-empty-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-empty-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-empty-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-fragment-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-fragment-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-fragment-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-same-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-same-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-same-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-same-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-same-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-same-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-relative-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-relative-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-relative-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-relative-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(sub/sub/branch.json, allOf/0) → (sub/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absolute-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absolute-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absolute-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absolute-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-duplicate-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-duplicate-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-duplicate-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-duplicate-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-duplicate-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-duplicate-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absent-duplicate-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absent-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absent-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absent-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-empty-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-empty-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-empty-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-fragment-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-fragment-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-fragment-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-same-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-same-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-same-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-same-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-same-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-same-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-relative-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-relative-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-relative-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/root.json, allOf/0) → (https://cycle10.invalid/sub/root.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-relative-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absolute-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absolute-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-duplicate-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-duplicate-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-duplicate-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-duplicate-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-absolute-duplicate-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absent-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absent-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-empty-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-empty-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-fragment-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-fragment-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-same-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-same-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-same-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-same-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-relative-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-relative-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absolute-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absolute-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absolute-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absolute-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absolute-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absolute-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-absolute-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-duplicate-empty-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-duplicate-fragment-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-duplicate-same-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-duplicate-same-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-duplicate-relative-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-duplicate-absolute-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_two_level_resource_product` | `outputSchema-relative-duplicate-duplicate-allOf-empty` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, not) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, allOf/0) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, not) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, allOf/0) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, not) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, not) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-./root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, allOf/0) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, not) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, allOf/0) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, not) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/sub/branch.json, allOf/0) → (up/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/sub/branch.json, not) → (up/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/up/root.json, allOf/0) → (https://cycle10.invalid/up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/up/root.json, not) → (https://cycle10.invalid/up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-../up/root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(relative/relative/relative/root.json, #) → (relative/relative/relative/root.json, allOf/0)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(relative/relative/relative/root.json, #) → (relative/relative/relative/root.json, not)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/relative/root.json, allOf/0) → (https://cycle10.invalid/relative/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/relative/root.json, not) → (https://cycle10.invalid/relative/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-relative/root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(rel/dir/rel/dir/rel/dir/, #) → (rel/dir/rel/dir/rel/dir/, allOf/0)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(rel/dir/rel/dir/rel/dir/, #) → (rel/dir/rel/dir/rel/dir/, not)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/rel/dir/, allOf/0) → (https://cycle10.invalid/rel/dir/, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/rel/dir/, not) → (https://cycle10.invalid/rel/dir/, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-rel/dir/-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `inputSchema-https://cycle10.invalid/root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, not) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, allOf/0) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, not) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, allOf/0) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(root.json, not) → (root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, allOf/0) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(sub/branch.json, not) → (sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-./root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, allOf/0) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, not) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, allOf/0) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/root.json, not) → (up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/sub/branch.json, allOf/0) → (up/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(up/sub/branch.json, not) → (up/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/up/root.json, allOf/0) → (https://cycle10.invalid/up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/up/root.json, not) → (https://cycle10.invalid/up/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-../up/root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(relative/relative/relative/root.json, #) → (relative/relative/relative/root.json, allOf/0)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(relative/relative/relative/root.json, #) → (relative/relative/relative/root.json, not)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/relative/root.json, allOf/0) → (https://cycle10.invalid/relative/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/relative/root.json, not) → (https://cycle10.invalid/relative/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-relative/root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-same-resource-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(rel/dir/rel/dir/rel/dir/, #) → (rel/dir/rel/dir/rel/dir/, allOf/0)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-same-resource-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(rel/dir/rel/dir/rel/dir/, #) → (rel/dir/rel/dir/rel/dir/, not)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-root-literal-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/rel/dir/, allOf/0) → (https://cycle10.invalid/rel/dir/, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-root-literal-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/rel/dir/, not) → (https://cycle10.invalid/rel/dir/, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-basename-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, allOf/0) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-basename-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/root.json, not) → (https://cycle10.invalid/root.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-rel/dir/-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-same-resource-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-same-resource-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-same-resource-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-same-resource-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-new-absolute-fragment-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, allOf/0) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-new-absolute-fragment-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/outer.json, not) → (https://cycle10.invalid/outer.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-new-absolute-relative-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, allOf/0) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-new-absolute-relative-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/sub/branch.json, not) → (https://cycle10.invalid/sub/branch.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-new-absolute-absolute-allOf-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, allOf/0) → (https://cycle10.invalid/child.json, #)` |
+| `test_cycle10_relative_root_behaviour_classes` | `outputSchema-https://cycle10.invalid/root.json-new-absolute-absolute-not-#` | Admit | B1 refusal | Valid, lookups resolved | `(https://cycle10.invalid/child.json, not) → (https://cycle10.invalid/child.json, #)` |
+
+### Cycle 13 post-review correction
+
+The shared graph keys retain the identity of the resource and anchor maps, the pending-resource set and the retrieval function in referencing 0.37.0. An empty crawl preserves all four. Initial indexing remains observable. The resolver used for each lookup is the resolver returned by the library. The A1/B1 static checks cover resolution and progress. At the Tool boundary, an arithmetic evaluation failure while building a fixture belongs to that fixture. After successful fixture validation, an arithmetic failure while checking a Tool belongs to that Tool. Repeated meta-validation of a shared target remains a performance follow-up.
+
+The tests added at `b9c2c489a2b0a85f834edf14444150af35ba3e17` produced 14 failures and four passes against the reviewed implementation. On `ed40da87593784e15c13e31a6fa05bd3a4ab2d5b`, the targeted run passed 22 cases, including four historical pointer/anchor controls. The diagnostic module passed all 53,597 collected cases exactly once in 1088.842 seconds. Its JUnit SHA-256 is `e9368e4ca031316feaca9f9ef421ccb70f6bf899893ffc6c65bfdc23aa039952`. Each cycle 13 self-check row identifies its oracle or contract control and reports the observed results.
+
+### Cycle 13 regression fingerprints
+
+The 22 allowlisted paths were added in `b4d872a6e33d6b2642e5240594d2dd0e23dbcb40`. The validator fingerprint settled in `049a64961b8074e6aef55f0cf2a1127ed9031f60`, the execution commit for all eleven successor records. Each orphan successor precedes the current successor of the same task. The current REM-0062 test module differs from its sealed baseline by three additional tests. All eleven original test functions retain their syntax trees. Both recorded test files match the preceding cycle12c record.
+
+In cycle 12, the code head was `da754e862a2c2fba621cf5d4534fcc5396299b6a` and the record input measurement was `aaf98a282f4c6787f1c4753ea86199f2808f7a72`. Campaign `698b944a1de4-1795114196` is historical. The adopted REM-0063-CYCLE12-UNIT-RECORD-INPUTS disposition and the three prior fork heads are recorded under `repair_cycle_12`.

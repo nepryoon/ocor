@@ -911,14 +911,17 @@ def command_vector_fits(argv: list[str], env: Mapping[str, str]) -> bool:
     return sum(len(item) + 1 + pointer for item in encoded) + len(encoded[0]) + 1 <= limit
 
 
-# Reads the selection from the lane spec already written on disk. Pytest then
-# sees the same argv lane_pytest_command would have passed to execve.
+# The lane spec is already on disk. When the sealed command does not fit in
+# ARG_MAX, a short process assigns the argv pytest would see after
+# ``python -m pytest``. The interpreter consumes ``-m`` and ``pytest``;
+# copying that execve vector into sys.argv makes ``-m`` a marker expression
+# and deselects the whole lane.
 _LANE_PYTEST_LAUNCHER = """\
 import json, runpy, sys
 from pathlib import Path
 spec_path, output = Path(sys.argv[1]), Path(sys.argv[2])
 selection = json.loads(spec_path.read_text(encoding="utf-8"))["selection"]
-sys.argv = [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing",
+sys.argv = ["pytest", "-v", "--cov=src", "--cov-report=term-missing",
             "--cov-report=json:" + str(output / "runtime_coverage_post_approval.json"),
             "--junitxml=" + str(output / "{junit}"), *selection]
 runpy.run_module("pytest", run_name="__main__")
@@ -928,7 +931,7 @@ _LANE_COLLECT_LAUNCHER = """\
 import json, runpy, sys
 from pathlib import Path
 selection = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["selection"]
-sys.argv = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]
+sys.argv = ["pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection]
 runpy.run_module("pytest", run_name="__main__")
 """
 
