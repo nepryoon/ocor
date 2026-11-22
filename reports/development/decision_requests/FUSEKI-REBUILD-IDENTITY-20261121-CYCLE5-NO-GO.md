@@ -1,6 +1,7 @@
 # FUSEKI-REBUILD-IDENTITY-20261121-CYCLE5-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa dal PO di persona. Il file pubblicato a `6e79615e75b11ea39ef21d4ce5dac08c62120274` resta sha256 `d89248d1bfde72e68972a7aae21b8a855c55ea4a895f56700997ccc157db7c00`. L'opzione 1 è adottata e non produce il commit di canonicalizzazione: il 2026-11-22T09:32:13Z `docker image inspect ocor/jena-fuseki:6.2.0 --format {{.Id}}` è `sha256:525d23b75d9a437789fa035ae37a0536fa60e912136d76640483d343d4d085db`, non `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1`. L'etichetta `ocor/jena-fuseki:preserve-f5a11814` resta `sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1`. Non si scrive un altro id. Non si rietichetta. Non si esegue `docker build`. Non si aggiunge un commit su `governed/fuseki-rebuild-identity-20261121`. Il candidato resta `aa718782eaefeb9b516c798c1e4c1098a116dd15`. Si apre la richiesta `FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-IMAGE-PRECONDITION`. Nessuna opzione di quella richiesta è applicata. VF-002 non è corretto e non è segnato PASS. Non si tocca la PR #722 né il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un repair_cycle 14. Non si applica `REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL`. Claim invariati. Questa PR si chiude come risolta e non si integra.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `913244f75229240e808a30d43914447ebc5c0af4`.
 Candidato: branch `governed/fuseki-rebuild-identity-20261121`, HEAD `aa718782eaefeb9b516c798c1e4c1098a116dd15`, parent `f8e88420984f49666b6d156bbe665424e5f01c1a`. Nessun commit è stato aggiunto sopra quell'HEAD. Il candidato non si modifica e non si mergia.
