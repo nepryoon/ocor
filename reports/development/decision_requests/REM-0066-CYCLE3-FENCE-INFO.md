@@ -1,6 +1,7 @@
 # REM-0066-CYCLE3-FENCE-INFO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `dc7f6452d7ede36227074ef2736422b88c7da492` resta sha256 `7604560e3445b363aef869de692fe8e0024ea306fccc1549a99653810f04f898`. L'opzione 1 non è applicata in questo commit: `governed/ocor-dev-rem-0066-state-only-ci` resta `b359b603efe8174a78a18c9e332898200c7ec2f2`. Non è un ciclo 4. Questa PR non si integra. Il testo delle opzioni non cambia. Claim invariati.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `23eb71c8ea9bed0e87d09196cc4c2626bc496ea6`.
 Richiesta già decisa: `REM-0066-CYCLE2-NO-GO-REFORMULATION`, opzione 1, `REM-0066-CYCLE2-NO-GO-REFORMULATION (2026-11-22)`, decisa per conto del PO, modello claude-fable-5-2, effort max. File pubblicato al commit `40d5e5f86c7ad38ed034e835c237326c41f90e06`, sha256 `b65f4afdc7c56e5b9c9a96dc4bc06b962a08fe3687511cd9932d2b08c5a7f783`. Disposition `0ebdc4967261d149aa5ce8c455b25bcc3b4127f4`, sha256 `81de139e402d8e3e9d81032692ea0145fef54261058dc88867f132d81915b2b8`. Bozza PR #760, non integrata. Il testo di quell'opzione non si riscrive in questa pubblicazione.
