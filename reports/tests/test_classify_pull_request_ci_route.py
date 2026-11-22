@@ -21,6 +21,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 CLASSIFIER = ROOT / "scripts" / "classify_pull_request_ci_route.py"
 RUNNER = ROOT / "scripts" / "run_state_only_ci_path.py"
+FORMAT = ROOT / "scripts" / "validate_decision_request_format.py"
+DECISION_DIR = "reports/development/decision_requests"
 WORKFLOWS = (
     ROOT / ".github/workflows/ocor-rccad.yml",
     ROOT / ".github/workflows/ocor-delivery-activation.yml",
@@ -140,6 +142,58 @@ def _classify(repo: Path, base: str, head: str) -> dict[str, Any]:
     if proc.returncode != 0:
         raise AssertionError(proc.stderr or proc.stdout)
     return json.loads(proc.stdout)
+
+
+def _diff_names(repo: Path, *revs: str) -> list[str]:
+    proc = _git(
+        repo,
+        "diff",
+        "--name-only",
+        "--no-ext-diff",
+        "--no-textconv",
+        "-M",
+        *revs,
+    )
+    return [line for line in proc.stdout.splitlines() if line]
+
+
+def _format_run(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["python3", str(FORMAT), *args],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _format_payload(*args: str) -> tuple[subprocess.CompletedProcess[str], dict[str, Any]]:
+    proc = _format_run(*args)
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return proc, payload
+
+
+_VALID_DIRECT = (
+    "# Decision\n\n"
+    "## Opzioni\n\n"
+    "1. **Titolo.** testo\n\n"
+    "## Raccomandazione\n\n"
+    "Nessuna.\n"
+)
+_VALID_LETTERS = (
+    "# Decision\n\n"
+    "### Opzioni del quesito A\n\n"
+    "A1. **Prima.** testo\n\n"
+    "A2. **Seconda.** testo\n\n"
+    "### Opzioni del quesito B\n\n"
+    "B1. **Terza.** testo\n\n"
+    "## Raccomandazione\n\n"
+    "Nessuna.\n"
+)
 
 
 def _run_blocks(text: str) -> list[str]:
@@ -409,6 +463,273 @@ class GitClassifierTests(unittest.TestCase):
         self.assertNotIn("route=", proc.stdout)
 
 
+class RepairCycle2Tests(unittest.TestCase):
+    """VF-001 of OCOR-DEV-REM-0066-2ab8577d5b0a-1.
+
+    The violated property is the pull-request diff: GitHub compares the
+    unique merge-base of the pinned base and head commits with the pinned
+    head. A two-dot diff of the branch tips is a different class member.
+    """
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self._tmp.name)
+        self.base = _init_repo(self.repo)
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_three_dot_keeps_a_change_the_base_also_adopted(self) -> None:
+        repo = self.repo
+        _git(repo, "checkout", "-q", "-B", "headside", self.base)
+        (repo / "README.md").write_text("shared\n", encoding="utf-8")
+        (repo / "reports/development/ITERATION_LOG.md").write_text("v1\n", encoding="utf-8")
+        head = _commit_all(repo, "head adds readme and state")
+        _git(repo, "checkout", "-q", "-B", "baseside", self.base)
+        (repo / "README.md").write_text("shared\n", encoding="utf-8")
+        base_tip = _commit_all(repo, "base adopts the same readme")
+        two = _diff_names(repo, base_tip, head)
+        three = _diff_names(repo, f"{base_tip}...{head}")
+        self.assertEqual(two, ["reports/development/ITERATION_LOG.md"])
+        self.assertCountEqual(
+            three,
+            ["README.md", "reports/development/ITERATION_LOG.md"],
+        )
+        result = _classify(repo, base_tip, head)
+        self.assertEqual(result["route"], "full")
+        self.assertEqual(result["reason"], "outside_closed_list")
+        self.assertEqual(result["merge_base"], self.base)
+
+    def test_three_dot_ignores_a_change_that_exists_only_on_the_base(self) -> None:
+        repo = self.repo
+        _git(repo, "checkout", "-q", "-B", "headside", self.base)
+        (repo / "reports/development/ITERATION_LOG.md").write_text("v1\n", encoding="utf-8")
+        head = _commit_all(repo, "head state")
+        _git(repo, "checkout", "-q", "-B", "baseside", self.base)
+        (repo / "README.md").write_text("advanced\n", encoding="utf-8")
+        base_tip = _commit_all(repo, "base readme")
+        two = _diff_names(repo, base_tip, head)
+        three = _diff_names(repo, f"{base_tip}...{head}")
+        self.assertCountEqual(
+            two,
+            ["README.md", "reports/development/ITERATION_LOG.md"],
+        )
+        self.assertEqual(three, ["reports/development/ITERATION_LOG.md"])
+        by_sha = _classify(repo, base_tip, head)
+        by_name = _classify(repo, "baseside", "headside")
+        self.assertEqual(by_sha["route"], "state_only")
+        self.assertEqual(by_sha["reason"], "state_files")
+        self.assertEqual(by_sha["merge_base"], self.base)
+        self.assertEqual(by_name["route"], by_sha["route"])
+        self.assertEqual(by_name["reason"], by_sha["reason"])
+        self.assertEqual(by_name["merge_base"], by_sha["merge_base"])
+        self.assertEqual(by_name["base_sha"], base_tip)
+        self.assertEqual(by_name["head_sha"], head)
+
+    def test_unrelated_histories_stay_full(self) -> None:
+        repo = self.repo
+        _git(repo, "checkout", "--orphan", "unrelated")
+        (repo / "reports/development/ITERATION_LOG.md").write_text("v1\n", encoding="utf-8")
+        _git(repo, "add", "-A")
+        head = _commit_all(repo, "orphan state")
+        merged = _git(repo, "merge-base", "--all", self.base, head, check=False)
+        self.assertNotEqual(merged.returncode, 0)
+        self.assertEqual(
+            _diff_names(repo, self.base, head),
+            ["reports/development/ITERATION_LOG.md"],
+        )
+        result = _classify(repo, self.base, head)
+        self.assertEqual(result["route"], "full")
+        self.assertEqual(result["reason"], "git_error")
+        self.assertEqual(result["merge_base"], "")
+
+    def test_multiple_merge_bases_stay_full(self) -> None:
+        repo = self.repo
+        base_branch = _git(repo, "branch", "--show-current").stdout.strip()
+        _git(repo, "checkout", "-q", "-b", "left")
+        (repo / "README.md").write_text("L\n", encoding="utf-8")
+        left = _commit_all(repo, "L")
+        _git(repo, "checkout", "-q", base_branch)
+        (repo / "reports/development/ITERATION_LOG.md").write_text("R\n", encoding="utf-8")
+        _commit_all(repo, "R")
+        _git(repo, "checkout", "-q", "left")
+        _git(repo, "merge", "--no-ff", "-q", "-m", "M1", base_branch)
+        first = _git(repo, "rev-parse", "HEAD").stdout.strip()
+        _git(repo, "checkout", "-q", base_branch)
+        _git(repo, "merge", "--no-ff", "-q", "-m", "M2", left)
+        (repo / "reports/development/ITERATION_LOG.md").write_text("R2\n", encoding="utf-8")
+        head = _commit_all(repo, "Y")
+        bases = _git(repo, "merge-base", "--all", first, head).stdout.split()
+        self.assertEqual(len(bases), 2)
+        self.assertEqual(
+            _diff_names(repo, first, head),
+            ["reports/development/ITERATION_LOG.md"],
+        )
+        result = _classify(repo, first, head)
+        self.assertEqual(result["route"], "full")
+        self.assertEqual(result["reason"], "git_error")
+        self.assertEqual(result["merge_base"], "")
+
+    def test_missing_head_and_empty_diff_stay_full(self) -> None:
+        missing = _classify(self.repo, self.base, "f" * 40)
+        self.assertEqual(missing["route"], "full")
+        self.assertEqual(missing["reason"], "git_error")
+        self.assertEqual(missing["merge_base"], "")
+        empty = _classify(self.repo, self.base, self.base)
+        self.assertEqual(empty["route"], "full")
+        self.assertEqual(empty["reason"], "empty_diff")
+        self.assertEqual(empty["merge_base"], self.base)
+
+    def test_payload_pins_the_linear_merge_base(self) -> None:
+        path = self.repo / STATE_FILES[0]
+        path.write_text("changed\n", encoding="utf-8")
+        head = _commit_all(self.repo, "state")
+        result = _classify(self.repo, self.base, head)
+        self.assertEqual(result["route"], "state_only")
+        self.assertEqual(result["reason"], "state_files")
+        self.assertEqual(result["base_sha"], self.base)
+        self.assertEqual(result["head_sha"], head)
+        self.assertEqual(result["merge_base"], self.base)
+
+    def test_classifier_workflow_and_test_paths_stay_full(self) -> None:
+        cases = (
+            "scripts/classify_pull_request_ci_route.py",
+            "scripts/run_state_only_ci_path.py",
+            "reports/tests/test_classify_pull_request_ci_route.py",
+            ".github/workflows/ocor-rccad.yml",
+        )
+        for relative in cases:
+            _git(self.repo, "checkout", "-q", "-B", "case", self.base)
+            path = self.repo / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("# changed\n", encoding="utf-8")
+            head = _commit_all(self.repo, relative)
+            result = _classify(self.repo, self.base, head)
+            self.assertEqual(result["route"], "full", relative)
+            self.assertEqual(result["reason"], "outside_closed_list", relative)
+
+
+class DecisionRequestFormatTests(unittest.TestCase):
+    """VF-002 of OCOR-DEV-REM-0066-2ab8577d5b0a-1.
+
+    The violated property is DR-FORMATO-OPZIONI on the decision-request file
+    the pull request adds or modifies. Classification stays path-only.
+    """
+
+    def test_gate_command_checks_the_diff_between_base_and_head(self) -> None:
+        module = _load(RUNNER, "run_state_only_format_command")
+        commands = module.gate_commands(
+            "/opt/venv/bin/python",
+            "origin/main",
+            "governed/state-sync-example",
+        )
+        rendered = [" ".join(command) for command in commands]
+        self.assertIn(
+            "/opt/venv/bin/python scripts/validate_decision_request_format.py "
+            "--base origin/main --head HEAD",
+            rendered,
+        )
+
+    def test_valid_pull_request_file_passes_and_malformed_stays_classified(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            base = _init_repo(repo)
+            path = repo / DECISION_DIR / "NEW.md"
+            path.write_text(_VALID_DIRECT, encoding="utf-8")
+            head = _commit_all(repo, "decision")
+            self.assertEqual(_classify(repo, base, head)["route"], "state_only")
+            proc, payload = _format_payload("--root", str(repo), "--base", base, "--head", head)
+            self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+            self.assertEqual(payload["reason"], "ok")
+            self.assertEqual(payload["checked"], [f"{DECISION_DIR}/NEW.md"])
+
+    def test_malformed_pull_request_file_fails_without_reclassification(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            base = _init_repo(repo)
+            path = repo / DECISION_DIR / "NEW.md"
+            path.write_text("# Decision\n\nNessuna opzione.\n", encoding="utf-8")
+            head = _commit_all(repo, "decision")
+            self.assertEqual(_classify(repo, base, head)["route"], "state_only")
+            self.assertEqual(_classify(repo, base, head)["reason"], "single_decision_request")
+            proc, payload = _format_payload("--root", str(repo), "--base", base, "--head", "HEAD")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertEqual(payload["reason"], "no_options_heading")
+            self.assertEqual(payload["path"], f"{DECISION_DIR}/NEW.md")
+
+    def test_state_only_diff_does_not_scan_the_historical_corpus(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            base = _init_repo(repo)
+            historical = repo / DECISION_DIR / "KEEP.md"
+            self.assertNotIn("## Opzioni", historical.read_text(encoding="utf-8"))
+            (repo / STATE_FILES[0]).write_text("changed\n", encoding="utf-8")
+            head = _commit_all(repo, "state")
+            proc, payload = _format_payload("--root", str(repo), "--base", base, "--head", head)
+            self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+            self.assertEqual(payload["checked"], [])
+
+    def test_missing_path_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            missing = f"{DECISION_DIR}/MISSING-OPTIONS-EXAMPLE.md"
+            proc, payload = _format_payload("--root", str(root), "--path", missing)
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertEqual(payload["reason"], "missing_file")
+            self.assertEqual(payload["path"], missing)
+
+    def test_option_class_fails_closed_and_the_two_valid_forms_pass(self) -> None:
+        samples = (
+            ("no_options_heading", "# Decision\n\nNessuna opzione.\n"),
+            (
+                "plain_list",
+                "# Decision\n\n## Opzioni\n\n1. Titolo senza grassetto\n",
+            ),
+            (
+                "numbering_gap",
+                "# Decision\n\n## Opzioni\n\n1. **Titolo.** testo\n3. **Altro.** testo\n",
+            ),
+            (
+                "numbering_gap",
+                "# Decision\n\n### Opzioni del quesito A\n\nA1. **Prima.** testo\nA3. **Terza.** testo\n",
+            ),
+            (
+                "empty_options",
+                "# Decision\n\n## Opzioni\n\n## Raccomandazione\n\nNessuna.\n",
+            ),
+            (
+                "empty_options",
+                "# Decision\n\n### Opzioni del quesito A\n\n"
+                "### Opzioni del quesito B\n\nB1. **Titolo.** testo\n",
+            ),
+            (
+                "wrong_letter",
+                "# Decision\n\n### Opzioni del quesito A\n\nB1. **Titolo.** testo\n",
+            ),
+            (
+                "option_outside_heading",
+                "# Decision\n\n1. **Fuori.** testo\n\n## Opzioni\n\n1. **Titolo.** testo\n",
+            ),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "REQUEST.md"
+            for reason, body in samples:
+                with self.subTest(reason=reason, body=body):
+                    target.write_text(body, encoding="utf-8")
+                    proc, payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+                    self.assertNotEqual(proc.returncode, 0)
+                    self.assertEqual(payload["reason"], reason)
+            target.write_text(_VALID_DIRECT, encoding="utf-8")
+            direct, direct_payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+            self.assertEqual(direct.returncode, 0, direct.stderr + direct.stdout)
+            self.assertEqual(direct_payload["reason"], "ok")
+            target.write_text(_VALID_LETTERS, encoding="utf-8")
+            letters, letter_payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+            self.assertEqual(letters.returncode, 0, letters.stderr + letters.stdout)
+            self.assertEqual(letter_payload["reason"], "ok")
+
+
 class FastPathCommandTests(unittest.TestCase):
     def test_commands_use_the_folder_marker_and_not_a_hand_written_list(self) -> None:
         module = _load(RUNNER, "run_state_only_ci_path")
@@ -435,6 +756,10 @@ class FastPathCommandTests(unittest.TestCase):
         self.assertIn("ruff check .", rendered)
         self.assertIn(
             "/opt/venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/state-sync-example",
+            rendered,
+        )
+        self.assertIn(
+            "/opt/venv/bin/python scripts/validate_decision_request_format.py --base origin/main --head HEAD",
             rendered,
         )
         for task, manifest in (
