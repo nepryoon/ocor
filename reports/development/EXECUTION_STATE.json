@@ -14665,6 +14665,45 @@
       "summary": "NO_GO del ciclo 6. L'opzione 1 autorizza una sola verifica indipendente dello stesso HEAD con il bootstrap di sviluppo e senza build. Nessuna opzione e applicata.",
       "title": "NO_GO del ciclo 6: verifica live sullo stesso HEAD senza build, oppure nessuno",
       "updated_at": "2026-11-22T15:16:43Z"
+    },
+    {
+      "blocked_scope": "Finche questa richiesta e aperta non si apre un ciclo 3, non si modifica il branch governed/ocor-dev-rem-0066-state-only-ci, non si mergia ffc6dbfb55dc99a088947c751c8bf490410781f4 e non si scrive prereview_request.json ne verify_request.json per OCOR-DEV-REM-0066. FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-NO-GO resta una richiesta distinta e aperta. Nessuna opzione e applicata.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0066"
+      ],
+      "blocked_tasks_after_decision": [],
+      "created_at": "2026-11-22T16:24:27Z",
+      "decision_level": "OPERATIVE",
+      "evidence": {
+        "branch": "governed/decision-request-rem0066-cycle2-nogo",
+        "commit": "562e8e2cb5dddbcaf1915b0b711a134a6318112d",
+        "format_check": "grep -cE '^[A-Z]?[0-9]{1,2}\\. \\*\\*' = 4, options 1..4 under ## Opzioni",
+        "path": "reports/development/decision_requests/REM-0066-CYCLE2-NO-GO.md",
+        "pr": 757,
+        "pr_disposition": "DRAFT_NOT_FOR_MERGE_PATH_NOT_ON_ALLOWLIST",
+        "sha256": "b5faebbb4729f94152e1e2561d7377864b867a361823a9d916cac9659f650b00"
+      },
+      "finding": "Verdict OCOR-DEV-REM-0066-ffc6dbfb55dc-2 is NO_GO on ffc6dbfb55dc99a088947c751c8bf490410781f4. Ordinary budget of two materially different repairs is exhausted. VF-001: validate_decision_request_format.py validate_text returns exit 0 reason=ok for an option that exists only inside a fence and for two headings ### Opzioni del quesito A that repeat A1. VF-002: _parse_numstat accepts an empty counter, a non-numeric counter and a single dash and selects state_only; an unknown or duplicated name-status can yield an empty decision-request list and reason=ok. VF-003 and VF-004 are not blocking and are not marked PASS. No option of this request is applied. No automatic cycle 3.",
+      "id": "REM-0066-CYCLE2-NO-GO",
+      "latest_observation": "2026-11-22T16:24:27Z OPEN_PO_DECISION_REQUIRED. Draft PR #757, commit 562e8e2cb5dddbcaf1915b0b711a134a6318112d, sha256 b5faebbb4729f94152e1e2561d7377864b867a361823a9d916cac9659f650b00. No option applied. Candidate remains ffc6dbfb55dc99a088947c751c8bf490410781f4 and is not merged. Recommendation is option 1.",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "question": "Il ciclo 2 di OCOR-DEV-REM-0066 e NO_GO per VF-001 e VF-002. Si autorizza un solo repair_cycle 3 eccezionale che chiude i quattro finding, lo stesso ciclo limitato ai finding bloccanti, nessuno ciclo 3, oppure si integra il candidato nonostante il NO_GO?",
+      "recommendation": "1",
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "status_history": [
+        {
+          "status": "OPEN_PO_DECISION_REQUIRED",
+          "updated_at": "2026-11-22T16:24:27Z"
+        }
+      ],
+      "summary": "NO_GO del ciclo 2. Il budget ordinario e esaurito. L'opzione 1 autorizza un solo repair_cycle 3 eccezionale. Nessuna opzione e applicata.",
+      "title": "NO_GO del ciclo 2: un solo repair_cycle 3 eccezionale, oppure nessuno",
+      "updated_at": "2026-11-22T16:24:27Z"
     }
   ],
   "checkpoint_consolidation": {
@@ -15459,6 +15498,7 @@
   "historical_next_executable_action_before_inotify_recheck3": "PREAMBLE-RECHECK-BEFORE-STOP (2026-11-08): rilettura di ~/.ocor-codex/openhands_preamble.md il 2026-11-17T18:15:21.676788+00:00, sha256 a6918522662f1c6dd560ffaae25d4b906b1cc9ec7ade85793a87e7b9a0c8e107, identico alla registrazione del 2026-11-17T17:17:14.814960+00:00. Esito SECTION_ABSENT. L'ultima sezione \u00e8 REM-0063-CYCLE10-LANE-ARGV-LIMIT (2026-11-17). Nessuna sezione decide REM-0063-CYCLE10-INOTIFY-INSTANCES. Il file della richiesta al commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c ha sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233, verificato con git cat-file -e, git merge-base --is-ancestor e sha256sum. PR #666 resta aperta e non mergiata. REM-0063-CYCLE10-INOTIFY-INSTANCES \u00e8 aperta, stato OPEN_PO_DECISION_REQUIRED, livello operativo. Branch governed/decision-request-rem0063-cycle10-inotify, commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c, file reports/development/decision_requests/REM-0063-CYCLE10-INOTIFY-INSTANCES.md, sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233, PR #666, non mergiata. Nessuna opzione applicata. L'allowlist del piano non \u00e8 estesa in questa pubblicazione. Il gate sullo head 3ae284727c9829902e72bea25c2f07373e60d969 \u00e8 PASS: 51 passi, 0 fallimenti, 6 NOT_EXECUTED, gates.json sha256 50ee856e76341d1cc1528a02e20c7ea9e2977e693a303d035815920862c6ed7b. Non rieseguirlo finch\u00e9 la sezione che decide la richiesta non lo chiede. Non rieseguire il gate sullo head 5a1a8aaff6af95470171c1add7f9e85f1ec997a8. Non rilanciare le campagne 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 e 3ae284727c98-1794931254: restano FAIL diagnostiche e non sono un PASS. La campagna 3ae284727c98-1794931254 \u00e8 FAIL, exit 1, 498.974 s, dal 2026-11-17T16:00:54Z al 2026-11-17T16:09:13Z, FOUR_LANE, alimentazione MAINS all'inizio e alla fine, pull rimanente 100 prima dell'avvio. Errore: kubelet del nodo d658ba79d6b52b65a74d7c60cc8292a75eba1c44d38a4458568586e863aaaaee con restarts 2 dopo failed to create fsnotify watcher: too many open files. fs.inotify.max_user_instances vale 128 e non \u00e8 scrivibile dal processo della campagna. Non alzarlo in questa attesa. Non modificare file sotto ocor-runtime/src. Non modificare scripts/run_qualifying_campaign.py, scripts/run_local_lane_campaign.py n\u00e9 reports/tests/test_local_lane_campaign.py. Non spostare governed/ocor-dev-rem-0063-mcp-profile da 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Nessuna verify_request e nessuna seconda revisione preventiva. Dopo un NO_GO di questo ciclo non c'\u00e8 un ciclo 11. Non aprire una seconda richiesta sullo stesso punto. Se compare la sezione che decide REM-0063-CYCLE10-INOTIFY-INSTANCES, applica l'opzione scelta esattamente come scritta al commit 3b1ecc02b8e732ee8d2bdc5c9a5c8b64385aa56c, sha256 2445e7351dedbeac8a8f62579ca0a8aeecf2e030b0d1c88373a14d58b1233233. Se il file a quel commit non ha quello sha256, non applicarla e apri una richiesta, secondo la regola vigente per le decision request. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_rem0031_module_level": "Verdetto FUSEKI-REBUILD-IDENTITY-20261121-24dcb6874c6e-4 e NO_GO, head 24dcb6874c6e3686f9e92748ea845397c0d6e391, sha256 9774452be3ebb06c1e4987e53ea677a9834537ef703df7ef474fe47382e9367a. FUSEKI-REBUILD-IDENTITY-20261121-CYCLE3-NO-GO (2026-11-21) opzione 1 non autorizza un ciclo 5. Richiesta FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO aperta: branch governed/decision-request-fuseki-rebuild-identity-20261121-cycle4-nogo, commit 4cb391425de5dbfb0dd30c66448b5b22279fca9b, sha256 442d3b676a6ee51d10f90d8f214dabcea11e4b3841efa8cca3111c491d3f28e6, bozza PR #742, nessuna opzione applicata. Non si modifica il branch governed/fuseki-rebuild-identity-20261121, non si mergia 24dcb6874c6e3686f9e92748ea845397c0d6e391, non si aggiorna infra/services.lock.json, non si cancella ne si rietichetta ocor/jena-fuseki:6.2.0, non si tocca la PR #722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f, non si apre un repair_cycle 14. REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP resta OPEN_PO_DECISION_REQUIRED: l'opzione 1 e decisa da REM-0066-STATE-ONLY-REM0031-GUARD-RESTORE-STOP (2026-11-21) e non e applicata in questa iterazione. Nessun commit sopra 6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1 finche quell'opzione non e applicata. La prossima unita implementativa applica quell'opzione 1 solo se il file al commit 78aa9b3b9c3328d4d7db25f1bfcabfa88f8993cc ha ancora sha256 42d1ab64b65db79f49c6d23f61c0466558c7545ddec0591be87bbaae7b647991. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_rem0031_restore_stop": "Il verdetto FUSEKI-REBUILD-IDENTITY-20261121-569af1c4cbbc-3 e NO_GO, sha256 4079e4cb7e4f7ec05ba77b5757b6997684c0530fc17313529ebd3f8d3613e979, head 569af1c4cbbc35ddf8945eec48755096c767cd6c, base 5344565521e8f7db701073cd5554e49834781598. VF-001 e VF-002 sono bloccanti. Non c'e un ciclo 4. La richiesta FUSEKI-REBUILD-IDENTITY-20261121-CYCLE3-NO-GO e OPEN_PO_DECISION_REQUIRED, commit 9a29816684f668688c045c4c36bdb996b3aab69f, sha256 e77d0296b4dab98cad11ad774166d14ea0ae1ab09255a8287db8eeaa98446495, bozza PR #738. Nessuna sua opzione e applicata. Non si modifica governed/fuseki-rebuild-identity-20261121. Non si mergia 569af1c4. Non si tocca la PR #722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non si apre un repair_cycle 14. REM-0066-STATE-ONLY-REM0031-GUARD-REFORMULATION resta OPEN_PO_DECISION_REQUIRED, commit 2814c1a7053e36b7c00956954155d4592a7fdec5, sha256 577c27c772366b0b88cf41b16f61b29ccfecfdb39c693060214abd133fdac73a, bozza PR #736. Nessuna sua opzione e applicata. Non aggiungere un commit sopra 6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1. Non scrivere prereview_request.json di REM-0066. Non avviare la suite completa. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
+  "historical_next_executable_action_before_rem0066_cycle2_nogo": "Il verdetto FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6 e NO_GO, sha256 cc4696dba0e1c91aa29168cef0e5800773b49dee51f6ecfb557b2f1258d73c8e, head a24756e0c90d82c0f5585e84868824b992d43d3b, creato 2026-11-22T15:00:18.140545Z. VF-001: lo stack ocor-bootstrap era assente e l'opzione 1 gia adottata vieta sia il bootstrap della CI, che esegue docker build -t sull'etichetta governata, sia il bootstrap di sviluppo. I controlli live restano non eseguiti. VF-002 non e bloccante e non si corregge. L'opzione 1 di FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-IMAGE-PRECONDITION non autorizza un ciclo 7. Richiesta FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-NO-GO aperta, commit e9caaed0f42dc188e41987ac9961ead97fa81bb4, sha256 5991625976dbe81f3cbb1f25bb88ec13e98d350adbdd8db890134c903ab6a7a6, bozza PR #755. Nessuna opzione e applicata. Non modificare ne mergiare il candidato. Non toccare la PR #722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. Il lavoro eseguibile che non dipende da questa richiesta e la disposizione del verdetto NO_GO OCOR-DEV-REM-0066-ffc6dbfb55dc-2, head ffc6dbfb55dc99a088947c751c8bf490410781f4, repair_cycle 2: nessun ciclo 3 automatico. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_rem0066_guard_disposition": "Verdetto OCOR-DEV-REM-0063-3b4894d181b7-10: NO_GO, sha256 f1d509cbcc61a0857b43014287ad9acd0eccc889012c140a730b4944cd9dbdf3, head 3b4894d181b7dfbfbc929f54a83ae320bcf73666, commit di esecuzione 3ae284727c9829902e72bea25c2f07373e60d969. Nessun ciclo 11. OCOR-DEV-REM-0063 \u00e8 bloccato da REM-0063-CYCLE10-NO-GO, stato OPEN_PO_DECISION_REQUIRED, commit e8db497fe45df05b44569c50757751837fa3a2eb, sha256 c1106610cd737b1458f7440d52370497aabdd8bef550169492879dae58ca7c96, PR #673 bozza, non si integra. Il branch di produzione resta 5ffc19bddca6bf0176575191e6bc3f0d4ea717d8. Non rilanciare le campagne diagnostiche 5a1a8aaff6af-1794907944, 8037040f14cc-1794928763 e 3ae284727c98-1794931254. Prossima unit\u00e0 eseguibile: registrare la disposition e applicare l'opzione 1 di REM-0066-GUARD-ADMISSION (2026-11-15). Il file al commit d57732f5345636ff9ca2e819e037f345af26679c ha sha256 56f50622954689e1913c73fc0d3bac5c111cb9d19b740b67799bef96c2a1d476, PR #647 bozza. Verificare lo sha256 prima di applicare. Se coincide, registrare la disposition e applicare l'opzione come descritta, senza suite completa nella stessa iterazione del nuovo PRE-CAMPAIGN-GATE. Se non coincide, non applicare e aprire una sola richiesta nuova. Poi OCOR-DEV-REM-0065 all'HEAD 583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c. AGENTIC-RISK-MAP-PARTIAL-GAPS resta aperta e non blocca alcun task. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_rem0066_import_exit_20261121": "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO e OPEN_PO_DECISION_REQUIRED. Il verdetto FUSEKI-REBUILD-IDENTITY-20261121-fe9ab6c09cd3-2 e NO_GO sull'HEAD fe9ab6c09cd3c7ed314e994a830d6d0c39e47237. Il budget ordinario di due riparazioni materialmente diverse e esaurito: ciclo 0 aee6ef0dcced NO_GO, ciclo 1 dd0467f18816 NO_GO, ciclo 2 fe9ab6c09cd3c7ed314e994a830d6d0c39e47237 NO_GO. Nessuna opzione e applicata. Non avviare il repair cycle 3. Non applicare alcuna opzione finche la sezione FUSEKI-REBUILD-IDENTITY-20261121-CYCLE2-NO-GO non e presente in ~/.ocor-codex/openhands_preamble.md e lo sha256 del file coincide con quello di questa sincronizzazione. Rilettura 2026-11-21T05:13:49Z, sha256 10f8d206a90ea08756f777fedf06fe6acd0fbb8921032a8f5ecfc3683f5bb00b, 573929 byte, 220 sezioni, esito SECTION_ABSENT. Ultima sezione ## FUSEKI-REBUILD-IDENTITY-20261121 (2026-11-21) \u2014 decisione del PO, su delega completa. Non modificare il branch governed/fuseki-rebuild-identity-20261121, che resta all'HEAD fe9ab6c09cd3c7ed314e994a830d6d0c39e47237. Non aggiornare il lock su origin/main: output_sha256 resta f03fa6e07fd125e38ddc637547413924d05390d94056b8f407a4e60e3f3cf875. Non cancellare, non ricostruire e non rietichettare l'immagine sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. Non eseguire scripts/bootstrap_ci_environment.py --execute. Non scrivere i record di regressione del launcher. Non riprendere il launcher sul branch governed/rem-0063-ci-argv-launcher finche il change set Fuseki non e sigillato dopo un futuro GO_FOR_EVIDENCE_SEAL. Non applicare REM-0066-STATE-ONLY-IMPORT-EXIT: CONFINE-G6 (2026-11-20) la tiene dopo la chiusura di OCOR-DEV-REM-0063. Non toccare la PR 722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. La bozza PR #732 non si integra. Se la sezione compare e lo sha256 coincide, l'iterazione successiva applica l'opzione scelta esattamente come scritta; questa sincronizzazione non la anticipa. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "historical_next_executable_action_before_rem0066_module_level_option1": "Il verdetto FUSEKI-REBUILD-IDENTITY-20261121-aa718782eaef-5 e NO_GO, sha256 c86c997043f702d95f66306aeadd93f550442fcec6231e6fd4f222a466996922, head aa718782eaefeb9b516c798c1e4c1098a116dd15, creato 2026-11-21T18:33:47Z. VF-001: EXECUTION_STATE.json e MODEL_HANDOFF.json non sono canonici su quell'HEAD e lo sono sul parent f8e88420984f49666b6d156bbe665424e5f01c1a. VF-002 non e bloccante e non si corregge. L'opzione 1 di FUSEKI-REBUILD-IDENTITY-20261121-CYCLE4-NO-GO non autorizza un ciclo 6. Richiesta FUSEKI-REBUILD-IDENTITY-20261121-CYCLE5-NO-GO aperta, commit 6e79615e75b11ea39ef21d4ce5dac08c62120274, sha256 d89248d1bfde72e68972a7aae21b8a855c55ea4a895f56700997ccc157db7c00, bozza PR #747. Nessuna opzione e applicata. Non modificare ne mergiare il candidato. Non toccare la PR #722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. REM-0066-STATE-ONLY-REM0031-GUARD-MODULE-LEVEL resta OPEN_PO_DECISION_REQUIRED: la sezione del preambolo adotta l'opzione 1 e questo commit non la attua. Nessun commit sopra 6b5a5a2a3c8a5cfdb396c5f9eb4a8f7cb01b19c1 finche quella voce e aperta. Claim invariati.",
@@ -20215,6 +20255,7 @@
   "historical_status_before_fuseki_cycle6_nogo": "REM0066_MODULE_LEVEL_OPTION1_APPLIED_PREREVIEW_PENDING",
   "historical_status_before_rem0031_module_level": "FUSEKI_REBUILD_IDENTITY_20261121_CYCLE4_NO_GO_REQUEST_OPEN",
   "historical_status_before_rem0031_restore_stop": "FUSEKI_CYCLE3_NO_GO_DECISION_REQUEST_OPEN",
+  "historical_status_before_rem0066_cycle2_nogo": "FUSEKI_CYCLE6_NO_GO_REQUEST_OPEN",
   "historical_status_before_rem0066_module_level_option1": "FUSEKI_CYCLE5_NO_GO_REQUEST_OPEN",
   "historical_terminal_loop_disposition": {
     "decision_request": "NCP-U12-CONTRACT-ERROR-CODES",
@@ -20234,6 +20275,7 @@
   "historical_updated_at_before_fuseki_cycle6_nogo": "2026-11-21T19:49:55Z",
   "historical_updated_at_before_fuseki_preamble_recheck_20261121": "2026-11-21T00:09:36Z",
   "historical_updated_at_before_fuseki_repair2_20261121": "2026-11-21T01:00:24Z",
+  "historical_updated_at_before_rem0066_cycle2_nogo": "2026-11-22T15:16:43Z",
   "historical_updated_at_before_rem0066_module_level_option1": "2026-11-21T18:44:20Z",
   "latest_ci_evidence": {
     "head_sha": "9b9f657bbf8ba8732b3cf2c72fece1e4f40e0513",
@@ -21896,7 +21938,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Il verdetto FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6 e NO_GO, sha256 cc4696dba0e1c91aa29168cef0e5800773b49dee51f6ecfb557b2f1258d73c8e, head a24756e0c90d82c0f5585e84868824b992d43d3b, creato 2026-11-22T15:00:18.140545Z. VF-001: lo stack ocor-bootstrap era assente e l'opzione 1 gia adottata vieta sia il bootstrap della CI, che esegue docker build -t sull'etichetta governata, sia il bootstrap di sviluppo. I controlli live restano non eseguiti. VF-002 non e bloccante e non si corregge. L'opzione 1 di FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-IMAGE-PRECONDITION non autorizza un ciclo 7. Richiesta FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-NO-GO aperta, commit e9caaed0f42dc188e41987ac9961ead97fa81bb4, sha256 5991625976dbe81f3cbb1f25bb88ec13e98d350adbdd8db890134c903ab6a7a6, bozza PR #755. Nessuna opzione e applicata. Non modificare ne mergiare il candidato. Non toccare la PR #722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. Il lavoro eseguibile che non dipende da questa richiesta e la disposizione del verdetto NO_GO OCOR-DEV-REM-0066-ffc6dbfb55dc-2, head ffc6dbfb55dc99a088947c751c8bf490410781f4, repair_cycle 2: nessun ciclo 3 automatico. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
+  "next_executable_action": "Il verdetto OCOR-DEV-REM-0066-ffc6dbfb55dc-2 e NO_GO, sha256 4a5d0b0df38a7b0b10029125f3ec0bd96a6954be5c41a7254b71ce3c191a6c17, head ffc6dbfb55dc99a088947c751c8bf490410781f4, creato 2026-11-22T13:48:58.178573Z, repair_cycle 2. Il budget ordinario di due riparazioni materialmente diverse e esaurito. Non c'e un ciclo 3 automatico. VF-001 e VF-002 sono bloccanti: il validatore di formato accetta un'opzione dentro un fence e due quesiti con la stessa lettera, e il parser numstat accetta contatori vuoti, non numerici o un solo trattino, selezionando state_only. VF-003 e VF-004 non sono bloccanti e non si segnano PASS. Richiesta REM-0066-CYCLE2-NO-GO aperta, commit 562e8e2cb5dddbcaf1915b0b711a134a6318112d, sha256 b5faebbb4729f94152e1e2561d7377864b867a361823a9d916cac9659f650b00, bozza PR #757. Nessuna opzione e applicata. Non modificare ne mergiare ffc6dbfb55dc99a088947c751c8bf490410781f4. Non scrivere prereview_request.json ne verify_request.json. FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-NO-GO resta aperta, commit e9caaed0f42dc188e41987ac9961ead97fa81bb4, bozza PR #755. Nessuna sua opzione e applicata. Non aprire un ciclo 7. Non mergiare a24756e0c90d82c0f5585e84868824b992d43d3b. Non toccare la PR #722 ne il commit 7b0b90ee79bdae51b22365faca2a54159502a44f. Non aprire un repair_cycle 14. La prossima iterazione rilegge il preambolo. Se una sezione decide una delle due richieste, si applica quella. Se nessuna e decisa e non resta altro lavoro eseguibile, l'iterazione successiva e TERMINAL_BLOCKED e cita entrambi gli ID. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -22583,15 +22625,16 @@
     "completed_evidence_tasks_count": 75,
     "contract_reviews_pending": [],
     "current_unit_blocked_by": [
-      "REM-0063-CI-ARGV-LAUNCHER"
+      "FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-NO-GO",
+      "REM-0066-CYCLE2-NO-GO"
     ],
     "current_unit_only_due_to_po": true,
     "executable_now": [],
-    "executable_now_note": "REM-0063-CI-ARGV-LAUNCHER e aperta. Nessuna opzione e applicata. Nessun'altra unita eseguibile sblocca la PR 722.",
+    "executable_now_note": "REM-0066-CYCLE2-NO-GO e FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-NO-GO sono aperte. Nessuna opzione e applicata. Non c'e un ciclo 3 automatico e non c'e un ciclo 7. Nessun'altra unita eseguibile non dipende da una richiesta aperta.",
     "in_progress": [],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-20T20:58:19.236935+00:00",
+    "observed_at": "2026-11-22T16:24:27Z",
     "open_po_decision_requests_non_blocking": {
       "AGENTIC-RISK-MAP-PARTIAL-GAPS": "OPEN_PO_DECISION_REQUIRED; blocks no task; recommendation option 1; commit 583ea0024f18ebe0f63f4c5eaa8da8bc9a246f6c; sha256 1b327c2b6b1ed9462251a221e0b7d89d956f962bf568eb666999517cc2729c00"
     },
@@ -53564,7 +53607,7 @@
       "stdout_sha256": "226bb75cf825c5e08bce612bcd532d72ba7e650ae1d5c59168d46e6370b1f9b2"
     }
   },
-  "status": "FUSEKI_CYCLE6_NO_GO_REQUEST_OPEN",
+  "status": "REM0066_CYCLE2_NO_GO_REQUEST_OPEN",
   "terminal_loop_disposition": {
     "claims_unchanged": true,
     "cycle12_nogo_preamble_recheck": {
@@ -53782,7 +53825,7 @@
       "section_sought": "REM-0063-CYCLE12-VISIT-KEY"
     }
   },
-  "updated_at": "2026-11-22T15:16:43Z",
+  "updated_at": "2026-11-22T16:24:27Z",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
