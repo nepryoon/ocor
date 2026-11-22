@@ -21,6 +21,7 @@ from pathlib import Path
 
 DECISION_PREFIX = "reports/development/decision_requests/"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
+_STATUS_TOKEN = re.compile(r"^(?:[AMDTUXB]|[RC][0-9]{1,3})$")
 _OPTION = re.compile(r"^([A-Z])?([0-9]{1,2})\. \*\*(.+)\*\*(.*)$")
 _LOOSE = re.compile(r"^[A-Z]?[0-9]{1,2}\. ")
 _GREP = re.compile(r"^[A-Z]?[0-9]{1,2}\. \*\*")
@@ -31,6 +32,9 @@ _PRIORITY = (
     "wrong_letter",
     "numbering_gap",
     "option_outside_heading",
+    "option_only_in_fence",
+    "repeated_question",
+    "repeated_identifier",
 )
 
 
@@ -119,7 +123,7 @@ def _changed_decision_requests(root: Path, merge_base: str, head_sha: str) -> li
             return None
         status_bytes, pos = status_field
         status = _decode(status_bytes)
-        if status is None or not status:
+        if status is None or _STATUS_TOKEN.fullmatch(status) is None:
             return None
         path_field = _read_field(blob, pos)
         if path_field is None:
@@ -146,17 +150,71 @@ def _show(root: Path, sha: str, path: str) -> bytes | None:
     return _git_bytes(root, ["show", "--no-textconv", "--end-of-options", f"{sha}:{path}"])
 
 
-def _next_heading(lines: Sequence[str], start: int, limit: int) -> int:
+def _first_nonspace_run(line: str) -> str:
+    stripped = line.lstrip(" \t")
+    end = 0
+    while end < len(stripped) and not stripped[end].isspace():
+        end += 1
+    return stripped[:end]
+
+
+def _opening_fence(line: str) -> tuple[str, int] | None:
+    """A fence opens when the first non-space run is only backticks or tildes."""
+    token = _first_nonspace_run(line)
+    if len(token) >= 3 and set(token) == {"`"}:
+        return "`", len(token)
+    if len(token) >= 3 and set(token) == {"~"}:
+        return "~", len(token)
+    return None
+
+
+def _closing_fence(line: str, character: str, length: int) -> bool:
+    stripped = line.strip(" \t")
+    return bool(stripped) and len(stripped) >= length and set(stripped) == {character}
+
+
+def _fence_hidden(lines: Sequence[str]) -> list[bool]:
+    """Mark fence markers and every line until the closer, or through EOF."""
+    hidden = [False] * len(lines)
+    index = 0
+    limit = len(lines)
+    while index < limit:
+        opener = _opening_fence(lines[index])
+        if opener is None:
+            index += 1
+            continue
+        character, length = opener
+        hidden[index] = True
+        index += 1
+        while index < limit:
+            hidden[index] = True
+            closed = _closing_fence(lines[index], character, length)
+            index += 1
+            if closed:
+                break
+    return hidden
+
+
+def _line_is_option(line: str) -> bool:
+    return bool(_OPTION.fullmatch(line) or _LOOSE.match(line) or _GREP.match(line))
+
+
+def _next_heading(lines: Sequence[str], start: int, limit: int, hidden: Sequence[bool]) -> int:
     for index in range(start, limit):
+        if hidden[index]:
+            continue
         if lines[index].startswith("#"):
             return index
     return limit
 
 
-def _gap_has_option(lines: Sequence[str], start: int, end: int) -> bool:
+def _gap_has_option(
+    lines: Sequence[str], start: int, end: int, hidden: Sequence[bool]
+) -> bool:
     for index in range(start, end):
-        line = lines[index]
-        if _OPTION.fullmatch(line) or _LOOSE.match(line) or _GREP.match(line):
+        if hidden[index]:
+            continue
+        if _line_is_option(lines[index]):
             return True
     return False
 
@@ -168,10 +226,17 @@ def _take_options(
     expect: str | None,
     problems: list[str],
     accepted: list[int],
+    hidden: Sequence[bool],
+    seen: set[str],
 ) -> None:
     found: list[tuple[str | None, int]] = []
     malformed = False
+    fenced_option = False
     for index in range(start, end):
+        if hidden[index]:
+            if _line_is_option(lines[index]):
+                fenced_option = True
+            continue
         line = lines[index]
         if line.startswith("#"):
             continue
@@ -185,11 +250,18 @@ def _take_options(
             problems.append("plain_list")
     if not found:
         if not malformed:
-            problems.append("empty_options")
+            if fenced_option:
+                problems.append("option_only_in_fence")
+            else:
+                problems.append("empty_options")
         return
-    for prefix, _number in found:
+    for prefix, number in found:
         if prefix != expect:
             problems.append("wrong_letter")
+        identifier = f"{prefix or ''}{number}"
+        if identifier in seen:
+            problems.append("repeated_identifier")
+        seen.add(identifier)
     numbers = [number for _prefix, number in found]
     if numbers != list(range(1, len(numbers) + 1)):
         problems.append("numbering_gap")
@@ -198,21 +270,36 @@ def _take_options(
 def validate_text(text: str) -> str:
     """Return ``ok`` or the first violated option-format property."""
     lines = text.splitlines()
-    grep_hits = [index for index, line in enumerate(lines) if _GREP.match(line)]
-    h2_at = [index for index, line in enumerate(lines) if line == "## Opzioni"]
+    hidden = _fence_hidden(lines)
+    grep_hits = [
+        index
+        for index, line in enumerate(lines)
+        if not hidden[index] and _GREP.match(line)
+    ]
+    h2_at = [
+        index
+        for index, line in enumerate(lines)
+        if not hidden[index] and line == "## Opzioni"
+    ]
     quesiti = [
         (index, matched.group(1))
         for index, line in enumerate(lines)
-        if (matched := _QUESITO.fullmatch(line)) is not None
+        if not hidden[index] and (matched := _QUESITO.fullmatch(line)) is not None
     ]
+    seen: set[str] = set()
     if not h2_at and not quesiti:
         return "no_options_heading"
     problems: list[str] = []
+    letters = [letter for _index, letter in quesiti]
+    if len(letters) != len(set(letters)):
+        problems.append("repeated_question")
     accepted: list[int] = []
     consumed: set[int] = set()
     for start in h2_at:
         end = len(lines)
         for index in range(start + 1, len(lines)):
+            if hidden[index]:
+                continue
             if lines[index].startswith("## ") and not lines[index].startswith("### "):
                 end = index
                 break
@@ -222,20 +309,22 @@ def validate_text(text: str) -> str:
         if children:
             cursor = start + 1
             for child_at, letter in children:
-                if _gap_has_option(lines, cursor, child_at):
+                if _gap_has_option(lines, cursor, child_at, hidden):
                     problems.append("option_outside_heading")
-                child_end = _next_heading(lines, child_at + 1, end)
-                _take_options(lines, child_at + 1, child_end, letter, problems, accepted)
+                child_end = _next_heading(lines, child_at + 1, end, hidden)
+                _take_options(
+                    lines, child_at + 1, child_end, letter, problems, accepted, hidden, seen
+                )
                 cursor = child_end
-            if _gap_has_option(lines, cursor, end):
+            if _gap_has_option(lines, cursor, end, hidden):
                 problems.append("option_outside_heading")
             continue
-        _take_options(lines, start + 1, end, None, problems, accepted)
+        _take_options(lines, start + 1, end, None, problems, accepted, hidden, seen)
     for index, letter in quesiti:
         if index in consumed:
             continue
-        end = _next_heading(lines, index + 1, len(lines))
-        _take_options(lines, index + 1, end, letter, problems, accepted)
+        end = _next_heading(lines, index + 1, len(lines), hidden)
+        _take_options(lines, index + 1, end, letter, problems, accepted, hidden, seen)
     if len(accepted) != len(grep_hits) or any(index not in accepted for index in grep_hits):
         problems.append("option_outside_heading")
     for reason in _PRIORITY:

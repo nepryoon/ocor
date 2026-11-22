@@ -45,6 +45,8 @@ ROUTE_STATE_ONLY = "state_only"
 ROUTE_FULL = "full"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _RAW_METADATA = re.compile(r"^:(\d{6}) (\d{6}) ([0-9a-f]+) ([0-9a-f]+) ([A-Z][0-9]*)$")
+_STATUS_TOKEN = re.compile(r"^(?:[AMDTUXB]|[RC][0-9]{1,3})$")
+_NUMSTAT_NUMBER = re.compile(rb"^[0-9]+$")
 
 
 class DiffEntry:
@@ -219,7 +221,7 @@ def _parse_name_status(blob: bytes) -> list[tuple[str, str, str | None]] | None:
             return None
         status_bytes, pos = status_field
         status = _decode(status_bytes)
-        if status is None or not status:
+        if status is None or _STATUS_TOKEN.fullmatch(status) is None:
             return None
         path_field = _read_field(blob, pos)
         if path_field is None:
@@ -243,6 +245,15 @@ def _parse_name_status(blob: bytes) -> list[tuple[str, str, str | None]] | None:
     return records
 
 
+def _numstat_class(piece: bytes) -> str | None:
+    """Return ``number``, ``dash``, or ``None`` for one numstat counter."""
+    if _NUMSTAT_NUMBER.fullmatch(piece):
+        return "number"
+    if piece == b"-":
+        return "dash"
+    return None
+
+
 def _parse_numstat(blob: bytes) -> list[tuple[str, str | None, bool]] | None:
     records: list[tuple[str, str | None, bool]] = []
     pos = 0
@@ -254,7 +265,11 @@ def _parse_numstat(blob: bytes) -> list[tuple[str, str | None, bool]] | None:
         pieces = header.split(b"\t")
         if len(pieces) < 3:
             return None
-        binary = pieces[0] == b"-" and pieces[1] == b"-"
+        left = _numstat_class(pieces[0])
+        right = _numstat_class(pieces[1])
+        if left is None or left != right:
+            return None
+        binary = left == "dash"
         embedded = b"\t".join(pieces[2:])
         if embedded == b"":
             old_field = _read_field(blob, pos)
