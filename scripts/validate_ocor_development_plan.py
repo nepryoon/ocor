@@ -1897,6 +1897,17 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-repair1.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-repair1.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-repair1.log",
+        # Repair cycle 2 of OCOR-DEV-REM-0066 changes the plan-validator
+        # allowlist, a sealed input of 0005, 0050 and 0082. These paths are
+        # declared before the records exist so the execution commit already
+        # contains the allowlist those records will hash. The task tests are
+        # unchanged. These records do not qualify requirements.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-repair2.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0066-repair2.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-repair2.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0066-repair2.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-repair2.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0066-repair2.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
