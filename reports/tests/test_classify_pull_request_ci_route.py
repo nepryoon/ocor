@@ -1634,6 +1634,77 @@ class RepairCycle3Tests(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertEqual(payload["reason"], "option_only_in_fence")
 
+    def _format_file(
+        self, body: str
+    ) -> tuple[subprocess.CompletedProcess[str], dict[str, Any]]:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "REQUEST.md").write_text(body, encoding="utf-8")
+            return _format_payload("--root", str(root), "--path", "REQUEST.md")
+
+    def test_attached_info_string_hides_the_only_option(self) -> None:
+        """An info string glued to the marker still hides the only option."""
+        openers = {
+            "markdown": "```markdown",
+            "python": "```python",
+            "four_backtick_json": "````json",
+            "tilde_markdown": "~~~markdown",
+            "indented_markdown": "  ```markdown",
+        }
+        for name, opener in openers.items():
+            with self.subTest(name=name):
+                body = (
+                    "# Decision\n\n"
+                    "## Opzioni\n\n"
+                    f"{opener}\n"
+                    "1. **Titolo.** testo\n"
+                )
+                proc, payload = self._format_file(body)
+                self.assertNotEqual(proc.returncode, 0, proc.stdout)
+                self.assertEqual(payload["reason"], "option_only_in_fence")
+                self.assertNotEqual(payload["reason"], "ok")
+
+    def test_space_separated_info_string_still_hides_the_only_option(self) -> None:
+        body = (
+            "# Decision\n\n"
+            "## Opzioni\n\n"
+            "``` markdown\n"
+            "1. **Titolo.** testo\n"
+            "```\n"
+        )
+        proc, payload = self._format_file(body)
+        self.assertNotEqual(proc.returncode, 0, proc.stdout)
+        self.assertEqual(payload["reason"], "option_only_in_fence")
+        self.assertNotEqual(payload["reason"], "ok")
+
+    def test_option_outside_a_closed_language_fence_exits_zero(self) -> None:
+        body = (
+            "# Decision\n\n"
+            "## Opzioni\n\n"
+            "```markdown\n"
+            "nota interna\n"
+            "```\n\n"
+            "1. **Titolo.** testo\n\n"
+            "## Raccomandazione\n\n"
+            "Nessuna.\n"
+        )
+        proc, payload = self._format_file(body)
+        self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+        self.assertEqual(payload["reason"], "ok")
+
+    def test_two_marker_prefix_does_not_hide_an_outside_option(self) -> None:
+        for opener in ("``markdown", "~~markdown"):
+            with self.subTest(opener=opener):
+                body = (
+                    "# Decision\n\n"
+                    "## Opzioni\n\n"
+                    f"{opener}\n"
+                    "1. **Titolo.** testo\n"
+                )
+                proc, payload = self._format_file(body)
+                self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+                self.assertEqual(payload["reason"], "ok")
+
     def test_repeated_question_letter_fails(self) -> None:
         body = (
             "# Decision\n\n"
