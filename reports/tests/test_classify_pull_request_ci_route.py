@@ -729,6 +729,95 @@ class DecisionRequestFormatTests(unittest.TestCase):
             self.assertEqual(letters.returncode, 0, letters.stderr + letters.stdout)
             self.assertEqual(letter_payload["reason"], "ok")
 
+    def test_non_utf8_body_fails_closed(self) -> None:
+        """A body that is not UTF-8 is not_utf8 on both entry points."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "REQUEST.md"
+            target.write_bytes(b"# Decision\n\xff\n")
+            proc, payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertEqual(payload["reason"], "not_utf8")
+            self.assertEqual(payload["path"], "REQUEST.md")
+            self.assertEqual(payload["checked"], [])
+
+            repo = root / "repo"
+            base = _init_repo(repo)
+            decision = repo / DECISION_DIR / "NEW.md"
+            decision.write_bytes(_VALID_DIRECT.encode("utf-8") + b"\xff")
+            head = _commit_all(repo, "binary decision")
+            diff, diff_payload = _format_payload(
+                "--root", str(repo), "--base", base, "--head", head
+            )
+            self.assertNotEqual(diff.returncode, 0)
+            self.assertEqual(diff_payload["reason"], "not_utf8")
+            self.assertEqual(diff_payload["path"], f"{DECISION_DIR}/NEW.md")
+
+    def test_git_protocol_error_fails_closed(self) -> None:
+        """Missing objects and a truncated name-status stream are git_error."""
+        missing = "0123456789abcdef0123456789abcdef01234567"
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            base = _init_repo(repo)
+            absent, absent_payload = _format_payload(
+                "--root", str(repo), "--base", base, "--head", missing
+            )
+            self.assertNotEqual(absent.returncode, 0)
+            self.assertEqual(absent_payload["reason"], "git_error")
+            empty, empty_payload = _format_payload(
+                "--root", str(repo), "--base", "", "--head", base
+            )
+            self.assertNotEqual(empty.returncode, 0)
+            self.assertEqual(empty_payload["reason"], "git_error")
+
+            bindir = repo / "fake-bin"
+            bindir.mkdir()
+            wrapper = bindir / "git"
+            wrapper.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os\n"
+                "import sys\n"
+                "argv = sys.argv[1:]\n"
+                "if argv[:1] == ['-C']:\n"
+                "    argv = argv[2:]\n"
+                "command = argv[0] if argv else ''\n"
+                "mode = os.environ.get('OCOR_FAKE_GIT', 'truncated')\n"
+                "if command == 'rev-parse':\n"
+                "    sys.stdout.buffer.write(b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\n')\n"
+                "    raise SystemExit(0)\n"
+                "if command == 'merge-base':\n"
+                "    sys.stdout.buffer.write(b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\n')\n"
+                "    raise SystemExit(0)\n"
+                "if command == 'diff':\n"
+                "    if mode == 'nonzero':\n"
+                "        sys.stderr.buffer.write(b'fatal: protocol\\n')\n"
+                "        raise SystemExit(1)\n"
+                "    sys.stdout.buffer.write(b'M')\n"
+                "    raise SystemExit(0)\n"
+                "sys.stderr.buffer.write(b'unexpected\\n')\n"
+                "raise SystemExit(99)\n",
+                encoding="utf-8",
+            )
+            wrapper.chmod(0o755)
+            saved = os.environ.get("PATH", "")
+            os.environ["PATH"] = f"{bindir}{os.pathsep}{saved}"
+            try:
+                os.environ["OCOR_FAKE_GIT"] = "truncated"
+                truncated, truncated_payload = _format_payload(
+                    "--root", str(repo), "--base", base, "--head", base
+                )
+                self.assertNotEqual(truncated.returncode, 0)
+                self.assertEqual(truncated_payload["reason"], "git_error")
+                os.environ["OCOR_FAKE_GIT"] = "nonzero"
+                failed, failed_payload = _format_payload(
+                    "--root", str(repo), "--base", base, "--head", base
+                )
+                self.assertNotEqual(failed.returncode, 0)
+                self.assertEqual(failed_payload["reason"], "git_error")
+            finally:
+                os.environ["PATH"] = saved
+                os.environ.pop("OCOR_FAKE_GIT", None)
+
 
 class FastPathCommandTests(unittest.TestCase):
     def test_commands_use_the_folder_marker_and_not_a_hand_written_list(self) -> None:
