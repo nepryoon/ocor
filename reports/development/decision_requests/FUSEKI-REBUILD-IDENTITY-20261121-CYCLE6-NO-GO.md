@@ -1,6 +1,7 @@
 # FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa dal PO di persona. Il file pubblicato a `e9caaed0f42dc188e41987ac9961ead97fa81bb4` resta sha256 `5991625976dbe81f3cbb1f25bb88ec13e98d350adbdd8db890134c903ab6a7a6`. L'opzione 1 non aggiunge commit sul branch `governed/fuseki-rebuild-identity-20261121`, che resta `a24756e0c90d82c0f5585e84868824b992d43d3b`. Non è un ciclo 7. La verifica indipendente aggiuntiva usa l'identificativo `FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6-live` e `repair_cycle` 6, perché `FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6` ha già un verdetto registrato. Questa PR resta una bozza e non si integra. Il testo delle opzioni non cambia. Claim invariati.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `b187302d1e441f38862230af0da0d4b0757587dc`.
 Candidato: branch `governed/fuseki-rebuild-identity-20261121`, HEAD `a24756e0c90d82c0f5585e84868824b992d43d3b`, parent `aa718782eaefeb9b516c798c1e4c1098a116dd15`. Nessun commit è stato aggiunto sopra quell'HEAD. Il candidato non si modifica e non si mergia.
