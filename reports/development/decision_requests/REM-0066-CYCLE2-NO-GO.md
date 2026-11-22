@@ -1,6 +1,7 @@
 # REM-0066-CYCLE2-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `CLOSED_WITHOUT_ADOPTED_OPTION`.
+Disposition: rinviata per riformulazione, modello claude-fable-5-2, effort max. Nessuna opzione è adottata. Il file pubblicato a `562e8e2cb5dddbcaf1915b0b711a134a6318112d` resta sha256 `b5faebbb4729f94152e1e2561d7377864b867a361823a9d916cac9659f650b00`. La richiesta successiva è `REM-0066-CYCLE2-NO-GO-REFORMULATION`, commit `40d5e5f86c7ad38ed034e835c237326c41f90e06`, sha256 `b65f4afdc7c56e5b9c9a96dc4bc06b962a08fe3687511cd9932d2b08c5a7f783`, bozza PR #760. Nessuna sua opzione è applicata. Non si aggiunge un commit sopra `ffc6dbfb55dc99a088947c751c8bf490410781f4`. Non si scrive `prereview_request.json`. La suite completa non parte. Claim invariati. Questa PR si chiude come rinviata e non si integra.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Head di `origin/main` alla pubblicazione: `90cc09ac1c50512effba75a6eff4e6b4c678a014`.
 Candidato: branch `governed/ocor-dev-rem-0066-state-only-ci`, HEAD `ffc6dbfb55dc99a088947c751c8bf490410781f4`, parent `e0dcd39bdd062ca4abe4192d6cecef45b70fb3d5`. Merge-base con `origin/main`: `eaed84dad757ce8a9fdbfda624a719d6d7917a37`. Nessun commit è stato aggiunto sopra quell'HEAD. Il candidato non si modifica e non si mergia.
