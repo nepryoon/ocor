@@ -159,13 +159,24 @@ def _first_nonspace_run(line: str) -> str:
 
 
 def _opening_fence(line: str) -> tuple[str, int] | None:
-    """A fence opens when the first non-space run is only backticks or tildes."""
+    """Open when the first non-space run starts with a fence prefix.
+
+    The prefix is a run of at least three identical backticks or tildes.
+    The opening length is that run. Text after it is an info string and
+    does not block the opening. Two markers do not open a fence.
+    """
     token = _first_nonspace_run(line)
-    if len(token) >= 3 and set(token) == {"`"}:
-        return "`", len(token)
-    if len(token) >= 3 and set(token) == {"~"}:
-        return "~", len(token)
-    return None
+    if not token:
+        return None
+    character = token[0]
+    if character not in {"`", "~"}:
+        return None
+    length = 0
+    while length < len(token) and token[length] == character:
+        length += 1
+    if length < 3:
+        return None
+    return character, length
 
 
 def _closing_fence(line: str, character: str, length: int) -> bool:
