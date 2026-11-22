@@ -245,6 +245,14 @@ def gate_commands(python: str, base_ref: str, branch: str) -> list[list[str]]:
             "--branch",
             branch,
         ],
+        [
+            python,
+            "scripts/validate_decision_request_format.py",
+            "--base",
+            base_ref,
+            "--head",
+            "HEAD",
+        ],
     ]
     for task, manifest in RUNTIME_EVIDENCE:
         commands.append(

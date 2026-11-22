@@ -1845,9 +1845,11 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
         # OCOR-DEV-REM-0066 (CI-STATO-RAPIDA): classifier, fast-path runner,
-        # mechanical live-stack marker, and the tests of that route.
+        # decision-request option format, mechanical live-stack marker, and
+        # the tests of that route.
         "scripts/classify_pull_request_ci_route.py",
         "scripts/run_state_only_ci_path.py",
+        "scripts/validate_decision_request_format.py",
         "reports/tests/conftest.py",
         "reports/tests/test_classify_pull_request_ci_route.py",
         # Regression-only requalification after the workflow and allowlist

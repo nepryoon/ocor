@@ -9,9 +9,12 @@ directly under ``reports/development/decision_requests/``.
 
 ``git diff --name-status`` does not show mode changes, symlinks or binary
 files. The command also reads ``git diff -M --raw -z`` and
-``git diff -M --numstat -z``. Paths are compared as exact strings. A ``..``
-segment is never normalised onto the allowlist. Missing data, a git error,
-an empty diff and any disallowed entry select full CI.
+``git diff -M --numstat -z``. All three views are the two-dot diff from the
+unique merge-base of the pinned base and head commits to the pinned head,
+which is the pull-request three-dot diff. Paths are compared as exact
+strings. A ``..`` segment is never normalised onto the allowlist. Missing
+data, a git error, zero or several merge-bases, an empty diff and any
+disallowed entry select full CI.
 
 No pinned library implements this policy. The property oracle is in
 ``reports/tests/test_classify_pull_request_ci_route.py``: the same entries in
@@ -40,6 +43,7 @@ STATE_FILES = frozenset(
 DECISION_PREFIX = "reports/development/decision_requests/"
 ROUTE_STATE_ONLY = "state_only"
 ROUTE_FULL = "full"
+_SHA = re.compile(r"^[0-9a-f]{40}$")
 _RAW_METADATA = re.compile(r"^:(\d{6}) (\d{6}) ([0-9a-f]+) ([0-9a-f]+) ([A-Z][0-9]*)$")
 
 
@@ -313,12 +317,47 @@ def _git_bytes(root: Path, args: Sequence[str]) -> bytes | None:
     return completed.stdout
 
 
-def entries_from_git(root: Path, base: str, head: str) -> list[DiffEntry] | None:
-    """Return aligned entries, or ``None`` when git fails or the views disagree."""
+def _rev_parse(root: Path, rev: str) -> str | None:
+    blob = _git_bytes(root, ["rev-parse", "--verify", "--end-of-options", f"{rev}^{{commit}}"])
+    if blob is None:
+        return None
+    text = _decode(blob)
+    if text is None:
+        return None
+    sha = text.strip()
+    if _SHA.fullmatch(sha) is None:
+        return None
+    return sha
+
+
+def _unique_merge_base(root: Path, base_sha: str, head_sha: str) -> str | None:
+    blob = _git_bytes(root, ["merge-base", "--all", "--end-of-options", base_sha, head_sha])
+    if blob is None:
+        return None
+    text = _decode(blob)
+    if text is None:
+        return None
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) != 1 or _SHA.fullmatch(lines[0]) is None:
+        return None
+    return lines[0]
+
+
+def _entries_between(root: Path, merge_base: str, head_sha: str) -> list[DiffEntry] | None:
+    """Return aligned entries of ``merge_base`` to ``head_sha``, or ``None``."""
     common = ["diff", "--no-ext-diff", "--no-textconv", "-M"]
-    raw_blob = _git_bytes(root, [*common, "--raw", "-z", "--no-abbrev", base, head])
-    numstat_blob = _git_bytes(root, [*common, "--numstat", "-z", base, head])
-    named_blob = _git_bytes(root, [*common, "--name-status", "-z", base, head])
+    raw_blob = _git_bytes(
+        root,
+        [*common, "--raw", "-z", "--no-abbrev", "--end-of-options", merge_base, head_sha],
+    )
+    numstat_blob = _git_bytes(
+        root,
+        [*common, "--numstat", "-z", "--end-of-options", merge_base, head_sha],
+    )
+    named_blob = _git_bytes(
+        root,
+        [*common, "--name-status", "-z", "--end-of-options", merge_base, head_sha],
+    )
     if raw_blob is None or numstat_blob is None or named_blob is None:
         return None
     raw_entries = _parse_raw(raw_blob)
@@ -329,15 +368,67 @@ def entries_from_git(root: Path, base: str, head: str) -> list[DiffEntry] | None
     return _align(raw_entries, named, counted)
 
 
+def entries_from_git(root: Path, base: str, head: str) -> list[DiffEntry] | None:
+    """Return aligned pull-request entries, or ``None`` when the range is unusable.
+
+    The range is the unique merge-base of the pinned commits. Zero merge-bases,
+    several merge-bases, a missing object and disagreeing views all return
+    ``None``.
+    """
+    base_sha = _rev_parse(root, base)
+    head_sha = _rev_parse(root, head)
+    if base_sha is None or head_sha is None:
+        return None
+    merge_base = _unique_merge_base(root, base_sha, head_sha)
+    if merge_base is None:
+        return None
+    return _entries_between(root, merge_base, head_sha)
+
+
+def _full_payload(base: str, head: str, reason: str) -> dict[str, str]:
+    return {
+        "base": base,
+        "base_sha": "",
+        "head": head,
+        "head_sha": "",
+        "merge_base": "",
+        "reason": reason,
+        "route": ROUTE_FULL,
+    }
+
+
 def decide(root: Path, base: str, head: str) -> dict[str, str]:
     """Return the route payload. Git failures stay on the full route."""
     if not base.strip() or not head.strip():
-        return {"base": base, "head": head, "reason": "missing_base_or_head", "route": ROUTE_FULL}
-    entries = entries_from_git(root, base, head)
+        return _full_payload(base, head, "missing_base_or_head")
+    base_sha = _rev_parse(root, base)
+    head_sha = _rev_parse(root, head)
+    if base_sha is None or head_sha is None:
+        return _full_payload(base, head, "git_error")
+    merge_base = _unique_merge_base(root, base_sha, head_sha)
+    if merge_base is None:
+        return _full_payload(base, head, "git_error")
+    entries = _entries_between(root, merge_base, head_sha)
     if entries is None:
-        return {"base": base, "head": head, "reason": "git_error", "route": ROUTE_FULL}
+        return {
+            "base": base,
+            "base_sha": base_sha,
+            "head": head,
+            "head_sha": head_sha,
+            "merge_base": merge_base,
+            "reason": "git_error",
+            "route": ROUTE_FULL,
+        }
     route, reason = classify_entries(entries)
-    return {"base": base, "head": head, "reason": reason, "route": route}
+    return {
+        "base": base,
+        "base_sha": base_sha,
+        "head": head,
+        "head_sha": head_sha,
+        "merge_base": merge_base,
+        "reason": reason,
+        "route": route,
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
