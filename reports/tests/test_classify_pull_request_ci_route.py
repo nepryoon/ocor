@@ -1431,5 +1431,241 @@ class LiveStackMarkerTests(unittest.TestCase):
         self.assertEqual(other.returncode, 5, other.stdout + other.stderr)
 
 
+_FAKE_GIT = """#!/usr/bin/env python3
+import os
+import sys
+
+argv = sys.argv[1:]
+if argv[:1] == ["-C"]:
+    argv = argv[2:]
+command = argv[0] if argv else ""
+if command == "rev-parse":
+    sys.stdout.buffer.write(b"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\n")
+    raise SystemExit(0)
+if command == "merge-base":
+    sys.stdout.buffer.write(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\n")
+    raise SystemExit(0)
+if command == "show":
+    sys.stdout.buffer.write(
+        b"# Decision\\n\\n## Opzioni\\n\\n1. **Titolo.** testo\\n\\n"
+        b"## Raccomandazione\\n\\nNessuna.\\n"
+    )
+    raise SystemExit(0)
+if command != "diff":
+    sys.stderr.buffer.write(b"unexpected\\n")
+    raise SystemExit(99)
+path = os.environ.get(
+    "OCOR_FAKE_PATH", "reports/development/ITERATION_LOG.md"
+).encode()
+status = os.environ.get("OCOR_FAKE_STATUS", "M").encode()
+raw_status = os.environ.get("OCOR_FAKE_RAW_STATUS", "M").encode()
+if "--raw" in argv:
+    meta = (
+        b":100644 100644 "
+        + b"a" * 40
+        + b" "
+        + b"b" * 40
+        + b" "
+        + raw_status
+    )
+    sys.stdout.buffer.write(meta + b"\\0" + path + b"\\0")
+    raise SystemExit(0)
+if "--name-status" in argv:
+    spec = os.environ.get("OCOR_FAKE_RECORDS")
+    if spec:
+        parts = spec.split("|")
+        if len(parts) % 2:
+            raise SystemExit(98)
+        blob = b""
+        for index in range(0, len(parts), 2):
+            blob += parts[index].encode() + b"\\0" + parts[index + 1].encode() + b"\\0"
+        sys.stdout.buffer.write(blob)
+    else:
+        sys.stdout.buffer.write(status + b"\\0" + path + b"\\0")
+    raise SystemExit(0)
+if "--numstat" in argv:
+    counters = os.environ.get("OCOR_FAKE_NUMSTAT", "1\\t1").encode()
+    sys.stdout.buffer.write(counters + b"\\t" + path + b"\\0")
+    raise SystemExit(0)
+sys.stderr.buffer.write(b"unexpected diff\\n")
+raise SystemExit(99)
+"""
+
+
+class RepairCycle3Tests(unittest.TestCase):
+    """VF-001 and VF-002 of OCOR-DEV-REM-0066-ffc6dbfb55dc-2.
+
+    Option 1 of REM-0066-CYCLE2-NO-GO-REFORMULATION. The fast path is the
+    classifier CLI and scripts/validate_decision_request_format.py. A binary
+    numstat stays on full CI. These tests do not start the stack.
+    """
+
+    def _classified(self, **env: str) -> dict[str, Any]:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            bindir = root / "bin"
+            bindir.mkdir()
+            fake = bindir / "git"
+            fake.write_text(_FAKE_GIT, encoding="utf-8")
+            fake.chmod(0o755)
+            saved_path = os.environ.get("PATH", "")
+            saved = {key: os.environ.get(key) for key in env}
+            os.environ["PATH"] = f"{bindir}{os.pathsep}{saved_path}"
+            for key, value in env.items():
+                os.environ[key] = value
+            try:
+                return _classify(root, "BASE", "HEAD")
+            finally:
+                os.environ["PATH"] = saved_path
+                for key, value in saved.items():
+                    if value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = value
+
+    def _format_with_git(self, **env: str) -> tuple[subprocess.CompletedProcess[str], dict[str, Any]]:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            bindir = root / "bin"
+            bindir.mkdir()
+            fake = bindir / "git"
+            fake.write_text(_FAKE_GIT, encoding="utf-8")
+            fake.chmod(0o755)
+            saved_path = os.environ.get("PATH", "")
+            saved = {key: os.environ.get(key) for key in env}
+            os.environ["PATH"] = f"{bindir}{os.pathsep}{saved_path}"
+            for key, value in env.items():
+                os.environ[key] = value
+            try:
+                return _format_payload("--root", str(root), "--base", "BASE", "--head", "HEAD")
+            finally:
+                os.environ["PATH"] = saved_path
+                for key, value in saved.items():
+                    if value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = value
+
+    def test_direct_options_and_one_question_exit_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "REQUEST.md"
+            target.write_text(_VALID_DIRECT, encoding="utf-8")
+            direct, direct_payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+            self.assertEqual(direct.returncode, 0, direct.stderr + direct.stdout)
+            self.assertEqual(direct_payload["reason"], "ok")
+            target.write_text(
+                "# Decision\n\n### Opzioni del quesito A\n\nA1. **Prima.** testo\n",
+                encoding="utf-8",
+            )
+            single, single_payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+            self.assertEqual(single.returncode, 0, single.stderr + single.stdout)
+            self.assertEqual(single_payload["reason"], "ok")
+
+    def test_integer_numstat_stays_state_only_and_binary_stays_full(self) -> None:
+        integers = self._classified(OCOR_FAKE_NUMSTAT="3\t4")
+        self.assertEqual(integers["route"], "state_only")
+        self.assertEqual(integers["reason"], "state_files")
+        binary = self._classified(OCOR_FAKE_NUMSTAT="-\t-")
+        self.assertEqual(binary["route"], "full")
+        self.assertEqual(binary["reason"], "binary")
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            base = _init_repo(repo)
+            (repo / STATE_FILES[0]).write_text("changed\n", encoding="utf-8")
+            head = _commit_all(repo, "state")
+            live = _classify(repo, base, head)
+            self.assertEqual(live["route"], "state_only")
+            self.assertEqual(live["reason"], "state_files")
+
+    def test_empty_non_numeric_and_single_dash_counters_select_full(self) -> None:
+        cases = {
+            "empty": "\t1",
+            "non_numeric": "xx\t1",
+            "single_dash": "-\t1",
+            "sign": "-1\t1",
+        }
+        for name, counters in cases.items():
+            with self.subTest(name=name):
+                result = self._classified(OCOR_FAKE_NUMSTAT=counters)
+                self.assertEqual(result["route"], "full")
+                self.assertEqual(result["reason"], "git_error")
+
+    def test_unreadable_status_selects_full_and_is_not_ok(self) -> None:
+        for status in ("MM", "Z"):
+            with self.subTest(status=status):
+                result = self._classified(
+                    OCOR_FAKE_STATUS=status,
+                    OCOR_FAKE_RAW_STATUS=status,
+                )
+                self.assertEqual(result["route"], "full")
+                self.assertEqual(result["reason"], "git_error")
+                proc, payload = self._format_with_git(OCOR_FAKE_STATUS=status)
+                self.assertNotEqual(proc.returncode, 0)
+                self.assertEqual(payload["reason"], "git_error")
+                self.assertNotEqual(payload["reason"], "ok")
+
+    def test_unreadable_status_before_a_real_file_is_not_ok(self) -> None:
+        spec = "MM|README.md|M|reports/development/decision_requests/NEW.md"
+        proc, payload = self._format_with_git(OCOR_FAKE_RECORDS=spec)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(payload["reason"], "git_error")
+        kept = "M|README.md|A|reports/development/decision_requests/NEW.md"
+        ok, ok_payload = self._format_with_git(OCOR_FAKE_RECORDS=kept)
+        self.assertEqual(ok.returncode, 0, ok.stderr + ok.stdout)
+        self.assertEqual(ok_payload["reason"], "ok")
+        self.assertEqual(
+            ok_payload["checked"],
+            ["reports/development/decision_requests/NEW.md"],
+        )
+
+    def test_option_only_inside_a_fence_fails(self) -> None:
+        body = (
+            "# Decision\n\n"
+            "## Opzioni\n\n"
+            "```\n"
+            "1. **Titolo.** testo\n"
+            "```\n"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "REQUEST.md").write_text(body, encoding="utf-8")
+            proc, payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(payload["reason"], "option_only_in_fence")
+
+    def test_repeated_question_letter_fails(self) -> None:
+        body = (
+            "# Decision\n\n"
+            "### Opzioni del quesito A\n\n"
+            "A1. **Prima.** testo\n\n"
+            "### Opzioni del quesito A\n\n"
+            "A1. **Seconda.** testo\n"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "REQUEST.md").write_text(body, encoding="utf-8")
+            proc, payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(payload["reason"], "repeated_question")
+
+    def test_repeated_identifier_fails(self) -> None:
+        body = (
+            "# Decision\n\n"
+            "## Opzioni\n\n"
+            "1. **Prima.** testo\n\n"
+            "## Nota\n\n"
+            "Nessuna.\n\n"
+            "## Opzioni\n\n"
+            "1. **Seconda.** testo\n"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "REQUEST.md").write_text(body, encoding="utf-8")
+            proc, payload = _format_payload("--root", str(root), "--path", "REQUEST.md")
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(payload["reason"], "repeated_identifier")
+
+
 if __name__ == "__main__":
     unittest.main()
