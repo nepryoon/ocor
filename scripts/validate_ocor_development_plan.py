@@ -1876,6 +1876,11 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
+        # FUSEKI-ARCHIVE-COPY-20261123 records only. Not a production file.
+        # The acquisition script and its tests stay the production change.
+        "reports/assurance/FUSEKI-ARCHIVE-COPY-20261123/FUSEKI-ARCHIVE-COPY-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
