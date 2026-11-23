@@ -20,6 +20,7 @@ import tempfile
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
+from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
@@ -115,13 +116,38 @@ def _reject_lone_surrogates(value: object, *, where: str) -> None:
     raise BootstrapError(f"{where}: unexpected JSON type rejected")
 
 
+def _load_stored_json(path: Path, *, where: str) -> dict[str, Any]:
+    """Load one stored JSON object. Decode and parse errors stay typed."""
+    try:
+        loaded = load_json(path)
+    except UnicodeDecodeError as exc:
+        raise BootstrapError(f"{where}: {path.name} is not valid UTF-8") from exc
+    _reject_lone_surrogates(loaded, where=where)
+    return loaded
+
+
 def cache_info(repository: Path) -> dict[str, str]:
-    loaded = load_json(repository / "infra/services.lock.json")
-    _reject_lone_surrogates(loaded, where="Fuseki acquisition lock")
-    service = next(item for item in loaded["services"] if item["id"] == "fuseki")
-    digest = service["build"]["source_sha512"]
+    loaded = _load_stored_json(repository / "infra/services.lock.json", where="Fuseki acquisition lock")
+    services = loaded.get("services")
+    if not isinstance(services, list) or len(services) == 0:
+        raise BootstrapError("Fuseki acquisition lock: services must be a non-empty list")
+    service = None
+    for index, item in enumerate(services):
+        if not isinstance(item, dict) or "id" not in item:
+            raise BootstrapError(
+                f"Fuseki acquisition lock: services[{index}] must be an object with id")
+        if item["id"] == "fuseki":
+            service = item
+            break
+    if not isinstance(service, dict):
+        raise BootstrapError("Fuseki acquisition lock: fuseki service is absent")
+    build = service.get("build")
+    if not isinstance(build, dict) or "source_sha512" not in build:
+        raise BootstrapError(
+            "Fuseki acquisition lock: fuseki build must be an object naming source_sha512")
+    digest = build["source_sha512"]
     # The lock still names the Apache archive. The governed copy is not a lock source.
-    if (service["version"] != "6.2.0" or service["source"] != APACHE_SOURCES[-1]
+    if (service.get("version") != "6.2.0" or service.get("source") != APACHE_SOURCES[-1]
             or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{128}", digest)):
         raise BootstrapError("Fuseki acquisition lock is not the governed version/source/SHA512")
     return {"key": "fuseki-sha512-" + digest, "sha512": digest,
@@ -172,8 +198,7 @@ def acquire(repository: Path, *, timeout: float = 600) -> tuple[Path, dict[str, 
         digest = checked_sha512(target, info["sha512"])
         source = None
         if provenance.exists():
-            loaded = load_json(provenance)
-            _reject_lone_surrogates(loaded, where="Fuseki cache provenance")
+            loaded = _load_stored_json(provenance, where="Fuseki cache provenance")
             source = loaded.get("source")
         # Provenance is informative; it can never authorize archive bytes.
         if source not in SOURCES:
@@ -224,7 +249,7 @@ def acquire(repository: Path, *, timeout: float = 600) -> tuple[Path, dict[str, 
             result = {"cache": "MISS", "cache_key": info["key"], "source": source, "verified_sha512": digest}
             print(json.dumps({"operation": "Fuseki archive", **result}), flush=True)
             return target, result
-        except (HTTPError, URLError, TimeoutError, ConnectionError) as exc:
+        except (HTTPError, URLError, TimeoutError, ConnectionError, HTTPException) as exc:
             failures.append({"source": source, "error": str(exc)})
             print(json.dumps({"operation": "Fuseki archive source", **failures[-1], "status": "FAIL"}), flush=True)
         finally:
