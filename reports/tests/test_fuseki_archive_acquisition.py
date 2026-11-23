@@ -406,3 +406,56 @@ def test_governed_copy_request_sends_no_authorization_header(tmp_path, monkeypat
     names = [name.lower() for name, _value in seen[0].header_items()]
     assert "authorization" not in names
     assert "token" not in seen[0].full_url
+
+
+def test_lock_digest_form_is_rejected_before_use(tmp_path):
+    """Empty, non-ASCII, uppercase and non-string digests are not hashes."""
+    valid = hashlib.sha512(b"governed archive").hexdigest()
+    cases = ["", "é" + valid[1:], valid.upper(), 1, True, None]
+    for index, digest in enumerate(cases):
+        case_dir = tmp_path / str(index)
+        case_dir.mkdir()
+        repo = repository(case_dir)
+        lock = repo / "infra/services.lock.json"
+        payload = json.loads(lock.read_text())
+        payload["services"][0]["build"]["source_sha512"] = digest
+        lock.write_text(json.dumps(payload))
+        with pytest.raises(BootstrapError, match="SHA512"):
+            archive.cache_info(repo)
+
+
+def test_lock_json_rejects_lone_surrogates(tmp_path):
+    repo = repository(tmp_path)
+    lock = repo / "infra/services.lock.json"
+    payload = json.loads(lock.read_text())
+    payload["services"][0]["nested"] = {"pair": "ok", "lone": "\ud800"}
+    payload["services"][0]["\ud800"] = "key"
+    lock.write_text(json.dumps(payload).replace("\\ud800", "\\uD800"))
+    with pytest.raises(BootstrapError, match="surrogate"):
+        archive.cache_info(repo)
+
+
+def test_budget_rejects_bool_before_any_download(tmp_path, monkeypatch):
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bool budget downloaded"))
+    with pytest.raises(BootstrapError, match="budget"):
+        archive.acquire(repository(tmp_path), timeout=True)
+
+
+@pytest.mark.parametrize("timeout", [float("nan"), float("inf"), float("-inf")])
+def test_budget_rejects_non_finite_numbers(tmp_path, monkeypatch, timeout):
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("non-finite budget downloaded"))
+    with pytest.raises(BootstrapError, match="budget"):
+        archive.acquire(repository(tmp_path), timeout=timeout)
+
+
+def test_cache_hit_provenance_rejects_lone_surrogate(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    info = archive.cache_info(repo)
+    directory = repo / info["path"]
+    directory.mkdir(parents=True)
+    (directory / "apache-jena-fuseki.tar.gz").write_bytes(b"governed archive")
+    (directory / "provenance.json").write_text('{"\\uD800": "lone", "source": "CONTENT"}\n')
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bad provenance downloaded"))
+    with pytest.raises(BootstrapError, match="surrogate"):
+        archive.acquire(repo, timeout=10)
+    assert not list(repo.rglob("*.part"))
