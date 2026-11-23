@@ -23,8 +23,8 @@ from contextlib import contextmanager
 from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.parse import urlparse, urlunparse
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener, getproxies
 from typing import Any
 
 from ocor_bootstrap_lib import BootstrapError, load_json, root, run
@@ -86,8 +86,46 @@ class OfficialRedirect(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+_AUTH_HEADER_NAMES = frozenset({"authorization", "proxy-authorization"})
+
+
+def _without_userinfo(url: str) -> str:
+    """Drop userinfo from a proxy URL. The host, port and path stay."""
+    parsed = urlparse(url)
+    if parsed.username is None and parsed.password is None:
+        return url
+    host = parsed.hostname or ""
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    netloc = f"{host}:{parsed.port}" if parsed.port is not None else host
+    return urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
+
+
+def _anonymous_proxies() -> dict[str, str]:
+    proxies: dict[str, str] = {}
+    for scheme, url in getproxies().items():
+        if not isinstance(url, str):
+            continue
+        proxies[scheme] = url if scheme == "no" else _without_userinfo(url)
+    return proxies
+
+
+class AnonymousProxyHandler(ProxyHandler):
+    """Environment proxy without credentials or authorization headers."""
+
+    def __init__(self) -> None:
+        super().__init__(_anonymous_proxies())
+
+
+def _reject_authorization_headers(request: Request) -> None:
+    names = [name.lower() for name, _value in request.header_items()]
+    if any(name in _AUTH_HEADER_NAMES for name in names):
+        raise BootstrapError("anonymous acquisition rejects an authorization header")
+
+
 def urlopen(request: Request, *, timeout: float) -> Any:
-    return build_opener(OfficialRedirect()).open(request, timeout=timeout)
+    _reject_authorization_headers(request)
+    return build_opener(AnonymousProxyHandler(), OfficialRedirect()).open(request, timeout=timeout)
 
 
 def _reject_lone_surrogates(value: object, *, where: str) -> None:
