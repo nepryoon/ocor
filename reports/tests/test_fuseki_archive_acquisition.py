@@ -443,6 +443,41 @@ def test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy(monkey
     assert "authorization" not in seen["headers"]
 
 
+@pytest.mark.parametrize("proxy", [
+    "synthetic-user:synthetic-pass@127.0.0.1:9",
+    "//synthetic-user:synthetic-pass@127.0.0.1:9",
+])
+def test_real_opener_omits_proxy_authorization_for_authority_proxy_forms(monkeypatch, proxy):
+    """Authority forms carry credentials that urlparse does not classify as userinfo."""
+    import http.client
+    from urllib.request import Request
+
+    for name in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"):
+        monkeypatch.setenv(name, proxy)
+    monkeypatch.delenv("no_proxy", raising=False)
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    seen = {}
+
+    def connect(self):
+        headers = {
+            str(key).lower(): value
+            for key, value in dict(getattr(self, "_tunnel_headers", {}) or {}).items()
+        }
+        seen["tunnel_host"] = getattr(self, "_tunnel_host", None)
+        seen["headers"] = headers
+        raise BootstrapError("stop before io")
+
+    monkeypatch.setattr(http.client.HTTPSConnection, "connect", connect)
+    with pytest.raises(BootstrapError, match="stop before io"):
+        archive.urlopen(
+            Request(GOVERNED_COPY, headers={"User-Agent": "OCOR-governed-acquisition/1"}),
+            timeout=1,
+        )
+    assert seen.get("tunnel_host") == "github.com"
+    assert "proxy-authorization" not in seen["headers"]
+    assert "authorization" not in seen["headers"]
+
+
 def test_lock_digest_form_is_rejected_before_use(tmp_path):
     """Empty, non-ASCII, uppercase and non-string digests are not hashes."""
     valid = hashlib.sha512(b"governed archive").hexdigest()
