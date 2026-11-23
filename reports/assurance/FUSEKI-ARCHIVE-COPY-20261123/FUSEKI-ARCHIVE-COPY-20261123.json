@@ -43,6 +43,365 @@
       "rg -n '^def |^class ' scripts/acquire_fuseki_archive.py"
     ]
   },
+  "pre_campaign": {
+    "allowlist_precheck": {
+      "decision": "EVIDENCE-PATHS-ALLOWLIST-PRECHECK (2026-11-09)",
+      "executed_on": "9e8a99c68b44b956f6ffea23d1a88067e8199776",
+      "log_sha256": "4cea1bf7bb9b7372e836ab65d765a4ee147ffd576a3293e63e27c16bd5745602",
+      "manifests_already_allowlisted": [
+        "reports/evidence/G0/MANIFEST.json",
+        "reports/evidence/G2/MANIFEST.json",
+        "reports/evidence/G5/MANIFEST.json"
+      ],
+      "paths": [
+        "reports/assurance/FUSEKI-ARCHIVE-COPY-20261123/FUSEKI-ARCHIVE-COPY-20261123.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.log"
+      ],
+      "placeholder_result": "PASS",
+      "status": "PASS"
+    },
+    "decision": "PRE-CAMPAIGN-GATE (2026-10-26)",
+    "environment": {
+      "node": "v20.20.2",
+      "python": "3.12.11",
+      "ruff": "0.13.1",
+      "typescript": "7.0.2",
+      "uv": "0.12.5"
+    },
+    "executed_on": "9e8a99c68b44b956f6ffea23d1a88067e8199776",
+    "input_hash_check": {
+      "commit": "e6f371cde5bcb569d4b526104aaf2846988c94cd",
+      "matches": {
+        "reports/tests/test_fuseki_archive_acquisition.py": "981b0b0f2a8fd4a14f90b3378f9c7bbd228b4e04e8793d91882870daf19c5866",
+        "scripts/acquire_fuseki_archive.py": "806db7257ce306df9e4aa6a134d7f88cd0825f0d751e057c3ee10c29c8203799"
+      },
+      "status": "PASS"
+    },
+    "not_executed": [
+      {
+        "name": "poc_integration_postgresql",
+        "reason": "The workflow starts a PostgreSQL service and runs live integration tests. This iteration does not provision that service and does not start the runtime suite.",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "name": "poc_runtime_unit",
+        "reason": "ocor-runtime/tests/runtime/ is the runtime unit job, not a static or quick gate. The full suite stays closed until after preventive review.",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "name": "poc_backend_assumptions",
+        "reason": "Backend-assumption tests are a runtime campaign slice, not a static gate. They stay closed until the single campaign after review.",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "name": "stack_provision_and_campaign_shards",
+        "reason": "bootstrap_ci_environment --execute, the live CI archive fetch, campaign shards, aggregation and teardown --execute are the runtime suite. This iteration stops before that suite.",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "name": "ci_only_actions",
+        "reason": "Checkout, setup, artifact upload and auto-merge are GitHub Actions infrastructure, not local checks.",
+        "status": "NOT_EXECUTED"
+      }
+    ],
+    "note": "Commands were executed on executed_on, which is the parent of the commit that adds this object. The self-check table is unchanged. Drift stays EXPECTED_FAIL until the real regressions run after preventive review.",
+    "steps": [
+      {
+        "exit": 0,
+        "log_sha256": "4cea1bf7bb9b7372e836ab65d765a4ee147ffd576a3293e63e27c16bd5745602",
+        "name": "allowlist_precheck",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "9df53abfe7e4bb326109c8ae85ab076a8fb2aac4187d769ab21bb9765c45fd5e",
+        "name": "autonomous_dry",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "811f0cc0be24f058bc79b6287f31a5a904655a77c9414ad04eb747f1c6b96f64",
+        "name": "autonomous_validate",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "918a8e777662d9f50aa18104ec10c1c50e1f1f266e16a5b7927b7c1c9c25e644",
+        "name": "bootstrap_check",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "5bf74c1452710b51ffa475fb17d1287b6da2c37c06b26638fd3606f184aa86db",
+        "name": "closure_report",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "name": "compose",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "2cde1c9e0de57103c4bf81e0b1c3a76a88b6a2773c994c4e9e4a4782fde0865a",
+        "name": "dec208",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "abf173105c169b364e331941cc67d8cc0d536d0f3be6929c6263c0723a9d4866",
+        "name": "document_harness",
+        "status": "PASS"
+      },
+      {
+        "exit": 1,
+        "log_sha256": "cb71614d0874bc5a4c988345a1c4fbf38cbf2b8608ecbb3f1cd4a4ca1c61efb6",
+        "name": "drift",
+        "note": "Drift is OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0072 and OCOR-DEV-0082. Point 4 of CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23) authorizes those requalifications. They stay NOT_EXECUTED until the campaign after preventive review. This record does not invent their results.",
+        "status": "EXPECTED_FAIL"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "32ee8a704e66ad3dfabd9cfff602baaf41cf775ce4119a842b90f032e1526979",
+        "name": "evidence_g0",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "baaf234d6e1634b6a6f9429d7acf4375be15b4b5fbd1053b7e51c63a9f10fb71",
+        "name": "fgm",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "f1ce76f4635d903fbdf3b668b7ca99775d411a73b47f1685209e46bf42c4ec52",
+        "name": "fitness",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "9497885b363ed3156abf090109b92ef6bf56cb343509bb70fce4be38115425b4",
+        "name": "guards",
+        "note": "The first run skipped test_generated_contracts_compile_under_tsc_strict because tsc was not on PATH while npm install was still running. This log is the re-run with tsc 7.0.2 on PATH: 602 passed, 0 skipped. check_junit reports tests 696, failures 0, errors 0, skipped 0.",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "3fc190bcf0acd280ef0dbb955d5c7b71448cf8430925856827c111cdce0c0356",
+        "name": "input_hashes",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "name": "inputs_diff",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+        "name": "language_script",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ee0062bc390c57e5167e70485794d7bac5c76a4301bdc5e3c028c437262fb877",
+        "name": "language_unittest",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "d88a5a1eeaaa1d597b1b791caa36166f52da6bf710764f1da712c76b64de7966",
+        "name": "lld",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ac7ad5465a15e718837d59f01c4cfb147f8cf432c3b07cfb95fdf50ec5682e21",
+        "name": "lock_schema",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ac04ad2a5daa688fdb47b4a4c7356d11871951032d34ee025a57f1b06a43d756",
+        "name": "markdownlint",
+        "status": "PASS"
+      },
+      {
+        "exit": 1,
+        "log_sha256": "05056ff65f7f4ce32206519b5afb664fa751bf03c8ec84744dff66f55dd955e0",
+        "name": "mermaid",
+        "note": "The workflow command exited 1 because the host AppArmor policy blocks the Chromium sandbox. The DAG file is unchanged from origin/main. This is not a PASS.",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "6ee6d13a5ff78dcfa0089126bd4823e93f7a6be9a5be217fc41e0cac43d95430",
+        "name": "methodology_schema",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130",
+        "name": "mypy",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ea6c5eca432eef64c81bf3a2c7f6df5e41347fd50f65dba5f93a6924806d5d85",
+        "name": "openapi",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+        "name": "plan",
+        "note": "An earlier run in this iteration exited 1 because reports/tests/openapi_31_validation_results.json was dirty from the OpenAPI step. That tracked file was restored. This log is the clean re-run.",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "dc84093fc9ed66491ff7ff738ebe422941e1b195e6f6cf23fcb6f2db1ee2a790",
+        "name": "preflight",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "04664ce46cd70e70eff088a6870a7de0e6a40475e4c37511b4f7f342638a5120",
+        "name": "pytest_0001",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "e685482bc79b1c30a576069e042ca8daa87ca3224ee46f3a4ddf9dfe075a69f7",
+        "name": "pytest_backlog",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "255cf4ef1a728b943b825950a2cb3c2a7030faef976153bb7a5ed919303fd248",
+        "name": "pytest_contracts",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "1997c803566c9ea96ab164bee3c2f662c3c0ed368416a49a4483ec63a25ee54e",
+        "name": "pytest_drift_tests",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "2a6028c38dfdaa988c74d7e10a8122158c0b4d0a50999bbb17d692482fdf6c2a",
+        "name": "pytest_lang_bench",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "c84dbc1c3ce3d57b5102d8cd20086217782d86ba63874a7297007fb5c55eac26",
+        "name": "pytest_runtime_evidence",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "753f7300acebaa3ccac98d3715a03aeb3e66a474425bb7436fc90aa19e5bb57a",
+        "name": "pytest_sdk",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+        "name": "rccad",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "3bade0c1983aab3ea5f4290f127f0c3d34150daf81f28fc74adb2c619100cf8f",
+        "name": "reset_dry",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+        "name": "ruff",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+        "name": "ruff_subset",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "40b951cae52565860314b0637b01b87ec8f152cb33777b78996e501a0f6a1bcc",
+        "name": "schema_tests",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+        "name": "scope",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+        "name": "sums_inputs",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "df21ddc1f9d3566524d70f1ac5aa99f87e6ba80c18ea5a5f15862c62075cdd74",
+        "name": "sums_reports",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "2f3f65840f97dd02e610028082e7e46714bfeb8c0ef4fa8630bcf88e6c61be45",
+        "name": "supply",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ea88196842ab871078745c43e9fe7db52aa518da6bccb828b9ad35490df01c50",
+        "name": "tsc",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "d4b815e6233663b12df602dbe3d2b2171acfaaf8fd90f0ec5d542dabd100af74",
+        "name": "unittest_rccad",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ca3124aa410885c87cf030ec64454d0cd51df327ab62b4157812616ae0d73d75",
+        "name": "unittest_tooling",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "33cd8f068420cb6c9f7b6c5b791e775f84bf67977c0aa6ecc4c61aa551e8e843",
+        "name": "verify_manifest",
+        "status": "PASS"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "60d372af09361f21bb5fbd68ad3a0efafd6633efb203d607b2fc7fb7b5a36d59",
+        "name": "mermaid_local_no_sandbox",
+        "note": "Same mermaid-cli 11.12.0 and the same DAG, with puppeteer args --no-sandbox --disable-setuid-sandbox. SVG bytes 370786. This shows the chart renders. It does not convert the workflow command to PASS.",
+        "status": "PASS"
+      }
+    ]
+  },
   "preventive_review": {
     "request_id": null,
     "status": "NOT_REQUESTED"
