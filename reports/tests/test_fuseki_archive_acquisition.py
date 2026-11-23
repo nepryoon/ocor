@@ -309,6 +309,9 @@ def test_copy_redirects_only_to_https_release_assets():
     )
     assert urlparse(allowed.get_full_url()).hostname == "release-assets.githubusercontent.com"
     rejected = (
+        "",
+        "not a url",
+        "https://exämple.invalid/asset",
         "http://release-assets.githubusercontent.com/asset",
         "https://example.invalid/asset",
         GOVERNED_COPY,
@@ -459,3 +462,49 @@ def test_cache_hit_provenance_rejects_lone_surrogate(tmp_path, monkeypatch):
     with pytest.raises(BootstrapError, match="surrogate"):
         archive.acquire(repo, timeout=10)
     assert not list(repo.rglob("*.part"))
+
+
+def test_json_tree_rejects_non_finite_number():
+    with pytest.raises(BootstrapError, match="non-finite"):
+        archive._reject_lone_surrogates({"nested": [float("nan")]}, where="Fuseki acquisition lock")
+    with pytest.raises(BootstrapError, match="non-finite"):
+        archive._reject_lone_surrogates(float("inf"), where="Fuseki acquisition lock")
+    with pytest.raises(BootstrapError, match="non-finite"):
+        archive._reject_lone_surrogates(float("-inf"), where="Fuseki acquisition lock")
+
+
+def test_build_ci_image_rejects_bool_budget_before_docker(tmp_path, monkeypatch):
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bool budget downloaded"))
+    monkeypatch.setattr(archive, "run", lambda *args, **kwargs: pytest.fail("docker started"))
+    with pytest.raises(BootstrapError, match="budget"):
+        archive.build_ci_image(repository(tmp_path), timeout=True)
+
+
+def test_build_ci_image_reports_typed_docker_failure(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+
+    repo = repository(tmp_path)
+    archive_path = tmp_path / "archive.tar.gz"
+    archive_path.write_bytes(b"governed archive")
+    monkeypatch.setattr(archive, "acquire", lambda *args, **kwargs: (archive_path, {"cache": "HIT"}))
+
+    @contextmanager
+    def context(*args, **kwargs):
+        yield tmp_path
+
+    class Result:
+        returncode = 1
+        stderr = "docker failed"
+
+    monkeypatch.setattr(archive, "build_context", context)
+    monkeypatch.setattr(archive, "run", lambda *args, **kwargs: Result())
+    with pytest.raises(BootstrapError, match="verified Fuseki build failed"):
+        archive.build_ci_image(repo, timeout=10)
+
+
+def test_main_execute_rejects_non_finite_timeout(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    monkeypatch.setattr(archive, "root", lambda: repo)
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("non-finite budget downloaded"))
+    monkeypatch.setattr(sys, "argv", ["acquire_fuseki_archive.py", "--execute", "--timeout", "nan"])
+    assert archive.main() == 1
