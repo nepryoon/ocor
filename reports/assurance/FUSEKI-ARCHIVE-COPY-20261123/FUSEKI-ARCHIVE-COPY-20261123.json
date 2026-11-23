@@ -54,11 +54,12 @@
   "pre_campaign": {
     "allowlist_precheck": {
       "decision": "EVIDENCE-PATHS-ALLOWLIST-PRECHECK (2026-11-09)",
-      "executed_on": "9e8a99c68b44b956f6ffea23d1a88067e8199776",
-      "log_sha256": "4cea1bf7bb9b7372e836ab65d765a4ee147ffd576a3293e63e27c16bd5745602",
+      "executed_on": "ce2d6f23357fcd7a81f8f4b9197dae4f6b07ccac",
+      "log_sha256": "936d28611533755b37044c85ab8c47b2b2aead8d4015a21a3feec57e43ef8eed",
       "manifests_already_allowlisted": [
         "reports/evidence/G0/MANIFEST.json",
         "reports/evidence/G2/MANIFEST.json",
+        "reports/evidence/G4/MANIFEST.json",
         "reports/evidence/G5/MANIFEST.json"
       ],
       "paths": [
@@ -69,8 +70,22 @@
         "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-fuseki-archive-copy-20261123.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.json",
-        "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.log"
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-fuseki-archive-copy-20261123.log"
       ],
       "placeholder_result": "PASS",
       "status": "PASS"
@@ -83,34 +98,34 @@
       "typescript": "7.0.2",
       "uv": "0.12.5"
     },
-    "executed_on": "9e8a99c68b44b956f6ffea23d1a88067e8199776",
+    "executed_on": "ce2d6f23357fcd7a81f8f4b9197dae4f6b07ccac",
     "input_hash_check": {
-      "commit": "e6f371cde5bcb569d4b526104aaf2846988c94cd",
+      "commit": "7416e8a128f24945da653756fa30a2488d75bbe3",
       "matches": {
-        "reports/tests/test_fuseki_archive_acquisition.py": "981b0b0f2a8fd4a14f90b3378f9c7bbd228b4e04e8793d91882870daf19c5866",
-        "scripts/acquire_fuseki_archive.py": "806db7257ce306df9e4aa6a134d7f88cd0825f0d751e057c3ee10c29c8203799"
+        "reports/tests/test_fuseki_archive_acquisition.py": "b24a30f630942f151d7e4697eeb91c70b4f87fc06ab528d71c3b5472f656b073",
+        "scripts/acquire_fuseki_archive.py": "23046a9cc08a6b6dadc5a6aadd0e404b60bbe5014dbb205fea4f7906825eccef"
       },
       "status": "PASS"
     },
     "not_executed": [
       {
         "name": "poc_integration_postgresql",
-        "reason": "The workflow starts a PostgreSQL service and runs live integration tests. This iteration does not provision that service and does not start the runtime suite.",
+        "reason": "The workflow starts a PostgreSQL service and runs live integration tests. This gate does not provision that service and does not start the runtime suite.",
         "status": "NOT_EXECUTED"
       },
       {
         "name": "poc_runtime_unit",
-        "reason": "ocor-runtime/tests/runtime/ is the runtime unit job, not a static or quick gate. The full suite stays closed until after preventive review.",
+        "reason": "ocor-runtime/tests/runtime/ is the runtime unit job, not a static or quick gate. It belongs to the single campaign after this gate.",
         "status": "NOT_EXECUTED"
       },
       {
         "name": "poc_backend_assumptions",
-        "reason": "Backend-assumption tests are a runtime campaign slice, not a static gate. They stay closed until the single campaign after review.",
+        "reason": "Backend-assumption tests are a runtime campaign slice, not a static gate. They belong to the single campaign after this gate.",
         "status": "NOT_EXECUTED"
       },
       {
         "name": "stack_provision_and_campaign_shards",
-        "reason": "bootstrap_ci_environment --execute, the live CI archive fetch, campaign shards, aggregation and teardown --execute are the runtime suite. This iteration stops before that suite.",
+        "reason": "bootstrap_ci_environment --execute, the live archive fetch, campaign shards, aggregation and teardown --execute are the runtime suite. This gate stops before that suite.",
         "status": "NOT_EXECUTED"
       },
       {
@@ -119,11 +134,11 @@
         "status": "NOT_EXECUTED"
       }
     ],
-    "note": "The gate object below was measured on 9e8a99c6, before the preventive-review corrections. It is historical. The gate is repeated on the head that contains those corrections, before the campaign.",
+    "note": "Measured on ce2d6f23357fcd7a81f8f4b9197dae4f6b07ccac after the preventive-review corrections. Drift exit 1 is EXPECTED_FAIL for the four completed-evidence tasks. The eleven-head requalification plan stays NOT_EXECUTED until the single campaign. The plan and guards results are the clean re-runs after the parallel-writer race.",
     "steps": [
       {
         "exit": 0,
-        "log_sha256": "4cea1bf7bb9b7372e836ab65d765a4ee147ffd576a3293e63e27c16bd5745602",
+        "log_sha256": "936d28611533755b37044c85ab8c47b2b2aead8d4015a21a3feec57e43ef8eed",
         "name": "allowlist_precheck",
         "status": "PASS"
       },
@@ -171,9 +186,9 @@
       },
       {
         "exit": 1,
-        "log_sha256": "cb71614d0874bc5a4c988345a1c4fbf38cbf2b8608ecbb3f1cd4a4ca1c61efb6",
+        "log_sha256": "8a40d0f3ca603316af349cd5a2e4a3fb29649ad9ece6a176d3e8c876b5db6dcd",
         "name": "drift",
-        "note": "Historical result on 9e8a99c6: drift was the four tasks then listed. The corrected inventory has eleven current heads. Results stay NOT_EXECUTED until the campaign. This entry is not a new gate run.",
+        "note": "Drift lists the four tasks in completed_evidence_tasks: OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0072 and OCOR-DEV-0082. Seven further sealed current heads are outside that list and stay in the requalification plan. Results stay NOT_EXECUTED until the campaign.",
         "status": "EXPECTED_FAIL"
       },
       {
@@ -190,20 +205,20 @@
       },
       {
         "exit": 0,
-        "log_sha256": "f1ce76f4635d903fbdf3b668b7ca99775d411a73b47f1685209e46bf42c4ec52",
+        "log_sha256": "29788a0b58ee0262486c064e6e4fc1670f574bed73769e44cbc0ef19b75b01e5",
         "name": "fitness",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "9497885b363ed3156abf090109b92ef6bf56cb343509bb70fce4be38115425b4",
+        "log_sha256": "f8f63ef86244d0f5e4c21e7890f8880e23cac60583f0575b97815286fdef8a5c",
         "name": "guards",
-        "note": "The first run skipped test_generated_contracts_compile_under_tsc_strict because tsc was not on PATH while npm install was still running. This log is the re-run with tsc 7.0.2 on PATH: 602 passed, 0 skipped. check_junit reports tests 696, failures 0, errors 0, skipped 0.",
+        "note": "The parallel run skipped test_generated_contracts_compile_under_tsc_strict because tsc was not on PATH while npm install was still running, and check_junit rejected skipped=1. This log is the re-run with tsc 7.0.2 on PATH: 626 passed, 0 skipped. check_junit reports tests 720, failures 0, errors 0, skipped 0.",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "3fc190bcf0acd280ef0dbb955d5c7b71448cf8430925856827c111cdce0c0356",
+        "log_sha256": "9215aa3c6f7d255032335b40d9e4f5c3400343b03bca8c7ef631bedfe5266c57",
         "name": "input_hashes",
         "status": "PASS"
       },
@@ -221,7 +236,7 @@
       },
       {
         "exit": 0,
-        "log_sha256": "ee0062bc390c57e5167e70485794d7bac5c76a4301bdc5e3c028c437262fb877",
+        "log_sha256": "30d531172157bda90961d40fc07feef964e1e920bb8e228838db2d5cfafc2aa2",
         "name": "language_unittest",
         "status": "PASS"
       },
@@ -239,13 +254,13 @@
       },
       {
         "exit": 0,
-        "log_sha256": "ac04ad2a5daa688fdb47b4a4c7356d11871951032d34ee025a57f1b06a43d756",
+        "log_sha256": "27401e05d041f12f1287fc66cc8e17574357671e4e89db8a3fba4ca37e7683e1",
         "name": "markdownlint",
         "status": "PASS"
       },
       {
         "exit": 1,
-        "log_sha256": "05056ff65f7f4ce32206519b5afb664fa751bf03c8ec84744dff66f55dd955e0",
+        "log_sha256": "cd26d9d9a5a8d4a377987c984773e4284dbbb655fd0e581af4546d14963b11e4",
         "name": "mermaid",
         "note": "The workflow command exited 1 because the host AppArmor policy blocks the Chromium sandbox. The DAG file is unchanged from origin/main. This is not a PASS.",
         "status": "NOT_EXECUTED"
@@ -272,54 +287,54 @@
         "exit": 0,
         "log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
         "name": "plan",
-        "note": "An earlier run in this iteration exited 1 because reports/tests/openapi_31_validation_results.json was dirty from the OpenAPI step. That tracked file was restored. This log is the clean re-run.",
+        "note": "The first run in this gate exited 1 because reports/tests/openapi_31_validation_results.json was dirty from the parallel OpenAPI step. That tracked file was restored. This log is the clean re-run.",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "dc84093fc9ed66491ff7ff738ebe422941e1b195e6f6cf23fcb6f2db1ee2a790",
+        "log_sha256": "271de7c68e2c39afc444b7fcefe761257fa0c38a6dc61978508016ba7f191690",
         "name": "preflight",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "04664ce46cd70e70eff088a6870a7de0e6a40475e4c37511b4f7f342638a5120",
+        "log_sha256": "56e20796868da6db0d4db83cb09a7271e28814c958b51297071723c0df94c772",
         "name": "pytest_0001",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "e685482bc79b1c30a576069e042ca8daa87ca3224ee46f3a4ddf9dfe075a69f7",
+        "log_sha256": "dc2ce22996f9b5e0b860ce189b6ae8c1abd3beb9e86dc6e5e1cc8afaa2e2ab3e",
         "name": "pytest_backlog",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "255cf4ef1a728b943b825950a2cb3c2a7030faef976153bb7a5ed919303fd248",
+        "log_sha256": "5815d07647ea896993913f9ae698e5b6fb7df05361a9a72d726c66758d1e3d04",
         "name": "pytest_contracts",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "1997c803566c9ea96ab164bee3c2f662c3c0ed368416a49a4483ec63a25ee54e",
+        "log_sha256": "b06acb3f9b38335db0209c5a6ed8e65ca702012d5080b4bebf4eced263667382",
         "name": "pytest_drift_tests",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "2a6028c38dfdaa988c74d7e10a8122158c0b4d0a50999bbb17d692482fdf6c2a",
+        "log_sha256": "86e4ee00a1bfeaaa55a48d5588a428226a0a81dae76c219f3ad2bbbfb602b803",
         "name": "pytest_lang_bench",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "c84dbc1c3ce3d57b5102d8cd20086217782d86ba63874a7297007fb5c55eac26",
+        "log_sha256": "630c06200818b3f951cafac9ea827508b521801197d96a165129d9c3d24995ac",
         "name": "pytest_runtime_evidence",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "753f7300acebaa3ccac98d3715a03aeb3e66a474425bb7436fc90aa19e5bb57a",
+        "log_sha256": "ac6fab108b6ca8dac8bbae0b2316df51171a0a4e46e753b0dbb71e8f0dbf5fed",
         "name": "pytest_sdk",
         "status": "PASS"
       },
@@ -349,13 +364,13 @@
       },
       {
         "exit": 0,
-        "log_sha256": "40b951cae52565860314b0637b01b87ec8f152cb33777b78996e501a0f6a1bcc",
+        "log_sha256": "de201120bd22ea1f155e1bb8ecc4cf4ffb0ef66a0930ec7fa6ea0bc61b935ce3",
         "name": "schema_tests",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+        "log_sha256": "ec71f3c9a3b087a0cbd73ff22a30a9eb50d27c2d43bb0a54d7bbbe51e25c140a",
         "name": "scope",
         "status": "PASS"
       },
@@ -379,19 +394,19 @@
       },
       {
         "exit": 0,
-        "log_sha256": "ea88196842ab871078745c43e9fe7db52aa518da6bccb828b9ad35490df01c50",
+        "log_sha256": "c596ddc3eb60ed8302f9c0ad88e324a954e7cff16e07e50a7f0ba0c653013bdf",
         "name": "tsc",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "d4b815e6233663b12df602dbe3d2b2171acfaaf8fd90f0ec5d542dabd100af74",
+        "log_sha256": "56545897b75612f27e7e689f998a1378a6b6378665e84934ed16f80bd6b57a52",
         "name": "unittest_rccad",
         "status": "PASS"
       },
       {
         "exit": 0,
-        "log_sha256": "ca3124aa410885c87cf030ec64454d0cd51df327ab62b4157812616ae0d73d75",
+        "log_sha256": "1ec5e4b42ff38d993b81b7511563217ce6cfcf64bfb64d9487b1748bff7a84fe",
         "name": "unittest_tooling",
         "status": "PASS"
       },
@@ -403,7 +418,7 @@
       },
       {
         "exit": 0,
-        "log_sha256": "60d372af09361f21bb5fbd68ad3a0efafd6633efb203d607b2fc7fb7b5a36d59",
+        "log_sha256": "fd18a26332c9393586cc15e535c5c08811f6ac35832f91559198bbdb738160c6",
         "name": "mermaid_local_no_sandbox",
         "note": "Same mermaid-cli 11.12.0 and the same DAG, with puppeteer args --no-sandbox --disable-setuid-sandbox. SVG bytes 370786. This shows the chart renders. It does not convert the workflow command to PASS.",
         "status": "PASS"
