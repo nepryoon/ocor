@@ -1,0 +1,1003 @@
+{
+  "change_set": {
+    "branch": "governed/fuseki-rebuild-identity-20261121",
+    "decision": "FUSEKI-REBUILD-IDENTITY-20261121 (2026-11-21) option 1; decisa per conto del PO, modello claude-fable-5-2, effort max",
+    "execution_commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+    "id": "FUSEKI-REBUILD-IDENTITY-20261121",
+    "lock_commit": "0dbb3541a7cc17726567f97b5aa5a8bc8f2bd851"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+      "cwd": ".",
+      "duration_seconds": 35.622,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+      "label": "bootstrap",
+      "not_executed": 0,
+      "raw_sha256": "2b3f2a69f578deae90d9dd4c8244417279d74f8918d121e77197f82bb9714bf0",
+      "skipped": 0,
+      "started_at": "2026-11-21T07:39:38Z",
+      "status": "PASS",
+      "xfailed": 0
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+      "cwd": ".",
+      "duration_seconds": 0.052,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+      "label": "verify-manifest-only",
+      "not_executed": 0,
+      "raw_sha256": "33cd8f068420cb6c9f7b6c5b791e775f84bf67977c0aa6ecc4c61aa551e8e843",
+      "skipped": 0,
+      "started_at": "2026-11-21T07:40:13Z",
+      "status": "PASS",
+      "xfailed": 0
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "cwd": ".",
+      "duration_seconds": 3.471,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+      "label": "verify-typed-execute",
+      "not_executed": 0,
+      "raw_sha256": "ddf8af69f531b7968105f4d8ba3b15f56ea5979813c5b26c3cdb1aaf679d8efb",
+      "skipped": 0,
+      "started_at": "2026-11-21T07:40:13Z",
+      "status": "PASS",
+      "xfailed": 0
+    }
+  ],
+  "commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+  "commit_role": "execution checkout dd0467f1881649ba0ca90c76b0867b84d95e544e, which already contains the Fuseki lock, the plan allowlist and the settled plan state. Repair cycle 2 executed every cited command on that checkout. Repair cycle 3 repeats only the four predecessor commands of OCOR-DEV-0070 after a governed teardown with an empty owned inventory, and removes the four extra PASS commands from that record. The evidence commit that stores this record does not change those inputs.",
+  "created_at": "2026-11-21T07:44:26Z",
+  "drifted_inputs": [
+    "infra/services.lock.json"
+  ],
+  "environment": {
+    "branch": "governed/fuseki-rebuild-identity-20261121",
+    "clean_shell": false,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "nep-LEGION",
+    "implementer_cli": "Grok Build (grok-4.7)",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "pytest_shell": "uv 0.12.5 is first on PATH for the development bootstrap. pytest of test_ocor_dev_0048.py and test_ocor_dev_rem_0023.py used env -i with HOME, PATH=/usr/bin:/bin, LANG=C.UTF-8, LC_ALL=C.UTF-8, OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN. The other cited commands used that uv-prepended shell without env -i. clean_shell is false.",
+    "python": "3.12.11",
+    "qualification_source_commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal 64199668 kB read on nep-LEGION in the regression session",
+    "threads": 24,
+    "uv": "0.12.5",
+    "uv_executable": "/home/luca/.ocor-codex/c5resume/toolchain/bin/uv",
+    "uv_executable_sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46"
+  },
+  "full_campaign": {
+    "executed": false,
+    "reason": "Repair cycle 2 of FUSEKI-REBUILD-IDENTITY-20261121 option 1 reran the record commands on the real local stack at execution commit dd0467f1881649ba0ca90c76b0867b84d95e544e. The full suite is not a prerequisite."
+  },
+  "independent_verification": {
+    "campaign": {
+      "executed": false,
+      "head": "a24756e0c90d82c0f5585e84868824b992d43d3b",
+      "mode": "NOT_A_FOUR_LANE_CAMPAIGN",
+      "reason": "The governing decision says the full suite is not a prerequisite. The verifier ran the record commands and the live checks named in the verdict. Excluded and left NOT_EXECUTED: the full ocor-runtime suite, a new Apache Fuseki archive acquisition, and the CI bootstrap rebuild.",
+      "status": "NOT_EXECUTED"
+    },
+    "candidate_json_sha256": "eb20d3e0ea91037dd10e77f8548f110a0658276f8b4f23d86d22ce63a68744c1",
+    "commands": [
+      {
+        "command": "./.venv/bin/python3 scripts/verify.py --json",
+        "exit_code": 127,
+        "source": "verdict.commands",
+        "summary": "Il percorso iniziale non esiste alla radice. Il controllo è stato eseguito con il Python 3.12.11 della PATH preparata dal loop."
+      },
+      {
+        "command": "python3 scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS nella shell pulita. Docker READY e sei porte locali libere prima dell'avvio. Hash e versioni del lock di toolchain confermati anche per Java."
+      },
+      {
+        "command": "SHA-256 degli eseguibili risolti tramite PATH, confronto con infra/toolchain.lock.json e infra/qualification_tools.lock.json",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Verificati docker, git, gh, node, Python, ruff, tsc, uv, helm, kind e kubectl. I digest coincidono con i lock e, dove riportati, con environment.json."
+      },
+      {
+        "command": "git show <commit>:<decision-request> | sha256sum",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Corrispondono i digest dell'opzione iniziale, dei passaggi cycle 5, cycle 6 image precondition e delle due decisioni cycle 6 NO_GO, incluse le disposition 096826dd e 379e15a5."
+      },
+      {
+        "command": "git diff --name-status <base> HEAD; confronto con allowlist governata e OCOR_SEALED_EVIDENCE_REGISTRY.json",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "40 percorsi autorizzati; zero modifiche a inputs/, ai 260 percorsi registrati come sigillati, al registro di conformità, a runtime, test, contratti o workflow."
+      },
+      {
+        "command": "Confronto strutturale del lock servizi e canonicalizzazione HEAD^..HEAD",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Nel lock servizi cambia solo build.output_sha256 di Fuseki. Il companion registra valore precedente, motivo e provenienza. Dockerfile e bootstrap sono byte-identici alla base e agli hash del companion. I soli due JSON del commit finale hanno valori identici al parent e serializzazione canonica."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "8/8 digest SHA-256 corrispondenti.",
+        "log_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+      },
+      {
+        "command": "python3 scripts/verify.py --json",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS harness meccanico con Python della PATH governata. La suite diretta di conformance è registrata separatamente.",
+        "log_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. 75 task, 241 input e zero drift.",
+        "log_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed"
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS.",
+        "log_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS_LOCAL_PRECHECK; 22 artefatti, 10 fitness function statiche e zero finding.",
+        "log_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. 37 controlli passati, due eseguibili opzionali indisponibili con fallback deterministici.",
+        "log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/fuseki-rebuild-identity-20261121",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. 40 percorsi, superfici immutabili e ledger stabili.",
+        "log_sha256": "9a595fe2736c19cf4d01db28ce143f89746bf62e78215e0ae5c2e6e98e5b4550"
+      },
+      {
+        "command": "python3 scripts/check_execution_commit_inputs.py --execution-commit dd0467f1881649ba0ca90c76b0867b84d95e544e --record reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. 15 record e 100 hash input coincidono tra commit di esecuzione e HEAD.",
+        "log_sha256": "3271d445dd1d93c8184a322d7ce45e22fc6bb955c37721fe96c0780740c8c334"
+      },
+      {
+        "command": "python3 -c '\nimport json, subprocess, sys\nbase, head = sys.argv[1], sys.argv[2]\ndef show(rev, path):\n    return subprocess.check_output([\"git\",\"show\",f\"{rev}:{path}\"])\ndef start(blob, path_bytes):\n    pos = blob.find(path_bytes)\n    marker = blob.rfind(b\"\\n    {\", 0, pos)\n    return marker + 1\nnames = subprocess.check_output([\"git\",\"diff\",\"--name-only\",base,head,\"--\",\"reports/evidence/G0/MANIFEST.json\",\"reports/evidence/G2/MANIFEST.json\",\"reports/evidence/G5/MANIFEST.json\"], text=True).split()\nassert names, \"no manifests\"\nfor path in names:\n    b, h = show(base, path), show(head, path)\n    if b == h:\n        print(path, \"identical\")\n        continue\n    first = json.loads(b)[\"artifacts\"][0][\"path\"].encode()\n    sb, sh = start(b, first), start(h, first)\n    ok = h[:sb] == b[:sb] and h[sh:] == b[sb:]\n    print(path, \"pure_insertion\" if ok else \"FAIL\", sh - sb)\n    if not ok:\n        sys.exit(1)\n' 5344565521e8f7db701073cd5554e49834781598 a24756e0c90d82c0f5585e84868824b992d43d3b",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. I tre manifest preservano byte per byte il contenuto storico dopo la rimozione del blocco in testa.",
+        "log_sha256": "f49aa0ff684fc0ab8a35156286d15791d51732df156ff8a2598dbc41fb4b4a40"
+      },
+      {
+        "command": "ruff check . --no-cache",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS.",
+        "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+      },
+      {
+        "command": "python3 -m mypy --cache-dir <verifier-workdir>/mypy-cache",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Il bootstrap di sviluppo ha sincronizzato il solo extra test. La prima invocazione non trova il modulo mypy; gate rieseguito nell'ambiente isolato con gli extra dal lock.",
+        "log_sha256": "bcc013a1de9516a22fbee80bf25da829c546d709f93de5edbae47aff10daa71e"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --non-skipped",
+        "exit_code": 2,
+        "source": "verdict.commands",
+        "summary": "L'invocazione senza --task/--manifest esce 2 per uso. Gate rieseguito sui 15 record del perimetro.",
+        "log_sha256": "2654a5cd0368399c40a661ddc1ddb4817d5fe8c8132eecae0d1d54b507219e4f"
+      },
+      {
+        "command": "python3 -m pytest -p no:cacheprovider reports/tests/test_schema_conformance.py",
+        "exit_code": 3,
+        "source": "verdict.commands",
+        "summary": "Pytest intercetta l'uscita dello script standalone durante la raccolta. I 98 casi sono stati valutati, poi rieseguiti in modalità diretta.",
+        "log_sha256": "5ebab7b29ba723a30eb12604f8a18788069036bc368917b0a6d1cbfe61dd8636"
+      },
+      {
+        "command": "git rev-parse HEAD",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "HEAD detached uguale a quello richiesto e branch remoto locale allineato.",
+        "log_sha256": "bde2eeda59d665fdc611cb38eec8f6362a426fe5e46be66e3141309e650dd000"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-bootstrap-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-bootstrap-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 -c 'import json; rows=json.load(open(\"infra/services.lock.json\"))[\"services\"]; row=next(item for item in rows if item.get(\"id\")==\"fuseki\"); digest=row[\"build\"][\"output_sha256\"]; image=row[\"build\"][\"output_image\"]; assert digest==\"f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1\", digest; assert image==\"ocor/jena-fuseki:6.2.0\", image; print(digest)'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Lock servizi e tag di uscita conformi all'identità conservata.",
+        "log_sha256": "bc09cf9dfb371407e9967ac0d5d6b4299ffc1367297e77e52e0cba3dd40faa83"
+      },
+      {
+        "command": "set -e\ndocker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap\ndocker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap\ndocker network ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Inventario iniziale del progetto Compose vuoto.",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "command": "python3 scripts/bootstrap_development_environment.py --execute",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. Stack avviato in 35,2 s e 13 voci di servizio acquisite. Il ramo build non è entrato: il tag esistente coincideva con il digest atteso. Il log non contiene un comando di build.",
+        "log_sha256": "d90bfe6d59445c26d3f7b4c791d342f5b31f0d3ef2db8c56b95246248aded067"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "after-bootstrap-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "after-bootstrap-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "git rev-parse HEAD",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "resume-exact-worktree",
+        "log_sha256": "bde2eeda59d665fdc611cb38eec8f6362a426fe5e46be66e3141309e650dd000"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "resume-after-bootstrap-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "resume-after-bootstrap-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-initialize-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-initialize-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 deploy/bootstrap/init/initialize_services.py --env-file .ocor/bootstrap.env",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. Realm ocor, policy OPA, mount OpenBao e database di test creati; trust SPIRE inizializzato.",
+        "log_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-fixtures-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-fixtures-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 deploy/bootstrap/fixtures/load_fixtures.py --env-file .ocor/bootstrap.env",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. Fixture TerminusDB e TypeDB caricate e verificate.",
+        "log_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-spire-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-spire-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 -c '\nimport json, subprocess, time\nagent=[\"docker\",\"exec\",\"ocor-bootstrap-spire-agent-1\",\"/opt/spire/bin/spire-agent\"]\nserver=[\"docker\",\"exec\",\"ocor-bootstrap-spire-server-1\",\"/opt/spire/bin/spire-server\"]\n\ndef run(cmd, timeout=30):\n    return subprocess.run(cmd, text=True, capture_output=True, timeout=timeout)\n\ndef retry(cmd, timeout=15, attempts=5):\n    last=None\n    for attempt in range(attempts):\n        last=run(cmd, timeout=timeout)\n        if last.returncode==0:\n            return last\n        if attempt+1<attempts:\n            time.sleep(min(2**attempt, 15))\n    return last\n\nready=retry(agent+[\"healthcheck\",\"-socketPath\",\"/run/spire/sockets/agent.sock\"], timeout=10)\nassert ready.returncode==0, ready.stderr[-400:]\nlisted=run(server+[\"agent\",\"list\",\"-socketPath\",\"/run/spire/sockets/server.sock\",\"-output\",\"json\"])\nassert listed.returncode==0, listed.stderr[-400:]\nagents=json.loads(listed.stdout)[\"agents\"]\nassert len(agents)==1 and agents[0][\"id\"][\"trust_domain\"]==\"ocor.test\", agents\nident=agents[0][\"id\"]\nparent=\"spiffe://%s%s\" % (ident[\"trust_domain\"], ident[\"path\"])\ncreated=run(server+[\"entry\",\"create\",\"-socketPath\",\"/run/spire/sockets/server.sock\",\"-parentID\",parent,\"-spiffeID\",\"spiffe://ocor.test/ocor/control-plane\",\"-selector\",\"unix:uid:0\"])\nassert created.returncode==0, created.stderr[-400:]\nmaterial=retry(agent+[\"api\",\"fetch\",\"x509\",\"-socketPath\",\"/run/spire/sockets/agent.sock\",\"-output\",\"json\"], timeout=15)\nassert material.returncode==0, material.stderr[-400:]\nsvids=json.loads(material.stdout).get(\"svids\", [])\nassert any(item.get(\"spiffe_id\")==\"spiffe://ocor.test/ocor/control-plane\" for item in svids)\nprint(\"SVID_OK spiffe://ocor.test/ocor/control-plane\")\n'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "SVID_OK spiffe://ocor.test/ocor/control-plane, con la sola entry autorizzata e agente attestato come parent.",
+        "log_sha256": "b70093f89b4937e93b9649422624ee8f3d7b775403e21258a8d7b31b9f98aae3"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-overlay-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-overlay-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 -c 'import json, pathlib; path=pathlib.Path(\".ocor/fuseki-jvm-overlay.json\"); path.write_text(json.dumps({\"services\":{\"fuseki\":{\"environment\":{\"JVM_ARGS\":\"-Xms128m -Xmx1G\"}}}}, indent=2, sort_keys=True)+\"\\n\"); print(path, \"overlay_only_jvm_args\")'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Overlay con la sola chiave services.fuseki.environment.JVM_ARGS.",
+        "log_sha256": "acc423028522c0b5a1539ffcbfb08352de956e396d728330ba8eec96f602c904"
+      },
+      {
+        "command": "docker compose --env-file .ocor/bootstrap.env -f deploy/bootstrap/compose.yaml -f .ocor/fuseki-jvm-overlay.json up --detach --no-build --no-deps fuseki",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Ricreato il solo servizio Fuseki con --no-build --no-deps.",
+        "log_sha256": "f18a7bf6df503d56aa587adb0ed656db03c8989c0a03213b730880bd5a36d601"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "after-overlay-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "after-overlay-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker top ocor-bootstrap-fuseki-1 -eo pid,args",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Il processo JVM attivo ha -Xms128m -Xmx1G.",
+        "log_sha256": "7de4bc7d37f7674f7d0044ca0e0f041eea1c886fdd4e4dc4e1db4abc15f1a295"
+      },
+      {
+        "command": "python3 -c 'import re, subprocess; proc=subprocess.run([\"docker\",\"exec\",\"ocor-bootstrap-fuseki-1\",\"java\",\"-Xms128m\",\"-Xmx1G\",\"-XX:+PrintFlagsFinal\",\"-version\"], text=True, capture_output=True); print(proc.stdout); print(proc.stderr); assert proc.returncode==0; assert re.search(r\"MaxHeapSize\\\\s*=\\\\s*1073741824\", proc.stdout), \"heap\"; print(\"HEAP_OK 1073741824\")'",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "MaxHeapSize misurato a 1073741824 byte. Il comando alla lettera esce 1 perché il pattern usa una barra inversa duplicata davanti a s.",
+        "log_sha256": "d2b553b3d88c8ada029f8319210ecaa56b72caebad767f220648e8d098f60290"
+      },
+      {
+        "command": "python3 -c 'import re, subprocess; proc=subprocess.run([\"docker\",\"exec\",\"ocor-bootstrap-fuseki-1\",\"java\",\"-Xms128m\",\"-Xmx1G\",\"-XX:+PrintFlagsFinal\",\"-version\"], text=True, capture_output=True); print(proc.stdout); print(proc.stderr); assert proc.returncode==0; assert re.search(r\"MaxHeapSize\\s*=\\s*1073741824\", proc.stdout), \"heap\"; print(\"HEAP_OK 1073741824\")'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS con correzione del pattern della sola sonda. MaxHeapSize=1073741824 byte.",
+        "log_sha256": "0809ff9ebd1a2218a5ed5ce56ae183ff6d09676bff441c46d8f6ce20e1db6f1a"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-typed-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-typed-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 scripts/verify_external_services.py --execute --typed",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Primo tentativo diagnostico: 10 READY, Fuseki DEGRADED mentre il container ricreato era ancora in avvio.",
+        "log_sha256": "bc4767b041dbceffb7d7c22c45911dbbda661f5a71972d83f9eddc2581db9fd8"
+      },
+      {
+        "command": "docker ps -a --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Names}} {{.Image}} {{.Status}}'\ndocker volume ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'\ndocker network ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "stack-before-pytest: inventario etichettato OCOR e controllo dello stato dei container.",
+        "log_sha256": "04aa5c503c164e17f648be3997197c57f81bafaf9b082483595bf24a303a29da"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-0048-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-0048-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 -c 'import os, subprocess; from pathlib import Path; vals={}; [vals.__setitem__(*line.split(\"=\",1)) for line in Path(\".ocor/bootstrap.env\").read_text().splitlines() if line and not line.startswith(\"#\") and \"=\" in line]; os.environ[\"OCOR_BOOTSTRAP_ENV\"]=str(Path(\".ocor/bootstrap.env\").resolve()); os.environ[\"OCOR_LIVE_POSTGRES_DSN\"]=\"postgresql://ocor:%s@127.0.0.1:55433/ocor\" % vals[\"OCOR_LOCAL_POSTGRES_PASSWORD\"]; raise SystemExit(subprocess.call([\"python3\",\"-m\",\"pytest\",\"ocor-runtime/tests/tasks/test_ocor_dev_0048.py\"]))'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "196 PASS, 0 FAIL, 0 errori di setup e 0 skip, in 133,49 s.",
+        "log_sha256": "71adf3afb3153a8aac591040e7a2fe11cee5c340f5363e73e775a3bce15a767a"
+      },
+      {
+        "command": "docker ps -a --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Names}} {{.Image}} {{.Status}}'\ndocker volume ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'\ndocker network ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "stack-after-0048: inventario etichettato OCOR e controllo dello stato dei container.",
+        "log_sha256": "f0ffd3eef358853de19eee72b5ec7a248649f488455aa8089397b97d0a18f98c"
+      },
+      {
+        "command": "set -e\nfor container in $(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap); do\n  docker inspect --format '{{.Name}} {{.State.OOMKilled}}' \"$container\"\ndone | awk '{print} $2 == \"true\" {failed=1} END {exit failed}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "oom-state-0048: inventario etichettato OCOR e controllo dello stato dei container.",
+        "log_sha256": "8b96470c574943069ba74d9c1d5ef8ea83e519fc4bf668e694b88d17e7d9a332"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-rem-0038-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-rem-0038-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 -c 'import os, subprocess; from pathlib import Path; vals={}; [vals.__setitem__(*line.split(\"=\",1)) for line in Path(\".ocor/bootstrap.env\").read_text().splitlines() if line and not line.startswith(\"#\") and \"=\" in line]; os.environ[\"OCOR_BOOTSTRAP_ENV\"]=str(Path(\".ocor/bootstrap.env\").resolve()); os.environ[\"OCOR_LIVE_POSTGRES_DSN\"]=\"postgresql://ocor:%s@127.0.0.1:55433/ocor\" % vals[\"OCOR_LOCAL_POSTGRES_PASSWORD\"]; raise SystemExit(subprocess.call([\"python3\",\"-m\",\"pytest\",\"ocor-runtime/tests/tasks/test_ocor_dev_rem_0038.py\"]))'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "22 PASS, 0 FAIL e 0 skip, in 22,24 s.",
+        "log_sha256": "e5c8ea299292f67309dcb259dc288537da4e7933e4c29533592f4f9cf5a7b396"
+      },
+      {
+        "command": "docker ps -a --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Names}} {{.Image}} {{.Status}}'\ndocker volume ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'\ndocker network ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "stack-after-rem-0038: inventario etichettato OCOR e controllo dello stato dei container.",
+        "log_sha256": "4240b70fd0a3fefc7beb2aa381b54c1c0111e11ff0972f02b74e596bb36db133"
+      },
+      {
+        "command": "set -e\nfor container in $(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap); do\n  docker inspect --format '{{.Name}} {{.State.OOMKilled}}' \"$container\"\ndone | awk '{print} $2 == \"true\" {failed=1} END {exit failed}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "oom-state-rem-0038: inventario etichettato OCOR e controllo dello stato dei container.",
+        "log_sha256": "8b96470c574943069ba74d9c1d5ef8ea83e519fc4bf668e694b88d17e7d9a332"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-rem-0023-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-rem-0023-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 -c 'import os, subprocess; from pathlib import Path; vals={}; [vals.__setitem__(*line.split(\"=\",1)) for line in Path(\".ocor/bootstrap.env\").read_text().splitlines() if line and not line.startswith(\"#\") and \"=\" in line]; os.environ[\"OCOR_BOOTSTRAP_ENV\"]=str(Path(\".ocor/bootstrap.env\").resolve()); os.environ[\"OCOR_LIVE_POSTGRES_DSN\"]=\"postgresql://ocor:%s@127.0.0.1:55433/ocor\" % vals[\"OCOR_LOCAL_POSTGRES_PASSWORD\"]; raise SystemExit(subprocess.call([\"python3\",\"-m\",\"pytest\",\"ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py\"]))'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "105 PASS, 0 FAIL e 0 skip, in 3,15 s.",
+        "log_sha256": "17f8b1372970bd56241ffac546fa71a63e6a4298ab88dae8beeca9a5102648c4"
+      },
+      {
+        "command": "docker ps -a --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Names}} {{.Image}} {{.Status}}'\ndocker volume ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'\ndocker network ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "stack-after-rem-0023: inventario etichettato OCOR e controllo dello stato dei container.",
+        "log_sha256": "4240b70fd0a3fefc7beb2aa381b54c1c0111e11ff0972f02b74e596bb36db133"
+      },
+      {
+        "command": "set -e\nfor container in $(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap); do\n  docker inspect --format '{{.Name}} {{.State.OOMKilled}}' \"$container\"\ndone | awk '{print} $2 == \"true\" {failed=1} END {exit failed}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "oom-state-rem-0023: inventario etichettato OCOR e controllo dello stato dei container.",
+        "log_sha256": "8b96470c574943069ba74d9c1d5ef8ea83e519fc4bf668e694b88d17e7d9a332"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "after-campaign-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "after-campaign-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-typed-retry-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-typed-retry-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker inspect ocor-bootstrap-fuseki-1 --format '{{.Image}} {{.HostConfig.Memory}} {{.State.Health.Status}} {{.State.OOMKilled}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Docker: Fuseki healthy, limite 2147483648 byte, OOMKilled=false, ID immagine conservato.",
+        "log_sha256": "52907dc4faf16abaed9b88ed304810085200def59dcc802b50360c223e57336c"
+      },
+      {
+        "command": "python3 scripts/verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS dopo healthcheck: 11 READY. Fuseki ping 200, dataset assente 404 e FAIL_CLOSED.",
+        "log_sha256": "72bf1c87e3b870144a22d47261ed13af82205d00bb9515c1ed4ff2e6325e823a"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-backend-image-check-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "before-backend-image-check-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 - <<'INNER'\nfrom pathlib import Path\nimport json, subprocess\ndef docker(*args):\n    return subprocess.check_output([\"docker\",*args],text=True).strip()\nlocked=json.loads(Path(\"infra/services.lock.json\").read_text())[\"services\"]\nlock={x[\"id\"]:x.get(\"image\") or x[\"build\"][\"output_image\"] for x in locked}\nlock[\"temporal-postgresql\"]=lock[\"postgresql\"]\nids=docker(\"ps\",\"-aq\",\"--filter\",\"label=com.docker.compose.project=ocor-bootstrap\").split()\nseen={}\nfor x in json.loads(docker(\"inspect\",*ids)):\n    key=x[\"Config\"][\"Labels\"][\"com.docker.compose.service\"]\n    img=x[\"Config\"][\"Image\"]\n    runtime_id=x[\"Image\"]\n    expected_id=docker(\"image\",\"inspect\",lock[key],\"--format\",\"{{.Id}}\")\n    assert img==lock[key] and runtime_id==expected_id,(key,img,runtime_id)\n    flags=x[\"State\"]\n    assert flags[\"Running\"] and not flags[\"OOMKilled\"],key\n    assert all(endpoint[\"HostIp\"]==\"127.0.0.1\" for endpoints in x[\"NetworkSettings\"][\"Ports\"].values() for endpoint in (endpoints or [])),key\n    seen[key]=expected_id\n    print(key,img,flags.get(\"Health\",{}).get(\"Status\",\"running\"),\"image-ID verified\")\nassert set(seen)==set(lock),(set(seen)^set(lock))\nprint(\"PASS\",len(seen),\"container; nessuna porta pubblicata fuori loopback\")\nINNER",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Confermati 15 container, riferimenti e ID pinned effettivi, porte pubblicate soltanto su loopback e OOMKilled=false.",
+        "log_sha256": "be1695b423bc8efe167566bb7dd54b359519db30214e5602adbf43df9db78e93"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "pre-teardown-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "pre-teardown-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "python3 - <<'INNER'\nimport collections, datetime, json, pathlib, subprocess\nfrom datetime import UTC\nstart=pathlib.Path('<verifier-workdir>/bootstrap.start').read_text().strip()\nuntil=datetime.datetime.now(UTC).isoformat()\nargs=[\"docker\",\"events\",\"--since\",start,\"--until\",until,\"--format\",\"{{json .}}\"]\nresult=subprocess.run(args,text=True,capture_output=True,timeout=20,check=True)\ncounts=collections.Counter()\nfuseki=[]\noom=[]\nfor line in result.stdout.splitlines():\n    event=json.loads(line)\n    actor=event.get(\"Actor\",{})\n    attr=actor.get(\"Attributes\",{})\n    typ, action = event[\"Type\"],event[\"Action\"]\n    if typ==\"image\":\n        counts[action]+=1\n        if any(\"ocor/jena-fuseki:\" in value or \"f5a11814\" in value for value in (str(actor[\"ID\"]),attr.get(\"name\",\"\"))):\n            fuseki.append((action,actor[\"ID\"]))\n    if typ==\"container\" and action==\"oom\" and attr.get(\"com.docker.compose.project\")==\"ocor-bootstrap\":\n        oom.append(attr.get(\"name\",\"unknown\"))\nprint(\"eventi immagine\",dict(counts),\"eventi specifici Fuseki\",fuseki,\"OOM OCOR\",oom)\nassert not fuseki and not oom\nINNER",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Nessun evento Docker osservato sul tag/ID Fuseki nel controllo e nessun OOM OCOR registrato; gli ID sono confermati separatamente dagli inspect.",
+        "log_sha256": "91e5823c26082ec0fd504d1c75df4d8f80a0aaa35a601953ee3194c0b0b6f33f"
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py --execute",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. Risorse possedute residue: container 0, reti 0 e volumi 0.",
+        "log_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:6.2.0 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "post-teardown-governed: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "docker image inspect ocor/jena-fuseki:preserve-f5a11814 --format '{{.Id}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "post-teardown-preserve: sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1.",
+        "log_sha256": "15ff56bb44e128b36307dede05170cf397a63d8fc90f4e2c1cb5d6790ee1b6bb"
+      },
+      {
+        "command": "set -e\ndocker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap\ndocker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap\ndocker network ls --filter label=com.docker.compose.project=ocor-bootstrap --format '{{.Name}}'",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Controllo Docker indipendente del teardown: inventario progetto vuoto.",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "command": "uv sync --offline --project ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Ambiente isolato sotto la directory temporanea, Python pinned già disponibile e dipendenze dalla cache.",
+        "log_sha256": "601c8a64419c5796174b4a56aff1627965e6407a579eac10c2a9da114ef6042e"
+      },
+      {
+        "command": "python -m mypy --cache-dir <directory temporanea> (ambiente isolato dal lock)",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "PASS. 153 file analizzati.",
+        "log_sha256": "8f4c82c4def5877c120713dbd513bb61a25cdc112c496163dbfb4e922933ea7c"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --non-skipped --task <task> --manifest <manifest> (15 invocazioni)",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "15/15 PASS in G0, G2 e G5.",
+        "log_sha256": "d64e191d4538eb4a98370d5bc1c015896dead71699eca93c3d58c6948b0ceb19"
+      },
+      {
+        "command": "python3 -m pytest -p no:cacheprovider --basetemp=<directory temporanea> reports/tests/test_runtime_evidence_validator.py",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "61 PASS. I risultati non qualificanti e i record difformi sono verificati dai casi negativi.",
+        "log_sha256": "88991ce1691810d448e85f1b81c61a7ee274b9ffc2430495c6c3861dd47b8794"
+      },
+      {
+        "command": "python3 reports/tests/test_schema_conformance.py (copia temporanea verificata di test e ADD)",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "97 PASS, 1 FAIL noto e non bloccante per disposizione. CANONICAL_COMMIT R1 senza Human Gate: atteso REJECT, osservato ACCEPT.",
+        "log_sha256": "cadf3a414a3833681f45f7bd9007a9be05dc252de470af7e1de1a484e7c5a936"
+      },
+      {
+        "command": "python3 <verifier-workdir>/check-records.py 5344565521e8f7db701073cd5554e49834781598 a24756e0c90d82c0f5585e84868824b992d43d3b",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "15 record, 46 sezioni e 30 digest nei manifest verificati. Supersession sui record effettivamente correnti in base e origin/main; comandi identici ai predecessori. Le provenienze storiche dichiarano clean_shell=false; tutte le invocazioni della nuova campagna hanno usato la shell pulita.",
+        "log_sha256": "016f19d45b667f3d65f66a70400746236526e4f5abdb30e124dc7b7135051fd7"
+      },
+      {
+        "command": "Scanner versionato in .github/workflows/ocor-supply-chain.yml sui 40 file del candidato, più controllo dei raw log e confronto con i valori generati",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Zero findings bloccanti. Le otto corrispondenze della sonda supplementare sugli URL si trovano già nella base. Zero corrispondenze con le credenziali generate.",
+        "log_sha256": "4f1d91e436ebbf38b38e442226796a5fe851a6a5ac39d3c2b8e7a900eb18e16b"
+      },
+      {
+        "command": "git merge-tree --write-tree origin/main HEAD (object store temporaneo)",
+        "exit_code": 1,
+        "source": "verdict.commands",
+        "summary": "Simulazione: conflitti soltanto sui tre file di stato autorizzati. Il TERMINAL_BLOCKED_REPORT.json coincide con origin/main; esclusi questi quattro percorsi, il diff col candidato è vuoto.",
+        "log_sha256": "2eaf0c7aaeca4dd92aca4215a073eafda9fbecb1d89f42e964ced2092fd923be"
+      },
+      {
+        "command": "git status --porcelain --untracked-files=all; git rev-parse HEAD",
+        "exit_code": 0,
+        "source": "verdict.commands",
+        "summary": "Albero pulito, HEAD invariato. Rimossi i file non versionati creati per il provisioning."
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "Suite diretta: 97 PASS e 1 FAIL. CANONICAL_COMMIT R1 senza Human Gate: atteso REJECT, osservato ACCEPT. ADD e test byte-identici alla base. Raw SHA-256 cadf3a414a3833681f45f7bd9007a9be05dc252de470af7e1de1a484e7c5a936.",
+        "id": "VF-002",
+        "path": "reports/tests/test_schema_conformance.py:281",
+        "required_fix": "Mantenere il FAIL e seguire la disposition REM-0066-CANONICAL-R1-HUMAN-GATE. La correzione appartiene alla relativa unità governata.",
+        "severity": "medium"
+      },
+      {
+        "blocking": false,
+        "evidence": "La sonda prescritta esce 1 con AssertionError: heap anche se stampa MaxHeapSize=1073741824. Il pattern Python contiene due barre inverse prima di s. La sonda con escape corretto esce 0 e la JVM attiva usa -Xms128m -Xmx1G. Log SHA-256 d2b553b3d88c8ada029f8319210ecaa56b72caebad767f220648e8d098f60290 e 0809ff9ebd1a2218a5ed5ce56ae183ff6d09676bff441c46d8f6ce20e1db6f1a.",
+        "id": "VF-005",
+        "path": "<home>/.ocor-codex/logs/20261123T024950-verifier-prompt-FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6-live-2.md:1551",
+        "required_fix": "Correggere la regex nella generazione della richiesta di verifica, mantenendo esatta la soglia di 1073741824 byte.",
+        "severity": "low"
+      },
+      {
+        "blocking": false,
+        "evidence": "Nei 15 record della riqualifica sono presenti role_coherence e requalification_digest_check. Mancano il comando, i conteggi e il digest della scansione delle celle SELF-CHECK-CELL-SCAN e l'inventario SELF-CHECK-PATH-INVENTORY. Il riscontro indipendente dei percorsi e dei record è passato.",
+        "id": "VF-006",
+        "path": "reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json:287",
+        "required_fix": "Registrare i due controlli di processo e i relativi output nel prossimo aggiornamento autorizzato del processo.",
+        "severity": "low"
+      }
+    ],
+    "findings_disposition": "GO_FOR_EVIDENCE_SEAL. VF-002, VF-005 and VF-006 are non-blocking. VF-002 stays FAIL and is owned by REM-0066-CANONICAL-R1-HUMAN-GATE; this change set does not mark it PASS and does not correct it. Command rows are copied from the verdict with local paths redacted. A non-zero exit_code is a diagnostic step recorded by the verifier and is not declared PASS. not_executed stays NOT_EXECUTED. Raw logs of these requalification records are unchanged. The qualified head is a24756e0c90d82c0f5585e84868824b992d43d3b. The metadata merge keeps the three state files and reports/development/TERMINAL_BLOCKED_REPORT.json from origin/main; every other path of that merge matches the qualified head.",
+    "head_sha": "a24756e0c90d82c0f5585e84868824b992d43d3b",
+    "not_executed": [
+      "G15 — NOT_EXECUTED per disposizione esplicita. Il validatore degli invarianti di allineamento è assente da origin/main al commit verificato.",
+      "Excluded by decision and not declared PASS: full suite ocor-runtime/tests/.",
+      "Excluded by decision and not declared PASS: a new acquisition of the Apache Fuseki archive.",
+      "Excluded by decision and not declared PASS: CI bootstrap and a Fuseki rebuild."
+    ],
+    "observations": [
+      "Verifier Codex (OpenAI), separate process and context. Implementer of cycles 0-6: Grok Build, grok-4.7 (xAI). The implementer did not start the verifier.",
+      "Development bootstrap did not run docker build. Both ocor/jena-fuseki:6.2.0 and ocor/jena-fuseki:preserve-f5a11814 stayed sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1 before bootstrap, after bootstrap, after the live checks and after teardown. MaxHeapSize measured 1073741824 bytes. SPIRE SVID spiffe://ocor.test/ocor/control-plane.",
+      "Non-blocking VF-002 remains the known canonical R1 human-gate FAIL. It is not corrected and is not marked PASS."
+    ],
+    "request_id": "FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6-live-2",
+    "severity": "medium",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_sha256": "ab9ac49d3145b55901dc03f97da636da38f0000cc80a6a40369029856def6618",
+    "verifier": {
+      "agent": "Codex",
+      "independence_limits": "Verifier Codex (OpenAI); implementatore dei cicli 0–6 Grok Build, grok-4.7 (xAI), come da richiesta, record e preflight di assegnazione. Fornitori e contesti distinti. Il modello non ha implementato il candidato.",
+      "model": "NOT_EXPOSED_BY_RUNTIME",
+      "process": "Codex (OpenAI), sessione non interattiva, contesto di verifica separato",
+      "provider": "OpenAI"
+    },
+    "verifier_started_by_implementer": false
+  },
+  "inputs": {
+    "deploy/bootstrap/compose.yaml": "010705eaa3a87886a1aebaa5b0bd10480bcc3559b4f876284b141cd0ab8a2ebc",
+    "deploy/bootstrap/services/openbao/qualify.py": "11ad5fb329753c5b3dac3ae91f1aa338c9cbf3a40b77ade9d3e263bcc0e6ae6e",
+    "deploy/bootstrap/services/openbao/test_qualify.py": "d3c2caeeb03bbc833431b43db489ed8f3f915e2da47cdf64f5bc19dde8a0e6b7",
+    "infra/services.lock.json": "4d5c6d8a78f712ad25ae3993eacda607f1076198fd49e20158d66333934f8c51",
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "pre_campaign_gate": {
+    "before_replays": true,
+    "decision": "PRE-CAMPAIGN-GATE (2026-10-26)",
+    "head_sha": "aee6ef0dcced1c204c7b70fd89c6b3b93dd47f79",
+    "not_executed": [
+      {
+        "name": "ci-bootstrap-execute",
+        "reason": "scripts/bootstrap_ci_environment.py docker-builds ocor/jena-fuseki:6.2.0 and would replace the authorized image id; FUSEKI option 1 forbids that build, a retag to the previous id, and deletion of the image"
+      },
+      {
+        "name": "qualifying-full-suite",
+        "reason": "FUSEKI-REBUILD-IDENTITY-20261121 option 1 does not require the full suite"
+      },
+      {
+        "name": "github-actions-cache",
+        "reason": "GitHub Actions cache has no local credential"
+      },
+      {
+        "name": "auto-merge",
+        "reason": "GitHub auto-merge is not a local step"
+      },
+      {
+        "name": "integration-postgresql-campaign",
+        "reason": "runtime campaign, not a fast step; option 1 exempts the full suite"
+      }
+    ],
+    "output_sha256": "d848cdee5cab8e7e7fa96d437f95087a2edd27b4fcc89a73887a8c812831b950",
+    "plan_validator_side_effect": "validate_ocor_development_plan.py exited 0 and rewrote the report digest inside OCOR_PLAN_RUN_STATE.json. Those two planning files were restored to the candidate HEAD so the settled self-hash and the execution commit inputs stay unchanged.",
+    "started_at": "2026-11-21T02:46:20Z",
+    "steps": [
+      {
+        "exit_code": 0,
+        "name": "prove-head",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "inputs-checksum",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "report-checksum",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "inputs-immutable",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "uv-pin",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "mypy",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "ruff",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "lock-schemas",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "tooling-acceptance",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "preflight-contract",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "bootstrap-check",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "compose-config",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "plan",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "rccad",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "language-tests",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "language",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "drift",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "scope",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "verify-json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "lld-add-alignment",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "name": "node-tsc-pin",
+        "status": "PASS"
+      }
+    ]
+  },
+  "previous_record": {
+    "record_id": "OCOR-DEV-0078-requalified-fuseki-20261113-ca73b1a91ed3",
+    "record_path": "reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261113.json",
+    "record_sha256": "c6151a27ecd72d2629071811c60a87ba78e28ec78a480cc5a934ca0a1850199f",
+    "status": "SEALED"
+  },
+  "qualification_limits": "Regression-only requalification after FUSEKI-REBUILD-IDENTITY-20261121 option 1 updated services[id=fuseki].build.output_sha256 to sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. qualifies_requirements is false. tests_unchanged_from_base is true. Repair cycle 2 executed every cited command at checkout dd0467f1881649ba0ca90c76b0867b84d95e544e with uv 0.12.5 (executable sha256 b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46) first on PATH. Development bootstrap did not rebuild Fuseki. That bootstrap attested a new SPIRE agent that had no workload entry, so the control-plane SPIFFE ID spiffe://ocor.test/ocor/control-plane was registered with entry create on that agent, the same registration CI bootstrap performs, without running scripts/bootstrap_ci_environment.py. Development bootstrap does not set JVM_ARGS, so the recreated Fuseki process used the image default -Xmx4G. The CI heap was then applied with docker compose up --no-build --no-deps --force-recreate and JVM_ARGS=-Xms128m -Xmx1G, without building, retagging or deleting the image. The probe after that recreate shows the running arguments -Xms128m -Xmx1G and MaxHeapSize = 1073741824. The image id remained sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1. test_ocor_dev_0048.py passed 196 with zero skips. test_ocor_dev_rem_0023.py passed 105 with zero skips. The shared regression of OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 passed 214 with zero skips. scripts/bootstrap_ci_environment.py --execute was not run because it docker-builds the preserved tag. VF-004 in reports/tests/test_schema_conformance.py is unchanged and out of scope.",
+  "qualifies_requirements": false,
+  "raw_output_format": "concatenated command output in command order; each section ends with EXIT:0 and DURATION. The three sections present in the log are bootstrap, verify-manifest-only and verify-typed-execute.",
+  "raw_output_sha256": "fa4a0f235124173a05c8c80cd2ad6d522c6da784c19a125c4b8dc926c11aa89b",
+  "record_id": "OCOR-DEV-0078-requalified-fuseki-20261121-dd0467f18816",
+  "repair_cycle": 3,
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_digest_check": {
+    "captured_head": "fe9ab6c09cd3c7ed314e994a830d6d0c39e47237",
+    "checked_inputs": 100,
+    "checked_records": 15,
+    "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit dd0467f1881649ba0ca90c76b0867b84d95e544e --record reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json --record reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json --record reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json",
+    "execution_commit": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+    "exit_code": 0,
+    "findings": 0,
+    "note": "Repair cycle 3. The stdout sha256 is the canonical JSON printed by that command while HEAD was fe9ab6c09cd3c7ed314e994a830d6d0c39e47237, after these repair-cycle records were written and before the evidence-only commit. Embedding this object does not change the checker output. Findings stay empty while the declared inputs still match execution commit dd0467f1881649ba0ca90c76b0867b84d95e544e.",
+    "result": "PASS",
+    "stdout_sha256": "8783b02fb45ae9583a4d4116138159c70c068251a1f8f3ef76eb56b966fc062f"
+  },
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only; REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "requirement_results": [],
+  "residual_risks": [
+    "Regression-only requalification of the local Fuseki engine id. Not runtime conformance and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only rerun for OCOR-DEV-0078 after the Fuseki local identity reacquisition; not a re-assessment of conformance",
+  "role_coherence": {
+    "command": "python3 -c \"import json\\nfrom pathlib import Path\\npaths = [\\n    \\\"reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0070.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0073.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0074.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0075.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0076.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0077.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0078.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0079.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json\\\",\\n    \\\"reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json\\\",\\n]\\nrows = []\\nfor path in paths:\\n    data = json.loads(Path(path).read_text())\\n    roles = data[\\\"roles\\\"]\\n    env = data[\\\"environment\\\"]\\n    rows.append({\\n        \\\"command_heads\\\": [item[\\\"head_sha\\\"] for item in data[\\\"commands\\\"]],\\n        \\\"commit\\\": data[\\\"commit\\\"],\\n        \\\"execution_commit\\\": data[\\\"change_set\\\"][\\\"execution_commit\\\"],\\n        \\\"implementers\\\": roles[\\\"implementers\\\"],\\n        \\\"path\\\": path,\\n        \\\"repair_cycle\\\": data[\\\"repair_cycle\\\"],\\n        \\\"uv\\\": env[\\\"uv\\\"],\\n        \\\"uv_executable_sha256\\\": env[\\\"uv_executable_sha256\\\"],\\n        \\\"verifier_excluded_providers\\\": roles[\\\"verifier_excluded_providers\\\"],\\n        \\\"verifier_started_by_implementer\\\": roles[\\\"verifier_started_by_implementer\\\"],\\n        \\\"verifier_status\\\": roles[\\\"verifier_status\\\"],\\n    })\\nerrors = []\\nfirst = rows[0]\\nfact_keys = [key for key in first if key != \\\"path\\\"]\\ncompared = 0\\nfor row in rows:\\n    for key in fact_keys:\\n        if key == \\\"command_heads\\\":\\n            compared += len(row[\\\"command_heads\\\"])\\n            continue\\n        compared += 1\\n        if row[key] != first[key]:\\n            errors.append(row[\\\"path\\\"] + \\\" \\\" + key)\\n    heads = row[\\\"command_heads\\\"]\\n    compared += 1\\n    if not heads or len(set(heads)) != 1 or heads[0] != row[\\\"commit\\\"] or row[\\\"commit\\\"] != row[\\\"execution_commit\\\"]:\\n        errors.append(row[\\\"path\\\"] + \\\" alignment\\\")\\npayload = {\\n    \\\"errors\\\": errors,\\n    \\\"execution_commit\\\": first[\\\"commit\\\"],\\n    \\\"fields_compared\\\": compared,\\n    \\\"records\\\": len(rows),\\n    \\\"status\\\": \\\"PASS\\\" if not errors else \\\"FAIL\\\",\\n}\\nprint(json.dumps(payload, indent=2, sort_keys=True))\"",
+    "corrections": [],
+    "decision": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+    "errors_corrected": 0,
+    "errors_found": 0,
+    "fields_compared": 200,
+    "note": "Executable scan of the fifteen fuseki-20261121 records. It ignores role_coherence and requalification_digest_check, so embedding this object does not change the stdout. scanned facts are the commit, the execution commit, every command head, repair_cycle, implementers, verifier fields, and the pinned uv version and digest. The scan stdout names execution commit dd0467f1881649ba0ca90c76b0867b84d95e544e.",
+    "records": 15,
+    "scanned_head": "dd0467f1881649ba0ca90c76b0867b84d95e544e",
+    "status": "PASS",
+    "stdout_sha256": "3a2f358a3df2c279c45434d4101f300057db98a3284c279b6da80c03f24675b0"
+  },
+  "roles": {
+    "implementers": [
+      "Grok Build (xAI), grok-4.7"
+    ],
+    "verifier_excluded_providers": [
+      "xAI"
+    ],
+    "verifier_started_by_implementer": false,
+    "verifier_status": "PENDING_INDEPENDENT_VERIFICATION"
+  },
+  "schema_version": "1.0",
+  "status": "SEALED",
+  "supersedes": "OCOR-DEV-0078-requalified-fuseki-20261113-ca73b1a91ed3",
+  "supersession_scope": "Regression-only after the local Fuseki output_sha256 reacquisition and, where the plan allowlist changed, after that allowlist extension. Task tests are unchanged. Not a re-assessment of conformance.",
+  "task_id": "OCOR-DEV-0078",
+  "tests_unchanged_from_base": true
+}
