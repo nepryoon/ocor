@@ -23,7 +23,7 @@ from contextlib import contextmanager
 from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener, getproxies
 from typing import Any
 
@@ -87,18 +87,61 @@ class OfficialRedirect(HTTPRedirectHandler):
 
 
 _AUTH_HEADER_NAMES = frozenset({"authorization", "proxy-authorization"})
+_PROXY_TYPE = re.compile(r"([^/:]+):(.*)", re.DOTALL)
+
+
+def _transport_proxy(url: str) -> tuple[str | None, str | None, str | None, str]:
+    """Split a proxy the way urllib.request accepts URL and authority forms."""
+    match = _PROXY_TYPE.match(url)
+    if match is None:
+        scheme: str | None = None
+        remainder = url
+    else:
+        scheme = match.group(1).lower()
+        remainder = match.group(2)
+    if not remainder.startswith("/"):
+        scheme = None
+        authority = url
+    elif not remainder.startswith("//"):
+        raise ValueError(f"proxy URL with no authority: {url!r}")
+    elif "@" in remainder:
+        host_separator = remainder.find("@")
+        end = remainder.find("/", host_separator)
+        authority = remainder[2:] if end == -1 else remainder[2:end]
+    else:
+        end = remainder.find("/", 2)
+        authority = remainder[2:] if end == -1 else remainder[2:end]
+    userinfo, separator, hostport = authority.rpartition("@")
+    if separator == "":
+        return scheme, None, None, hostport
+    user, password_separator, password = userinfo.partition(":")
+    return scheme, user, (password if password_separator else None), hostport
 
 
 def _without_userinfo(url: str) -> str:
-    """Drop userinfo from a proxy URL. The host, port and path stay."""
-    parsed = urlparse(url)
-    if parsed.username is None and parsed.password is None:
+    """Drop userinfo from every proxy form the transport accepts.
+
+    urlparse leaves ``user:pass@host:port`` unchanged. urllib.request still
+    reads that authority and adds Proxy-Authorization before the tunnel.
+    """
+    if not isinstance(url, str):
+        raise BootstrapError("proxy value is not text")
+    try:
+        scheme, user, password, hostport = _transport_proxy(url)
+    except ValueError:
         return url
-    host = parsed.hostname or ""
-    if ":" in host and not host.startswith("["):
-        host = f"[{host}]"
-    netloc = f"{host}:{parsed.port}" if parsed.port is not None else host
-    return urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
+    if user is None and password is None:
+        return url
+    if hostport == "":
+        raise BootstrapError("proxy host is absent")
+    cleaned = hostport if scheme is None else f"{scheme}://{hostport}"
+    try:
+        _scheme, again_user, again_password, _hostport = _transport_proxy(cleaned)
+    except ValueError as exc:
+        raise BootstrapError("proxy credentials were not removed") from exc
+    if again_user is not None or again_password is not None:
+        raise BootstrapError("proxy credentials were not removed")
+    return cleaned
 
 
 def _anonymous_proxies() -> dict[str, str]:
