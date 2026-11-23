@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Acquire Fuseki bytes by the governed SHA512, within the provisioning budget.
 
-Only Apache sources and this worktree's content-addressed cache are used. Cache
-contents are untrusted until rehashed. Check mode never downloads or writes.
+The first source is the immutable governed GitHub release copy. The three
+official Apache sources follow, with archive.apache.org last. From the copy,
+only HTTPS redirects to release-assets.githubusercontent.com are accepted;
+Apache sources still accept only Apache hosts. Downloads are anonymous. Cache
+contents are untrusted until rehashed. The lock SHA512 is the only authority.
+Check mode never downloads or writes.
 """
 from __future__ import annotations
 
@@ -23,23 +27,59 @@ from typing import Any
 
 from ocor_bootstrap_lib import BootstrapError, load_json, root, run
 
-SOURCES = (
+APACHE_SOURCES = (
     "https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz",
     "https://downloads.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz",
     "https://archive.apache.org/dist/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz",
 )
+# Acquisition source only. It does not change the lock source, official_source,
+# source_sha512, output_sha256, cache key or cache path.
+GOVERNED_COPY_URL = (
+    "https://github.com/nepryoon/ocor/releases/download/"
+    "mirror-apache-jena-fuseki-6.2.0/apache-jena-fuseki-6.2.0.tar.gz"
+)
+RELEASE_ASSET_HOST = "release-assets.githubusercontent.com"
+SOURCES = (GOVERNED_COPY_URL, *APACHE_SOURCES)
 MAX_BYTES = 512 * 1024 * 1024
 
 
-def official_url(url: str) -> bool:
+def _https_endpoint(url: str, *, hosts: set[str]) -> bool:
     parsed = urlparse(url)
-    return (parsed.scheme == "https" and parsed.hostname in {urlparse(source).hostname for source in SOURCES}
+    return (parsed.scheme == "https" and parsed.hostname in hosts
             and parsed.port in (None, 443) and parsed.username is None and parsed.password is None)
+
+
+def official_url(url: str) -> bool:
+    hosts = {urlparse(source).hostname for source in APACHE_SOURCES}
+    return _https_endpoint(url, hosts={host for host in hosts if host is not None})
+
+
+def release_asset_url(url: str) -> bool:
+    return _https_endpoint(url, hosts={RELEASE_ASSET_HOST})
+
+
+def redirect_allowed(current_url: str, new_url: str) -> bool:
+    """Copy hops may land only on the release-asset host; Apache stays Apache."""
+    current = urlparse(current_url)
+    if current_url == GOVERNED_COPY_URL or current.hostname == RELEASE_ASSET_HOST:
+        return release_asset_url(new_url)
+    if official_url(current_url):
+        return official_url(new_url)
+    return False
+
+
+def final_url_allowed(source: str, url: str) -> bool:
+    if source == GOVERNED_COPY_URL:
+        return url == GOVERNED_COPY_URL or release_asset_url(url)
+    if source in APACHE_SOURCES:
+        return official_url(url)
+    return False
 
 
 class OfficialRedirect(HTTPRedirectHandler):
     def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str) -> Any:
-        if not official_url(newurl):
+        current = req.get_full_url()
+        if not redirect_allowed(current, newurl):
             raise BootstrapError("redirect outside official Apache sources")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
@@ -51,7 +91,8 @@ def urlopen(request: Request, *, timeout: float) -> Any:
 def cache_info(repository: Path) -> dict[str, str]:
     service = next(item for item in load_json(repository / "infra/services.lock.json")["services"] if item["id"] == "fuseki")
     digest = service["build"]["source_sha512"]
-    if service["version"] != "6.2.0" or service["source"] != SOURCES[-1] or not re.fullmatch(r"[0-9a-f]{128}", digest):
+    # The lock still names the Apache archive. The governed copy is not a lock source.
+    if service["version"] != "6.2.0" or service["source"] != APACHE_SOURCES[-1] or not re.fullmatch(r"[0-9a-f]{128}", digest):
         raise BootstrapError("Fuseki acquisition lock is not the governed version/source/SHA512")
     return {"key": "fuseki-sha512-" + digest, "sha512": digest,
             "path": ".ocor/cache/fuseki/sha512/" + digest}
@@ -114,8 +155,10 @@ def acquire(repository: Path, *, timeout: float = 600) -> tuple[Path, dict[str, 
             raise BootstrapError("partial cache file contains a symlink")
         try:
             request = Request(source, headers={"User-Agent": "OCOR-governed-acquisition/1"})
+            if any(name.lower() == "authorization" for name, _value in request.header_items()):
+                raise BootstrapError("anonymous acquisition rejects an authorization header")
             with urlopen(request, timeout=min(10, remaining(source_deadline))) as response, partial.open("wb") as output:
-                if not official_url(response.geturl()):
+                if not final_url_allowed(source, response.geturl()):
                     raise BootstrapError("redirect outside official Apache sources")
                 size = 0
                 while True:
@@ -133,7 +176,11 @@ def acquire(repository: Path, *, timeout: float = 600) -> tuple[Path, dict[str, 
                     if size > MAX_BYTES:
                         raise BootstrapError("Fuseki archive exceeds bounded size")
                     output.write(chunk)
-            digest = checked_sha512(partial, info["sha512"])
+            try:
+                digest = checked_sha512(partial, info["sha512"])
+            except BootstrapError as exc:
+                # A wrong digest stops acquisition. Later sources are not used.
+                raise BootstrapError(f"{source}: {exc}") from exc
             remaining(deadline)
             partial.replace(target)
             provenance.write_text(json.dumps({"source": source}, indent=2, sort_keys=True) + "\n")

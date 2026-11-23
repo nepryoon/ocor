@@ -64,16 +64,27 @@ def test_verified_miss_then_hit_rechecks_bytes(tmp_path, monkeypatch):
 
 
 def test_official_fallback_order_and_no_extra_retry(tmp_path, monkeypatch):
+    """Named assertion update ``official_fallback_order_includes_governed_copy_first``.
+
+    CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 point 3. The call list is the full
+    source tuple: the governed copy is first and archive.apache.org is last.
+    The previous assertion fixed the three Apache URLs as the only sources
+    (the third attempt was the last) and the stand-in final URL was
+    ``SOURCES[0]``, which was then an Apache host.
+    """
     repo = repository(tmp_path)
     calls = []
+
     def fetch(request, timeout):
         calls.append(request.full_url)
-        if len(calls) < 3:
+        if request.full_url != archive.SOURCES[-1]:
             raise URLError("unavailable")
-        return Response(b"governed archive")
+        return _body(b"governed archive", request.full_url)
+
     monkeypatch.setattr(archive, "urlopen", fetch)
     path, result = archive.acquire(repo, timeout=10)
     assert calls == list(archive.SOURCES)
+    assert calls[0] == GOVERNED_COPY and calls[-1] == ARCHIVE
     assert path.is_file() and result["source"] == archive.SOURCES[-1]
 
 
