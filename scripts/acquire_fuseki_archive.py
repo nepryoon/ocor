@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import shutil
 import tempfile
@@ -88,11 +89,40 @@ def urlopen(request: Request, *, timeout: float) -> Any:
     return build_opener(OfficialRedirect()).open(request, timeout=timeout)
 
 
+def _reject_lone_surrogates(value: object, *, where: str) -> None:
+    """Reject decoded JSON text that contains a lone UTF-16 surrogate."""
+    if isinstance(value, str):
+        if any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+            raise BootstrapError(f"{where}: lone surrogate rejected")
+        return
+    if value is None or isinstance(value, (bool, int)):
+        return
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise BootstrapError(f"{where}: non-finite number rejected")
+        return
+    if isinstance(value, list):
+        for item in value:
+            _reject_lone_surrogates(item, where=where)
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise BootstrapError(f"{where}: non-string key rejected")
+            _reject_lone_surrogates(key, where=where)
+            _reject_lone_surrogates(item, where=where)
+        return
+    raise BootstrapError(f"{where}: unexpected JSON type rejected")
+
+
 def cache_info(repository: Path) -> dict[str, str]:
-    service = next(item for item in load_json(repository / "infra/services.lock.json")["services"] if item["id"] == "fuseki")
+    loaded = load_json(repository / "infra/services.lock.json")
+    _reject_lone_surrogates(loaded, where="Fuseki acquisition lock")
+    service = next(item for item in loaded["services"] if item["id"] == "fuseki")
     digest = service["build"]["source_sha512"]
     # The lock still names the Apache archive. The governed copy is not a lock source.
-    if service["version"] != "6.2.0" or service["source"] != APACHE_SOURCES[-1] or not re.fullmatch(r"[0-9a-f]{128}", digest):
+    if (service["version"] != "6.2.0" or service["source"] != APACHE_SOURCES[-1]
+            or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{128}", digest)):
         raise BootstrapError("Fuseki acquisition lock is not the governed version/source/SHA512")
     return {"key": "fuseki-sha512-" + digest, "sha512": digest,
             "path": ".ocor/cache/fuseki/sha512/" + digest}
@@ -106,6 +136,8 @@ def remaining(deadline: float) -> float:
 
 
 def checked_sha512(path: Path, expected: str) -> str:
+    if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{128}", expected):
+        raise BootstrapError("Fuseki SHA512 mismatch; possible supply-chain failure")
     if path.is_symlink() or not path.is_file():
         raise BootstrapError("archive must be a regular file, not a symlink")
     if path.stat().st_size > MAX_BYTES:
@@ -121,7 +153,8 @@ def checked_sha512(path: Path, expected: str) -> str:
 
 
 def acquire(repository: Path, *, timeout: float = 600) -> tuple[Path, dict[str, object]]:
-    if not 0 < timeout <= 600:
+    if (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
+            or not math.isfinite(timeout) or not 0 < timeout <= 600):
         raise BootstrapError("provisioning budget must be in (0, 600] seconds")
     deadline = time.monotonic() + timeout
     info = cache_info(repository)
@@ -137,7 +170,11 @@ def acquire(repository: Path, *, timeout: float = 600) -> tuple[Path, dict[str, 
         raise BootstrapError("cache provenance contains a symlink")
     if target.exists() or target.is_symlink():
         digest = checked_sha512(target, info["sha512"])
-        source = load_json(provenance).get("source") if provenance.exists() else None
+        source = None
+        if provenance.exists():
+            loaded = load_json(provenance)
+            _reject_lone_surrogates(loaded, where="Fuseki cache provenance")
+            source = loaded.get("source")
         # Provenance is informative; it can never authorize archive bytes.
         if source not in SOURCES:
             source = "CONTENT_ADDRESSED_CACHE; original source NOT_EXECUTED"
