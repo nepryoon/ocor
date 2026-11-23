@@ -8,9 +8,16 @@
     "runtime": "NOT_ESTABLISHED",
     "verified": 0
   },
-  "code_commit": "e6f371cde5bcb569d4b526104aaf2846988c94cd",
+  "code_commit": "7416e8a128f24945da653756fa30a2488d75bbe3",
   "decision": "CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23)",
   "green": {
+    "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_ci_fuseki_archive.py",
+    "exit_code": 0,
+    "parent_red": "ae9c2e346f2cc71e921e84a18e29609c6ca1aecd",
+    "passed": 79,
+    "stdout_sha256": "8a78eaa8aad2601b33dd13e9860cfda4ab27c2130eeca8f03d5854a4c0d4c4be"
+  },
+  "historical_green_before_review_repair": {
     "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_ci_fuseki_archive.py",
     "exit_code": 0,
     "passed": 55,
@@ -22,23 +29,24 @@
     "provider": "xAI"
   },
   "inputs": {
-    "reports/tests/test_fuseki_archive_acquisition.py": "981b0b0f2a8fd4a14f90b3378f9c7bbd228b4e04e8793d91882870daf19c5866",
-    "scripts/acquire_fuseki_archive.py": "806db7257ce306df9e4aa6a134d7f88cd0825f0d751e057c3ee10c29c8203799"
+    "reports/tests/test_fuseki_archive_acquisition.py": "b24a30f630942f151d7e4697eeb91c70b4f87fc06ab528d71c3b5472f656b073",
+    "scripts/acquire_fuseki_archive.py": "23046a9cc08a6b6dadc5a6aadd0e404b60bbe5014dbb205fea4f7906825eccef"
   },
   "path_inventory": {
     "change_set_source_files": {
       "reports/tests/test_fuseki_archive_acquisition.py": "The test module drives the production functions and receives no service response of its own.",
-      "scripts/acquire_fuseki_archive.py": 15,
+      "scripts/acquire_fuseki_archive.py": 16,
       "scripts/validate_ocor_development_plan.py": "The edit adds three path strings and does not parse archive bytes, URLs, or JSON from the network."
     },
     "consumption_points": [
       "HTTP redirect target in OfficialRedirect.redirect_request",
       "HTTP final URL and body in acquire",
       "infra/services.lock.json in cache_info",
-      "provenance.json on a cache hit in acquire"
+      "provenance.json on a cache hit in acquire",
+      "stored JSON bytes in _load_stored_json, used by cache_info and by acquire on a cache hit"
     ],
     "decision": "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
-    "functions_examined": 15,
+    "functions_examined": 16,
     "searches": [
       "rg -n '^def |^class ' scripts/acquire_fuseki_archive.py"
     ]
@@ -111,7 +119,7 @@
         "status": "NOT_EXECUTED"
       }
     ],
-    "note": "Commands were executed on executed_on, which is the parent of the commit that adds this object. The self-check table is unchanged. Drift stays EXPECTED_FAIL until the real regressions run after preventive review.",
+    "note": "The gate object below was measured on 9e8a99c6, before the preventive-review corrections. It is historical. The gate is repeated on the head that contains those corrections, before the campaign.",
     "steps": [
       {
         "exit": 0,
@@ -165,7 +173,7 @@
         "exit": 1,
         "log_sha256": "cb71614d0874bc5a4c988345a1c4fbf38cbf2b8608ecbb3f1cd4a4ca1c61efb6",
         "name": "drift",
-        "note": "Drift is OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0072 and OCOR-DEV-0082. Point 4 of CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23) authorizes those requalifications. They stay NOT_EXECUTED until the campaign after preventive review. This record does not invent their results.",
+        "note": "Historical result on 9e8a99c6: drift was the four tasks then listed. The corrected inventory has eleven current heads. Results stay NOT_EXECUTED until the campaign. This entry is not a new gate run.",
         "status": "EXPECTED_FAIL"
       },
       {
@@ -403,8 +411,38 @@
     ]
   },
   "preventive_review": {
-    "request_id": null,
-    "status": "NOT_REQUESTED"
+    "advisory": 0,
+    "blocking": 3,
+    "dispositions": [
+      {
+        "cells_at_review": "cache_info types_before_conversions FIXED for DIGEST_TYPE only; strict_decoding FIXED for LONE_SURROGATE only",
+        "correction": "LOCK_SHAPE and invalid UTF-8 raise BootstrapError before indexing",
+        "disposition": "CORRECTED",
+        "id": "P1",
+        "row": "cache_info"
+      },
+      {
+        "cells_at_review": "acquire processes_and_resources was PASS and did not name HTTPException",
+        "correction": "HTTPException, including IncompleteRead, is a named source failure and does not escape acquire",
+        "disposition": "CORRECTED",
+        "id": "P2",
+        "row": "acquire"
+      },
+      {
+        "cells_at_review": "requalification_plan listed 4 of 11 current heads",
+        "correction": "The plan now lists all 11 select_most_recent heads. Results stay NOT_EXECUTED until the campaign",
+        "disposition": "CORRECTED",
+        "id": "P3",
+        "row": "requalification_plan"
+      }
+    ],
+    "outcome_sha256": "3805330a8f8c3d84a3a9a36bfe72b849bcb3f4c7985410f5cdfdf6e12cc8f18a",
+    "request_id": "FUSEKI-ARCHIVE-COPY-20261123-24f49bbebab7-pre",
+    "reviewed_head": "24f49bbebab701810c8189a21be5d7b1e4be9da6",
+    "reviewer": "Cursor cursor-grok-4.6-xhigh",
+    "reviewer_provider": "xAI",
+    "second_review": false,
+    "status": "BLOCKING_FINDINGS_CORRECTED"
   },
   "red": [
     {
@@ -420,49 +458,166 @@
       "passed": 3,
       "stdout_sha256": "6fd49cdd1f7dd028fe313dc1bdba8ae8d3e9ce4b2aa44ad5d9bb7698b805f390",
       "subject": "non-string digest, lone surrogate and boolean budget"
+    },
+    {
+      "commit": "ae9c2e346f2cc71e921e84a18e29609c6ca1aecd",
+      "failed": 22,
+      "passed": 2,
+      "stdout_sha256": "03803287f9925c1d6eae39d0530e69ef159c02925c346aee93a66ea696c52944",
+      "subject": "lock shape, non-UTF-8 and HTTP protocol errors"
     }
   ],
   "requalification_plan": {
-    "authorization": "CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23) point 4 authorizes these requalifications because the inventory has four tasks and includes OCOR-DEV-0050.",
-    "method": "select_most_recent on sealed records whose inputs include a file this change set modifies",
-    "reason": "NOT_EXECUTED. The regressions run in the single campaign after preventive review. This record does not invent those results.",
+    "authorization": "CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23) point 4 authorizes these requalifications. select_most_recent finds eleven sealed current heads, and the set includes OCOR-DEV-0050.",
+    "head_count_rule": "Each new record must name the selected_record_id in supersedes. The current head count of each task is 1 and must stay 1.",
+    "method": "select_most_recent on every evidence task, then keep a sealed current head whose inputs include a file this change set modifies when that recorded hash differs from HEAD",
+    "reason": "NOT_EXECUTED. The regressions run in the single campaign after the preventive-review corrections. This record does not invent those results.",
     "status": "NOT_EXECUTED",
     "tasks": [
       {
+        "current_head_count": 1,
         "planned_log": "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.log",
         "planned_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.json",
         "selected_path": "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-20261121.json",
         "selected_record_id": "OCOR-DEV-0005-requalified-fuseki-20261121-dd0467f18816",
+        "status": "SEALED",
         "supersedes": "OCOR-DEV-0005-requalified-fuseki-20261121-dd0467f18816",
         "task_id": "OCOR-DEV-0005",
-        "why": "scripts/validate_ocor_development_plan.py"
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
       },
       {
+        "current_head_count": 1,
         "planned_log": "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.log",
         "planned_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.json",
         "selected_path": "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-20261121.json",
         "selected_record_id": "OCOR-DEV-0050-requalified-fuseki-20261121-dd0467f18816",
+        "status": "SEALED",
         "supersedes": "OCOR-DEV-0050-requalified-fuseki-20261121-dd0467f18816",
         "task_id": "OCOR-DEV-0050",
-        "why": "scripts/validate_ocor_development_plan.py"
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
       },
       {
+        "current_head_count": 1,
         "planned_log": "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.log",
         "planned_record": "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.json",
         "selected_path": "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0038.json",
         "selected_record_id": "OCOR-DEV-0072-requalified-rem0038-36e61515552d",
+        "status": "SEALED",
         "supersedes": "OCOR-DEV-0072-requalified-rem0038-36e61515552d",
         "task_id": "OCOR-DEV-0072",
-        "why": "scripts/acquire_fuseki_archive.py"
+        "why": [
+          "scripts/acquire_fuseki_archive.py"
+        ]
       },
       {
+        "current_head_count": 1,
         "planned_log": "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.log",
         "planned_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.json",
         "selected_path": "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-20261121.json",
         "selected_record_id": "OCOR-DEV-0082-requalified-fuseki-20261121-dd0467f18816",
+        "status": "SEALED",
         "supersedes": "OCOR-DEV-0082-requalified-fuseki-20261121-dd0467f18816",
         "task_id": "OCOR-DEV-0082",
-        "why": "scripts/validate_ocor_development_plan.py"
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
+      },
+      {
+        "current_head_count": 1,
+        "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-archive-copy-20261123.log",
+        "planned_record": "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-archive-copy-20261123.json",
+        "selected_path": "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json",
+        "selected_record_id": "OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816",
+        "status": "SEALED",
+        "supersedes": "OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816",
+        "task_id": "OCOR-DEV-REM-0018",
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
+      },
+      {
+        "current_head_count": 1,
+        "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-archive-copy-20261123.log",
+        "planned_record": "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-archive-copy-20261123.json",
+        "selected_path": "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-20261121.json",
+        "selected_record_id": "OCOR-DEV-REM-0022-requalified-fuseki-20261121-dd0467f18816",
+        "status": "SEALED",
+        "supersedes": "OCOR-DEV-REM-0022-requalified-fuseki-20261121-dd0467f18816",
+        "task_id": "OCOR-DEV-REM-0022",
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
+      },
+      {
+        "current_head_count": 1,
+        "planned_log": "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-archive-copy-20261123.log",
+        "planned_record": "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-archive-copy-20261123.json",
+        "selected_path": "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json",
+        "selected_record_id": "OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816",
+        "status": "SEALED",
+        "supersedes": "OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816",
+        "task_id": "OCOR-DEV-REM-0023",
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
+      },
+      {
+        "current_head_count": 1,
+        "planned_log": "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-fuseki-archive-copy-20261123.log",
+        "planned_record": "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-fuseki-archive-copy-20261123.json",
+        "selected_path": "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.json",
+        "selected_record_id": "OCOR-DEV-REM-0036-requalified-rem0059-636975eaacd7",
+        "status": "SEALED",
+        "supersedes": "OCOR-DEV-REM-0036-requalified-rem0059-636975eaacd7",
+        "task_id": "OCOR-DEV-REM-0036",
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
+      },
+      {
+        "current_head_count": 1,
+        "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-fuseki-archive-copy-20261123.log",
+        "planned_record": "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-fuseki-archive-copy-20261123.json",
+        "selected_path": "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0056.json",
+        "selected_record_id": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
+        "status": "SEALED",
+        "supersedes": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
+        "task_id": "OCOR-DEV-REM-0037",
+        "why": [
+          "reports/planning/OCOR_PLAN_RUN_STATE.json",
+          "scripts/validate_ocor_development_plan.py"
+        ]
+      },
+      {
+        "current_head_count": 1,
+        "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-archive-copy-20261123.log",
+        "planned_record": "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-archive-copy-20261123.json",
+        "selected_path": "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json",
+        "selected_record_id": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
+        "status": "SEALED",
+        "supersedes": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
+        "task_id": "OCOR-DEV-REM-0038",
+        "why": [
+          "scripts/validate_ocor_development_plan.py"
+        ]
+      },
+      {
+        "current_head_count": 1,
+        "planned_log": "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-fuseki-archive-copy-20261123.log",
+        "planned_record": "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-fuseki-archive-copy-20261123.json",
+        "selected_path": "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.json",
+        "selected_record_id": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
+        "status": "SEALED",
+        "supersedes": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
+        "task_id": "OCOR-DEV-REM-0053",
+        "why": [
+          "reports/planning/OCOR_PLAN_RUN_STATE.json",
+          "scripts/validate_ocor_development_plan.py"
+        ]
       }
     ]
   },
@@ -484,21 +639,22 @@
   "schema_version": "1.0",
   "self_check": {
     "cell_scan": {
-      "cells": 90,
-      "cited_tests": 24,
+      "cells": 96,
+      "cited_tests": 31,
       "command": "python3 /home/luca/.ocor-codex/fuseki-archive-copy-20261123/scan_self_check.py",
       "counts": {
-        "FIXED": 8,
-        "N/A": 35,
-        "PASS": 47
+        "FIXED": 10,
+        "N/A": 38,
+        "PASS": 48
       },
       "decision": "SELF-CHECK-CELL-SCAN (2026-11-09)",
       "errors_corrected": 0,
       "errors_found": 0,
-      "rows": 15,
-      "scanned_head": "5f51e52ced15805ab316820c1a3931a24d36a937",
+      "note": "Scanned the table in the worktree immediately before the commit that introduces it. scanned_head is filled by the next commit, which does not change the table.",
+      "rows": 16,
+      "scanned_head": null,
       "status": "PASS",
-      "stdout_sha256": "bb57d52bf3b29253475b7c1786605c46baf72f7e044861891c86057981bf68a8"
+      "stdout_sha256": "0a7ead0669718d619d07a89e827f183b7c044cd85f0f720b76b434e9578f8cc5"
     },
     "decisions": [
       "SELF-CHECK-CHECKLIST (2026-11-08)",
@@ -682,12 +838,34 @@
       },
       {
         "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity in the decoded tree are rejected by the walker this function calls before the object is returned (test_json_tree_rejects_non_string_key_and_non_finite_number).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "FIXED: invalid UTF-8 and a JSON parse error become BootstrapError before any field is used (UTF8_AND_JSON).",
+          "types_before_conversions": "PASS: a JSON root that is not an object raises BootstrapError before field access (test_lock_shape_is_a_typed_bootstrap_error)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_load_stored_json",
+        "paths": [
+          "stored JSON file"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_non_utf8_before_use",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_invalid_json_before_use",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_hit_provenance_rejects_non_utf8",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_shape_is_a_typed_bootstrap_error"
+        ]
+      },
+      {
+        "checks": {
           "boundary_digests": "FIXED: an empty, non-ASCII, uppercase or wrong-length digest is rejected before the cache key is built (DIGEST_FORM).",
           "complete_normative_records": "N/A: cache_info reads the service lock and does not build or validate a normative governance record.",
           "finite_numbers": "PASS: a non-finite number in the lock tree is rejected by the walker before the digest is read (test_json_tree_rejects_non_string_key_and_non_finite_number).",
           "processes_and_resources": "N/A: cache_info reads one local JSON file and starts no process, container, or service.",
-          "strict_decoding": "FIXED: a lone surrogate in a lock key or nested value is rejected before the digest is used (LONE_SURROGATE).",
-          "types_before_conversions": "FIXED: a non-string digest raises BootstrapError before re.fullmatch, so it is not a TypeError (DIGEST_TYPE)."
+          "strict_decoding": "FIXED: a lone surrogate and invalid UTF-8 in the lock are rejected before the digest is used (UTF8_OR_LONE_SURROGATE).",
+          "types_before_conversions": "FIXED: null, a wrong type, an empty list, a non-object element, a missing id and a missing or non-object build raise BootstrapError before indexing (LOCK_SHAPE)."
         },
         "file": "scripts/acquire_fuseki_archive.py",
         "function": "cache_info",
@@ -698,7 +876,10 @@
         "tests": [
           "reports/tests/test_fuseki_archive_acquisition.py::test_lock_digest_form_is_rejected_before_use",
           "reports/tests/test_fuseki_archive_acquisition.py::test_lock_json_rejects_lone_surrogates",
-          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_key_uses_only_locked_sha512"
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_key_uses_only_locked_sha512",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_shape_is_a_typed_bootstrap_error",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_non_utf8_before_use",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_invalid_json_before_use"
         ]
       },
       {
@@ -748,8 +929,8 @@
           "boundary_digests": "PASS: every source, including the governed copy, is hashed against the lock SHA-512 before the cache is updated (test_governed_copy_is_the_only_download_when_bytes_match).",
           "complete_normative_records": "N/A: acquire stores a provenance object with the source URL. It does not build a normative governance record.",
           "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected before a download, and 601 seconds remains rejected (test_budget_rejects_non_finite_numbers).",
-          "processes_and_resources": "PASS: the partial file is unlinked in finally, and a digest mismatch does not try a later source (test_governed_copy_digest_mismatch_names_the_copy_and_stops).",
-          "strict_decoding": "FIXED: a lone surrogate in cache provenance is rejected on a hit before the source string is trusted (LONE_SURROGATE).",
+          "processes_and_resources": "FIXED: an HTTPException during the body read, including IncompleteRead, is a named source failure and the partial file is still removed (HTTP_PROTOCOL).",
+          "strict_decoding": "FIXED: a lone surrogate and invalid UTF-8 in cache provenance are rejected on a hit before the source string is trusted (UTF8_OR_LONE_SURROGATE).",
           "types_before_conversions": "FIXED: a boolean timeout is rejected before urlopen, so True is not treated as one second (BOOL_BUDGET)."
         },
         "file": "scripts/acquire_fuseki_archive.py",
@@ -768,7 +949,10 @@
           "reports/tests/test_fuseki_archive_acquisition.py::test_budget_rejects_bool_before_any_download",
           "reports/tests/test_fuseki_archive_acquisition.py::test_budget_rejects_non_finite_numbers",
           "reports/tests/test_fuseki_archive_acquisition.py::test_cache_hit_provenance_rejects_lone_surrogate",
-          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_http_404_falls_through_to_apache_sources"
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_http_404_falls_through_to_apache_sources",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_hit_provenance_rejects_non_utf8",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_http_protocol_error_is_typed_and_does_not_escape",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_acquire_rejects_malformed_lock_before_download"
         ]
       },
       {
@@ -816,7 +1000,7 @@
           "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
           "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
           "finite_numbers": "PASS: --timeout nan returns status 1 and does not download (test_main_execute_rejects_non_finite_timeout).",
-          "processes_and_resources": "PASS: a rejected budget does not open a download. urlopen is not called (test_main_execute_rejects_non_finite_timeout).",
+          "processes_and_resources": "PASS: a rejected budget does not open a download, and a malformed lock returns status 1 without a traceback (test_main_check_rejects_malformed_lock).",
           "strict_decoding": "N/A: main parses argv and does not decode a file, a log, or a process stream itself.",
           "types_before_conversions": "PASS: argparse type float rejects a non-numeric token, and a parsed NaN is rejected by acquire (test_main_execute_rejects_non_finite_timeout)."
         },
@@ -828,14 +1012,15 @@
         "rereads_stored_data": false,
         "tests": [
           "reports/tests/test_fuseki_archive_acquisition.py::test_main_execute_rejects_non_finite_timeout",
-          "reports/tests/test_fuseki_archive_acquisition.py::test_budget_cannot_be_extended"
+          "reports/tests/test_fuseki_archive_acquisition.py::test_budget_cannot_be_extended",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_main_check_rejects_malformed_lock"
         ]
       }
     ],
     "text_form": {
       "decision": "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)",
       "digest": "Empty, non-ASCII and non-string digests are rejected before hash or comparison.",
-      "json": "Lone surrogates in keys and nested values are rejected. A valid surrogate pair is not generated by these tests.",
+      "json": "Invalid UTF-8, a JSON parse error, lone surrogates, null, a wrong type, an empty list and a missing object are rejected before use.",
       "url": "Empty, non-ASCII and malformed copy URLs are rejected before a request."
     }
   },
