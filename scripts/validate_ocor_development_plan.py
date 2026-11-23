@@ -1876,6 +1876,8 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
+        # OCOR-DEV-REM-0067 design contract only. Not a production file of the unit.
+        "reports/assurance/OCOR-DEV-REM-0067-RCCAD/README.md",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
