@@ -1878,9 +1878,17 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
         # FUSEKI-ARCHIVE-COPY-20261123 records only. Not a production file.
         # The acquisition script and its tests stay the production change.
+        # Drift from those files selects 0072. Admitting this record also
+        # changes this validator, which selects 0005, 0050 and 0082.
         "reports/assurance/FUSEKI-ARCHIVE-COPY-20261123/FUSEKI-ARCHIVE-COPY-20261123.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.log",
         "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.json",
         "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
