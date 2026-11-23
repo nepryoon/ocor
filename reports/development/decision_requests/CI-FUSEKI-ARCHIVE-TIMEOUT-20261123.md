@@ -1,0 +1,63 @@
+# CI-FUSEKI-ARCHIVE-TIMEOUT-20261123
+
+Stato: aperta. Nessuna opzione è applicata da questa pubblicazione. Non si modifica `scripts/acquire_fuseki_archive.py`. Non si rilanciano i run già falliti. Non è un ciclo 4 di `OCOR-DEV-REM-0066`.
+
+## Contesto e contrasto da chiudere
+
+`REM-0017-CI-ARCHIVE-ACQUISITION (2026-10-08)` fissa l'archivio Fuseki con lo SHA-512 del lock come unica autorità, il download solo dalle fonti ufficiali Apache e il budget totale di provisioning a 600 s. Il codice su `origin/main` `618e72c00f994e8ea8899914548cc38743aa4569` rifiuta un timeout fuori da `(0, 600]`. Per ogni fonte il termine è `min(120, budget residuo)` e il timeout di ogni lettura è `min(10, residuo di quel termine)`. Lo SHA-512 atteso è `ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132`.
+
+La PR #773, HEAD `95ab10c2e36c39f73db32cfeb1f083d329b39341`, è aperta e non si mergia. I tre workflow obbligatori che provisionano lo stack sono al `run_attempt` 2, quindi il rerun già consentito è consumato:
+
+- run `45139159711`, OCOR RCCAD methodology gates, creato `2026-11-23T08:30:24Z`, conclusion `failure`;
+- run `45139159581`, OCOR governance and validation closure, stesso istante, conclusion `failure`;
+- run `45139159701`, OCOR autonomous delivery controls, stesso istante, conclusion `failure`.
+
+L'API dei job mostra che ogni parte di questi tre run fallisce nel solo step `Provision the full pinned disposable stack`. Gli aggregatori falliscono nel rifiuto delle parti. Tre log letti in questa iterazione, job `137574757907` (rccad-methodology part 1/4), `137574755367` (validation-closure part 1/4) e `137574771036` (delivery-activation part 1/4), riportano la stessa sequenza: `Cache not found` per la chiave `fuseki-sha512-ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132`; HTTP 404 da `dlcdn.apache.org`; HTTP 404 da `downloads.apache.org`; poi `archive.apache.org` con errore `The read operation timed out`. Fra il 404 di `downloads.apache.org` e quell'errore passano 120,001 s in tutti e tre i log. Non è un'asserzione di test fallita: lo step dei test non parte. Il salvataggio della cache non parte.
+
+Il run precedente `45116784337`, `run_attempt` 2, HEAD `ec91f8e969b278bd5593f141f35fcfe2e9c49257`, conclusion `failure`, ha le parti fallite nello stesso step. Il log di quel run non è stato riletto in questa iterazione. La PR #771 è già chiusa senza merge.
+
+Il 2026-11-23T09:12:33Z un HEAD verso `https://archive.apache.org/dist/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz` restituisce HTTP 200 in 0,349 s, `Content-Length: 51398669`, `Last-Modified: Mon, 27 Jul 2026 16:15:48 GMT`, `Vary: Slow,Glacial`. La copia locale sotto `.ocor/cache/fuseki/sha512/` ha la stessa dimensione e lo SHA-512 del lock. Un HEAD non dimostra che il corpo da 51398669 byte termini entro 120 s su un runner.
+
+`QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12)` e il mandato vigente fermano i nuovi tentativi quando la stessa causa infrastrutturale colpisce più run. Questi run non si rilanciano. `CI-STATO-RAPIDA (2026-11-14)` non è implementata: una PR di solo stato esegue ancora il provisioning. La PR #770, sul merge di `main`, aveva i check di suite verdi; il miss di cache di questi branch non è quindi la prova che la suite fallisca sempre.
+
+Una scansione dei file JSON sotto `reports/evidence` che contengono il nome `acquire_fuseki_archive.py` trova 12 file e 9 task: `OCOR-DEV-0070`, `OCOR-DEV-0072`, `OCOR-DEV-0073`, `OCOR-DEV-0074`, `OCOR-DEV-0075`, `OCOR-DEV-0076`, `OCOR-DEV-0077`, `OCOR-DEV-0078`, `OCOR-DEV-0079`. Non è l'inventario di `select_most_recent`. Non nomina `OCOR-DEV-0049` né `OCOR-DEV-0050`. `LOCAL-FULL-SUITE-CAP-90-AMENDMENT (2026-10-26)` chiede una decision request prima di riqualifiche sostanziali oltre tre task. Questa è quella richiesta per un eventuale cambio del file. Il cambio non si fa in questa pubblicazione.
+
+`FUSEKI-ETICHETTA-CI-ORDINE (2026-11-21)` fa partire l'unità dopo l'integrazione, con sigillo e state sync, di `FUSEKI-REBUILD-IDENTITY-20261121`. Quella condizione è vera su `origin/main` (`3ecef444`, sigillo `51e18ae7`, state sync `618e72c0`). `REM-0066-CYCLE3-NO-GO` è aperta, bozza PR #772, commit `171708381416e03d3c217efdcb60328e158f5b84`, sha256 `e44221eb591f62640098bf50295ebdf74d6999880e48803c2f8ba4064e724fcb`, e nessuna sua opzione è applicata. Il candidato resta `3b2ee600ee5d9e3055e3d916628d958635fefff3`.
+
+## Quesito A
+
+Come si rende di nuovo possibile il provisioning ufficiale di Fuseki in CI, senza un terzo tentativo dei run già falliti, senza alzare il budget di 600 s, senza mirror di terze parti e senza indebolire lo SHA-512?
+
+## Opzioni
+
+1. **Il termine per fonte diventa il budget residuo, dentro i 600 s.** Soluzione completa per la causa osservata: l'unica fonte ufficiale ancora viva è stata tentata per 120,001 s e la lettura era ancora aperta allo scadere. Non si attua in questa pubblicazione. Questa opzione modifica, soltanto per la ripartizione interna del budget già fissato, il termine per fonte in `scripts/acquire_fuseki_archive.py`: da `min(120, budget residuo)` al budget residuo, comunque dentro `(0, 600]`. Il timeout di ogni lettura resta `min(10, residuo del termine della fonte)`. Lo SHA-512, l'ordine delle tre fonti ufficiali, il rifiuto dei redirect fuori da Apache, il rifiuto di 601 s e l'assenza di mirror restano. Non modifica il punto sul budget di 600 s di `REM-0017-CI-ARCHIVE-ACQUISITION (2026-10-08)`. File ammessi: `scripts/acquire_fuseki_archive.py` e `reports/tests/test_fuseki_archive_acquisition.py`. Se un test esistente fallisce solo perché fissa `min(120, budget residuo)`, si aggiorna quella asserzione nello stesso change set e la si nomina; non si cancella il test. Se serve un altro file di produzione, ci si ferma e si apre una sola richiesta nuova. RED prima del codice: con timeout totale 600 un flusso ancora aperto a 121 s non fallisce per il vecchio termine di 120 s; timeout 601, redirect non ufficiale e SHA-512 diverso restano rifiutati. Poi GREEN. L'inventario delle riqualifiche si ricalcola con `select_most_recent` sui record sigillati che hanno fra gli input i file cambiati; la scansione dei 9 task non sostituisce quell'inventario. Se i task sono più di tre, o se compaiono `OCOR-DEV-0049` o `OCOR-DEV-0050`, questa opzione autorizza quelle riqualifiche sostanziali perché è la richiesta che `LOCAL-FULL-SUITE-CAP-90-AMENDMENT (2026-10-26)` esige prima di farle. Ogni record nuovo nomina in `supersedes` la testa selezionata su `origin/main`; nessun record sigillato si riscrive; i conteggi delle teste non aumentano, altrimenti ci si ferma e si apre una sola richiesta nuova. Dopo GREEN, un solo tentativo CI nuovo del change set, non un rerun dei run nominati. Se l'archivio ufficiale non termina nemmeno entro 600 s, non si alza il tetto: ci si ferma e si apre una sola richiesta nuova con la durata misurata. Criterio di accettazione: un job mostra cache HIT oppure un download da fonte ufficiale con SHA-512 verificato, e i check di suite richiesti sono verdi sull'HEAD esatto. Costo onesto: un ciclo RED/GREEN, le riqualifiche che l'inventario reale elenca, un tentativo CI. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessuna opzione è applicata da questa pubblicazione.
+
+2. **Nessun cambio di codice e nessun altro tentativo finché non c'è un fatto nuovo.** Non si attua come autorizzazione a mergiare. I run `45139159711`, `45139159581`, `45139159701` e `45116784337` non si rilanciano. `scripts/acquire_fuseki_archive.py` resta com'è. La PR #773 resta aperta e non si mergia. Un run nuovo è ammesso solo dopo un fatto nuovo verificabile: la chiave di cache presente per quel branch, oppure una fonte ufficiale che completa il corpo entro il termine attuale. Non è la soluzione completa: il miss osservato non salva la cache, e la fonte viva non ha terminato entro 120 s. La PR di stato resta fuori da `main`. Claim invariati. Nessuna opzione è applicata da questa pubblicazione.
+
+3. **Si pubblica in cache il solo archivio già verificato, senza cambiare il termine.** Non si attua in questa pubblicazione. Lo SHA-512 della copia locale coincide col lock e la dimensione è 51398669. Questa opzione non modifica il termine per fonte né il tetto di 600 s. Ammesso solo un meccanismo già nel repository, con la cache Actions di questo repository e l'action già fissata, dopo la verifica SHA-512, senza credenziale nuova, senza host di terze parti e senza mettere l'archivio in git. Poi un run nuovo della PR di stato, non un rerun dei run nominati. Non è la soluzione completa: un miss successivo, su un altro branch, ritrova il termine di 120 s. Se quel meccanismo non esiste senza una credenziale nuova, l'opzione non è attuabile e non si estende. Claim invariati. Nessuna opzione è applicata da questa pubblicazione.
+
+## Quesito B
+
+`FUSEKI-ETICHETTA-CI-ORDINE (2026-11-21)` ha la condizione di avvio già vera. `REM-0066-CYCLE3-NO-GO` è aperta e il suo impatto dice di non avviare `FUSEKI-ETICHETTA-CI`. Mentre il quesito A e quella richiesta sono aperti, il contratto di `FUSEKI-ETICHETTA-CI` parte o aspetta?
+
+### Opzioni del quesito B
+
+B1. **Parte solo il contratto, nell'iterazione successiva a una decisione che adotta questa opzione.** Soluzione completa rispetto all'ordine già scritto in `FUSEKI-ETICHETTA-CI-ORDINE (2026-11-21)` e ai punti 2–8 di `FUSEKI-ETICHETTA-CI (2026-11-21)`. Non si attua in questa pubblicazione. Non modifica quelle sezioni. Non applica nessuna opzione di `REM-0066-CYCLE3-NO-GO`. Non è un ciclo 4. Il candidato `3b2ee600ee5d9e3055e3d916628d958635fefff3` non si modifica e non si mergia. L'iterazione che attua questa opzione pubblica soltanto il contratto in inglese, da una a tre pagine, sul primo identificativo `OCOR-DEV-REM-` libero calcolato col comando della sezione, poi scrive la richiesta di revisione preventiva e si ferma. Nessun codice di produzione, nessuna campagna, nessun `docker build`, `docker rmi`, prune o `docker tag`. L'integrazione di quell'unità resta dopo la revisione, RED, GREEN, campagna e verifica, e resta dipendente da un provisioning che passi oppure dall'opzione 1 di questo quesito A. Claim invariati. Nessuna opzione è applicata da questa pubblicazione.
+
+B2. **Il contratto non parte finché questo quesito A e `REM-0066-CYCLE3-NO-GO` non sono decisi.** Non si attua in questa pubblicazione. Questa opzione sospende, solo fino a quelle due decisioni, il punto 1 di `FUSEKI-ETICHETTA-CI-ORDINE (2026-11-21)`. Non modifica il resto di quella sezione. Non è la soluzione completa: l'unità già ordinata non inizia. Claim invariati. Nessuna opzione è applicata da questa pubblicazione.
+
+## Raccomandazione
+
+Quesito A, opzione 1. È l'unica che toglie la causa misurata: la fonte ufficiale ancora viva resta aperta oltre il termine di 120 s mentre il budget di 600 s non è esaurito. L'opzione 2 lascia la PR di stato fuori da `main`. L'opzione 3 non copre il miss successivo. La raccomandazione non dipende dalla durata del change set.
+
+Quesito B, opzione B1. È l'unica che esegue l'unità già ordinata, nel solo perimetro del contratto. L'opzione B2 lascia quell'unità ferma. La raccomandazione non dipende dal numero di file.
+
+Chi apre questa richiesta non ne applica nessuna opzione.
+
+## Impatto
+
+Finché questa richiesta è aperta non si rilanciano i run `45139159711`, `45139159581`, `45139159701` e `45116784337`, non si modifica `scripts/acquire_fuseki_archive.py` e non si mergia la PR #773. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CYCLE3-NO-GO`: nessun ciclo 4, nessun `PRE-CAMPAIGN-GATE`, nessuna campagna e nessun `verify_request.json` per quell'unità. Il candidato resta `3b2ee600ee5d9e3055e3d916628d958635fefff3`. Non si tocca la PR #722 né il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si avvia `OCOR-DEV-REM-0060`. `FUSEKI-ETICHETTA-CI` non parte in questa pubblicazione, perché nessuna opzione del quesito B è applicata.
+
+Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, al tetto di 600 s o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist del validatore del piano per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione. Lo state sync che registra la richiesta è un branch separato, senza questa pull request di bozza, perché un'altra pull request farebbe ripartire lo stesso provisioning.
+
+Implementatore di questa richiesta: Grok Build, grok-4.7, xAI. Nessun verifier è stato avviato.
