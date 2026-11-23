@@ -517,3 +517,115 @@ def test_main_execute_rejects_non_finite_timeout(tmp_path, monkeypatch):
     monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("non-finite budget downloaded"))
     monkeypatch.setattr(sys, "argv", ["acquire_fuseki_archive.py", "--execute", "--timeout", "nan"])
     assert archive.main() == 1
+
+
+def _replace_lock(repo: Path, text: str) -> None:
+    (repo / "infra/services.lock.json").write_text(text)
+
+
+@pytest.mark.parametrize("text", [
+    "null",
+    "{}",
+    '{"services": null}',
+    '{"services": {}}',
+    '{"services": []}',
+    '{"services": true}',
+    '{"services": "fuseki"}',
+    '{"services": [null]}',
+    '{"services": ["fuseki"]}',
+    '{"services": [{}]}',
+    '{"services": [{"id": "other"}]}',
+    '{"services": [{"id": "fuseki"}]}',
+    '{"services": [{"id": "fuseki", "build": null}]}',
+    '{"services": [{"id": "fuseki", "build": {}}]}',
+    '{"services": [{"id": "fuseki", "build": []}]}',
+])
+def test_lock_shape_is_a_typed_bootstrap_error(tmp_path, text):
+    """Null, a wrong type, an empty list and a missing build are not indexed."""
+    repo = repository(tmp_path)
+    _replace_lock(repo, text)
+    with pytest.raises(BootstrapError):
+        archive.cache_info(repo)
+
+
+@pytest.mark.parametrize("payload", [b"\xff\xfe", b"\x80", b"\xff"])
+def test_lock_rejects_non_utf8_before_use(tmp_path, payload):
+    repo = repository(tmp_path)
+    (repo / "infra/services.lock.json").write_bytes(payload)
+    with pytest.raises(BootstrapError, match="UTF-8"):
+        archive.cache_info(repo)
+
+
+def test_lock_rejects_invalid_json_before_use(tmp_path):
+    repo = repository(tmp_path)
+    _replace_lock(repo, "{")
+    with pytest.raises(BootstrapError):
+        archive.cache_info(repo)
+
+
+def test_acquire_rejects_malformed_lock_before_download(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    _replace_lock(repo, '{"services": null}')
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("malformed lock downloaded"))
+    with pytest.raises(BootstrapError):
+        archive.acquire(repo, timeout=10)
+
+
+def test_cache_hit_provenance_rejects_non_utf8(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    info = archive.cache_info(repo)
+    directory = repo / info["path"]
+    directory.mkdir(parents=True)
+    (directory / "apache-jena-fuseki.tar.gz").write_bytes(b"governed archive")
+    (directory / "provenance.json").write_bytes(b"\xff\xfe")
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bad provenance downloaded"))
+    with pytest.raises(BootstrapError, match="UTF-8"):
+        archive.acquire(repo, timeout=10)
+    assert (directory / "apache-jena-fuseki.tar.gz").is_file()
+
+
+@pytest.mark.parametrize("error", [
+    "incomplete",
+    "protocol",
+])
+def test_http_protocol_error_is_typed_and_does_not_escape(tmp_path, monkeypatch, error):
+    """HTTPException, including IncompleteRead, is a source failure, not a raw escape."""
+    import http.client
+
+    repo = repository(tmp_path)
+    calls = []
+
+    def fetch(request, timeout):
+        calls.append(request.full_url)
+
+        class Body:
+            def geturl(self):
+                return request.full_url
+
+            def read1(self, size):
+                if error == "incomplete":
+                    raise http.client.IncompleteRead(partial=b"x")
+                raise http.client.HTTPException("protocol")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        return Body()
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    with pytest.raises(BootstrapError, match="official sources exhausted"):
+        archive.acquire(repo, timeout=10)
+    assert calls == list(archive.SOURCES)
+    assert not list(repo.rglob("*.tar.gz")) and not list(repo.rglob("*.part"))
+
+
+def test_main_check_rejects_malformed_lock(tmp_path, monkeypatch, capsys):
+    repo = repository(tmp_path)
+    _replace_lock(repo, '{"services": null}')
+    monkeypatch.setattr(archive, "root", lambda: repo)
+    monkeypatch.setattr(sys, "argv", ["acquire_fuseki_archive.py"])
+    assert archive.main() == 1
+    assert "FAIL" in capsys.readouterr().out
