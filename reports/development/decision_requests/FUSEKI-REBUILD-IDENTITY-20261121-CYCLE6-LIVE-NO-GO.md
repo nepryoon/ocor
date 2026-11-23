@@ -1,6 +1,7 @@
 # FUSEKI-REBUILD-IDENTITY-20261121-CYCLE6-LIVE-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, decisa per conto del PO, modello claude-fable-5-2, effort max. Il file pubblicato a `d2738ddd4c717e8219cc01d269aa3e9558b2e1ed` resta sha256 `6f1af3e29788b05a74e681247aa8fa5d61f06364e471f4ffda0fdce3dbf96677`. L'opzione 1 non aggiunge commit sul branch `governed/fuseki-rebuild-identity-20261121`, che resta `a24756e0c90d82c0f5585e84868824b992d43d3b`. Non è un ciclo 7. La verifica indipendente ulteriore usa l'identificativo `FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6-live-2` e `repair_cycle` 6, perché `FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6` e `FUSEKI-REBUILD-IDENTITY-20261121-a24756e0c90d-6-live` hanno già un verdetto registrato. Questa PR resta una bozza e non si integra. Il testo delle opzioni non cambia. Claim invariati.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta riguarda un ciclo di riparazione e l'eventuale stop dell'unità. Nessuna opzione è applicata da questa pubblicazione.
 Head di `origin/main` alla pubblicazione: `b2ec15806216ce8ba39e5c93227c34919f734675`.
