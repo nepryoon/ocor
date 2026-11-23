@@ -411,6 +411,38 @@ def test_governed_copy_request_sends_no_authorization_header(tmp_path, monkeypat
     assert "token" not in seen[0].full_url
 
 
+def test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy(monkeypatch):
+    """The real opener must not send proxy credentials. No stand-in for urlopen."""
+    import http.client
+    from urllib.request import Request
+
+    proxy = "http://synthetic-user:synthetic-pass@127.0.0.1:9"
+    for name in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"):
+        monkeypatch.setenv(name, proxy)
+    monkeypatch.delenv("no_proxy", raising=False)
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    seen = {}
+
+    def connect(self):
+        headers = {
+            str(key).lower(): value
+            for key, value in dict(getattr(self, "_tunnel_headers", {}) or {}).items()
+        }
+        seen["tunnel_host"] = getattr(self, "_tunnel_host", None)
+        seen["headers"] = headers
+        raise BootstrapError("stop before io")
+
+    monkeypatch.setattr(http.client.HTTPSConnection, "connect", connect)
+    with pytest.raises(BootstrapError, match="stop before io"):
+        archive.urlopen(
+            Request(GOVERNED_COPY, headers={"User-Agent": "OCOR-governed-acquisition/1"}),
+            timeout=1,
+        )
+    assert seen.get("tunnel_host") == "github.com"
+    assert "proxy-authorization" not in seen["headers"]
+    assert "authorization" not in seen["headers"]
+
+
 def test_lock_digest_form_is_rejected_before_use(tmp_path):
     """Empty, non-ASCII, uppercase and non-string digests are not hashes."""
     valid = hashlib.sha512(b"governed archive").hexdigest()
