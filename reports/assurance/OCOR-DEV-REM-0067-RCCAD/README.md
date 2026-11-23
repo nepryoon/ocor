@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0067 — CI Fuseki label contract
 
-Design contract for the unit required by FUSEKI-ETICHETTA-CI (2026-11-21), points 2–8, with the identifier rule of FUSEKI-ETICHETTA-CI-ORDINE (2026-11-21). This commit is that contract. It is the one design review. It does not change production behaviour.
+Design contract for the unit required by FUSEKI-ETICHETTA-CI (2026-11-21), points 2–8, with the identifier rule of FUSEKI-ETICHETTA-CI-ORDINE (2026-11-21). This file is that contract. The first publication was the one design review. A later commit on this branch may correct the contract after that review. It does not change production behaviour.
 
 ## Identifier
 
@@ -23,11 +23,19 @@ The CI bootstrap builds and qualifies Fuseki on its own label, distinct from `bu
 
 ## Mechanism
 
-`ci_resources()` already writes `.ocor/ci-resources.yaml` and the CI bootstrap already passes it as a second Compose file after `deploy/bootstrap/compose.yaml`. Compose replaces a scalar `image` from the later file. The overlay therefore gains `services.fuseki.image` set to `ocor/jena-fuseki:ci-6.2.0`, beside the existing `JVM_ARGS`. `deploy/bootstrap/compose.yaml` stays `image: ocor/jena-fuseki:6.2.0`. An environment variable is not used, because this overlay can carry the label.
+`ci_resources()` already writes `.ocor/ci-resources.yaml` and the CI bootstrap already passes it as a second Compose file after `deploy/bootstrap/compose.yaml`. Compose replaces a scalar `image` from the later file. The overlay therefore gains `services.fuseki.image` set to `ocor/jena-fuseki:ci-6.2.0`, beside the existing `JVM_ARGS`. `deploy/bootstrap/compose.yaml` stays `image: ocor/jena-fuseki:6.2.0` plus `build: {context: ../../infra/fuseki}`, with no `pull_policy`. An environment variable is not used, because this overlay can carry the label.
 
-`provision()` builds with `-t ocor/jena-fuseki:ci-6.2.0` and inspects that label. It never builds, tags, or removes `ocor/jena-fuseki:6.2.0`. The CI image id may differ from `build.output_sha256`; the CI bootstrap does not gain a new identity gate. The development bootstrap keeps its own gate: it rebuilds onto `ocor/jena-fuseki:6.2.0` with `--no-cache` only when that label is absent or its id is not the lock id, then fail-closes if the built id is still not the lock id.
+The overlay sets `image` and does not remove `build`. The merged Fuseki service still has `build.context` `../../infra/fuseki`. On Docker Compose v5.8.0, a throwaway project that is not `ocor-bootstrap` and does not use the name `ocor/jena-fuseki` shows the policy this file binds to a flag, not to a future Compose default:
 
-The typed check gains an optional `--expected-fuseki-image`. Omitted, the expected image stays `build.output_image`. The CI bootstrap passes `--expected-fuseki-image ocor/jena-fuseki:ci-6.2.0` only on the typed-check command inside `provision()`. The flag is not read from the environment and not from `.ocor/ci-resources.yaml`. When the running `Config.Image` differs, the development path (flag omitted) keeps the current sentence `fuseki running image differs from the exact services.lock.json entry`. At this base that sentence occurs only in `scripts/verify_external_services.py`. The CI path adds a separate sentence that names `ocor/jena-fuseki:ci-6.2.0`. Status values stay `READY`, `DEGRADED`, and `NOT_PROVISIONED`.
+- `image` absent, `up` without `--no-build`: Compose builds and names that `image`.
+- `image` present, build context changed, `up` without `--build`: the id is unchanged.
+- `image` absent, `up --no-build`: the image is not created.
+- an overlay that only replaces `image`, that name absent, `up` without `--no-build`: Compose builds the overlay name and does not create the base name.
+- the same overlay with `up --no-build` and the overlay name absent: neither name is created.
+
+`provision()` builds with `-t ocor/jena-fuseki:ci-6.2.0` and inspects that label. It never builds, tags, or removes `ocor/jena-fuseki:6.2.0`. Every `docker compose up` in the CI bootstrap that includes the Fuseki service keeps `--no-build`. At this base that is the complete-stack `up` in `scripts/bootstrap_ci_environment.py`. The `spire-server` `up` does not name Fuseki, and `spire-server` does not depend on Fuseki, so that command does not build Fuseki and stays as it is. A later change that makes that `up` include Fuseki must pass `--no-build` too. The CI image id may differ from `build.output_sha256`; the CI bootstrap does not gain a new identity gate. The development bootstrap keeps its own gate: it rebuilds onto `ocor/jena-fuseki:6.2.0` with `--no-cache` only when that label is absent or its id is not the lock id, then fail-closes if the built id is still not the lock id.
+
+The typed check gains an optional `--expected-fuseki-image`. Omitted, the expected image stays `build.output_image`. The CI bootstrap passes `--expected-fuseki-image ocor/jena-fuseki:ci-6.2.0` only on the typed-check command inside `provision()`. The flag is not read from the environment and not from `.ocor/ci-resources.yaml`. When the running `Config.Image` differs, the development path (flag omitted) keeps the current sentence `fuseki running image differs from the exact services.lock.json entry`. At this base that sentence occurs only in `scripts/verify_external_services.py`. The CI path adds a separate sentence that names `ocor/jena-fuseki:ci-6.2.0`. Status values stay `READY`, `DEGRADED`, `UNREACHABLE`, and `NOT_PROVISIONED`. The enum is not reduced. After the container has already matched, a ping that raises `OSError` or `URLError` stays `UNREACHABLE`, and a ping status other than 200 stays `DEGRADED`.
 
 Teardown does not `docker rmi`, `docker tag`, build, or prune either label. `ocor/jena-fuseki:preserve-f5a11814` is not created, moved, or removed by this unit.
 
@@ -49,8 +57,13 @@ Readers that do not build:
 - `ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py` asserts the compose image string. It stays true because the compose file stays.
 - Workflows `.github/workflows/ocor-rccad.yml`, `ocor-delivery-activation.yml`, and `ocor-validation-closure.yml` call `scripts/bootstrap_ci_environment.py --execute` and `--teardown --execute`. They move the governed label today only through `provision()`.
 - `scripts/run_local_lane_campaign.py` runs those two commands inside a private `dockerd` (`--data-root /var/lib/docker`), not on the workstation engine.
+- `scripts/capture_environment_evidence.py` calls `typed_health_checks(..., execute=False)` and does not pass `--expected-fuseki-image`, so it stays on the development expectation. This unit does not change that file.
+- `ocor-runtime/tests/tasks/test_ocor_dev_0079.py` asserts the closed status set `READY`, `DEGRADED`, `UNREACHABLE`, `NOT_PROVISIONED`. The set stays. This unit does not change that test.
+- `ocor-runtime/tests/tasks/test_ocor_dev_rem_0038.py` loads `scripts/verify_external_services.py` and does not assert the Fuseki tag. Unchanged.
+- `scripts/ocor_bootstrap_lib.py` requires `build.output_image` on a lock entry that uses `build`. It does not read the CI label. Unchanged.
+- `infra/services.lock.schema.json` patterns `output_image`. Unchanged.
 
-No other file under `scripts/`, `deploy/`, `infra/`, `.github/`, or `ocor-runtime/` executes `docker build` or `docker tag` onto `ocor/jena-fuseki:6.2.0`.
+The five readers above do not execute `docker build` or `docker tag`. No other file under `scripts/`, `deploy/`, `infra/`, `.github/`, or `ocor-runtime/` executes `docker build` or `docker tag` onto `ocor/jena-fuseki:6.2.0`.
 
 ## Matrix
 
@@ -62,13 +75,15 @@ Cache warmth never selects the tag. It only affects layer reuse of a build that 
 
 Outcome function:
 
-- E1, every state: governed id unchanged, including absent staying absent. On success the build tag and the Fuseki container `Config.Image` are `ocor/jena-fuseki:ci-6.2.0`. A pre-existing CI label may move to the new build id. E1 does not read the residue to choose the tag.
+- E1, every state: governed id unchanged, including absent staying absent. The explicit build tag is `ocor/jena-fuseki:ci-6.2.0` and never `ocor/jena-fuseki:6.2.0`. Every Fuseki-including `up` passes `--no-build`, so Compose does not apply the build policy to either label. On success the Fuseki container `Config.Image` is `ocor/jena-fuseki:ci-6.2.0`. A pre-existing CI label may move to the new id of that explicit build. E1 does not read the residue to choose the tag. The `spire-server` `up` does not include Fuseki.
 - E2, every state: no build and no tag change of either label. The CI label stays present if it was present and absent if it was absent.
-- E3, governed id already `LOCK_ID`, every other state: no Fuseki build, and compose is started from `deploy/bootstrap/compose.yaml` only. CI label and residue do not cause a rebuild and do not change the image.
-- E3, governed `OTHER_ID` or `ABSENT`: unchanged mismatch path. It may build onto `ocor/jena-fuseki:6.2.0` and fail-closes unless the result is `LOCK_ID`. CI label and residue do not enter that decision.
-- E4, every state: no build and no tag change. The service image is the compose file’s `ocor/jena-fuseki:6.2.0`. If that label is absent, compose does not create it.
-- E5, every state: the expected image is only the CLI argument `ocor/jena-fuseki:ci-6.2.0`. Match and healthy ping: `READY`. Any other `Config.Image`: `DEGRADED` with the CI sentence. Container absent: `NOT_PROVISIONED`.
-- E6, every state: the expected image is only `build.output_image`. A container on the CI label is `DEGRADED` with the existing lock sentence. Residue cannot switch E6 onto the CI label.
+- E3, governed id already `LOCK_ID`, every other state: no Fuseki build, and compose is started from `deploy/bootstrap/compose.yaml` only. CI label and residue do not cause a rebuild and do not change the image. The development compose `up` does not pass `--no-build`; with the governed image already present it does not rebuild that image.
+- E3, governed `OTHER_ID` or `ABSENT`: unchanged mismatch path. It may `docker build --no-cache -t ocor/jena-fuseki:6.2.0` and fail-closes unless the result is `LOCK_ID`. CI label and residue do not enter that decision. That path is outside this unit because the development bootstrap stays unchanged.
+- E4 is a bare `docker compose -f deploy/bootstrap/compose.yaml` with no CI overlay, no `--build`, and no `--no-build`. It is not the CI bootstrap.
+- E4, governed image present (`LOCK_ID` or `OTHER_ID`), every other state: no build and no tag change. The service image stays the compose file’s `ocor/jena-fuseki:6.2.0`.
+- E4, governed image `ABSENT`, every other state: Compose applies the unchanged build policy and can create `ocor/jena-fuseki:6.2.0`. This unit does not close that path. The CI-bootstrap property does not say that a bare compose up leaves an absent governed label absent.
+- E5, every state: the expected image is only the CLI argument `ocor/jena-fuseki:ci-6.2.0`. Container absent: `NOT_PROVISIONED`. Any other `Config.Image`, or a present container that is not running, is paused, or is not healthy: `DEGRADED` with the CI sentence. Image match and a ping `OSError` or `URLError`: `UNREACHABLE`. Image match and a ping status other than 200: `DEGRADED`. Image match and ping 200: `READY`.
+- E6, every state: the expected image is only `build.output_image`. A container on the CI label is `DEGRADED` with the existing lock sentence. Residue cannot switch E6 onto the CI label. Container absent: `NOT_PROVISIONED`. Image match and a ping `OSError` or `URLError`: `UNREACHABLE`. Image match and a ping status other than 200: `DEGRADED`. Image match and ping 200: `READY`.
 - E7: E2 then E1 on the lane’s private engine. The workstation labels `ocor/jena-fuseki:6.2.0` and `ocor/jena-fuseki:preserve-f5a11814` are not arguments of the lane. Inside the sandbox, E1 and E2 apply.
 
 ## Examples
@@ -77,6 +92,8 @@ Positive, producer to consumer. Producer: E1 with governed `LOCK_ID`, CI label a
 
 Negative, producer to consumer. Producer: E6 against a running container whose `Config.Image` is `ocor/jena-fuseki:ci-6.2.0`, with `.ocor/ci-resources.yaml` present. Consumer: status `DEGRADED` and the sentence `fuseki running image differs from the exact services.lock.json entry`. The residue is not consulted.
 
+Residual path, not an E1 failure. E4 with the governed label absent can create `ocor/jena-fuseki:6.2.0`. That is the unchanged Compose build policy. Proofs of E1 still require the governed inspect outcome to be unchanged, and they run where that label is not the workstation image.
+
 ## Oracle and proofs
 
 The oracle is `docker image inspect` before and after, on real Docker. Mocks are only for local fault handling (a failed subprocess or a missing engine in a unit test). They are not the image-id oracle.
@@ -84,6 +101,14 @@ The oracle is `docker image inspect` before and after, on real Docker. Mocks are
 No proof, campaign, or command of this unit creates, moves, or removes `ocor/jena-fuseki:6.2.0` or `ocor/jena-fuseki:preserve-f5a11814` on the workstation Docker. Proofs that put a governed-labelled image at risk run in a lane sandbox, on a probe image labelled as the governed image inside that private engine.
 
 RED comes before the production change, in a later iteration. It includes a real-Docker sandbox proof that today’s `docker build --pull -t ocor/jena-fuseki:6.2.0` moves that probe label when the cache is cleared. GREEN shows the same sandbox leaving the probe id unchanged and the CI container on `ocor/jena-fuseki:ci-6.2.0`. No existing test is removed or weakened. A changed test records the line before, the line after, and the reason.
+
+## Design review disposition
+
+One design review, request `OCOR-DEV-REM-0067-88d526421d77-pre`, head `88d526421d77cbe8db4f1a1546b41dcb929a7156`, base `618e72c00f994e8ea8899914548cc38743aa4569`. Outcome file sha256 `2486b876a4de96061d0eca5bdfa39120af580c1cb14edea1cea72b66cd9a89a5`. Reviewer Cursor, model `cursor-grok-4.6-xhigh`, vendor xAI. The implementer of the contract is Grok Build, grok-4.7, xAI. The reviewer is a reserve reviewer: same vendor, different model. The planned verifier of the later code is Codex (OpenAI). The outcome has one blocking finding and three advisory findings. This correction does not request a second design review.
+
+The blocking finding is closed here. The previous E4 row said that a bare compose up does not create `ocor/jena-fuseki:6.2.0` when that label is absent. That claim is false for the unchanged compose file. The corrected E4-absent row states the residual path. E1 is bound to the CI tag and to `--no-build` on every Fuseki-including up, so the CI bootstrap does not take that path.
+
+The three advisory findings are accepted. The overlay does not remove `build`, and `--no-build` is now an E1 bound. The status set keeps `UNREACHABLE`; a failed ping stays `UNREACHABLE`. The reader list adds the five files named above. None of those files change in this unit. The cell count stays 7 × 24 = 168.
 
 ## Later code, not this commit
 
