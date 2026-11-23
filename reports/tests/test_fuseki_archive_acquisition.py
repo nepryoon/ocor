@@ -464,7 +464,16 @@ def test_cache_hit_provenance_rejects_lone_surrogate(tmp_path, monkeypatch):
     assert not list(repo.rglob("*.part"))
 
 
-def test_json_tree_rejects_non_finite_number():
+def test_checked_sha512_rejects_non_string_expected_before_read(tmp_path):
+    path = tmp_path / "archive.tar.gz"
+    path.write_bytes(b"governed archive")
+    with pytest.raises(BootstrapError, match="SHA512"):
+        archive.checked_sha512(path, 1)
+
+
+def test_json_tree_rejects_non_string_key_and_non_finite_number():
+    with pytest.raises(BootstrapError, match="non-string key"):
+        archive._reject_lone_surrogates({1: "x"}, where="Fuseki acquisition lock")
     with pytest.raises(BootstrapError, match="non-finite"):
         archive._reject_lone_surrogates({"nested": [float("nan")]}, where="Fuseki acquisition lock")
     with pytest.raises(BootstrapError, match="non-finite"):
