@@ -70,7 +70,7 @@
     "change_set_source_files": {
       "reports/tests/test_fuseki_archive_acquisition.py": "The test module drives the production functions and receives no service response of its own.",
       "scripts/acquire_fuseki_archive.py": 16,
-      "scripts/validate_ocor_development_plan.py": "The edit adds three path strings and does not parse archive bytes, URLs, or JSON from the network."
+      "scripts/validate_ocor_development_plan.py": "The edit adds 23 path strings and does not parse archive bytes, URLs, or JSON from the network."
     },
     "consumption_points": [
       "HTTP redirect target in OfficialRedirect.redirect_request",
@@ -516,6 +516,66 @@
       "subject": "lock shape, non-UTF-8 and HTTP protocol errors"
     }
   ],
+  "repair_cycle_1": {
+    "campaign_d036d1ac3607_1795460426": "HISTORICAL_DOES_NOT_QUALIFY_THIS_HEAD",
+    "code_commit": "39a82513455af5739300eeee5e1b9ac1bd0a3305",
+    "dispositions": [
+      {
+        "disposition": "CORRECTED",
+        "green_commit": "39a82513455af5739300eeee5e1b9ac1bd0a3305",
+        "id": "VF-001",
+        "red_commit": "fa70afec79590d6a90b3ccaaf403d014692fed54"
+      },
+      {
+        "disposition": "CORRECTED",
+        "id": "VF-002",
+        "note": "requirement_results is omitted from the eleven regression records. Manifest and dossier digests were recomputed from the new bytes. Supersession, log bytes and sealed predecessors are unchanged."
+      },
+      {
+        "disposition": "OUT_OF_SCOPE",
+        "id": "VF-003",
+        "note": "Separate remediation. inputs/ and reports/tests/test_schema_conformance.py are unchanged."
+      },
+      {
+        "disposition": "CORRECTED",
+        "id": "VF-004",
+        "note": "path_inventory now says 23 path strings, the count of unique quoted paths added in scripts/validate_ocor_development_plan.py."
+      },
+      {
+        "disposition": "PROCEDURAL",
+        "id": "VF-005",
+        "note": "The next verification uses umask 022, checks the anonymous Docker Hub quota before provisioning, and keeps the read-only mount. scripts/bootstrap_ci_environment.py is unchanged. The two verifier attempts do not qualify."
+      }
+    ],
+    "green": {
+      "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_ci_fuseki_archive.py",
+      "exit_code": 0,
+      "parent_red": "fa70afec79590d6a90b3ccaaf403d014692fed54",
+      "passed": 80,
+      "stdout_sha256": "5a89f0cca5c145cf5183f43e188581b2ff0a49571bb3068eb22b74e3550dc060"
+    },
+    "implementer": {
+      "agent": "Grok Build",
+      "model": "grok-4.7",
+      "provider": "xAI"
+    },
+    "previous_code_commit": "7416e8a128f24945da653756fa30a2488d75bbe3",
+    "red": {
+      "commit": "fa70afec79590d6a90b3ccaaf403d014692fed54",
+      "failed": 1,
+      "log_sha256": "68609c3184b5452fd6c65943c0541da2e692b65fb32cb2c61d2ef9713f894a5f",
+      "subject": "real opener still sends proxy-authorization"
+    },
+    "top_level_code_commit_and_inputs": "The top-level code_commit and inputs remain the pre-repair green and the campaign witness at d036d1ac3607b4539fc9ac68f1fc44588276aa94. They do not describe this repair head.",
+    "verdict_head": "5b31e56f0bef5ff0798d91148ac15b80797412c7",
+    "verdict_id": "FUSEKI-ARCHIVE-COPY-20261123-5b31e56f0bef-0",
+    "verdict_status": "NO_GO",
+    "verifier": {
+      "agent": "Codex",
+      "model": "NOT_EXPOSED_BY_RUNTIME",
+      "provider": "OpenAI"
+    }
+  },
   "requalification_plan": {
     "authorization": "CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23) point 4 authorizes these requalifications. select_most_recent finds eleven sealed current heads, and the set includes OCOR-DEV-0050.",
     "head_count_measurement": {
@@ -618,7 +678,7 @@
         "executed_log": "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "186eda830a492e3b276fb9191b30160d29ddbce29dcb68ef68ec375c36eda1d2",
         "executed_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "74b88484d3ead39b5d7eb5728fa2548026df9a86b755e1d576b95cf56bc680f4",
+        "executed_record_sha256": "e2deff4290dbdfb66a3af43825c5d06b4d7308ee10ea1c608834d5ba74effec6",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G0/OCOR-DEV-0005.requalified-fuseki-archive-copy-20261123.log",
@@ -638,7 +698,7 @@
         "executed_log": "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "b379451228d9c304df9937468724c36a43d2a36987a7fd86c9e18cb55277fadf",
         "executed_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "bee640588adea10e1f5ed8a05ed4857569beed0c5a225efa72485d0a36897f20",
+        "executed_record_sha256": "bc31c1a54638dddb00b8ab83a4a65ea7621ce0b589dca5641d1ddad99e263baf",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G5/OCOR-DEV-0050.requalified-fuseki-archive-copy-20261123.log",
@@ -658,7 +718,7 @@
         "executed_log": "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "613d73257f3ef8bb143559de7012d4271143e7670251f3dbe961855446319ccb",
         "executed_record": "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "e1533bc67657f97fbe67ee51541ccd475744d74ab30cc1fb43151b194c9b8ae3",
+        "executed_record_sha256": "3ef43b271c709db63d5dab80ba078467e692f4c02505c6609cbb0b0e4ac0c5be",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.log",
@@ -678,7 +738,7 @@
         "executed_log": "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "fbf07c33b8b66ba98597a05c71f4e3f4087422c21494ddd38adc2a64832f1306",
         "executed_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "42648d1abbe865bef536169ffd78c9d52d8960555cb3454ae7b84b1757999dc6",
+        "executed_record_sha256": "6d363cdfc2677b88abe22343bd6cb55681a43cf72d5807a48124218a981268eb",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G2/OCOR-DEV-0082.requalified-fuseki-archive-copy-20261123.log",
@@ -698,7 +758,7 @@
         "executed_log": "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "2ceb6fd8c64f3af502538806b7841ca20a6b48de3e53486f498e4e9bfbbdda79",
         "executed_record": "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "cd021c94b536208e24f32e66c59f6f2efe143c293cbe4b175a135cd2ed372cf1",
+        "executed_record_sha256": "9ab814266976a5b24d343c2cd4fa5b7e20c547f3e7cee4f57c6bea94fe05100b",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-archive-copy-20261123.log",
@@ -718,7 +778,7 @@
         "executed_log": "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "daa0f058317e398556f02b2eb5159ef224eef5062cc94d3e81360a7298b86b01",
         "executed_record": "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "91f1a676e2f76c8e8191d37291b390ceb784ce5ac63839501a515d13d32b94d4",
+        "executed_record_sha256": "925a3ef6bc2884a9ec2dfbbf54e5db96d1740595eb2cf9c32944e5ce2f34246a",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-fuseki-archive-copy-20261123.log",
@@ -738,7 +798,7 @@
         "executed_log": "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "9063f688afc8e115e225323b1d251951dc48fff3194e15e78a1043de1eea5e16",
         "executed_record": "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "a251a988f3dac65bdeb9f8f4bd80b8127db22113a3a4fa28bfcd65945f8dbb79",
+        "executed_record_sha256": "51db61c3e4653333c13551bfab8f7464d074dda96afd14c18a0480ccf1baa707",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-archive-copy-20261123.log",
@@ -758,7 +818,7 @@
         "executed_log": "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "e34ea643a0f1836a4e4de97bb397cbc856e0d2d646350fb83b3587b44189021a",
         "executed_record": "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "c290c8529a09be0dab7f118d75b60c44ef8080ba685c07c3630706e783672494",
+        "executed_record_sha256": "27c4daeec2f7eadaee9c51a2505a16d4ef315a176313c76e04df0bd46fe1d2d0",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-fuseki-archive-copy-20261123.log",
@@ -778,7 +838,7 @@
         "executed_log": "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "d5ccbb17e65b04ea1ffc308ccb25fd04e11b2ea01bbc2cde7782444441b67121",
         "executed_record": "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "d56378f3475bfe3ea4a348a72ae39d1be7ecad5b02b9d1ece739ec3c8a147ac4",
+        "executed_record_sha256": "babecd1e1f0d8c1bd097db552bcf0ed34f734731f4c234415261462213e601fc",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-fuseki-archive-copy-20261123.log",
@@ -799,7 +859,7 @@
         "executed_log": "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "9183079446fb9c7397154b25b06fefe5325b724d8ecbacce83946693a37a6185",
         "executed_record": "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "51ac3338098fae8ce30911a3b07772114481a21e4b5329ff405aad8a19ab3060",
+        "executed_record_sha256": "fcf3b7286ccc5c828964bc56e7f2e86032f8a7d3bde5502546a4579b1d16ab36",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-archive-copy-20261123.log",
@@ -819,7 +879,7 @@
         "executed_log": "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-fuseki-archive-copy-20261123.log",
         "executed_log_sha256": "2c3e2d7c726f9d56451367b4288e795d75f344b7125fd813f56ac76d2c122dfd",
         "executed_record": "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-fuseki-archive-copy-20261123.json",
-        "executed_record_sha256": "0756c4d808082e050623a67facb7be911a3874fcf61074936119c2a72c263996",
+        "executed_record_sha256": "07bdeac53f1a900397d5bd69c3534b64bccfa27a95ad0a9b43e38913b9e53030",
         "executed_record_status": "CANDIDATE",
         "executed_result": "PASS",
         "planned_log": "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-fuseki-archive-copy-20261123.log",
@@ -856,7 +916,7 @@
   "self_check": {
     "cell_scan": {
       "cells": 96,
-      "cited_tests": 31,
+      "cited_tests": 32,
       "command": "python3 /home/luca/.ocor-codex/fuseki-archive-copy-20261123/scan_self_check.py",
       "counts": {
         "FIXED": 10,
@@ -866,11 +926,11 @@
       "decision": "SELF-CHECK-CELL-SCAN (2026-11-09)",
       "errors_corrected": 0,
       "errors_found": 0,
-      "note": "Scanned the table at 522044c106c589d1ede415edb496e4e7bf7e59cf, immediately before the commit that introduced it. This commit records that head and does not change the table.",
+      "note": "Scanned the worktree table immediately before the repair-cycle-1 record commit. The parent 39a82513455af5739300eeee5e1b9ac1bd0a3305 does not contain the urlopen proxy sentence. Counts remain FIXED 10, N/A 38, PASS 48. cited_tests is 32 because the proxy negative is now cited.",
       "rows": 16,
-      "scanned_head": "522044c106c589d1ede415edb496e4e7bf7e59cf",
+      "scanned_head": "39a82513455af5739300eeee5e1b9ac1bd0a3305",
       "status": "PASS",
-      "stdout_sha256": "0a7ead0669718d619d07a89e827f183b7c044cd85f0f720b76b434e9578f8cc5"
+      "stdout_sha256": "62a051d364304faca3f7c50c8eb1c35a7fa098f846ae468387d7b57c122a8750"
     },
     "decisions": [
       "SELF-CHECK-CHECKLIST (2026-11-08)",
@@ -1016,19 +1076,21 @@
           "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
           "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
           "finite_numbers": "PASS: the transport timeout refreshed on each read1 is greater than 0 and at most 10 seconds (test_stream_reads_one_receive_and_refreshes_transport_deadline).",
-          "processes_and_resources": "PASS: acquire opens the response in a with statement, so close runs on success and on HTTP 404 (test_copy_http_404_falls_through_to_apache_sources).",
+          "processes_and_resources": "PASS: acquire opens the response in a with statement, so close runs on success and on HTTP 404 (test_copy_http_404_falls_through_to_apache_sources). The opener strips proxy userinfo before CONNECT and rejects an Authorization or Proxy-Authorization header already on the request (test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy).",
           "strict_decoding": "PASS: urlopen does not decode the body. acquire reads raw bytes and hashes them (test_governed_copy_is_the_only_download_when_bytes_match).",
           "types_before_conversions": "PASS: the timeout handed to urlopen is the numeric remainder already checked by acquire, not a bool (test_budget_rejects_bool_before_any_download)."
         },
         "file": "scripts/acquire_fuseki_archive.py",
         "function": "urlopen",
         "paths": [
-          "HTTP response"
+          "HTTP response",
+          "proxy URL from the process environment"
         ],
         "rereads_stored_data": true,
         "tests": [
           "reports/tests/test_fuseki_archive_acquisition.py::test_stream_reads_one_receive_and_refreshes_transport_deadline",
-          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_http_404_falls_through_to_apache_sources"
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_http_404_falls_through_to_apache_sources",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy"
         ]
       },
       {
