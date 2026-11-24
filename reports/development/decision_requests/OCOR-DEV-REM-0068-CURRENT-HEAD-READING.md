@@ -1,13 +1,13 @@
 # OCOR-DEV-REM-0068-CURRENT-HEAD-READING
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
-Disposition: nessuna. Nessuna opzione è applicata da questa pubblicazione. Il branch di codice di `OCOR-DEV-REM-0068` non parte. Il commit di contratto `67dbe992441d4bacf7d0c769977cc04ce47a0f60` non è una decisione e non si modifica. Questa pubblicazione non si integra. Claim invariati.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzioni A1 e B1, con le precisazioni dei punti 1–4 della decisione normativa `OCOR-DEV-REM-0068-CURRENT-HEAD-READING (2026-11-24)`, decisa dal PO di persona, sezione scritta a mano. Il file pubblicato a `287c6a9f29b5123320185f579439b1dc95684b75` resta sha256 `17e9c2e73dc44f516d95fd8f55b5294419ea58c48cbdba8541092872e56202f6`. Il testo delle opzioni non cambia. Il commit `67dbe992441d4bacf7d0c769977cc04ce47a0f60` resta la base del contratto: si correggono solo le differenze, in un commit di contratto non eseguito da questa pubblicazione. Il branch di codice non parte finché `OCOR-DEV-REM-0069` non è su `origin/main`. Questa pubblicazione non si integra. Claim invariati.
 
 Livello: normativo. La questione sceglie la lettura della proprietà del punto 4 di `CONFINE-G6 (2026-11-20)` e dell'opzione 1 di `REM-0061-CYCLE5-REDESIGN (2026-11-13)`. Una prova eseguibile mostra il grafo misurato; non dice quale lettura il gate deve applicare. Nessun nuovo `DEC-*`.
-Nessuna opzione è applicata da questa pubblicazione. La richiesta resta aperta finché una sezione non ne adotta un'opzione.
+Le opzioni A1 e B1 sono adottate dalla sezione scritta a mano. Il testo delle opzioni in questo file non cambia. L'allineamento del contratto non è questo commit.
 Head di `origin/main` alla pubblicazione: `618e72c00f994e8ea8899914548cc38743aa4569`.
 Contratto rivisto: branch `governed/ocor-dev-rem-0068-current-head-contract`, HEAD rivisto `6c52de0657a62b5dd0053a7fd88b6e20fe1400ca`, base `618e72c00f994e8ea8899914548cc38743aa4569`. Revisione `OCOR-DEV-REM-0068-6c52de0657a6-pre`, esito `BLOCKING_FINDINGS`, sha256 del file di esito `e959a0de2fb2ab1297d2bd16218b51ceb91c33d5af163f8611df4020664c4b95`, due finding bloccanti, zero consultivi. Revisore: Cursor CLI, `cursor-grok-4.6-xhigh`, xAI, di riserva. Implementatore del contratto: Grok Build, `grok-4.7`, xAI. Stesso fornitore, generazione Grok diversa. Implementatore di questa pubblicazione: Grok Build, `grok-4.7`, xAI.
-Commit successivo sullo stesso branch: `67dbe992441d4bacf7d0c769977cc04ce47a0f60`, un solo file, `reports/assurance/OCOR-DEV-REM-0068-RCCAD/README.md`. Quel commit scrive una lettura nel contratto. Non è l'adozione di un'opzione. Non si modifica e non si tratta come contratto adottato finché un'opzione non è adottata. Non si chiede una seconda revisione del progetto: il punto 4 di `CONFINE-G6 (2026-11-20)` e il punto 3 di `PRE-CAMPAIGN-REVIEW (2026-10-26)` ne prevedono una. Prima di ogni codice il contratto deve coincidere con le opzioni adottate.
+Commit successivo sullo stesso branch: `67dbe992441d4bacf7d0c769977cc04ce47a0f60`, un solo file, `reports/assurance/OCOR-DEV-REM-0068-RCCAD/README.md`. Quel commit scrive una lettura nel contratto. Non è l'adozione di un'opzione: l'adozione è la sezione del PO. Si correggono solo le differenze rispetto ad A1, B1 e ai punti 1 e 2. Non si chiede una seconda revisione del progetto: il punto 4 di `CONFINE-G6 (2026-11-20)` e il punto 3 di `PRE-CAMPAIGN-REVIEW (2026-10-26)` ne prevedono una. Prima di ogni codice il contratto deve coincidere con le opzioni adottate.
 
 ## Contesto e perimetro
 
