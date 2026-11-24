@@ -1,6 +1,7 @@
 # FUSEKI-ARCHIVE-COPY-20261123-CYCLE3-NO-GO
 
-Stato: aperta. Nessuna opzione è applicata da questa pubblicazione. Il candidato resta `24633cc9d4c49749bd33a386020fe0d9f6cf5174` e non si mergia. Non è un ciclo 4.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, con le precisazioni dei punti 1–6 della decisione `FUSEKI-ARCHIVE-COPY-20261123-CYCLE3-NO-GO (2026-11-24)`, decisa dal PO di persona, sezione scritta a mano. Il file pubblicato a `f68d7493607c977c1598abd682ef498dd33a050b` resta sha256 `0cc2971920a204c130c5e8be6a09f04362202b03d5ce845fda4c15084dbfb9f5`. Il testo delle opzioni non cambia. Il candidato `24633cc9d4c49749bd33a386020fe0d9f6cf5174` non si modifica e non si mergia. Non è un ciclo 4. L'unità nuova è `OCOR-DEV-REM-0069`, primo identificativo libero misurato su `origin/main` e sui nomi dei branch remoti. Questa pubblicazione non si integra. Claim invariati.
 
 Livello: operativo. Nessun nuovo `DEC-*`.
 Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta riguarda un ciclo di riparazione oltre il tetto e l'eventuale stop dell'unità. Nessuna opzione è applicata da questa pubblicazione.
