@@ -90,81 +90,74 @@
     {
       "command": "git rev-parse 24633cc9d4c49749bd33a386020fe0d9f6cf5174 && git rev-parse refs/heads/governed/fuseki-archive-copy-20261123 && if git merge-base --is-ancestor 24633cc9d4c49749bd33a386020fe0d9f6cf5174 origin/main; then echo ANCESTOR_EXIT:0; else echo ANCESTOR_EXIT:$?; fi",
       "criterion": "Candidate 24633cc9d4c49749bd33a386020fe0d9f6cf5174 is unchanged and not merged",
-      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "outcome": "PASS",
       "stdout_sha256": "9b414375fe0399323d81fef4e53c5247cd869d7732887fb96b841b8f0523f30a"
     },
     {
       "command": "git rev-parse HEAD:scripts/acquire_fuseki_archive.py && git rev-parse HEAD:reports/tests/test_fuseki_archive_acquisition.py && sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
       "criterion": "The two acquisition blobs stay the cited blobs",
-      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "outcome": "PASS",
       "stdout_sha256": "fbd7d8b2e55f3ec47cde23dbb495ea85643207e35295bf8b1a7906937453b281"
     },
     {
       "command": "git diff origin/main -- reports/planning/OCOR_PLAN_RUN_STATE.json",
       "criterion": "Plan state changes only in the authorized digest string",
-      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "outcome": "PASS",
       "stdout_sha256": "65f3fd0f59cc2c3a85b3409d9b4104fab74abe848331c229f6e013088756488f"
     },
     {
-      "command": "NOT_EXECUTED",
+      "command": "python3 /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/record_exit_read.py",
       "criterion": "exit_file_absent is false when the exit file exists and contains 1",
-      "executed_on": null,
-      "note": "Guards, mermaid and plan were not run in this iteration. No exit file was read and none is claimed absent. When those gates run, a record read of an exit file that exists and contains 1 sets exit_file_absent to false, and that read is distinct from the first-attempt log.",
-      "outcome": "NOT_EXECUTED",
-      "stdout_sha256": null
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "note": "The reader opens only guards.exit, mermaid.exit and plan.exit. plan.exit exists and contains 1, so exit_file_absent is false. guards.exit and mermaid.exit exist and contain 0, so exit_file_absent is false. The accepted plan rerun is plan-rerun.exit and is not the first-attempt file. The first plan attempt failed because the untracked symlink ocor-runtime/.venv is not ignored by the directory pattern .venv/; the rerun hid that symlink, passed, and restored the plan bytes.",
+      "outcome": "PASS",
+      "stdout_sha256": "ccfd69e96d82d9d7c649dfae86fb6aea4b3adb59afbc0c035d9eef54278d83c7"
     },
     {
       "command": "git rev-parse HEAD:scripts/acquire_fuseki_archive.py && git rev-parse HEAD:reports/tests/test_fuseki_archive_acquisition.py && sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
       "criterion": "Root code_commit and inputs of the current proof are the qualified code",
-      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "outcome": "PASS",
       "stdout_sha256": "fbd7d8b2e55f3ec47cde23dbb495ea85643207e35295bf8b1a7906937453b281"
     },
     {
       "command": "python3 /tmp/rem0069_scan_roles.py reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
       "criterion": "The role scan names the scanned HEAD",
-      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "note": "scanned_head is 34a66b063b7867ed938828f9f5affbc0d35f1d52.",
       "outcome": "PASS",
       "stdout_sha256": "82e0862fec0c4bf3709fbf151b5ce2d405b95c8218756b7e6b7269c890be4cc9"
     },
     {
-      "command": "NOT_EXECUTED",
+      "command": "ocor-runtime/.venv/bin/python reports/tests/test_schema_conformance.py",
       "criterion": "VF-004 stays NOT_CORRECTED and is not PASS",
-      "executed_on": null,
-      "note": "The pre-existing failure remains NOT_CORRECTED. reports/tests/test_schema_conformance.py is 97 PASS and 1 FAIL on CANONICAL_COMMIT R1 without Human Gate, expected REJECT, got ACCEPT. This iteration does not rerun that test and does not mark the row PASS.",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "note": "TOTAL 98 PASS 97 FAIL 1. The failing case is negativo semantico: CANONICAL_COMMIT R1 senza Human Gate, expected REJECT, got ACCEPT. The row is not marked PASS. reports/tests/conformance_results.json was restored and is not part of this change.",
       "outcome": "NOT_CORRECTED",
-      "stdout_sha256": null
+      "stdout_sha256": "cadf3a414a3833681f45f7bd9007a9be05dc252de470af7e1de1a484e7c5a936"
     },
     {
-      "command": "NOT_EXECUTED",
+      "command": "python -u scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/ocor-dev-rem-0069/campaign-80a2c854cfad/full --expected-head 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c --tool-bin /home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin --tool-bin /home/luca/.ocor-codex/impl-env/rem-0063/bin",
       "criterion": "New campaign on the unit HEAD, zero skips",
-      "executed_on": null,
-      "note": "The four-lane campaign is the next iteration. The campaign on 9b27e16cf810f7cf6c11ecd76b53b84b63668ed2 does not transfer. No count from that run is reused.",
-      "outcome": "NOT_EXECUTED",
-      "stdout_sha256": null
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "note": "FOUR_LANE. counts tests 5826, failures 0, errors 0, skipped 0. union collected 5826, executed 5826, missing [], duplicated [], unexpected [], lanes [1, 1854, 2436, 1535]. total_duration_seconds 1867.554, limit 5400. Distinct union recollects the suite and calls check_exact_union; stdout sha256 e9220cfd0f43fa0b62eb1d0e239eac11a030499795270df30ff0a87d8137f709; status PASS; skipped 0.",
+      "outcome": "PASS",
+      "stdout_sha256": "5f525930ddb6d929b61375642c76e9a44161a01e263d325a208f59b55067c4ea"
     },
     {
       "command": "NOT_EXECUTED",
       "criterion": "One verification, verifier from a vendor other than xAI, not started by the implementer",
       "executed_on": null,
-      "note": "verify_request.json is not written in this iteration. The implementer does not start the verifier.",
+      "note": "verify_request.json is written after this evidence commit. The implementer does not start the verifier. The verifier vendor is not xAI. No verdict is available in this commit.",
       "outcome": "NOT_EXECUTED",
       "stdout_sha256": null
     }
   ],
   "requalification_plan": {
-    "deferred": [
-      {
-        "reason": "The selected head is a full REM-0038 qualification. The replaced change set proved its replacement with the four-lane campaign on 9b27e16cf810f7cf6c11ecd76b53b84b63668ed2, and that campaign does not transfer. This iteration does not run the campaign and does not write a PASS record. Drift of OCOR-DEV-0072 is expected until the campaign iteration writes the requalification, before verify_request.json.",
-        "status": "NOT_EXECUTED",
-        "supersedes": "OCOR-DEV-0072-requalified-rem0038-36e61515552d",
-        "task_id": "OCOR-DEV-0072"
-      }
-    ],
+    "deferred": [],
     "head_counts_after": {
       "by_task": {
         "OCOR-DEV-0049": 1,
@@ -186,6 +179,7 @@
     "published": [
       "OCOR-DEV-0005-requalified-rem0069-34a66b063b78",
       "OCOR-DEV-0050-requalified-rem0069-34a66b063b78",
+      "OCOR-DEV-0072-requalified-rem0069-80a2c854cfad",
       "OCOR-DEV-0082-requalified-rem0069-34a66b063b78"
     ]
   },
