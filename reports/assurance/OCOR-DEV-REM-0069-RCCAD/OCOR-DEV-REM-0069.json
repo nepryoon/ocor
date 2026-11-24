@@ -1,0 +1,754 @@
+{
+  "base_sha": "618e72c00f994e8ea8899914548cc38743aa4569",
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "code_commit": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+  "created_at": "2026-11-24T12:44:36Z",
+  "decision": "FUSEKI-ARCHIVE-COPY-20261123-CYCLE3-NO-GO (2026-11-24) option 1",
+  "frozen_acquisition_green": {
+    "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line reports/tests/test_fuseki_archive_acquisition.py",
+    "duration_seconds": 0.23,
+    "exit_code": 0,
+    "passed": 65,
+    "started_at": "2026-11-24T12:42:33Z",
+    "stdout_sha256": "d0e2cf13f4ba84665108c33144a207a2709463489400222c95ddb7a4c68dbb72"
+  },
+  "historical_acquisition_digests": {
+    "name": "historical_acquisition_digests_not_current_proof",
+    "reports/tests/test_fuseki_archive_acquisition.py": "b24a30f630942f151d7e4697eeb91c70b4f87fc06ab528d71c3b5472f656b073",
+    "scripts/acquire_fuseki_archive.py": "23046a9cc08a6b6dadc5a6aadd0e404b60bbe5014dbb205fea4f7906825eccef"
+  },
+  "implementer": {
+    "model": "grok-4.7",
+    "process": "Grok Build",
+    "vendor": "xAI"
+  },
+  "inputs": {
+    "reports/tests/test_fuseki_archive_acquisition.py": "9bb58c5880f05b8e0275ce06db97ac4f86ea12e759186aed0edbdfbe7cdd4ce9",
+    "scripts/acquire_fuseki_archive.py": "c25d013922a86a402e5a6131779a0375c5260ae9bff8b950b505874c8c0c3848"
+  },
+  "path_inventory": {
+    "change_set_source_files": [
+      {
+        "file": "scripts/acquire_fuseki_archive.py",
+        "reason": "Production acquisition module. Every function and method has a self-check row.",
+        "rows": 21
+      },
+      {
+        "file": "reports/tests/test_fuseki_archive_acquisition.py",
+        "reason": "Test module. It is not a production parser. The consumers are the rows of scripts/acquire_fuseki_archive.py.",
+        "rows": 0
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "reason": "The contract commit adds allowlist path strings inside extension_paths. load_json, allowed and the parsers are unchanged. This code commit does not modify the file.",
+        "rows": 0
+      }
+    ],
+    "consumption_points": 21,
+    "decision": "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
+    "functions_examined": 21,
+    "searches": [
+      "python3 ast walk of function and method definitions in scripts/acquire_fuseki_archive.py",
+      "python3 ast walk of test function definitions in reports/tests/test_fuseki_archive_acquisition.py"
+    ]
+  },
+  "preventive_review": {
+    "advisory_count": 2,
+    "blocking_count": 0,
+    "dispositions": [
+      {
+        "disposition": "Reading A is binding. The drift selector is select_most_recent on completed_evidence_tasks. Remeasured on origin/main 618e72c00f994e8ea8899914548cc38743aa4569, the pin set is exactly OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0072 and OCOR-DEV-0082. The seven rejected REM requalifications are not carried. The closed allowlist is not extended.",
+        "id": "P1",
+        "severity": "advisory"
+      },
+      {
+        "disposition": "The design head had no unit JSON, so the path inventory, cell scan and role scan were absent there. Those mechanical checks are recorded in this file on the implementation head. This is not a perimeter defect. No second preventive review is requested in this iteration.",
+        "id": "P2",
+        "severity": "advisory"
+      }
+    ],
+    "independence_limit": "Reserve reviewer. The reviewer vendor is xAI, the same vendor as the implementer Grok Build grok-4.7, with a different Grok generation (cursor-grok-4.6-xhigh).",
+    "outcome_sha256": "fffbbaaf73764200d123bf560fb2f03cac7fb817eefc21ca147729ecaa5cbd1c",
+    "request_id": "OCOR-DEV-REM-0069-50ed4aca28e6-pre",
+    "reviewed_head": "50ed4aca28e60f7995c359be577da6b1f235e26f",
+    "reviewer": {
+      "model": "cursor-grok-4.6-xhigh",
+      "process": "Cursor",
+      "reserve": true,
+      "vendor": "xAI"
+    },
+    "status": "NO_BLOCKING_FINDINGS"
+  },
+  "proof_table": [
+    {
+      "command": "git rev-parse 24633cc9d4c49749bd33a386020fe0d9f6cf5174 && git rev-parse refs/heads/governed/fuseki-archive-copy-20261123 && if git merge-base --is-ancestor 24633cc9d4c49749bd33a386020fe0d9f6cf5174 origin/main; then echo ANCESTOR_EXIT:0; else echo ANCESTOR_EXIT:$?; fi",
+      "criterion": "Candidate 24633cc9d4c49749bd33a386020fe0d9f6cf5174 is unchanged and not merged",
+      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "outcome": "PASS",
+      "stdout_sha256": "9b414375fe0399323d81fef4e53c5247cd869d7732887fb96b841b8f0523f30a"
+    },
+    {
+      "command": "git rev-parse HEAD:scripts/acquire_fuseki_archive.py && git rev-parse HEAD:reports/tests/test_fuseki_archive_acquisition.py && sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
+      "criterion": "The two acquisition blobs stay the cited blobs",
+      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "outcome": "PASS",
+      "stdout_sha256": "fbd7d8b2e55f3ec47cde23dbb495ea85643207e35295bf8b1a7906937453b281"
+    },
+    {
+      "command": "git diff origin/main -- reports/planning/OCOR_PLAN_RUN_STATE.json",
+      "criterion": "Plan state changes only in the authorized digest string",
+      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "outcome": "PASS",
+      "stdout_sha256": "65f3fd0f59cc2c3a85b3409d9b4104fab74abe848331c229f6e013088756488f"
+    },
+    {
+      "command": "NOT_EXECUTED",
+      "criterion": "exit_file_absent is false when the exit file exists and contains 1",
+      "executed_on": null,
+      "note": "Guards, mermaid and plan were not run in this iteration. No exit file was read and none is claimed absent. When those gates run, a record read of an exit file that exists and contains 1 sets exit_file_absent to false, and that read is distinct from the first-attempt log.",
+      "outcome": "NOT_EXECUTED",
+      "stdout_sha256": null
+    },
+    {
+      "command": "git rev-parse HEAD:scripts/acquire_fuseki_archive.py && git rev-parse HEAD:reports/tests/test_fuseki_archive_acquisition.py && sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
+      "criterion": "Root code_commit and inputs of the current proof are the qualified code",
+      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "outcome": "PASS",
+      "stdout_sha256": "fbd7d8b2e55f3ec47cde23dbb495ea85643207e35295bf8b1a7906937453b281"
+    },
+    {
+      "command": "python3 /tmp/rem0069_scan_roles.py reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
+      "criterion": "The role scan names the scanned HEAD",
+      "executed_on": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "note": "scanned_head is 34a66b063b7867ed938828f9f5affbc0d35f1d52.",
+      "outcome": "PASS",
+      "stdout_sha256": "82e0862fec0c4bf3709fbf151b5ce2d405b95c8218756b7e6b7269c890be4cc9"
+    },
+    {
+      "command": "NOT_EXECUTED",
+      "criterion": "VF-004 stays NOT_CORRECTED and is not PASS",
+      "executed_on": null,
+      "note": "The pre-existing failure remains NOT_CORRECTED. reports/tests/test_schema_conformance.py is 97 PASS and 1 FAIL on CANONICAL_COMMIT R1 without Human Gate, expected REJECT, got ACCEPT. This iteration does not rerun that test and does not mark the row PASS.",
+      "outcome": "NOT_CORRECTED",
+      "stdout_sha256": null
+    },
+    {
+      "command": "NOT_EXECUTED",
+      "criterion": "New campaign on the unit HEAD, zero skips",
+      "executed_on": null,
+      "note": "The four-lane campaign is the next iteration. The campaign on 9b27e16cf810f7cf6c11ecd76b53b84b63668ed2 does not transfer. No count from that run is reused.",
+      "outcome": "NOT_EXECUTED",
+      "stdout_sha256": null
+    },
+    {
+      "command": "NOT_EXECUTED",
+      "criterion": "One verification, verifier from a vendor other than xAI, not started by the implementer",
+      "executed_on": null,
+      "note": "verify_request.json is not written in this iteration. The implementer does not start the verifier.",
+      "outcome": "NOT_EXECUTED",
+      "stdout_sha256": null
+    }
+  ],
+  "requalification_plan": {
+    "deferred": [
+      {
+        "reason": "The selected head is a full REM-0038 qualification. The replaced change set proved its replacement with the four-lane campaign on 9b27e16cf810f7cf6c11ecd76b53b84b63668ed2, and that campaign does not transfer. This iteration does not run the campaign and does not write a PASS record. Drift of OCOR-DEV-0072 is expected until the campaign iteration writes the requalification, before verify_request.json.",
+        "status": "NOT_EXECUTED",
+        "supersedes": "OCOR-DEV-0072-requalified-rem0038-36e61515552d",
+        "task_id": "OCOR-DEV-0072"
+      }
+    ],
+    "head_counts_after": {
+      "by_task": {
+        "OCOR-DEV-0049": 1,
+        "OCOR-DEV-0050": 3,
+        "OCOR-DEV-0075": 1
+      },
+      "groups_with_2plus_successors": 5,
+      "tasks_with_multiple_current": 22
+    },
+    "head_counts_before": {
+      "by_task": {
+        "OCOR-DEV-0049": 1,
+        "OCOR-DEV-0050": 3,
+        "OCOR-DEV-0075": 1
+      },
+      "groups_with_2plus_successors": 5,
+      "tasks_with_multiple_current": 22
+    },
+    "published": [
+      "OCOR-DEV-0005-requalified-rem0069-34a66b063b78",
+      "OCOR-DEV-0050-requalified-rem0069-34a66b063b78",
+      "OCOR-DEV-0082-requalified-rem0069-34a66b063b78"
+    ]
+  },
+  "roles": {
+    "code_commit": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+    "effective_verifier": null,
+    "implementers": [
+      {
+        "model": "grok-4.7",
+        "process": "Grok Build",
+        "vendor": "xAI"
+      }
+    ],
+    "preventive_review_request_id": "OCOR-DEV-REM-0069-50ed4aca28e6-pre",
+    "preventive_review_verdict": "NO_BLOCKING_FINDINGS",
+    "preventive_reviewer": {
+      "model": "cursor-grok-4.6-xhigh",
+      "process": "Cursor",
+      "reserve": true,
+      "vendor": "xAI"
+    },
+    "reviewed_head": "50ed4aca28e60f7995c359be577da6b1f235e26f",
+    "scanned_head": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+    "verifier_excluded_vendors": [
+      "xAI"
+    ],
+    "verifier_status": "NOT_REQUESTED"
+  },
+  "schema_version": "1.0",
+  "self_check": {
+    "cell_scan": {
+      "cells": 126,
+      "cited_tests": 33,
+      "command": "python3 /tmp/rem0069_scan_self_check.py reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
+      "counts": {
+        "FIXED": 13,
+        "N/A": 58,
+        "PASS": 55
+      },
+      "decision": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "errors_corrected": 0,
+      "errors_found": 0,
+      "note": "Scanned the worktree copy of this record before the evidence commit. The scanned code tree is 34a66b063b7867ed938828f9f5affbc0d35f1d52. The table is not in that commit; it is published by the evidence commit.",
+      "rows": 21,
+      "scanned_head": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "status": "PASS",
+      "stdout_sha256": "122c2380e0e0cce80419730f1e74758bab5a940d9bc74313ee5b90b0b1ece62b"
+    },
+    "decisions": [
+      "SELF-CHECK-CHECKLIST (2026-11-08)",
+      "SELF-CHECK-CLASS-COVERAGE (2026-11-08)",
+      "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
+      "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)",
+      "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "AUTOCONTROLLO-DIGEST-COMMIT (2026-11-11)"
+    ],
+    "role_scan": {
+      "command": "python3 /tmp/rem0069_scan_roles.py reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
+      "compared_fields": 16,
+      "decision": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "errors_corrected": 0,
+      "errors_found": 0,
+      "note": "The scan names scanned_head 34a66b063b7867ed938828f9f5affbc0d35f1d52. Reviewer, request, verdict and excluded vendor agree across roles and preventive_review.",
+      "scanned_head": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "status": "PASS",
+      "stdout_sha256": "82e0862fec0c4bf3709fbf151b5ce2d405b95c8218756b7e6b7269c890be4cc9"
+    },
+    "table": [
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: the port is accepted only when it is None or 443, before any request (test_copy_redirects_only_to_https_release_assets).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "PASS: an empty URL, a non-ASCII host and a non-URL return false before a request (test_copy_redirects_only_to_https_release_assets).",
+          "types_before_conversions": "PASS: scheme, host and userinfo are compared only as strings. No int() or float() runs on the URL (test_copy_redirects_only_to_https_release_assets)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_https_endpoint",
+        "paths": [
+          "URL string from a redirect or a source constant"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_redirects_only_to_https_release_assets",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_final_url_outside_release_assets_is_rejected"
+        ],
+        "text_form_cases": "Fixed-form URL text. Empty, non-ASCII and non-URL values return false before a request (test_copy_redirects_only_to_https_release_assets). JSON and port-body cases do not apply: the function does not decode JSON or accept a response body."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: an Apache URL uses the same port rule, None or 443, before it is followed (test_copy_redirects_only_to_https_release_assets).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "PASS: a non-Apache host, including a non-ASCII host, is not an official URL (test_redirect_outside_apache_is_rejected).",
+          "types_before_conversions": "PASS: the URL is a str. The host set is built from the Apache source strings, not from converted numbers (test_redirect_outside_apache_is_rejected)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "official_url",
+        "paths": [
+          "Apache source URL"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_redirects_only_to_https_release_assets",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_redirect_outside_apache_is_rejected"
+        ],
+        "text_form_cases": "Fixed-form source URL. The same redirect tests reject a non-HTTPS or foreign host before use. No JSON object is decoded here."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: port 444 is rejected and only port None or 443 is accepted (test_copy_redirects_only_to_https_release_assets).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "PASS: HTTP, a suffixed host and a userinfo URL are rejected before a request (test_copy_redirects_only_to_https_release_assets).",
+          "types_before_conversions": "PASS: the host comparison uses the parsed string hostname and does not coerce another type (test_copy_redirects_only_to_https_release_assets)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "release_asset_url",
+        "paths": [
+          "release-assets.githubusercontent.com URL"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_redirects_only_to_https_release_assets"
+        ],
+        "text_form_cases": "Fixed-form governed-copy URL. test_governed_copy_is_the_only_download_when_bytes_match uses the constant. A malformed copy URL is not requested."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: a redirect target with port 444 is rejected by the endpoint check before it is followed (test_copy_redirects_only_to_https_release_assets).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "PASS: the copy accepts only an HTTPS release-asset target. Empty, non-ASCII and HTTP targets are rejected (test_copy_redirects_only_to_https_release_assets).",
+          "types_before_conversions": "PASS: both URLs are strings. A copy target is not accepted merely because it is an Apache URL (test_copy_redirects_only_to_https_release_assets)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "redirect_allowed",
+        "paths": [
+          "current URL",
+          "redirect target URL"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_redirects_only_to_https_release_assets",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_redirect_outside_apache_is_rejected"
+        ],
+        "text_form_cases": "Fixed-form redirect URL. Non-HTTPS and non-release-assets hosts are false before the next request (test_copy_redirects_only_to_https_release_assets)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: the final URL is not parsed as a number. A non-HTTPS final URL is rejected before the body is hashed (test_copy_final_url_outside_release_assets_is_rejected).",
+          "processes_and_resources": "PASS: a rejected final URL does not leave a partial archive (test_copy_final_url_outside_release_assets_is_rejected).",
+          "strict_decoding": "PASS: an HTTP final URL and a foreign host are rejected before the body is used (test_copy_final_url_outside_release_assets_is_rejected).",
+          "types_before_conversions": "PASS: the final URL is compared as a string with the copy URL or checked as an HTTPS endpoint (test_governed_copy_is_the_only_download_when_bytes_match)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "final_url_allowed",
+        "paths": [
+          "source URL",
+          "response final URL"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_final_url_outside_release_assets_is_rejected",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_governed_copy_is_the_only_download_when_bytes_match"
+        ],
+        "text_form_cases": "Fixed-form final URL. A final host outside release-assets is rejected (test_copy_final_url_outside_release_assets_is_rejected)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: the redirect status code is not used as a budget. The target port is checked by redirect_allowed (test_copy_redirects_only_to_https_release_assets).",
+          "processes_and_resources": "PASS: a rejected redirect raises BootstrapError before urllib follows it (test_redirect_guard_checks_before_following_third_party).",
+          "strict_decoding": "PASS: empty, non-ASCII, HTTP and foreign targets raise BootstrapError before the redirect is followed (test_copy_redirects_only_to_https_release_assets).",
+          "types_before_conversions": "PASS: newurl is a str from urllib. It is not coerced with int() or float() before the allow check (test_redirect_guard_checks_before_following_third_party)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "OfficialRedirect.redirect_request",
+        "paths": [
+          "urllib redirect target"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_redirects_only_to_https_release_assets",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_redirect_guard_checks_before_following_third_party"
+        ],
+        "text_form_cases": "Port answer: the redirect target is a URL string, checked by redirect_allowed before it is followed (test_copy_redirects_only_to_https_release_assets, test_redirect_guard_checks_before_following_third_party)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: the transport timeout refreshed on each read1 is greater than 0 and at most 10 seconds (test_stream_reads_one_receive_and_refreshes_transport_deadline).",
+          "processes_and_resources": "FIXED: urlparse leaves user:pass@host:port unchanged, and urllib.request still adds Proxy-Authorization before the tunnel (AUTHORITY_PROXY_USERINFO). The opener strips every proxy form the transport accepts, including the authority form and the scheme-relative form, re-parses the result, and rejects Authorization or Proxy-Authorization already on the request.",
+          "strict_decoding": "PASS: urlopen does not decode the body. acquire reads raw bytes and hashes them (test_governed_copy_is_the_only_download_when_bytes_match).",
+          "types_before_conversions": "PASS: the timeout handed to urlopen is the numeric remainder already checked by acquire, not a bool (test_budget_rejects_bool_before_any_download)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "urlopen",
+        "paths": [
+          "HTTP response",
+          "proxy URL from the process environment"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_stream_reads_one_receive_and_refreshes_transport_deadline",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_http_404_falls_through_to_apache_sources",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_authority_proxy_forms"
+        ],
+        "text_form_cases": "Port answer and fixed-form request URL. Authorization headers are rejected first. The opener strips proxy credentials. Body decoding is not done here."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "N/A: this function does not read or compare a number. The host and port stay text.",
+          "processes_and_resources": "FIXED: a proxy authority that urlparse does not classify as userinfo is stripped before CONNECT, and the cleaned value is parsed again (AUTHORITY_PROXY_USERINFO). test_real_opener_omits_proxy_authorization_for_authority_proxy_forms stops before socket I/O.",
+          "strict_decoding": "N/A: this function does not decode a file, a response body, or JSON. It only splits a proxy string.",
+          "types_before_conversions": "N/A: this function does not coerce the proxy with int() or float(). A non-text value is refused as text before the split."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_without_userinfo",
+        "paths": [
+          "proxy URL or authority from the process environment"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_authority_proxy_forms"
+        ],
+        "text_form_cases": "Fixed-form proxy text. A non-text value raises BootstrapError before the split. Authority forms are covered by test_real_opener_omits_proxy_authorization_for_authority_proxy_forms."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity in the decoded tree raise BootstrapError before field use (test_json_tree_rejects_non_string_key_and_non_finite_number).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "FIXED: a lone UTF-16 surrogate in a nested value or in a key is rejected before use (LONE_SURROGATE).",
+          "types_before_conversions": "PASS: a non-string key raises BootstrapError before the value is walked (test_json_tree_rejects_non_string_key_and_non_finite_number)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_reject_lone_surrogates",
+        "paths": [
+          "decoded JSON value from the lock or provenance"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_json_rejects_lone_surrogates",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_hit_provenance_rejects_lone_surrogate",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_json_tree_rejects_non_string_key_and_non_finite_number"
+        ],
+        "text_form_cases": "JSON text. Lone surrogates in nested values and keys, non-string keys, and NaN, Infinity and -Infinity raise BootstrapError (test_json_tree_rejects_non_string_key_and_non_finite_number, test_lock_json_rejects_lone_surrogates). A valid surrogate pair is not produced by the JSON decoder used here."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity in the decoded tree are rejected by the walker this function calls before the object is returned (test_json_tree_rejects_non_string_key_and_non_finite_number).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "FIXED: invalid UTF-8 and a JSON parse error become BootstrapError before any field is used (UTF8_AND_JSON).",
+          "types_before_conversions": "PASS: a JSON root that is not an object raises BootstrapError before field access (test_lock_shape_is_a_typed_bootstrap_error)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_load_stored_json",
+        "paths": [
+          "stored JSON file"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_non_utf8_before_use",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_invalid_json_before_use",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_hit_provenance_rejects_non_utf8",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_shape_is_a_typed_bootstrap_error"
+        ],
+        "text_form_cases": "Stored JSON. Non-UTF-8, invalid JSON and a lone surrogate are typed BootstrapError before use (test_lock_rejects_non_utf8_before_use, test_lock_rejects_invalid_json_before_use, test_lock_json_rejects_lone_surrogates)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED: an empty, non-ASCII, uppercase or wrong-length digest is rejected before the cache key is built (DIGEST_FORM).",
+          "complete_normative_records": "N/A: cache_info reads the service lock and does not build or validate a normative governance record.",
+          "finite_numbers": "PASS: a non-finite number in the lock tree is rejected by the walker before the digest is read (test_json_tree_rejects_non_string_key_and_non_finite_number).",
+          "processes_and_resources": "N/A: cache_info reads one local JSON file and starts no process, container, or service.",
+          "strict_decoding": "FIXED: a lone surrogate and invalid UTF-8 in the lock are rejected before the digest is used (UTF8_OR_LONE_SURROGATE).",
+          "types_before_conversions": "FIXED: null, a wrong type, an empty list, a non-object element, a missing id and a missing or non-object build raise BootstrapError before indexing (LOCK_SHAPE)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "cache_info",
+        "paths": [
+          "infra/services.lock.json"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_digest_form_is_rejected_before_use",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_json_rejects_lone_surrogates",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_key_uses_only_locked_sha512",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_shape_is_a_typed_bootstrap_error",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_non_utf8_before_use",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_lock_rejects_invalid_json_before_use"
+        ],
+        "text_form_cases": "Stored provenance JSON reread from the cache file. The same UTF-8, surrogate and type rejects apply (test_cache_hit_provenance_rejects_non_utf8, test_cache_hit_provenance_rejects_lone_surrogate)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: a non-positive remainder raises BootstrapError. NaN never becomes a deadline because acquire rejects it first (test_budget_rejects_non_finite_numbers).",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "N/A: remaining reads the monotonic clock only. It does not decode a file, a log, or a response.",
+          "types_before_conversions": "PASS: the deadline subtraction is a float remainder. A boolean budget never reaches it (test_budget_rejects_bool_before_any_download)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "remaining",
+        "paths": [
+          "monotonic deadline"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_budget_exhaustion_is_fail_closed",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_budget_rejects_non_finite_numbers"
+        ],
+        "text_form_cases": "Finite budget number. A bool and a non-finite timeout are rejected before a download (test_budget_rejects_bool_before_any_download, test_budget_rejects_non_finite_numbers). No digest is parsed here."
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED: the expected digest must be 128 lowercase hex characters before the file is read or hashed (DIGEST_FORM).",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: the only numeric bound is the archive size cap. A larger file raises BootstrapError before it is cached (test_wrong_download_digest_is_not_retried_or_cached).",
+          "processes_and_resources": "PASS: the file is closed by the with statement, including when the digest does not match (test_wrong_download_digest_is_not_retried_or_cached).",
+          "strict_decoding": "PASS: archive bytes are hashed as raw bytes and are not decoded as text (test_governed_copy_is_the_only_download_when_bytes_match).",
+          "types_before_conversions": "FIXED: a non-string expected digest raises BootstrapError before the file is read (DIGEST_TYPE)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "checked_sha512",
+        "paths": [
+          "archive file bytes",
+          "expected SHA-512"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_checked_sha512_rejects_non_string_expected_before_read",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_wrong_download_digest_is_not_retried_or_cached",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_verified_copy_is_rechecked_and_context_is_removed"
+        ],
+        "text_form_cases": "Fixed-form SHA-512 digest. Empty, non-ASCII, uppercase and non-string values are rejected before use (test_lock_digest_form_is_rejected_before_use, test_checked_sha512_rejects_non_string_expected_before_read)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: every source, including the governed copy, is hashed against the lock SHA-512 before the cache is updated (test_governed_copy_is_the_only_download_when_bytes_match).",
+          "complete_normative_records": "N/A: acquire stores a provenance object with the source URL. It does not build a normative governance record.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected before a download, and 601 seconds remains rejected (test_budget_rejects_non_finite_numbers).",
+          "processes_and_resources": "FIXED: an HTTPException during the body read, including IncompleteRead, is a named source failure and the partial file is still removed (HTTP_PROTOCOL).",
+          "strict_decoding": "FIXED: a lone surrogate and invalid UTF-8 in cache provenance are rejected on a hit before the source string is trusted (UTF8_OR_LONE_SURROGATE).",
+          "types_before_conversions": "FIXED: a boolean timeout is rejected before urlopen, so True is not treated as one second (BOOL_BUDGET)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "acquire",
+        "paths": [
+          "HTTP body",
+          "final URL",
+          "cache files",
+          "provenance.json"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_governed_copy_is_the_only_download_when_bytes_match",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_governed_copy_digest_mismatch_names_the_copy_and_stops",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_governed_copy_request_sends_no_authorization_header",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_budget_rejects_bool_before_any_download",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_budget_rejects_non_finite_numbers",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_hit_provenance_rejects_lone_surrogate",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_copy_http_404_falls_through_to_apache_sources",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_cache_hit_provenance_rejects_non_utf8",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_http_protocol_error_is_typed_and_does_not_escape",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_acquire_rejects_malformed_lock_before_download"
+        ],
+        "text_form_cases": "Port answer bytes and the lock JSON. A digest mismatch is not cached. Authorization is absent. Malformed lock JSON is rejected before any download (test_wrong_download_digest_is_not_retried_or_cached, test_governed_copy_request_sends_no_authorization_header, test_acquire_rejects_malformed_lock_before_download)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: the archive is hashed again before the copy, and the copied file is hashed before Docker can see it (test_verified_copy_is_rechecked_and_context_is_removed).",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: build_context does not convert a numeric field. The digest check is an exact string comparison (test_verified_copy_is_rechecked_and_context_is_removed).",
+          "processes_and_resources": "PASS: TemporaryDirectory removes the context when the block exits, including after a tampered archive is rejected (test_verified_copy_is_rechecked_and_context_is_removed).",
+          "strict_decoding": "PASS: the Dockerfile is read as UTF-8 by the test fixture and the archive is copied as bytes, not decoded (test_verified_copy_is_rechecked_and_context_is_removed).",
+          "types_before_conversions": "PASS: the expected digest comes from cache_info, which already rejected a non-string digest (test_lock_digest_form_is_rejected_before_use)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "build_context",
+        "paths": [
+          "verified archive",
+          "infra/fuseki/Dockerfile"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_verified_copy_is_rechecked_and_context_is_removed"
+        ],
+        "text_form_cases": "Stored lock JSON consumed from acquire. A bool budget is rejected before Docker (test_build_ci_image_rejects_bool_budget_before_docker)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: build_ci_image does not hash bytes. acquire and build_context verify the archive before Docker starts.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: the docker timeout is the remaining finite budget. A non-finite or boolean budget is rejected first (test_build_ci_image_rejects_bool_budget_before_docker).",
+          "processes_and_resources": "PASS: a non-zero docker result becomes BootstrapError and does not report success (test_build_ci_image_reports_typed_docker_failure).",
+          "strict_decoding": "PASS: stderr is the text already captured by run. This function only keeps the last 2000 characters (test_build_ci_image_reports_typed_docker_failure).",
+          "types_before_conversions": "PASS: a boolean budget never reaches docker. int() is applied only to a remainder that acquire already accepted (test_build_ci_image_rejects_bool_budget_before_docker)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "build_ci_image",
+        "paths": [
+          "docker build stderr"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_build_ci_image_reports_typed_docker_failure",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_build_ci_image_rejects_bool_budget_before_docker"
+        ],
+        "text_form_cases": "Port answer from Docker. A typed failure is returned and a bool budget never starts Docker (test_build_ci_image_reports_typed_docker_failure, test_build_ci_image_rejects_bool_budget_before_docker)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: --timeout nan returns status 1 and does not download (test_main_execute_rejects_non_finite_timeout).",
+          "processes_and_resources": "PASS: a rejected budget does not open a download, and a malformed lock returns status 1 without a traceback (test_main_check_rejects_malformed_lock).",
+          "strict_decoding": "N/A: main parses argv and does not decode a file, a log, or a process stream itself.",
+          "types_before_conversions": "PASS: argparse type float rejects a non-numeric token, and a parsed NaN is rejected by acquire (test_main_execute_rejects_non_finite_timeout)."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "main",
+        "paths": [
+          "argv"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_main_execute_rejects_non_finite_timeout",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_budget_cannot_be_extended",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_main_check_rejects_malformed_lock"
+        ],
+        "text_form_cases": "CLI timeout and the lock file. A non-finite timeout and a malformed lock are rejected before acquisition (test_main_execute_rejects_non_finite_timeout, test_main_check_rejects_malformed_lock)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "N/A: this function does not read or compare a number. The host and port stay text.",
+          "processes_and_resources": "N/A: this function starts no process, container, or network connection. The caller owns that resource.",
+          "strict_decoding": "N/A: this function does not decode a file, a response body, or JSON. It only splits a proxy string.",
+          "types_before_conversions": "N/A: this function does not coerce the proxy with int() or float(). The caller _without_userinfo rejects a non-text value before the split."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_transport_proxy",
+        "paths": [
+          "proxy URL string already held by _without_userinfo"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_authority_proxy_forms"
+        ],
+        "text_form_cases": "Fixed-form proxy text, including the authority form. The negative tests are test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy and test_real_opener_omits_proxy_authorization_for_authority_proxy_forms. The function does not decode JSON."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: a non-text environment value, including a number, is skipped before _without_userinfo. This function has no numeric field.",
+          "processes_and_resources": "PASS: the function reads the process environment and returns text. It opens no socket. The opener test stops before socket I/O.",
+          "strict_decoding": "PASS: only text proxy values are kept. A non-string value from getproxies is skipped and is not decoded.",
+          "types_before_conversions": "PASS: isinstance(url, str) runs before _without_userinfo. No int() or float() converts the proxy."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_anonymous_proxies",
+        "paths": [
+          "proxy URLs from the process environment via getproxies"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_authority_proxy_forms"
+        ],
+        "text_form_cases": "Port environment answer. Non-text values are skipped. Credential forms are removed before the opener (the two real-opener proxy tests)."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "PASS: the handler receives the text map from _anonymous_proxies. It does not parse a numeric proxy field.",
+          "processes_and_resources": "FIXED: AUTHORITY_PROXY_USERINFO. The handler installs the credential-free proxy map before CONNECT. test_real_opener_omits_proxy_authorization_for_authority_proxy_forms stops before socket I/O.",
+          "strict_decoding": "PASS: the handler does not decode a response body. Proxy values that reach it are text from _anonymous_proxies.",
+          "types_before_conversions": "PASS: ProxyHandler receives the dict returned by _anonymous_proxies. Non-text environment values never enter that dict."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "AnonymousProxyHandler.__init__",
+        "paths": [
+          "environment proxy map consumed by the opener"
+        ],
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_authority_proxy_forms"
+        ],
+        "text_form_cases": "Port answer installed into the opener. The same two proxy tests observe that Proxy-Authorization is absent. A malformed response body is not consumed here."
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compute or compare a digest. Hashing stays in checked_sha512.",
+          "complete_normative_records": "N/A: this function does not build or validate a normative record. It does not accept a governance context.",
+          "finite_numbers": "N/A: this function does not read or compare a number. Header names stay text.",
+          "processes_and_resources": "N/A: this function starts no process or connection. It rejects header names before urlopen sends the request.",
+          "strict_decoding": "N/A: this function does not decode a file, a response body, or JSON. It reads in-memory header names.",
+          "types_before_conversions": "PASS: header names are taken from header_items and compared as lower-case text before any request. No int() or float() runs."
+        },
+        "file": "scripts/acquire_fuseki_archive.py",
+        "function": "_reject_authorization_headers",
+        "paths": [
+          "in-memory request headers before the opener sends them"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_fuseki_archive_acquisition.py::test_governed_copy_request_sends_no_authorization_header",
+          "reports/tests/test_fuseki_archive_acquisition.py::test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy"
+        ],
+        "text_form_cases": "Port answer: Authorization and Proxy-Authorization on the request raise BootstrapError before open. test_governed_copy_request_sends_no_authorization_header and the real-opener proxy tests apply. JSON decoding does not apply."
+      }
+    ],
+    "text_form": {
+      "decision": "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)",
+      "rows": {
+        "AnonymousProxyHandler.__init__": "Port answer installed into the opener. The same two proxy tests observe that Proxy-Authorization is absent. A malformed response body is not consumed here.",
+        "OfficialRedirect.redirect_request": "Port answer: the redirect target is a URL string, checked by redirect_allowed before it is followed (test_copy_redirects_only_to_https_release_assets, test_redirect_guard_checks_before_following_third_party).",
+        "_anonymous_proxies": "Port environment answer. Non-text values are skipped. Credential forms are removed before the opener (the two real-opener proxy tests).",
+        "_https_endpoint": "Fixed-form URL text. Empty, non-ASCII and non-URL values return false before a request (test_copy_redirects_only_to_https_release_assets). JSON and port-body cases do not apply: the function does not decode JSON or accept a response body.",
+        "_load_stored_json": "Stored JSON. Non-UTF-8, invalid JSON and a lone surrogate are typed BootstrapError before use (test_lock_rejects_non_utf8_before_use, test_lock_rejects_invalid_json_before_use, test_lock_json_rejects_lone_surrogates).",
+        "_reject_authorization_headers": "Port answer: Authorization and Proxy-Authorization on the request raise BootstrapError before open. test_governed_copy_request_sends_no_authorization_header and the real-opener proxy tests apply. JSON decoding does not apply.",
+        "_reject_lone_surrogates": "JSON text. Lone surrogates in nested values and keys, non-string keys, and NaN, Infinity and -Infinity raise BootstrapError (test_json_tree_rejects_non_string_key_and_non_finite_number, test_lock_json_rejects_lone_surrogates). A valid surrogate pair is not produced by the JSON decoder used here.",
+        "_transport_proxy": "Fixed-form proxy text, including the authority form. The negative tests are test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy and test_real_opener_omits_proxy_authorization_for_authority_proxy_forms. The function does not decode JSON.",
+        "_without_userinfo": "Fixed-form proxy text. A non-text value raises BootstrapError before the split. Authority forms are covered by test_real_opener_omits_proxy_authorization_for_authority_proxy_forms.",
+        "acquire": "Port answer bytes and the lock JSON. A digest mismatch is not cached. Authorization is absent. Malformed lock JSON is rejected before any download (test_wrong_download_digest_is_not_retried_or_cached, test_governed_copy_request_sends_no_authorization_header, test_acquire_rejects_malformed_lock_before_download).",
+        "build_ci_image": "Port answer from Docker. A typed failure is returned and a bool budget never starts Docker (test_build_ci_image_reports_typed_docker_failure, test_build_ci_image_rejects_bool_budget_before_docker).",
+        "build_context": "Stored lock JSON consumed from acquire. A bool budget is rejected before Docker (test_build_ci_image_rejects_bool_budget_before_docker).",
+        "cache_info": "Stored provenance JSON reread from the cache file. The same UTF-8, surrogate and type rejects apply (test_cache_hit_provenance_rejects_non_utf8, test_cache_hit_provenance_rejects_lone_surrogate).",
+        "checked_sha512": "Fixed-form SHA-512 digest. Empty, non-ASCII, uppercase and non-string values are rejected before use (test_lock_digest_form_is_rejected_before_use, test_checked_sha512_rejects_non_string_expected_before_read).",
+        "final_url_allowed": "Fixed-form final URL. A final host outside release-assets is rejected (test_copy_final_url_outside_release_assets_is_rejected).",
+        "main": "CLI timeout and the lock file. A non-finite timeout and a malformed lock are rejected before acquisition (test_main_execute_rejects_non_finite_timeout, test_main_check_rejects_malformed_lock).",
+        "official_url": "Fixed-form source URL. The same redirect tests reject a non-HTTPS or foreign host before use. No JSON object is decoded here.",
+        "redirect_allowed": "Fixed-form redirect URL. Non-HTTPS and non-release-assets hosts are false before the next request (test_copy_redirects_only_to_https_release_assets).",
+        "release_asset_url": "Fixed-form governed-copy URL. test_governed_copy_is_the_only_download_when_bytes_match uses the constant. A malformed copy URL is not requested.",
+        "remaining": "Finite budget number. A bool and a non-finite timeout are rejected before a download (test_budget_rejects_bool_before_any_download, test_budget_rejects_non_finite_numbers). No digest is parsed here.",
+        "urlopen": "Port answer and fixed-form request URL. Authorization headers are rejected first. The opener strips proxy credentials. Body decoding is not done here."
+      }
+    }
+  },
+  "status": "CANDIDATE",
+  "unit": "OCOR-DEV-REM-0069"
+}
