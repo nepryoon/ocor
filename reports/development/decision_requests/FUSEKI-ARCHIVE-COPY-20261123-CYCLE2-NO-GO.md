@@ -1,6 +1,7 @@
 # FUSEKI-ARCHIVE-COPY-20261123-CYCLE2-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`. Nessuna opzione è applicata da questa pubblicazione. Non è un ciclo 3. Il branch `governed/fuseki-archive-copy-20261123` resta `948479739127d33bc2f69a2c003a4acb5823d8b4` e non si mergia. Non si apre una pull request di quel branch.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 2, con le precisazioni dei punti 1–6 della decisione `FUSEKI-ARCHIVE-COPY-20261123-CYCLE2-NO-GO (2026-11-24)`, decisa dal PO di persona, sezione scritta a mano. Il file pubblicato a `99d22adeea09e060507e7f9bc60f7f5380d37df5` resta sha256 `83620375c84d7cfd09383139314127dd5fbf3d0ef0eabd2b09aea3b72445276d`. Il testo delle opzioni non cambia. Questa pubblicazione non si integra. Claim invariati.
 
 Livello: operativo. Nessun nuovo `DEC-*`.
 Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta riguarda un ciclo di riparazione oltre il budget ordinario e l'eventuale estensione di un gate. Nessuna opzione è applicata da questa pubblicazione.
