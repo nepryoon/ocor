@@ -158,72 +158,88 @@
     {
       "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
       "criterion": "Point 2 drift on the cycle-1 tree",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "PASS, 241 inputs, 75 tasks, zero drift. The stdout does not print HEAD and does not read this unit record. The same sha256 was produced on the rejected evidence head before the VF-003 edit, because that edit does not change inputs.",
+      "note": "PASS, 241 inputs, 75 tasks, zero drift. The stdout does not print HEAD and does not read this unit record. The same sha256 was produced on the rejected evidence head before the VF-003 edit, because that edit does not change inputs. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed"
     },
     {
       "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --manifest reports/evidence/G0/MANIFEST.json --non-skipped",
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0005",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "Stdout is the PASS line. It does not print HEAD.",
+      "note": "Stdout is the PASS line. It does not print HEAD. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2"
     },
     {
       "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0050",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "Stdout is the PASS line. It does not print HEAD.",
+      "note": "Stdout is the PASS line. It does not print HEAD. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
     },
     {
       "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0072 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0072 after the VF-003 edit",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "Stdout is the PASS line. The manifest digest of the corrected 0072 record matches the file.",
+      "note": "Stdout is the PASS line. The manifest digest of the corrected 0072 record matches the file. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "dc02de336b090d616cc4f87d4b6bb69885d731a292e64c3ed2ea838a0807edb7"
     },
     {
       "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0082",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "Stdout is the PASS line. It does not print HEAD.",
+      "note": "Stdout is the PASS line. It does not print HEAD. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83"
     },
     {
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c --record reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json",
+      "criterion": "Point 2 input check of the corrected OCOR-DEV-0072 requalification",
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
+      "note": "PASS, 4 inputs, findings empty. The tool prints git rev-parse HEAD, and that field is 7cf4c23e91b49b34a28ead075f25094254556764. This stdout was captured on that commit, after the VF-003 edit. A re-run on the final head stays PASS. Its stdout differs only in the head field, which becomes the final head, so its sha256 is not stored in this commit.",
+      "outcome": "PASS",
+      "stdout_sha256": "e101bb866ee4fe0be1159b5f6caed2eac58587f70032737b74616fa93b674f90"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit 34a66b063b7867ed938828f9f5affbc0d35f1d52 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json",
+      "criterion": "Point 2 input check of the OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 requalifications",
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
+      "note": "PASS, 22 inputs, 3 records, findings empty. The tool prints git rev-parse HEAD, and that field is 7cf4c23e91b49b34a28ead075f25094254556764. This stdout was captured on that commit. A re-run on the final head stays PASS and differs only in the head field.",
+      "outcome": "PASS",
+      "stdout_sha256": "5e69f6c9a0d5e550e53b67fb98d6df359d06c201fab053a38a7c490ba43a0bd1"
+    },
+    {
       "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
       "criterion": "Point 2 plan validator on the cycle-1 tree",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "The untracked symlink ocor-runtime/.venv is not in the commit. It was moved aside for this run because the validator treats it as an unauthorized untracked path, then restored. The interpreter is that venv, CPython 3.12.11. Tracked plan files were restored with git checkout and git diff --exit-code was 0. Stdout is the PASS JSON line, 37 PASS and 2 NOT_EXECUTED. The campaign-tree plan step in fast_gate remains PASS_AFTER_RERUN for its first attempt and is not this row.",
+      "note": "The untracked symlink ocor-runtime/.venv is not in the commit. It was moved aside for this run because the validator treats it as an unauthorized untracked path, then restored. The interpreter is that venv, CPython 3.12.11. Tracked plan files were restored with git checkout and git diff --exit-code was 0. Stdout is the PASS JSON line, 37 PASS and 2 NOT_EXECUTED. The campaign-tree plan step in fast_gate remains PASS_AFTER_RERUN for its first attempt and is not this row. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
     },
     {
       "command": "git diff --name-status 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c HEAD",
       "criterion": "Point 3 delta against the campaign commit is only the four allowed paths",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "The stdout is repair_cycle_1.final_head.name_status_text. It does not depend on the bytes of those files.",
+      "note": "The stdout is repair_cycle_1.final_head.name_status_text. It does not depend on the bytes of those files. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "c4b30a7459f096ed797683f44c2e4f60baedab2ce5cb603b823d25b405be7000"
     },
     {
       "command": "sha256 of the three manifests and the four rem0069 requalification records",
       "criterion": "VF-005 evidence-path inventory, corrected in this record",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "PASS only together with the inventory in this commit. 0005, 0050, 0082 and the three manifests were already on the campaign commit. 0072 was published by the evidence commit and its digest in this inventory is the VF-003 text.",
+      "note": "PASS only together with the inventory in this commit. 0005, 0050, 0082 and the three manifests were already on the campaign commit. 0072 was published by the evidence commit and its digest in this inventory is the VF-003 text. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "07011bbc99a82bb3e90e8b78356f190bcb77776d3a385de8b063b0c70d79032d"
     },
@@ -238,9 +254,9 @@
     {
       "command": "set environment.clean_shell true for the campaign process and record wrapper_environment on reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json; replace that artifact digest in reports/evidence/G2/MANIFEST.json",
       "criterion": "VF-003 corrected in the requalification record",
-      "executed_on": null,
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "clean_shell true is the campaign process, bash --noprofile --norc under env -i. wrapper_environment.clean_shell false is run.sh. startup_log_sha256 b5d7527da95cd38dabf142a1a044e7807b68ca09af59c369e74f8692ff238824. startup_script_sha256 c6bedf3b4ba0d2cd9f8e57f26e29a09400d097f9091624ce18a7640b4929eaac. Corrected record sha256 e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd. This PASS is in the same commit as the correction. VF-004 is a different row and is not PASS.",
+      "note": "clean_shell true is the campaign process, bash --noprofile --norc under env -i. wrapper_environment.clean_shell false is run.sh. startup_log_sha256 b5d7527da95cd38dabf142a1a044e7807b68ca09af59c369e74f8692ff238824. startup_script_sha256 c6bedf3b4ba0d2cd9f8e57f26e29a09400d097f9091624ce18a7640b4929eaac. Corrected record sha256 e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd. This PASS is in the same commit as the correction. VF-004 is a different row and is not PASS. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd"
     },
@@ -255,6 +271,12 @@
   ],
   "repair_cycle": 1,
   "repair_cycle_1": {
+    "check_execution_commit_inputs": {
+      "check_0072_stdout_sha256": "e101bb866ee4fe0be1159b5f6caed2eac58587f70032737b74616fa93b674f90",
+      "check_three_stdout_sha256": "5e69f6c9a0d5e550e53b67fb98d6df359d06c201fab053a38a7c490ba43a0bd1",
+      "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
+      "outcome": "PASS"
+    },
     "decision": "OCOR-DEV-REM-0069-NO-GO (2026-11-24) option 1, points 1-5",
     "decision_note": "Decisa dal PO di persona, sezione scritta a mano.",
     "equivalence": {
@@ -895,11 +917,12 @@
     },
     "final_head": {
       "campaign_commit": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
-      "content_commit": null,
+      "content_commit": "7cf4c23e91b49b34a28ead075f25094254556764",
       "name_status_command": "git diff --name-status 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c HEAD",
       "name_status_stdout_sha256": "c4b30a7459f096ed797683f44c2e4f60baedab2ce5cb603b823d25b405be7000",
       "name_status_text": "M\treports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\nM\treports/evidence/G2/MANIFEST.json\nA\treports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json\nA\treports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.log\n",
-      "note": "The registration commit fills content_commit with this commit's sha. The commit that contains the filled block is the final head of repair cycle 1. Its only change from content_commit is this unit record. The name-status text does not depend on file bytes. scanned_head and the campaign commit stay distinct from the final head.",
+      "note": "The commit that contains this object is the final head of repair cycle 1. Its parent is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. git diff --name-status against that parent is only this unit record. git diff --name-status against the campaign commit 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c is the four paths in name_status_text. scanned_head stays 34a66b063b7867ed938828f9f5affbc0d35f1d52. The campaign commit stays 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c. The final head, scanned_head and the campaign commit are three distinct values. This file does not contain the final head sha, because a commit cannot embed its own sha. Point-2 commands that do not print HEAD were re-measured on the content commit and match the stored stdout_sha256. The same commands on this final head reproduce those hashes. check_execution_commit_inputs prints git rev-parse HEAD, so its stored hashes are the content-commit runs.",
+      "parent": "7cf4c23e91b49b34a28ead075f25094254556764",
       "scanned_head": "34a66b063b7867ed938828f9f5affbc0d35f1d52"
     },
     "implementer": {
