@@ -1,0 +1,52 @@
+# REM-0063-ARGV-LAUNCHER-CURRENT-HEADS
+
+Stato: `OPEN_PO_DECISION_REQUIRED`. Nessuna opzione è applicata da questa pubblicazione. Non si scrivono i tre record di riqualifica. Il branch `governed/rem-0063-ci-argv-launcher` resta `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b` e non si mergia. Non si apre una pull request di quel branch.
+
+Livello: operativo. Nessun nuovo `DEC-*`.
+Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta arresta l'applicazione restante di un'unità già decisa. Nessuna opzione è applicata da questa pubblicazione.
+Head di `origin/main` alla pubblicazione: `618e72c00f994e8ea8899914548cc38743aa4569`.
+Candidato: branch `governed/rem-0063-ci-argv-launcher`, HEAD `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b`. Nessun commit è aggiunto sopra quell'HEAD da questa pubblicazione. Il candidato non è antenato di `origin/main`. Non ha una pull request. Non si modifica e non si mergia.
+Decisione già adottata: `REM-0063-CI-ARGV-LAUNCHER (2026-11-20)`, opzione 1, `option_applied` false. Il testo dell'opzione è il file `reports/development/decision_requests/REM-0063-CI-ARGV-LAUNCHER.md` al commit `984fdb328337be31dcc16f2e055bf6954dd896f1`, sha256 `7e17f8d0498eda82cae5289c05975d0cf8126a54dc4f8cd3b13ed4bcefed5c99`. Disposition `8ff004247f34be940e5bc59bf05e5d85ecb7afb9`, sha256 `34d3c1a1373b3b8a664ab9979511c5bf77907ad4abfa856ee7bc74bbf40770f2`, bozza PR #724 non mergiata. Le opzioni 2 e 3 di quella richiesta non si applicano.
+Implementatore del codice già pubblicato e di questa pubblicazione: Grok Build, modello `grok-4.7`, fornitore xAI. Nessun verifier è stato avviato da chi la apre.
+
+## Contesto e perimetro
+
+L'opzione 1 già adottata autorizza un solo change set a partire da `origin/main`. Quando `command_vector_fits` è falso, il supervisore della campagna qualificante consegna la stessa selezione con launcher di corsia duplicati. Il predicato resta quello di `scripts/run_local_lane_campaign.py`. Il supervisore non importa il modulo di corsia. Quel modulo resta identico byte a byte. Il baseline della guardia resta `82b71d0db410bcdb8124e8ec8a8235631ecfa1fa`. Prima di sigillare i record nuovi, la stessa opzione ordina di cercare sotto `reports/evidence/` l'hash `9a599094a697ba573051b7696c22c6b002553ddafeaaa9dc420a199242fd79fd`: se un record corrente non superseduto, oltre i tre nominati, fissa ancora quell'hash, ci si ferma e non si riqualifica un quarto task. I tre record nominati, da supersedere, sono `OCOR-DEV-REM-0018-requalified-fuseki-20261113-ca73b1a91ed3`, `OCOR-DEV-REM-0023-requalified-fuseki-20261113-ca73b1a91ed3` e `OCOR-DEV-REM-0038-requalified-fuseki-20261113-ca73b1a91ed3`. Se l'applicazione deve andare oltre l'opzione scritta, ci si ferma e si apre una sola richiesta.
+
+Su `origin/main` `618e72c00f994e8ea8899914548cc38743aa4569` quella condizione di stop è già vera. `scripts/run_qualifying_campaign.py` è il blob `b0058e9e8381905e993bbcb8f58b28e467b3cc5e`, 53113 byte, sha256 `9a599094a697ba573051b7696c22c6b002553ddafeaaa9dc420a199242fd79fd`, identico al baseline `82b71d0db410bcdb8124e8ec8a8235631ecfa1fa`. La ricerca sui JSON di `reports/evidence/` di quell'HEAD trova otto file con quell'hash. I tre nominati dall'opzione sono già superseduti. I tre record correnti, stato `SEALED`, senza un successore, sono:
+
+- `reports/evidence/G2/OCOR-DEV-REM-0018.requalified-fuseki-20261121.json`, record `OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816`, supersede `OCOR-DEV-REM-0018-requalified-fuseki-20261113-ca73b1a91ed3`.
+- `reports/evidence/G5/OCOR-DEV-REM-0023.requalified-fuseki-20261121.json`, record `OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816`, supersede `OCOR-DEV-REM-0023-requalified-fuseki-20261113-ca73b1a91ed3`.
+- `reports/evidence/G2/OCOR-DEV-REM-0038.requalified-fuseki-20261121.json`, record `OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816`, supersede `OCOR-DEV-REM-0038-requalified-fuseki-20261113-ca73b1a91ed3`.
+
+Gli altri due file che contengono l'hash sono storici e già superseduti: `OCOR-DEV-REM-0038-requalified-rem0055-351bb27eeeb0` e `OCOR-DEV-REM-0023-requalified-rem0059-636975eaacd7`. Scrivere i `supersedes` verso gli identificativi del 2026-11-13 creerebbe un secondo successore di ciascun record del 2026-11-13, accanto alla testa del 2026-11-21. L'opzione 1 non autorizza quel secondo successore e non autorizza una quarta riqualifica. Questa pubblicazione non scrive record e non imposta `option_applied` a true.
+
+Il codice già pubblicato resta `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b`. Il diff `origin/main...69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b` tocca `reports/planning/OCOR_PLAN_RUN_STATE.json`, `reports/tests/test_kind_teardown_observation.py`, `reports/tests/test_qualifying_campaign_guard.py`, `scripts/run_qualifying_campaign.py` e `scripts/validate_ocor_development_plan.py`. Non contiene `scripts/run_local_lane_campaign.py` e non contiene i tre record. Non si aggiunge un commit su quel branch.
+
+`FUSEKI-ARCHIVE-COPY-20261123-CYCLE2-NO-GO` resta aperta, commit `99d22adeea09e060507e7f9bc60f7f5380d37df5`, sha256 `83620375c84d7cfd09383139314127dd5fbf3d0ef0eabd2b09aea3b72445276d`, senza pull request. Nessuna sua opzione è applicata. Non è un ciclo 3. Il candidato `948479739127d33bc2f69a2c003a4acb5823d8b4` non si modifica e non si mergia. Il punto 9 di `CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23)` vieta, finché quel change set non è integrato, un branch di codice dell'unità che separa l'etichetta Fuseki della CI.
+
+`REM-0066-CYCLE3-NO-GO` resta aperta, bozza PR #772, commit `171708381416e03d3c217efdcb60328e158f5b84`, sha256 `e44221eb591f62640098bf50295ebdf74d6999880e48803c2f8ba4064e724fcb`. Nessuna sua opzione è applicata. Non è un ciclo 4. Il candidato `3b2ee600ee5d9e3055e3d916628d958635fefff3` non si modifica e non si mergia.
+
+Non si rilanciano i run `45139159711`, `45139159581`, `45139159701`, `45116784337` e `45147805219`. Non si apre una pull request di questa richiesta né dello state sync: il provisioning di una pull request ripeterebbe il fallimento già osservato sulla copia dell'archivio, ancora assente da `origin/main`. Non si tocca la PR #722 né il commit `7b0b90ee79bdae51b22365faca2a54159502a44f`. Non si apre un `repair_cycle` 14. Non si avvia `OCOR-DEV-REM-0060`. `OCOR-DEV-REM-0065` resta differito e questa pubblicazione non apre una richiesta su quel differimento. Non si scrive `verify_request.json`.
+
+## Quesito
+
+L'opzione 1 di `REM-0063-CI-ARGV-LAUNCHER` non si può applicare alla lettera: i tre record del 2026-11-13 che essa nomina sono già superseduti, e i tre record correnti del 2026-11-21 fissano ancora l'hash `9a599094a697ba573051b7696c22c6b002553ddafeaaa9dc420a199242fd79fd`. Si continua il change set nominando le teste del 2026-11-21, ci si ferma senza riqualifica, oppure si autorizza in modo esplicito un secondo successore di ciascun record del 2026-11-13?
+
+## Opzioni
+
+1. **Le tre riqualifiche nominano le teste correnti del 2026-11-21.** Si continua il change set da `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b` con un merge di `origin/main`, senza rebase e senza force-push. I tre record nuovi supersedono `OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816`, `OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816` e `OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816`, gli stessi tre task, nessun quarto task. I record del 2026-11-13 restano storici e non ricevono un secondo successore. Il resto dell'opzione 1 già adottata non cambia: `scripts/run_local_lane_campaign.py` resta identico byte a byte, il baseline della guardia resta `82b71d0db410bcdb8124e8ec8a8235631ecfa1fa`, i record già sigillati non si riscrivono, la PR #722 e il commit `7b0b90ee79bdae51b22365faca2a54159502a44f` non si toccano prima che questo change set sia su `origin/main`, e VF-004 non si segna `PASS`. Se dopo il merge `select_most_recent` seleziona una testa diversa da uno dei tre record del 2026-11-21, ci si ferma e si apre una sola richiesta nuova. Finché la copia governata dell'archivio non è su `origin/main`, la continuazione si pubblica senza pull request, perché una pull request ripeterebbe il provisioning già esaurito. Non è applicata da questa pubblicazione. Claim invariati.
+
+2. **Si ferma il change set del launcher.** Non si mergia `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b`. Non si scrivono riqualifiche. La PR #722 resta com'è. L'errore errno 7 osservato su quella pull request resta aperto. Non è la soluzione completa. Non è applicata da questa pubblicazione. Claim invariati.
+
+3. **Si supersedono comunque i tre record del 2026-11-13 come scritti.** Si autorizza in modo esplicito, come eccezione alla regola del successore unico, due successori per ciascuno dei tre record del 2026-11-13: la testa del 2026-11-21 già su `origin/main` e il record nuovo del change set. Il resto dell'opzione 1 già adottata non cambia. Non è raccomandata: il conteggio delle teste aumenta. Non è applicata da questa pubblicazione. Claim invariati.
+
+## Raccomandazione
+
+Opzione 1. L'opzione già adottata vuole gli stessi tre task e vieta una quarta riqualifica quando un record corrente, oltre i tre nominati, fissa ancora l'hash dello script. Le teste correnti sono quelle del 2026-11-21. Nominarle mantiene un solo successore per ciascun record e non allarga il change set. L'opzione 2 lascia errno 7 aperto. L'opzione 3 aumenta il numero delle teste. La raccomandazione non dipende dal numero di comandi. Chi apre questa richiesta non ne applica nessuna opzione.
+
+## Impatto
+
+Finché questa richiesta è aperta non si mergia `69c3877caf58f82ebf4ea9e6e39df6560ad1ff8b`, non si scrivono i tre record e non si imposta `option_applied` a true su `REM-0063-CI-ARGV-LAUNCHER`. `FUSEKI-ARCHIVE-COPY-20261123-CYCLE2-NO-GO` e `REM-0066-CYCLE3-NO-GO` restano aperte e questa richiesta non ne modifica il testo. Il codice dell'unità che separa l'etichetta Fuseki della CI non parte. `OCOR-DEV-REM-0066` resta bloccato da `REM-0066-CYCLE3-NO-GO`. `OCOR-DEV-REM-0060` non si avvia. `OCOR-DEV-REM-0065` resta differito.
+
+Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim da questa pubblicazione. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
