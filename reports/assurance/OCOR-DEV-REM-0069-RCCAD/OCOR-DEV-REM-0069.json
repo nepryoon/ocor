@@ -143,19 +143,788 @@
       "command": "python -u scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/ocor-dev-rem-0069/campaign-80a2c854cfad/full --expected-head 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c --tool-bin /home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin --tool-bin /home/luca/.ocor-codex/impl-env/rem-0063/bin",
       "criterion": "New campaign on the unit HEAD, zero skips",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
-      "note": "FOUR_LANE. counts tests 5826, failures 0, errors 0, skipped 0. union collected 5826, executed 5826, missing [], duplicated [], unexpected [], lanes [1, 1854, 2436, 1535]. total_duration_seconds 1867.554, limit 5400. Distinct union recollects the suite and calls check_exact_union; stdout sha256 e9220cfd0f43fa0b62eb1d0e239eac11a030499795270df30ff0a87d8137f709; status PASS; skipped 0.",
+      "note": "FOUR_LANE. counts tests 5826, failures 0, errors 0, skipped 0. union collected 5826, executed 5826, missing [], duplicated [], unexpected [], lanes [1, 1854, 2436, 1535]. total_duration_seconds 1867.554, limit 5400. Distinct union recollects the suite and calls check_exact_union; stdout sha256 e9220cfd0f43fa0b62eb1d0e239eac11a030499795270df30ff0a87d8137f709; status PASS; skipped 0. Equivalence for this campaign is repair_cycle_1.equivalence. The execution commit stays this row's executed_on. It is not the evidence head.",
       "outcome": "PASS",
       "stdout_sha256": "5f525930ddb6d929b61375642c76e9a44161a01e263d325a208f59b55067c4ea"
+    },
+    {
+      "command": "git grep -n -I reports 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c -- ocor-runtime/tests",
+      "criterion": "Point 1 search of collected tests before equivalence is registered",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "note": "Raw stdout sha256 of git grep. Outcome of the reading is EQUIVALENCE_HOLDS. See repair_cycle_1.equivalence. No collected test reads a delta path or lists a directory that contains one.",
+      "outcome": "PASS",
+      "stdout_sha256": "c19f3e5e5ad5dd236d508bd559ccc8ea54dc53dd8e42f94781724a4151b2811e"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+      "criterion": "Point 2 drift on the cycle-1 tree",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "PASS, 241 inputs, 75 tasks, zero drift. The stdout does not print HEAD and does not read this unit record. The same sha256 was produced on the rejected evidence head before the VF-003 edit, because that edit does not change inputs.",
+      "outcome": "PASS",
+      "stdout_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --manifest reports/evidence/G0/MANIFEST.json --non-skipped",
+      "criterion": "Point 2 runtime evidence for OCOR-DEV-0005",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "Stdout is the PASS line. It does not print HEAD.",
+      "outcome": "PASS",
+      "stdout_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+      "criterion": "Point 2 runtime evidence for OCOR-DEV-0050",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "Stdout is the PASS line. It does not print HEAD.",
+      "outcome": "PASS",
+      "stdout_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0072 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+      "criterion": "Point 2 runtime evidence for OCOR-DEV-0072 after the VF-003 edit",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "Stdout is the PASS line. The manifest digest of the corrected 0072 record matches the file.",
+      "outcome": "PASS",
+      "stdout_sha256": "dc02de336b090d616cc4f87d4b6bb69885d731a292e64c3ed2ea838a0807edb7"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+      "criterion": "Point 2 runtime evidence for OCOR-DEV-0082",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "Stdout is the PASS line. It does not print HEAD.",
+      "outcome": "PASS",
+      "stdout_sha256": "66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
+      "criterion": "Point 2 plan validator on the cycle-1 tree",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "The untracked symlink ocor-runtime/.venv is not in the commit. It was moved aside for this run because the validator treats it as an unauthorized untracked path, then restored. The interpreter is that venv, CPython 3.12.11. Tracked plan files were restored with git checkout and git diff --exit-code was 0. Stdout is the PASS JSON line, 37 PASS and 2 NOT_EXECUTED. The campaign-tree plan step in fast_gate remains PASS_AFTER_RERUN for its first attempt and is not this row.",
+      "outcome": "PASS",
+      "stdout_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+    },
+    {
+      "command": "git diff --name-status 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c HEAD",
+      "criterion": "Point 3 delta against the campaign commit is only the four allowed paths",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "The stdout is repair_cycle_1.final_head.name_status_text. It does not depend on the bytes of those files.",
+      "outcome": "PASS",
+      "stdout_sha256": "c4b30a7459f096ed797683f44c2e4f60baedab2ce5cb603b823d25b405be7000"
+    },
+    {
+      "command": "sha256 of the three manifests and the four rem0069 requalification records",
+      "criterion": "VF-005 evidence-path inventory, corrected in this record",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "PASS only together with the inventory in this commit. 0005, 0050, 0082 and the three manifests were already on the campaign commit. 0072 was published by the evidence commit and its digest in this inventory is the VF-003 text.",
+      "outcome": "PASS",
+      "stdout_sha256": "07011bbc99a82bb3e90e8b78356f190bcb77776d3a385de8b063b0c70d79032d"
+    },
+    {
+      "command": "bind pregate-80a2c854/gates.json: commit, 50 commands, statuses, exit codes and log sha256 values",
+      "criterion": "VF-002 fast gate bound, diagnostics distinct from accepted results",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "note": "gates.json sha256 36f86d94f4613fb898eb0038800a21abb4366794a78c97dbebc50867b9c79de6. head and executed_on are the campaign commit. 47 ACCEPTED, drift on that tree is DIAGNOSTIC_NOT_ACCEPTED (EXPECTED_FAIL, exit 1), plan first attempt is DIAGNOSTIC_FIRST_ATTEMPT (PASS_AFTER_RERUN), vf004_schema_conformance is NOT_CORRECTED_NOT_PASS. The accepted plan rerun log sha256 is c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba. This row is not a PASS of VF-004.",
+      "outcome": "RECORDED",
+      "stdout_sha256": "36f86d94f4613fb898eb0038800a21abb4366794a78c97dbebc50867b9c79de6"
+    },
+    {
+      "command": "set environment.clean_shell true for the campaign process and record wrapper_environment on reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json; replace that artifact digest in reports/evidence/G2/MANIFEST.json",
+      "criterion": "VF-003 corrected in the requalification record",
+      "executed_on": null,
+      "execution_commit_role": "repair_cycle_1_content_commit",
+      "note": "clean_shell true is the campaign process, bash --noprofile --norc under env -i. wrapper_environment.clean_shell false is run.sh. startup_log_sha256 b5d7527da95cd38dabf142a1a044e7807b68ca09af59c369e74f8692ff238824. startup_script_sha256 c6bedf3b4ba0d2cd9f8e57f26e29a09400d097f9091624ce18a7640b4929eaac. Corrected record sha256 e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd. This PASS is in the same commit as the correction. VF-004 is a different row and is not PASS.",
+      "outcome": "PASS",
+      "stdout_sha256": "e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd"
     },
     {
       "command": "NOT_EXECUTED",
       "criterion": "One verification, verifier from a vendor other than xAI, not started by the implementer",
       "executed_on": null,
-      "note": "verify_request.json is written after this evidence commit. The implementer does not start the verifier. The verifier vendor is not xAI. No verdict is available in this commit.",
+      "note": "verify_request.json is written after this evidence commit. The implementer does not start the verifier. The verifier vendor is not xAI. No verdict is available in this commit. Repair cycle 1 still does not start the verifier.",
       "outcome": "NOT_EXECUTED",
       "stdout_sha256": null
     }
   ],
+  "repair_cycle": 1,
+  "repair_cycle_1": {
+    "decision": "OCOR-DEV-REM-0069-NO-GO (2026-11-24) option 1, points 1-5",
+    "decision_note": "Decisa dal PO di persona, sezione scritta a mano.",
+    "equivalence": {
+      "allowed_delta": [
+        "reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
+        "reports/evidence/G2/MANIFEST.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.log"
+      ],
+      "campaign_commit": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "campaign_tree": "b8ceda7a88933cbc0c4c1732e2680fa3bebe406c",
+      "junit_union": {
+        "campaign_result_sha256": "5f525930ddb6d929b61375642c76e9a44161a01e263d325a208f59b55067c4ea",
+        "collected": 5826,
+        "distinct_union_stdout_sha256": "e9220cfd0f43fa0b62eb1d0e239eac11a030499795270df30ff0a87d8137f709",
+        "duration_seconds": 1867.554,
+        "errors": 0,
+        "executed": 5826,
+        "failures": 0,
+        "lanes": [
+          1,
+          1854,
+          2436,
+          1535
+        ],
+        "skipped": 0
+      },
+      "outcome": "EQUIVALENCE_HOLDS",
+      "rejected_evidence_head": "38e15d2cb3379aecd62e2a7e4c20b5888e4ecae5",
+      "rejected_evidence_tree": "0714e19a93a3bbda8049824a3e952fd7477ca8bb",
+      "repository_reads_not_delta": [
+        {
+          "action": "generate_contracts.generate lists only reports/contracts via iterdir and glob. The line also passes tmp_path as the output directory. reports/contracts does not contain the delta.",
+          "line": 152,
+          "path": "ocor-runtime/tests/sdk/test_typescript_sdk_conformance.py"
+        },
+        {
+          "action": "read_text of two named files under reports/contracts.",
+          "line": 71,
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0050.py"
+        },
+        {
+          "action": "read_text of the OpenAPI file under reports/contracts.",
+          "line": 94,
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0054.py"
+        },
+        {
+          "action": "read_text of the OpenAPI file under reports/contracts.",
+          "line": 89,
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0055.py"
+        },
+        {
+          "action": "Loads reports/tests/test_rem0023_consumer_fixture_scope.py. FILES is only ocor-runtime/tests/tasks/test_ocor_dev_0054.py and test_ocor_dev_0055.py. Those are the files it then reads.",
+          "line": 412,
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py"
+        },
+        {
+          "action": "task_scope_errors receives the string reports/evidence/G2/OCOR-DEV-0070.json and compares path strings to the backlog. It does not open the file or list the directory.",
+          "line": 304,
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0001.py"
+        }
+      ],
+      "rule": "A collected test rejects equivalence when it reads one of the four delta paths, reports/evidence/G2, or reports/assurance/OCOR-DEV-REM-0069-RCCAD from the repository, including by glob or by listing a directory that contains that path. A named read of another file does not reject equivalence.",
+      "scanned_head": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
+      "search_command": "git grep -n -I reports 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c -- ocor-runtime/tests",
+      "search_hit_count": 64,
+      "search_note": "The raw command stdout is 64 lines. Docstrings that mention reports/evidence/G2 are not reads. Paths built under tmp_path are not repository reads. No hit reads a delta path or lists reports/, reports/evidence, reports/evidence/G2, reports/assurance, or the RCCAD directory.",
+      "search_stdout_sha256": "c19f3e5e5ad5dd236d508bd559ccc8ea54dc53dd8e42f94781724a4151b2811e"
+    },
+    "evidence_inventory": {
+      "command": "sha256 of G0, G2 and G5 MANIFEST.json plus the four rem0069 requalification records, after the VF-003 edit",
+      "covers": [
+        "reports/evidence/G0/MANIFEST.json",
+        "reports/evidence/G2/MANIFEST.json",
+        "reports/evidence/G5/MANIFEST.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json"
+      ],
+      "digests": {
+        "reports/evidence/G0/MANIFEST.json": "da41d60d6c43a0265c46acd0cde48332caa102d5759642149b4c2b88908fad7e",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json": "80b72c7f075307a3f8e641f3331255bba41aea84bc7248472584f64a388db6a0",
+        "reports/evidence/G2/MANIFEST.json": "1acb6d92610249a3630866dd9be7bcc0071043598632d041086f7ed5c3c66fed",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json": "e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json": "8fe1a4470bb8d0530b00ce4d71734dc7b9cdc0569683827635b06cfee7c3a5a0",
+        "reports/evidence/G5/MANIFEST.json": "7999dcf5ef76104e93de3776bc82ddef4f424ace732f7c5e46f6fe38c17a4279",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json": "a813750e85dac9e501c70fd50456c2331ef91bb4f2a7296012b1d62a3dd0abf2"
+      },
+      "outcome": "PASS",
+      "stdout_sha256": "07011bbc99a82bb3e90e8b78356f190bcb77776d3a385de8b063b0c70d79032d",
+      "worktree_head_before_commit": "38e15d2cb3379aecd62e2a7e4c20b5888e4ecae5"
+    },
+    "fast_gate": {
+      "accepted_plan_rerun": {
+        "classification": "ACCEPTED",
+        "command": "The untracked symlink ocor-runtime/.venv was moved aside because it is not in the commit. ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref 618e72c00f994e8ea8899914548cc38743aa4569 --authorized-extension. Plan bytes were restored with git checkout -- reports/planning/OCOR_PLAN_RUN_STATE.json.",
+        "exit_code": 0,
+        "log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+        "name": "plan_rerun",
+        "status": "PASS"
+      },
+      "base": "618e72c00f994e8ea8899914548cc38743aa4569",
+      "branch": "governed/ocor-dev-rem-0069-fuseki-archive-copy",
+      "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "gates_json_sha256": "36f86d94f4613fb898eb0038800a21abb4366794a78c97dbebc50867b9c79de6",
+      "head": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "not_executed": [
+        {
+          "name": "integration-postgresql",
+          "reason": "The workflow job needs a postgres:16 service. The qualifying campaign runs the live PostgreSQL tests. This gate does not mark the job PASS."
+        },
+        {
+          "name": "qualifying-campaign-shards",
+          "reason": "Full-suite shards, aggregation, and uploads are the four-lane campaign after this gate."
+        },
+        {
+          "name": "actions-cache-and-artifacts",
+          "reason": "GitHub Actions cache and artifact upload or download have no local credential."
+        },
+        {
+          "name": "mandatory-gates-aggregator",
+          "reason": "The aggregator reads GitHub Actions needs.*.result. There is no local job graph."
+        },
+        {
+          "name": "auto-merge",
+          "reason": "GitHub auto-merge is not exercised from this gate."
+        },
+        {
+          "name": "conditional-0049-aggregator",
+          "reason": "The five full-suite parts are not produced by this gate."
+        }
+      ],
+      "plan_bytes_sha256": "4571993b5a0954645b5ba04dfecadbadeba63a367c27f5f940c11590b28d1177",
+      "steps": [
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport hashlib\nfrom pathlib import Path\nimport subprocess\nroot = Path('.').resolve()\nmain = subprocess.check_output(['git','show','origin/main:reports/planning/OCOR_PLAN_RUN_STATE.json'])\ncurrent = (root/'reports/planning/OCOR_PLAN_RUN_STATE.json').read_bytes()\nold = 'c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827'\nnew = '028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50'\nif main.count(old.encode()) != 1 or new.encode() in main:\n    raise SystemExit('base digest pattern is not the single expected occurrence')\nexpected = main.replace(old.encode(), new.encode(), 1)\nif current != expected:\n    raise SystemExit('plan bytes differ from the single digest substitution %s vs %s' % (len(current), len(expected)))\nif len(current) != 4991:\n    raise SystemExit('plan length %s != 4991' % (len(current),))\nprint(hashlib.sha256(current).hexdigest())\nprint('allowlist plan bytes PASS')\nPY",
+          "duration_seconds": 0.022,
+          "exit_code": 0,
+          "log_bytes": 91,
+          "log_sha256": "f00586df893f13b48b4635424473b367cf0751b899d17d00b50d6791addcf28e",
+          "name": "allowlist_precheck",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python scripts/ocor_autonomous_delivery.py --dry-run",
+          "duration_seconds": 0.102,
+          "exit_code": 0,
+          "log_bytes": 110,
+          "log_sha256": "9df53abfe7e4bb326109c8ae85ab076a8fb2aac4187d769ab21bb9765c45fd5e",
+          "name": "autonomous_dry",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python scripts/ocor_autonomous_delivery.py --validate",
+          "duration_seconds": 0.102,
+          "exit_code": 0,
+          "log_bytes": 71,
+          "log_sha256": "811f0cc0be24f058bc79b6287f31a5a904655a77c9414ad04eb747f1c6b96f64",
+          "name": "autonomous_validate",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "python3 scripts/bootstrap_development_environment.py --check",
+          "duration_seconds": 0.048,
+          "exit_code": 0,
+          "log_bytes": 300,
+          "log_sha256": "918a8e777662d9f50aa18104ec10c1c50e1f1f266e16a5b7927b7c1c9c25e644",
+          "name": "bootstrap_check",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python reports/tests/build_validation_closure_report.py",
+          "duration_seconds": 0.025,
+          "exit_code": 0,
+          "log_bytes": 124,
+          "log_sha256": "5bf74c1452710b51ffa475fb17d1287b6da2c37c06b26638fd3606f184aa86db",
+          "name": "closure_report",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "OCOR_LOCAL_TERMINUSDB_PASSWORD=x OCOR_LOCAL_KEYCLOAK_PASSWORD=x OCOR_LOCAL_OPENBAO_TOKEN=x OCOR_LOCAL_POSTGRES_PASSWORD=x OCOR_LOCAL_SEAWEEDFS_PASSWORD=x OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD=x OCOR_SPIRE_BOOTSTRAP_DIR=/tmp OCOR_SPIRE_JOIN_TOKEN=x docker compose -f deploy/bootstrap/compose.yaml config --quiet",
+          "duration_seconds": 0.066,
+          "exit_code": 0,
+          "log_bytes": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "compose",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "python reports/tests/build_dec208_approval_manifest.py && python reports/tests/verify_dec208_authoritative_promotion.py && ocor-runtime/.venv/bin/python reports/tests/validate_openapi_remediation_c.py",
+          "duration_seconds": 0.51,
+          "exit_code": 0,
+          "log_bytes": 609,
+          "log_sha256": "2cde1c9e0de57103c4bf81e0b1c3a76a88b6a2773c994c4e9e4a4782fde0865a",
+          "name": "dec208",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "set -euo pipefail; ocor-runtime/.venv/bin/python scripts/verify.py --add reports/OCOR_Architectural_Design_Document_v1.2_Candidate.md --json; ocor-runtime/.venv/bin/python reports/tests/test_v12_candidate.py; ocor-runtime/.venv/bin/python reports/tests/test_v12_semantics.py; ocor-runtime/.venv/bin/python reports/tests/test_v12_release_gate.py; ocor-runtime/.venv/bin/python reports/tests/test_v12_approval_readiness.py; git checkout -- reports/verify_report.json",
+          "duration_seconds": 0.519,
+          "exit_code": 0,
+          "log_bytes": 15272,
+          "log_sha256": "abf173105c169b364e331941cc67d8cc0d536d0f3be6929c6263c0723a9d4866",
+          "name": "document_harness",
+          "status": "PASS"
+        },
+        {
+          "classification": "DIAGNOSTIC_NOT_ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+          "duration_seconds": 0.193,
+          "exit_code": 1,
+          "log_bytes": 478,
+          "log_sha256": "f05e11cbaa158621c5ae78fbdcc72d231c3fd4a99c4c914b1f4632060bf913ce",
+          "name": "drift",
+          "status": "EXPECTED_FAIL"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport json\nimport subprocess\nfrom pathlib import Path\nmanifest = json.loads(Path('reports/evidence/G0/MANIFEST.json').read_text())\ntasks = sorted({item['task_id'] for item in manifest['artifacts'] if __import__('re').fullmatch(r'OCOR-DEV-[0-9]{4}', item['task_id'])})\nif not tasks:\n    raise SystemExit('no G0 tasks')\nprint('tasks', len(tasks))\nfor task in tasks:\n    subprocess.run(['ocor-runtime/.venv/bin/python','scripts/validate_runtime_evidence.py','--task',task,'--non-skipped','--manifest','reports/evidence/G0/MANIFEST.json'], check=True)\nsubprocess.run(['ocor-runtime/.venv/bin/python','ocor-runtime/tools/evidence_manifest.py','validate','--task','OCOR-DEV-0004','--non-skipped','--manifest','reports/evidence/G0/MANIFEST.json'], check=True)\nPY",
+          "duration_seconds": 0.321,
+          "exit_code": 0,
+          "log_bytes": 369,
+          "log_sha256": "6a155f564a989d023d9d447b94694293190e7a98b1d37d11065b009f894980dc",
+          "name": "evidence_g0",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "python3 /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/record_exit_read.py",
+          "duration_seconds": 0.017,
+          "exit_code": 0,
+          "log_bytes": 499,
+          "log_sha256": "ccfd69e96d82d9d7c649dfae86fb6aea4b3adb59afbc0c035d9eef54278d83c7",
+          "name": "exit_file_record_read",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python reports/tests/test_authoritative_contract_conformance.py",
+          "duration_seconds": 0.116,
+          "exit_code": 0,
+          "log_bytes": 121,
+          "log_sha256": "baaf234d6e1634b6a6f9429d7acf4375be15b4b5fbd1053b7e51c63a9f10fb71",
+          "name": "fgm",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0004.py ocor-runtime/tests/tasks/test_ocor_dev_0007.py ocor-runtime/tests/tasks/test_ocor_dev_0008.py ocor-runtime/tests/tasks/test_ocor_dev_0009.py ocor-runtime/tests/tasks/test_ocor_dev_0010.py ocor-runtime/tests/tasks/test_ocor_dev_0011.py ocor-runtime/tests/tasks/test_ocor_dev_0012.py ocor-runtime/tests/tasks/test_ocor_dev_0013.py ocor-runtime/tests/tasks/test_ocor_dev_0014.py",
+          "duration_seconds": 3.592,
+          "exit_code": 0,
+          "log_bytes": 340,
+          "log_sha256": "5908cd6548a92a71911447e524c4daf16bb5919dc0030311892595935533d201",
+          "name": "fitness",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "set -euo pipefail; ocor-runtime/.venv/bin/python -m pytest -v -p no:cacheprovider --junitxml=/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/guards_junit.xml reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_local_lane_campaign.py; ocor-runtime/.venv/bin/python - <<'PY'\nimport sys\nfrom pathlib import Path\nsys.path.insert(0, 'scripts')\nfrom run_qualifying_campaign import check_junit\nprint(check_junit(Path('/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/guards_junit.xml')))\nPY",
+          "duration_seconds": 40.229,
+          "exit_code": 0,
+          "log_bytes": 85651,
+          "log_sha256": "f62ec73f1b12ccfe89ad954af0c7acdac86cba247d78ad0af38a749e23877a51",
+          "name": "guards",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
+          "duration_seconds": 0.004,
+          "exit_code": 0,
+          "log_bytes": 215,
+          "log_sha256": "5b260080bd3d365f048c860d0193b4348a869516b35042fdd355ff4590dbb519",
+          "name": "input_hashes",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "git diff --exit-code 618e72c00f994e8ea8899914548cc38743aa4569 -- inputs/",
+          "duration_seconds": 0.004,
+          "exit_code": 0,
+          "log_bytes": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "inputs_diff",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+          "duration_seconds": 0.033,
+          "exit_code": 0,
+          "log_bytes": 77,
+          "log_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+          "name": "language_script",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_validate_language_policy",
+          "duration_seconds": 0.075,
+          "exit_code": 0,
+          "log_bytes": 919,
+          "log_sha256": "d57d3cce311c7a7ef2a5b4ab8065f67041569af72d641a199d595f8ee91db920",
+          "name": "language_unittest",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python reports/tests/test_lld_add_alignment.py --output /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/lld_add_alignment_results.json",
+          "duration_seconds": 0.031,
+          "exit_code": 0,
+          "log_bytes": 6239,
+          "log_sha256": "d88a5a1eeaaa1d597b1b791caa36166f52da6bf710764f1da712c76b64de7966",
+          "name": "lld",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jsonschema import Draft202012Validator, FormatChecker\nfor name in (\"toolchain\", \"services\"):\n    schema = json.loads(Path(f\"infra/{name}.lock.schema.json\").read_text())\n    data = json.loads(Path(f\"infra/{name}.lock.json\").read_text())\n    Draft202012Validator.check_schema(schema)\n    Draft202012Validator(schema, format_checker=FormatChecker()).validate(data)\nprint(\"lock schemas PASS\")\nPY",
+          "duration_seconds": 0.075,
+          "exit_code": 0,
+          "log_bytes": 18,
+          "log_sha256": "ac7ad5465a15e718837d59f01c4cfb147f8cf432c3b07cfb95fdf50ec5682e21",
+          "name": "lock_schema",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "npx --yes markdownlint-cli2@0.18.1 'docs/development_plan/*.md' 'reports/planning/*.md'",
+          "duration_seconds": 0.826,
+          "exit_code": 0,
+          "log_bytes": 146,
+          "log_sha256": "48b6461f4f3204e5374922a79032eee59c529a5a33047648ebbb0be362eb79f9",
+          "name": "markdownlint",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "npx --yes @mermaid-js/mermaid-cli@11.12.0 --input docs/development_plan/OCOR_DEPENDENCY_DAG.mmd --output /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/ocor-dependency-dag.svg --puppeteerConfigFile .github/mermaid-puppeteer.json --quiet",
+          "duration_seconds": 2.484,
+          "exit_code": 0,
+          "log_bytes": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "mermaid",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jsonschema import Draft202012Validator\nroot = Path.cwd()\nschema = json.loads((root / \"docs/development_methodology/methodology.schema.json\").read_text())\ninstance = json.loads((root / \"docs/development_methodology/methodology.json\").read_text())\nDraft202012Validator.check_schema(schema)\nDraft202012Validator(schema).validate(instance)\nprint(\"methodology schema PASS\")\nPY",
+          "duration_seconds": 0.077,
+          "exit_code": 0,
+          "log_bytes": 24,
+          "log_sha256": "6ee6d13a5ff78dcfa0089126bd4823e93f7a6be9a5be217fc41e0cac43d95430",
+          "name": "methodology_schema",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m mypy",
+          "duration_seconds": 0.324,
+          "exit_code": 0,
+          "log_bytes": 45,
+          "log_sha256": "8f4c82c4def5877c120713dbd513bb61a25cdc112c496163dbfb4e922933ea7c",
+          "name": "mypy",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python reports/tests/validate_openapi_governed.py",
+          "duration_seconds": 0.307,
+          "exit_code": 0,
+          "log_bytes": 252,
+          "log_sha256": "ea6c5eca432eef64c81bf3a2c7f6df5e41347fd50f65dba5f93a6924806d5d85",
+          "name": "openapi",
+          "status": "PASS"
+        },
+        {
+          "classification": "DIAGNOSTIC_FIRST_ATTEMPT",
+          "command": "set +e; ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref 618e72c00f994e8ea8899914548cc38743aa4569 --authorized-extension; rc=$?; git checkout -- reports/planning/OCOR_PLAN_RUN_STATE.json; git diff --exit-code HEAD -- reports/planning/OCOR_PLAN_RUN_STATE.json; exit $rc",
+          "duration_seconds": 0.102,
+          "exit_code": 1,
+          "log_bytes": 143,
+          "log_sha256": "62660875554260de8deacf5e82edfe1c57a192fb189db6fca976672734042e90",
+          "name": "plan",
+          "status": "PASS_AFTER_RERUN"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "python3 scripts/preflight_environment.py --contract-only",
+          "duration_seconds": 0.039,
+          "exit_code": 0,
+          "log_bytes": 656,
+          "log_sha256": "71115ae0db57db7fc276fbe421627b6edba777549331169044303fa2c084a70d",
+          "name": "preflight",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0001.py",
+          "duration_seconds": 0.418,
+          "exit_code": 0,
+          "log_bytes": 99,
+          "log_sha256": "b4ccacdd4d798baeb63b8a5b8f0a2e6a16de6254762b299724368bd3cf85a75b",
+          "name": "pytest_0001",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_backlog_generator_reality_parity.py",
+          "duration_seconds": 0.29,
+          "exit_code": 0,
+          "log_bytes": 98,
+          "log_sha256": "bba54d0d911e4f4b3ff7099be56f23a579126dd0cbb36d88eb246b10ef320d5b",
+          "name": "pytest_backlog",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_generate_contracts_reference_resolution.py",
+          "duration_seconds": 3.241,
+          "exit_code": 0,
+          "log_bytes": 99,
+          "log_sha256": "fe0a555a6a9811e1b5fee5a78bcf63e4575f547338e0c47ebac4ca09f5a94884",
+          "name": "pytest_contracts",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_evidence_input_drift.py",
+          "duration_seconds": 0.385,
+          "exit_code": 0,
+          "log_bytes": 98,
+          "log_sha256": "7517664b89111669a5d4ca6b5a47ee28eb6f1944b80558fa0be13669e4509513",
+          "name": "pytest_drift_tests",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_language_migration_benchmark_harness.py",
+          "duration_seconds": 1.072,
+          "exit_code": 0,
+          "log_bytes": 99,
+          "log_sha256": "06aac4fe83e97dc49a1cffe1f96ee3349cfaf15f6a26f107418b904e0f8af2b9",
+          "name": "pytest_lang_bench",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_runtime_evidence_validator.py",
+          "duration_seconds": 3.89,
+          "exit_code": 0,
+          "log_bytes": 138,
+          "log_sha256": "290dcbfbb021e80268e5657023c989bc1234a6a2105fdc8edaf4ce4ff41c54a6",
+          "name": "pytest_runtime_evidence",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/sdk/test_typescript_sdk_conformance.py",
+          "duration_seconds": 0.754,
+          "exit_code": 0,
+          "log_bytes": 98,
+          "log_sha256": "87a60d5f0e877f12a64ce616288d296d98c12639c9d5ed55dc65a5ecd1c118d6",
+          "name": "pytest_sdk",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref 618e72c00f994e8ea8899914548cc38743aa4569",
+          "duration_seconds": 1.25,
+          "exit_code": 0,
+          "log_bytes": 630,
+          "log_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+          "name": "rccad",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "python3 scripts/reset_test_environment.py",
+          "duration_seconds": 0.051,
+          "exit_code": 0,
+          "log_bytes": 224,
+          "log_sha256": "3bade0c1983aab3ea5f4290f127f0c3d34150daf81f28fc74adb2c619100cf8f",
+          "name": "reset_dry",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ruff check .",
+          "duration_seconds": 0.011,
+          "exit_code": 0,
+          "log_bytes": 19,
+          "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "name": "ruff",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ruff check reports/tests/test_autonomous_tooling_policy.py reports/tests/test_bootstrap_lock_validation.py scripts/ocor_bootstrap_lib.py scripts/preflight_environment.py",
+          "duration_seconds": 0.007,
+          "exit_code": 0,
+          "log_bytes": 19,
+          "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "name": "ruff_subset",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/schemas/test_schema_integrity.py",
+          "duration_seconds": 0.466,
+          "exit_code": 0,
+          "log_bytes": 98,
+          "log_sha256": "42317fada6dcccf66125f116d742efc2b7f7fa15372a60582b23352bdc60c64e",
+          "name": "schema_tests",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base 618e72c00f994e8ea8899914548cc38743aa4569 --head 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c --branch governed/ocor-dev-rem-0069-fuseki-archive-copy",
+          "duration_seconds": 0.045,
+          "exit_code": 0,
+          "log_bytes": 75,
+          "log_sha256": "75953c025fcd3815fa256c6bbfd98c027f30f021f8fdbad1cde653e06fc85a8a",
+          "name": "scope",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "sha256sum -c inputs/normative/SHA256SUMS",
+          "duration_seconds": 0.003,
+          "exit_code": 0,
+          "log_bytes": 459,
+          "log_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+          "name": "sums_inputs",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "sha256sum -c reports/OCOR_ADD_v1.2_SHA256SUMS",
+          "duration_seconds": 0.004,
+          "exit_code": 0,
+          "log_bytes": 1253,
+          "log_sha256": "df21ddc1f9d3566524d70f1ac5aa99f87e6ba80c18ea5a5f15862c62075cdd74",
+          "name": "sums_reports",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "rm -rf /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/supply-archive && mkdir -p /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/supply-archive && git archive HEAD | tar -x -C /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/supply-archive && OCOR_SCAN_ROOT=/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/supply-archive OCOR_SCAN_OUTPUT=/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/supply-output OCOR_SCANNER_VERSION=1.1.0 python3 /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/supply_scan.py",
+          "duration_seconds": 2.964,
+          "exit_code": 0,
+          "log_bytes": 904,
+          "log_sha256": "8de31aecc5be33dca62ae794d61cb575cf47a8120f3620974f46b389bc1434b3",
+          "name": "supply",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "python3 scripts/bootstrap_ci_environment.py --teardown --execute && test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\"",
+          "duration_seconds": 0.098,
+          "exit_code": 0,
+          "log_bytes": 476,
+          "log_sha256": "9ce61139d09e0de97312cc91861802962073cf86bea24a708b0afda6ac314af2",
+          "name": "teardown_absent",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "npm install --no-audit --no-fund && npm run build",
+          "duration_seconds": 0.296,
+          "exit_code": 0,
+          "log_bytes": 88,
+          "log_sha256": "78258a7cec6db2ecc1a86af4975344cc950df386e7aaf415f034da2a68dd4e4e",
+          "name": "tsc",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_rccad_methodology",
+          "duration_seconds": 4.184,
+          "exit_code": 0,
+          "log_bytes": 2468,
+          "log_sha256": "4ca117063ad5b565f630b6c89057df6f295f4c11c0924b1a0239fb03ce6b850a",
+          "name": "unittest_rccad",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_autonomous_tooling_policy reports.tests.test_bootstrap_lock_validation",
+          "duration_seconds": 0.487,
+          "exit_code": 0,
+          "log_bytes": 3138,
+          "log_sha256": "9698dc2af96b5ada267b479aefbeaa2cfae420d919879e12bddf00f9007449f6",
+          "name": "unittest_tooling",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+          "duration_seconds": 0.01,
+          "exit_code": 0,
+          "log_bytes": 30,
+          "log_sha256": "e8417b9a9179b198b0f9857f94a92a7cc766f5fbabb3a88c8b15930fb52af36f",
+          "name": "uv-sync",
+          "status": "PASS"
+        },
+        {
+          "classification": "ACCEPTED",
+          "command": "python3 scripts/verify_external_services.py --manifest-only",
+          "duration_seconds": 0.057,
+          "exit_code": 0,
+          "log_bytes": 46,
+          "log_sha256": "33cd8f068420cb6c9f7b6c5b791e775f84bf67977c0aa6ecc4c61aa551e8e843",
+          "name": "verify_manifest",
+          "status": "PASS"
+        },
+        {
+          "classification": "NOT_CORRECTED_NOT_PASS",
+          "command": "ocor-runtime/.venv/bin/python reports/tests/test_schema_conformance.py; rc=$?; rm -f reports/tests/conformance_results.json; exit $rc",
+          "duration_seconds": 0.106,
+          "exit_code": 1,
+          "log_bytes": 9226,
+          "log_sha256": "cadf3a414a3833681f45f7bd9007a9be05dc252de470af7e1de1a484e7c5a936",
+          "name": "vf004_schema_conformance",
+          "status": "NOT_CORRECTED"
+        }
+      ],
+      "unexpected_failures": []
+    },
+    "final_head": {
+      "campaign_commit": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "content_commit": null,
+      "name_status_command": "git diff --name-status 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c HEAD",
+      "name_status_stdout_sha256": "c4b30a7459f096ed797683f44c2e4f60baedab2ce5cb603b823d25b405be7000",
+      "name_status_text": "M\treports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\nM\treports/evidence/G2/MANIFEST.json\nA\treports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json\nA\treports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.log\n",
+      "note": "The registration commit fills content_commit with this commit's sha. The commit that contains the filled block is the final head of repair cycle 1. Its only change from content_commit is this unit record. The name-status text does not depend on file bytes. scanned_head and the campaign commit stay distinct from the final head.",
+      "scanned_head": "34a66b063b7867ed938828f9f5affbc0d35f1d52"
+    },
+    "implementer": {
+      "model": "grok-4.7",
+      "process": "Grok Build",
+      "vendor": "xAI"
+    },
+    "parent_head": "38e15d2cb3379aecd62e2a7e4c20b5888e4ecae5",
+    "registered_at": "2026-11-24T18:53:24Z",
+    "verifier_status": "NOT_REQUESTED",
+    "vf003": {
+      "corrected_record_sha256": "e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd",
+      "outcome": "PASS",
+      "startup_log_sha256": "b5d7527da95cd38dabf142a1a044e7807b68ca09af59c369e74f8692ff238824",
+      "startup_script_sha256": "c6bedf3b4ba0d2cd9f8e57f26e29a09400d097f9091624ce18a7640b4929eaac"
+    },
+    "vf004": {
+      "outcome": "NOT_CORRECTED",
+      "stdout_sha256": "cadf3a414a3833681f45f7bd9007a9be05dc252de470af7e1de1a484e7c5a936"
+    },
+    "vf005": {
+      "outcome": "PASS",
+      "stdout_sha256": "07011bbc99a82bb3e90e8b78356f190bcb77776d3a385de8b063b0c70d79032d"
+    }
+  },
   "requalification_plan": {
     "deferred": [],
     "head_counts_after": {

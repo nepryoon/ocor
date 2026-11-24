@@ -36,18 +36,24 @@
   "created_at": "2026-11-24T13:55:31Z",
   "environment": {
     "branch": "governed/ocor-dev-rem-0069-fuseki-archive-copy",
-    "clean_shell": false,
+    "clean_shell": true,
     "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
     "host": "nep-LEGION",
     "implementer_cli": "Grok Build (grok-4.7)",
     "platform": "Linux-7.0.0-44-generic-x86_64-with-glibc2.43",
-    "pytest_shell": "The campaign used scripts/run_local_lane_campaign.py under env -i with ocor-runtime/.venv/bin/python. That interpreter is CPython 3.12.11. clean_shell is false.",
+    "pytest_shell": "clean_shell describes the campaign process only. That process is bash --noprofile --norc started by env -i. It does not source .ocor/bootstrap.env. The interpreter is CPython 3.12.11 at ocor-runtime/.venv/bin/python.",
     "python": "3.12.11",
     "python_executable": "ocor-runtime/.venv/bin/python",
     "qualification_source_commit": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
     "ram_bytes": 65740464128,
     "ram_source": "MemTotal 64199672 kB read on nep-LEGION in this campaign session",
-    "threads": 24
+    "threads": 24,
+    "wrapper_environment": {
+      "clean_shell": false,
+      "note": "The implementer shell starts run.sh. That wrapper is not the campaign process. Its clean_shell is false. env -i is inside the script.",
+      "startup_log_sha256": "b5d7527da95cd38dabf142a1a044e7807b68ca09af59c369e74f8692ff238824",
+      "startup_script_sha256": "c6bedf3b4ba0d2cd9f8e57f26e29a09400d097f9091624ce18a7640b4929eaac"
+    }
   },
   "inputs": {
     "infra/toolchain.lock.json": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
