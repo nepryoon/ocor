@@ -616,7 +616,7 @@
         "status": "NOT_EXECUTED"
       }
     ],
-    "note": "Measured on 1484403ed5447338b2c266d2d134df124376e1ae after the repair-cycle-1 record commit. Drift exit 1 is EXPECTED_FAIL for OCOR-DEV-0072 only. The campaign d036d1ac3607-1795460426 does not qualify this head. Preventive review FUSEKI-ARCHIVE-COPY-20261123-24f49bbebab7-pre stays the single review and was not repeated. Plan and guards results are the clean re-runs after the parallel-writer race.",
+    "note": "Measured on 1484403ed5447338b2c266d2d134df124376e1ae after the repair-cycle-1 record commit. Drift exit 1 is EXPECTED_FAIL for OCOR-DEV-0072 only. The campaign d036d1ac3607-1795460426 does not qualify this head. Preventive review FUSEKI-ARCHIVE-COPY-20261123-24f49bbebab7-pre stays the single review and was not repeated. Plan and guards results are the clean re-runs after the parallel-writer race. Cycle-2 gate outcomes for 48f8f2e54518eba6f740e06ecef723827270b5dd are under repair_cycle_2.pre_campaign_gate. This block stays the cycle-1 gate.",
     "steps": [
       {
         "exit": 0,
@@ -932,7 +932,10 @@
     "reviewer": "Cursor cursor-grok-4.6-xhigh",
     "reviewer_provider": "xAI",
     "second_review": false,
-    "status": "BLOCKING_FINDINGS_CORRECTED"
+    "status": "BLOCKING_FINDINGS_CORRECTED",
+    "reserve_role": true,
+    "reviewer_role": "reserve",
+    "independence_limit": "The reviewer is Cursor cursor-grok-4.6-xhigh, provider xAI, a different Grok generation from the implementer Grok Build grok-4.7, also provider xAI. LOOP-GROK-PRIMARY (2026-11-10) point 3 admits that different generation as a reserve reviewer only when this limit is declared. The shared vendor means the preventive review is not an independent verification. The final verifier must be a provider other than xAI. PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30) point 3."
   },
   "red": [
     {
@@ -1150,6 +1153,443 @@
       "provider": "xAI"
     },
     "pre_campaign_executed_on": "48f8f2e54518eba6f740e06ecef723827270b5dd",
+    "pre_campaign_gate": {
+      "allowlist_precheck": {
+        "counts": {
+          "NOT_EXECUTED": 2,
+          "PASS": 37
+        },
+        "decision": "EVIDENCE-PATHS-ALLOWLIST-PRECHECK (2026-11-09)",
+        "executed_on": "48f8f2e54518eba6f740e06ecef723827270b5dd",
+        "exit": 0,
+        "log_bytes": 274,
+        "log_sha256": "85d1c8d7348ddbb88c0dc0be060cbe479461c89846996c1a6e903e6bed6636f6",
+        "note": "The log is the detached checkout of 48f8f2e54518eba6f740e06ecef723827270b5dd followed by the plan-validator JSON. It does not enumerate the 23 allowlist paths. Those paths stay in the change set and in the historical allowlist block on the cycle-1 gate. Option 2 of FUSEKI-ARCHIVE-COPY-20261123-CYCLE2-NO-GO (2026-11-24) admits those 23 paths. This gate did not know that decision.",
+        "status": "PASS",
+        "verdict": "PASS"
+      },
+      "decision": "PRE-CAMPAIGN-GATE (2026-10-26)",
+      "environment": {
+        "node": "v20.20.2",
+        "python": "3.12.11",
+        "ruff": "0.13.1",
+        "typescript_note": "tsc.log does not print a TypeScript version. The contemporaneous iteration log records tsc 7.0.2 on PATH for the guards rerun.",
+        "uv": "0.12.5"
+      },
+      "executed_on": "48f8f2e54518eba6f740e06ecef723827270b5dd",
+      "input_hash_check": {
+        "head": "48f8f2e54518eba6f740e06ecef723827270b5dd",
+        "head_hashes": {
+          "reports/tests/test_fuseki_archive_acquisition.py": "9bb58c5880f05b8e0275ce06db97ac4f86ea12e759186aed0edbdfbe7cdd4ce9",
+          "scripts/acquire_fuseki_archive.py": "c25d013922a86a402e5a6131779a0375c5260ae9bff8b950b505874c8c0c3848"
+        },
+        "log_bytes": 136,
+        "log_sha256": "a69bf5de0c766917ce41f12f6b1701af4023f352eb5be0bdadb4bd0919087335",
+        "status": "RECORDED_FOR_THIS_HEAD"
+      },
+      "log_directory": "/home/luca/.ocor-codex/fuseki-archive-copy-20261123/gate-logs-48f8f2e5",
+      "not_executed": [
+        {
+          "name": "poc_integration_postgresql",
+          "status": "NOT_EXECUTED",
+          "reason": "The workflow starts a PostgreSQL service and runs live integration tests. This iteration does not provision that service and does not start the runtime suite."
+        },
+        {
+          "name": "poc_runtime_unit",
+          "status": "NOT_EXECUTED",
+          "reason": "ocor-runtime/tests/runtime/ is the runtime unit job, not a static or quick gate. It belongs to the single campaign after this gate."
+        },
+        {
+          "name": "poc_backend_assumptions",
+          "status": "NOT_EXECUTED",
+          "reason": "Backend-assumption tests are a runtime campaign slice, not a static gate. They belong to the single campaign after this gate."
+        },
+        {
+          "name": "stack_provision_and_campaign_shards",
+          "status": "NOT_EXECUTED",
+          "reason": "bootstrap_ci_environment --execute, the live archive fetch, campaign shards, aggregation and teardown --execute are the runtime suite. This gate stops before that suite."
+        },
+        {
+          "name": "ci_only_actions",
+          "status": "NOT_EXECUTED",
+          "reason": "Checkout, setup, artifact upload and auto-merge are GitHub Actions infrastructure, not local checks."
+        }
+      ],
+      "note": "Bound in repair cycle 3 from the original logs. The gate was not re-run. The top-level pre_campaign block remains the cycle-1 gate on 1484403ed5447338b2c266d2d134df124376e1ae, script digest d6514d76387d2bb70c16323f52cc7bbf42e174f4e3e8a1204178065f72f4dbf3. This gate's script digest is c25d013922a86a402e5a6131779a0375c5260ae9bff8b950b505874c8c0c3848. Contemporaneous narrative: commit 9b27e16cf810f7cf6c11ecd76b53b84b63668ed2. The qualifying campaign 9b27e16cf810-1795474948 was not re-run. The script blob is identical at 48f8f2e5, 9b27e16c and 94847973, so that campaign still covers the acquisition code.",
+      "runner_out_bytes": 10914,
+      "runner_out_sha256": "b01bbf81733fd30e5db33ce3c602a6c7026624aee607b4116ffe346470366222",
+      "runner_status": "GATE_SCRIPT_DONE",
+      "schema_tests_note": "schema_tests is the gate module that logged 7 passed. It is not reports/tests/test_schema_conformance.py and it is not VF-004 PASS.",
+      "steps": [
+        {
+          "exit": 0,
+          "log_bytes": 274,
+          "log_sha256": "85d1c8d7348ddbb88c0dc0be060cbe479461c89846996c1a6e903e6bed6636f6",
+          "name": "allowlist_precheck",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 110,
+          "log_sha256": "9df53abfe7e4bb326109c8ae85ab076a8fb2aac4187d769ab21bb9765c45fd5e",
+          "name": "autonomous_dry",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 71,
+          "log_sha256": "811f0cc0be24f058bc79b6287f31a5a904655a77c9414ad04eb747f1c6b96f64",
+          "name": "autonomous_validate",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 300,
+          "log_sha256": "918a8e777662d9f50aa18104ec10c1c50e1f1f266e16a5b7927b7c1c9c25e644",
+          "name": "bootstrap_check",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 124,
+          "log_sha256": "5bf74c1452710b51ffa475fb17d1287b6da2c37c06b26638fd3606f184aa86db",
+          "name": "closure_report",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "compose",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 609,
+          "log_sha256": "2cde1c9e0de57103c4bf81e0b1c3a76a88b6a2773c994c4e9e4a4782fde0865a",
+          "name": "dec208",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 15272,
+          "log_sha256": "abf173105c169b364e331941cc67d8cc0d536d0f3be6929c6263c0723a9d4866",
+          "name": "document_harness",
+          "status": "PASS"
+        },
+        {
+          "exit": 1,
+          "log_bytes": 478,
+          "log_sha256": "f93dcd6195171c0b1a151bb57f9ce8f67d5e2fe66a0f0cd524c4be7a8db9c539",
+          "name": "drift",
+          "note": "EXPECTED_FAIL for OCOR-DEV-0072 only. head_sha256 c25d013922a86a402e5a6131779a0375c5260ae9bff8b950b505874c8c0c3848; recorded_sha256 d6514d76387d2bb70c16323f52cc7bbf42e174f4e3e8a1204178065f72f4dbf3. The other requalification records do not list this file. No sealed hash was rewritten.",
+          "status": "EXPECTED_FAIL"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 2820,
+          "log_sha256": "655a1376aa853b85b7b71c4f384da5a8420385ba26f17776c621f11c25942a3e",
+          "name": "evidence_g0",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 121,
+          "log_sha256": "baaf234d6e1634b6a6f9429d7acf4375be15b4b5fbd1053b7e51c63a9f10fb71",
+          "name": "fgm",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 340,
+          "log_sha256": "a7a818a47279833da0fad617266233d917009e4a5ef04c9178f31ee56bd66833",
+          "name": "fitness",
+          "status": "PASS"
+        },
+        {
+          "accepted_junit_check_bytes": 57,
+          "accepted_junit_check_sha256": "ecb842b4d6eb00db4de65800f217c675ec05b9077bb91056e0cf4412f34726ad",
+          "accepted_junit_xml_bytes": 100729,
+          "accepted_junit_xml_sha256": "7f17633347117175f3281a5a17524da4c857fa03e40edd5724bcd3773190cff3",
+          "accepted_log_bytes": 85731,
+          "accepted_log_sha256": "7759e9f9a65854d21d7562bb194f7d4ed7ba293a8b8d0eebe2be469fc0ca908b",
+          "accepted_rerun_status": "PASS",
+          "diagnostic_attempt": {
+            "accepted_log": "guards-rerun.log",
+            "accepted_observed_summary": "629 passed, 94 subtests passed in 40.11s",
+            "accepted_junit_check_body": "{'tests': 723, 'failures': 0, 'errors': 0, 'skipped': 0}",
+            "contemporaneous_record": "Commit 9b27e16cf810f7cf6c11ecd76b53b84b63668ed2 states that the parallel run skipped tsc and check_junit rejected one skip. The rerun had tsc 7.0.2 on PATH. tsc.log itself does not print a TypeScript version.",
+            "exit_file_absent": true,
+            "first_exit": 1,
+            "first_junit_xml": "guards_junit.xml",
+            "first_junit_xml_bytes": 101000,
+            "first_junit_xml_sha256": "28cd3b5138a09726f843151c7caa37bed0d3afb61dfe34349a55c3691193be96",
+            "first_observed_result": "628 passed, 1 skipped, 94 subtests passed; nonqualifying JUnit {'tests': 723, 'failures': 0, 'errors': 0, 'skipped': 1}"
+          },
+          "first_exit": 1,
+          "first_log_bytes": 86136,
+          "first_log_sha256": "9b77134db57b2fd1d36a30fe9d6180bd04a2683866ff07313749322816fd509e",
+          "name": "guards",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 136,
+          "log_sha256": "a69bf5de0c766917ce41f12f6b1701af4023f352eb5be0bdadb4bd0919087335",
+          "name": "input_hashes",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "inputs_diff",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 77,
+          "log_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+          "name": "language_script",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 919,
+          "log_sha256": "37e9e4a4cc6d6065d73fc1d4edaf3af630341f73860a47ae73ed947ca8c58985",
+          "name": "language_unittest",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 6239,
+          "log_sha256": "d88a5a1eeaaa1d597b1b791caa36166f52da6bf710764f1da712c76b64de7966",
+          "name": "lld",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 18,
+          "log_sha256": "ac7ad5465a15e718837d59f01c4cfb147f8cf432c3b07cfb95fdf50ec5682e21",
+          "name": "lock_schema",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 698,
+          "log_sha256": "a53abe331e6055b3390366bee800491bc03010d6938ceeb481a62711ae2fbc91",
+          "name": "markdownlint",
+          "status": "PASS"
+        },
+        {
+          "accepted_log_bytes": 198,
+          "accepted_log_sha256": "612f906dd1d8c01982a00ec4851bde2cc84c6d83d665ab69188cccd7173b7876",
+          "accepted_rerun_status": "PASS",
+          "accepted_svg_bytes": 370786,
+          "accepted_svg_sha256": "9ec33175e10a98265084288c0a205ff7660af0161611c18fcbdb0fb60cb8353b",
+          "diagnostic_attempt": {
+            "accepted_config": ".github/mermaid-puppeteer.json",
+            "accepted_log": "mermaid-nosandbox-rerun.log",
+            "accepted_svg": "ocor-dependency-dag.svg",
+            "cause_in_original_log": "Failed to launch the browser process. No usable sandbox. AppArmor disabled unprivileged user namespaces.",
+            "contemporaneous_record": "Same host adaptation as cycle 1. It is not a gate weakening.",
+            "exit_file_absent": true,
+            "first_exit": 1
+          },
+          "first_exit": 1,
+          "first_log_bytes": 1508,
+          "first_log_sha256": "9d6738ee04039fd329091b86597efcc74d10ee0640e28ce9df553ab02d821b38",
+          "name": "mermaid",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 24,
+          "log_sha256": "6ee6d13a5ff78dcfa0089126bd4823e93f7a6be9a5be217fc41e0cac43d95430",
+          "name": "methodology_schema",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 60,
+          "log_sha256": "606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130",
+          "name": "mypy",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 252,
+          "log_sha256": "ea6c5eca432eef64c81bf3a2c7f6df5e41347fd50f65dba5f93a6924806d5d85",
+          "name": "openapi",
+          "status": "PASS"
+        },
+        {
+          "accepted_log_bytes": 132,
+          "accepted_log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+          "accepted_rerun_status": "PASS",
+          "diagnostic_attempt": {
+            "accepted_log": "plan-rerun.log",
+            "cause_in_original_log": "plan.log records verdict FAIL, counts PASS 36, NOT_EXECUTED 2, FAIL 1. It does not name the dirty file.",
+            "contemporaneous_record": "Commit 9b27e16cf810f7cf6c11ecd76b53b84b63668ed2 states that reports/tests/openapi_31_validation_results.json was dirty from a parallel OpenAPI step. The file was restored. OCOR_PLAN_RUN_STATE.json rewritten by the rerun was restored and is not in that commit.",
+            "exit_file_absent": true,
+            "first_exit": 1
+          },
+          "first_exit": 1,
+          "first_log_bytes": 143,
+          "first_log_sha256": "62660875554260de8deacf5e82edfe1c57a192fb189db6fca976672734042e90",
+          "name": "plan",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 656,
+          "log_sha256": "445d1c19b128fe4a7c5ef080679adc0dfb0b552e9ed38d45fee1807b30a6919a",
+          "name": "preflight",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 99,
+          "log_sha256": "19787a66317c62d7b09c073639e16a90db1f0fd157682195d8995c51f98e92b8",
+          "name": "pytest_0001",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 98,
+          "log_sha256": "31aea369e724e06e40899f30e41b4d08322eb801791b7267f074241d775f0735",
+          "name": "pytest_backlog",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 110,
+          "log_sha256": "ba19479d9c7b998504b0347b767b7e00eeeb8c05505773e7fc0a1a711662c055",
+          "name": "pytest_contracts",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 98,
+          "log_sha256": "2f2d71b76cb38573f465395fbaa020a42b0f73978d2d0b4ab0cbbc4a1187078e",
+          "name": "pytest_drift_tests",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 99,
+          "log_sha256": "83146a95bf64be71113f4c12a845015329edf544b1adf26777959093e77553b3",
+          "name": "pytest_lang_bench",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 138,
+          "log_sha256": "1170cc13c61e1b5a519241f055c7a7d3a9f860294ec982d0d45a4ba89b5e7e69",
+          "name": "pytest_runtime_evidence",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 98,
+          "log_sha256": "d9d33fa6f0d3d2f665211b4daaca7a420ee8c9812a7e07084fcabe20033c38be",
+          "name": "pytest_sdk",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 630,
+          "log_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+          "name": "rccad",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 224,
+          "log_sha256": "3bade0c1983aab3ea5f4290f127f0c3d34150daf81f28fc74adb2c619100cf8f",
+          "name": "reset_dry",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 19,
+          "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "name": "ruff",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 19,
+          "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "name": "ruff_subset",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 98,
+          "log_sha256": "9c2bc789bf2cba75cc5ed822cd3fccab9cf3d7a226611daf566ceea5ed0c55b1",
+          "name": "schema_tests",
+          "note": "The log records 7 passed in 0.39s and does not name reports/tests/test_schema_conformance.py. This step is not VF-004 and is not VF-004 PASS.",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 75,
+          "log_sha256": "d672ef5284ebda8f98340be388fbedd4f9e9edfa244b4720db99a964d75e5d33",
+          "name": "scope",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 459,
+          "log_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+          "name": "sums_inputs",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 1253,
+          "log_sha256": "df21ddc1f9d3566524d70f1ac5aa99f87e6ba80c18ea5a5f15862c62075cdd74",
+          "name": "sums_reports",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 924,
+          "log_sha256": "2f3f65840f97dd02e610028082e7e46714bfeb8c0ef4fa8630bcf88e6c61be45",
+          "name": "supply",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 88,
+          "log_sha256": "a9e233e93605b8b07277fdb5f31fec952feca881cc7e2344ffe1de12a3131f98",
+          "name": "tsc",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 2468,
+          "log_sha256": "b3c1df736a554a06d70f546811c1ef98fa487f88b9769f000bda64c2a51d90e1",
+          "name": "unittest_rccad",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 3138,
+          "log_sha256": "cb363bdcf3f92592a5446000e3f0b37af221631dab15ead0a8f91dc2b37cca72",
+          "name": "unittest_tooling",
+          "status": "PASS"
+        },
+        {
+          "exit": 0,
+          "log_bytes": 46,
+          "log_sha256": "33cd8f068420cb6c9f7b6c5b791e775f84bf67977c0aa6ecc4c61aa551e8e843",
+          "name": "verify_manifest",
+          "status": "PASS"
+        }
+      ]
+    },
     "previous_verdict": "FUSEKI-ARCHIVE-COPY-20261123-273543f4b910-1 NO_GO",
     "qualifying_campaign_id": "9b27e16cf810-1795474948",
     "qualifying_counts": {
@@ -1264,6 +1704,63 @@
         "tasks_with_multiple_current_heads": 22,
         "selected_0072": "reports/evidence/G2/OCOR-DEV-0072.requalified-fuseki-archive-copy-20261123.json"
       }
+    }
+  },
+  "repair_cycle_3": {
+    "adopted_option": "2",
+    "allowlist_entries_removed": false,
+    "allowlist_entries_retained": 23,
+    "campaign_rerun": false,
+    "claims_unchanged": {
+      "E1": 0,
+      "E2": 0,
+      "PoC": "NO-GO",
+      "Production": "NO-GO",
+      "Verified": 0,
+      "runtime": "NOT_ESTABLISHED"
+    },
+    "decision": "FUSEKI-ARCHIVE-COPY-20261123-CYCLE2-NO-GO (2026-11-24)",
+    "decision_commit": "99d22adeea09e060507e7f9bc60f7f5380d37df5",
+    "decision_file_sha256": "83620375c84d7cfd09383139314127dd5fbf3d0ef0eabd2b09aea3b72445276d",
+    "decision_note": "decisa dal PO di persona, sezione scritta a mano",
+    "evidence_only": true,
+    "gate_rerun": false,
+    "implementer": {
+      "agent": "Grok Build",
+      "model": "grok-4.7",
+      "provider": "xAI"
+    },
+    "parent_head": "948479739127d33bc2f69a2c003a4acb5823d8b4",
+    "pre_campaign_executed_on": "48f8f2e54518eba6f740e06ecef723827270b5dd",
+    "pre_campaign_gate_ref": "repair_cycle_2.pre_campaign_gate",
+    "production_files_unchanged": [
+      "reports/tests/test_fuseki_archive_acquisition.py",
+      "scripts/acquire_fuseki_archive.py"
+    ],
+    "production_git_blob": {
+      "reports/tests/test_fuseki_archive_acquisition.py": "dee2ca8813565043b20798a634743edcf0fd5f20",
+      "scripts/acquire_fuseki_archive.py": "debf96c90a7ea6ffd89b0c10c92c93ed985d6ded"
+    },
+    "production_sha256": {
+      "reports/tests/test_fuseki_archive_acquisition.py": "9bb58c5880f05b8e0275ce06db97ac4f86ea12e759186aed0edbdfbe7cdd4ce9",
+      "scripts/acquire_fuseki_archive.py": "c25d013922a86a402e5a6131779a0375c5260ae9bff8b950b505874c8c0c3848"
+    },
+    "qualifying_campaign_id": "9b27e16cf810-1795474948",
+    "qualifying_campaign_still_covers_code": true,
+    "second_preventive_review": false,
+    "vf_002": {
+      "disposition": "RECORDED",
+      "executed_on": "48f8f2e54518eba6f740e06ecef723827270b5dd",
+      "recorded_at": "repair_cycle_2.pre_campaign_gate"
+    },
+    "vf_003": {
+      "disposition": "DECLARED",
+      "recorded_at": "preventive_review.independence_limit"
+    },
+    "vf_004": {
+      "marked_pass": false,
+      "note": "reports/tests/test_schema_conformance.py CANONICAL_COMMIT R1 without a Human Gate expects REJECT and gets ACCEPT. The failure is pre-existing and the same on origin/main. The gate step schema_tests logged 7 passed and does not name that module. schema_tests is not VF-004 PASS.",
+      "status": "NOT_CORRECTED"
     }
   },
   "requalification_plan": {
