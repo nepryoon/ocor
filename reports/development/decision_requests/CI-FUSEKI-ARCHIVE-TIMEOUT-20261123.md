@@ -1,6 +1,7 @@
 # CI-FUSEKI-ARCHIVE-TIMEOUT-20261123
 
-Stato: aperta. Nessuna opzione è applicata da questa pubblicazione. Non si modifica `scripts/acquire_fuseki_archive.py`. Non si rilanciano i run già falliti. Non è un ciclo 4 di `OCOR-DEV-REM-0066`.
+Stato: `DECIDED_BY_PO`.
+Disposition: quesito A, nessuna delle tre opzioni del file; il Product Owner adotta la copia governata dei punti 1–8 della decisione `CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 (2026-11-23)`, decisa dal PO di persona, sezione scritta a mano. Quesito B: opzione B1, nell'ordine del punto 9 di quella decisione. Il file pubblicato a `15a36bec1ceb3020ef075fc331dda22c9b173650` resta sha256 `d63ff2aced89118c52b2262d9f468818bcc9ea08820b88034146a7d50c32831b`. Il testo delle opzioni non cambia. Questa PR non si integra. Claim invariati.
 
 ## Contesto e contrasto da chiudere
 
