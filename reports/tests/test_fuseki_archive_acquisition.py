@@ -6,13 +6,24 @@ import io
 import json
 import sys
 from pathlib import Path
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 import acquire_fuseki_archive as archive
 from ocor_bootstrap_lib import BootstrapError
+
+# CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 point 1. Literal, so the RED run does not
+# depend on a constant the production module does not have yet.
+GOVERNED_COPY = (
+    "https://github.com/nepryoon/ocor/releases/download/"
+    "mirror-apache-jena-fuseki-6.2.0/apache-jena-fuseki-6.2.0.tar.gz"
+)
+RELEASE_ASSET = "https://release-assets.githubusercontent.com/github-production-release-asset/ok"
+DLCDN = "https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz"
+ARCHIVE = "https://archive.apache.org/dist/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz"
 
 
 def repository(tmp_path, data=b"governed archive"):
@@ -53,16 +64,27 @@ def test_verified_miss_then_hit_rechecks_bytes(tmp_path, monkeypatch):
 
 
 def test_official_fallback_order_and_no_extra_retry(tmp_path, monkeypatch):
+    """Named assertion update ``official_fallback_order_includes_governed_copy_first``.
+
+    CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 point 3. The call list is the full
+    source tuple: the governed copy is first and archive.apache.org is last.
+    The previous assertion fixed the three Apache URLs as the only sources
+    (the third attempt was the last) and the stand-in final URL was
+    ``SOURCES[0]``, which was then an Apache host.
+    """
     repo = repository(tmp_path)
     calls = []
+
     def fetch(request, timeout):
         calls.append(request.full_url)
-        if len(calls) < 3:
+        if request.full_url != archive.SOURCES[-1]:
             raise URLError("unavailable")
-        return Response(b"governed archive")
+        return _body(b"governed archive", request.full_url)
+
     monkeypatch.setattr(archive, "urlopen", fetch)
     path, result = archive.acquire(repo, timeout=10)
     assert calls == list(archive.SOURCES)
+    assert calls[0] == GOVERNED_COPY and calls[-1] == ARCHIVE
     assert path.is_file() and result["source"] == archive.SOURCES[-1]
 
 
@@ -234,3 +256,443 @@ def test_stream_reads_one_receive_and_refreshes_transport_deadline(tmp_path, mon
     monkeypatch.setattr(archive, 'urlopen', lambda *a, **kw: Stream(b'governed archive'))
     path, _ = archive.acquire(repo, timeout=10)
     assert path.is_file() and timeouts and all(0 < value <= 10 for value in timeouts)
+
+
+def _body(data, url):
+    class Body(Response):
+        def geturl(self):
+            return url
+
+    return Body(data)
+
+
+def test_governed_copy_is_the_only_download_when_bytes_match(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    calls = []
+
+    def fetch(request, timeout):
+        calls.append(request.full_url)
+        return _body(b"governed archive", RELEASE_ASSET)
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    path, result = archive.acquire(repo, timeout=10)
+    assert calls == [GOVERNED_COPY]
+    assert result["cache"] == "MISS" and result["source"] == GOVERNED_COPY
+    assert path.read_bytes() == b"governed archive"
+    assert result["verified_sha512"] == hashlib.sha512(b"governed archive").hexdigest()
+
+
+def test_governed_copy_digest_mismatch_names_the_copy_and_stops(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    calls = []
+
+    def fetch(request, timeout):
+        calls.append(request.full_url)
+        return _body(b"not the locked bytes", request.full_url)
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    with pytest.raises(BootstrapError, match="SHA512") as caught:
+        archive.acquire(repo, timeout=10)
+    assert GOVERNED_COPY in str(caught.value)
+    assert calls == [GOVERNED_COPY]
+    assert not list(repo.rglob("*.tar.gz"))
+    assert not list(repo.rglob("*.part"))
+    assert not list(repo.rglob("provenance.json"))
+
+
+def test_copy_redirects_only_to_https_release_assets():
+    from urllib.request import Request
+
+    guard = archive.OfficialRedirect()
+    allowed = guard.redirect_request(
+        Request(GOVERNED_COPY), None, 302, "Found", {}, RELEASE_ASSET,
+    )
+    assert urlparse(allowed.get_full_url()).hostname == "release-assets.githubusercontent.com"
+    rejected = (
+        "",
+        "not a url",
+        "https://exämple.invalid/asset",
+        "http://release-assets.githubusercontent.com/asset",
+        "https://example.invalid/asset",
+        GOVERNED_COPY,
+        "https://release-assets.githubusercontent.com.evil/asset",
+        "https://user@release-assets.githubusercontent.com/asset",
+        "https://release-assets.githubusercontent.com:444/asset",
+    )
+    for target in rejected:
+        with pytest.raises(BootstrapError, match="official Apache"):
+            guard.redirect_request(Request(GOVERNED_COPY), None, 302, "Found", {}, target)
+    with pytest.raises(BootstrapError, match="official Apache"):
+        guard.redirect_request(Request(DLCDN), None, 302, "Found", {}, RELEASE_ASSET)
+    apache = guard.redirect_request(Request(DLCDN), None, 302, "Found", {}, ARCHIVE)
+    assert urlparse(apache.get_full_url()).hostname == "archive.apache.org"
+
+
+@pytest.mark.parametrize("final", [
+    "http://release-assets.githubusercontent.com/asset",
+    "https://example.invalid/asset",
+])
+def test_copy_final_url_outside_release_assets_is_rejected(tmp_path, monkeypatch, final):
+    repo = repository(tmp_path)
+    calls = []
+
+    def fetch(request, timeout):
+        calls.append(request.full_url)
+        return _body(b"governed archive", final)
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    with pytest.raises(BootstrapError, match="official Apache"):
+        archive.acquire(repo, timeout=10)
+    assert calls == [GOVERNED_COPY]
+    assert not list(repo.rglob("*.tar.gz"))
+
+
+def test_copy_http_404_falls_through_to_apache_sources(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    calls = []
+
+    def fetch(request, timeout):
+        calls.append(request.full_url)
+        if request.full_url == GOVERNED_COPY:
+            raise HTTPError(GOVERNED_COPY, 404, "Not Found", hdrs=None, fp=None)
+        return _body(b"governed archive", request.full_url)
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    path, result = archive.acquire(repo, timeout=10)
+    assert calls[0] == GOVERNED_COPY
+    assert DLCDN in calls
+    assert result["source"] == DLCDN
+    assert path.read_bytes() == b"governed archive"
+    assert calls.count(GOVERNED_COPY) == 1
+
+
+def test_copy_source_deadline_falls_through_to_apache_sources(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    clock = {"t": 0.0}
+    monkeypatch.setattr(archive.time, "monotonic", lambda: clock["t"])
+    calls = []
+
+    class Stall(Response):
+        def geturl(self):
+            return GOVERNED_COPY
+
+        def read1(self, size):
+            clock["t"] = 121.0
+            return b"x"
+
+    def fetch(request, timeout):
+        calls.append(request.full_url)
+        if request.full_url == GOVERNED_COPY:
+            return Stall(b"partial")
+        return _body(b"governed archive", request.full_url)
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    path, result = archive.acquire(repo, timeout=300)
+    assert calls[0] == GOVERNED_COPY
+    assert result["source"] == DLCDN
+    assert path.read_bytes() == b"governed archive"
+    assert not list(repo.rglob("*.part"))
+
+
+def test_governed_copy_request_sends_no_authorization_header(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    seen = []
+
+    def fetch(request, timeout):
+        seen.append(request)
+        return _body(b"governed archive", GOVERNED_COPY)
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    _path, result = archive.acquire(repo, timeout=10)
+    assert result["source"] == GOVERNED_COPY
+    assert len(seen) == 1 and seen[0].full_url == GOVERNED_COPY
+    names = [name.lower() for name, _value in seen[0].header_items()]
+    assert "authorization" not in names
+    assert "token" not in seen[0].full_url
+
+
+def test_real_opener_omits_proxy_authorization_for_an_authenticated_proxy(monkeypatch):
+    """The real opener must not send proxy credentials. No stand-in for urlopen."""
+    import http.client
+    from urllib.request import Request
+
+    proxy = "http://synthetic-user:synthetic-pass@127.0.0.1:9"
+    for name in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"):
+        monkeypatch.setenv(name, proxy)
+    monkeypatch.delenv("no_proxy", raising=False)
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    seen = {}
+
+    def connect(self):
+        headers = {
+            str(key).lower(): value
+            for key, value in dict(getattr(self, "_tunnel_headers", {}) or {}).items()
+        }
+        seen["tunnel_host"] = getattr(self, "_tunnel_host", None)
+        seen["headers"] = headers
+        raise BootstrapError("stop before io")
+
+    monkeypatch.setattr(http.client.HTTPSConnection, "connect", connect)
+    with pytest.raises(BootstrapError, match="stop before io"):
+        archive.urlopen(
+            Request(GOVERNED_COPY, headers={"User-Agent": "OCOR-governed-acquisition/1"}),
+            timeout=1,
+        )
+    assert seen.get("tunnel_host") == "github.com"
+    assert "proxy-authorization" not in seen["headers"]
+    assert "authorization" not in seen["headers"]
+
+
+@pytest.mark.parametrize("proxy", [
+    "synthetic-user:synthetic-pass@127.0.0.1:9",
+    "//synthetic-user:synthetic-pass@127.0.0.1:9",
+])
+def test_real_opener_omits_proxy_authorization_for_authority_proxy_forms(monkeypatch, proxy):
+    """Authority forms carry credentials that urlparse does not classify as userinfo."""
+    import http.client
+    from urllib.request import Request
+
+    for name in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"):
+        monkeypatch.setenv(name, proxy)
+    monkeypatch.delenv("no_proxy", raising=False)
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    seen = {}
+
+    def connect(self):
+        headers = {
+            str(key).lower(): value
+            for key, value in dict(getattr(self, "_tunnel_headers", {}) or {}).items()
+        }
+        seen["tunnel_host"] = getattr(self, "_tunnel_host", None)
+        seen["headers"] = headers
+        raise BootstrapError("stop before io")
+
+    monkeypatch.setattr(http.client.HTTPSConnection, "connect", connect)
+    with pytest.raises(BootstrapError, match="stop before io"):
+        archive.urlopen(
+            Request(GOVERNED_COPY, headers={"User-Agent": "OCOR-governed-acquisition/1"}),
+            timeout=1,
+        )
+    assert seen.get("tunnel_host") == "github.com"
+    assert "proxy-authorization" not in seen["headers"]
+    assert "authorization" not in seen["headers"]
+
+
+def test_lock_digest_form_is_rejected_before_use(tmp_path):
+    """Empty, non-ASCII, uppercase and non-string digests are not hashes."""
+    valid = hashlib.sha512(b"governed archive").hexdigest()
+    cases = ["", "é" + valid[1:], valid.upper(), 1, True, None]
+    for index, digest in enumerate(cases):
+        case_dir = tmp_path / str(index)
+        case_dir.mkdir()
+        repo = repository(case_dir)
+        lock = repo / "infra/services.lock.json"
+        payload = json.loads(lock.read_text())
+        payload["services"][0]["build"]["source_sha512"] = digest
+        lock.write_text(json.dumps(payload))
+        with pytest.raises(BootstrapError, match="SHA512"):
+            archive.cache_info(repo)
+
+
+def test_lock_json_rejects_lone_surrogates(tmp_path):
+    repo = repository(tmp_path)
+    lock = repo / "infra/services.lock.json"
+    payload = json.loads(lock.read_text())
+    payload["services"][0]["nested"] = {"pair": "ok", "lone": "\ud800"}
+    payload["services"][0]["\ud800"] = "key"
+    lock.write_text(json.dumps(payload).replace("\\ud800", "\\uD800"))
+    with pytest.raises(BootstrapError, match="surrogate"):
+        archive.cache_info(repo)
+
+
+def test_budget_rejects_bool_before_any_download(tmp_path, monkeypatch):
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bool budget downloaded"))
+    with pytest.raises(BootstrapError, match="budget"):
+        archive.acquire(repository(tmp_path), timeout=True)
+
+
+@pytest.mark.parametrize("timeout", [float("nan"), float("inf"), float("-inf")])
+def test_budget_rejects_non_finite_numbers(tmp_path, monkeypatch, timeout):
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("non-finite budget downloaded"))
+    with pytest.raises(BootstrapError, match="budget"):
+        archive.acquire(repository(tmp_path), timeout=timeout)
+
+
+def test_cache_hit_provenance_rejects_lone_surrogate(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    info = archive.cache_info(repo)
+    directory = repo / info["path"]
+    directory.mkdir(parents=True)
+    (directory / "apache-jena-fuseki.tar.gz").write_bytes(b"governed archive")
+    (directory / "provenance.json").write_text('{"\\uD800": "lone", "source": "CONTENT"}\n')
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bad provenance downloaded"))
+    with pytest.raises(BootstrapError, match="surrogate"):
+        archive.acquire(repo, timeout=10)
+    assert not list(repo.rglob("*.part"))
+
+
+def test_checked_sha512_rejects_non_string_expected_before_read(tmp_path):
+    path = tmp_path / "archive.tar.gz"
+    path.write_bytes(b"governed archive")
+    with pytest.raises(BootstrapError, match="SHA512"):
+        archive.checked_sha512(path, 1)
+
+
+def test_json_tree_rejects_non_string_key_and_non_finite_number():
+    with pytest.raises(BootstrapError, match="non-string key"):
+        archive._reject_lone_surrogates({1: "x"}, where="Fuseki acquisition lock")
+    with pytest.raises(BootstrapError, match="non-finite"):
+        archive._reject_lone_surrogates({"nested": [float("nan")]}, where="Fuseki acquisition lock")
+    with pytest.raises(BootstrapError, match="non-finite"):
+        archive._reject_lone_surrogates(float("inf"), where="Fuseki acquisition lock")
+    with pytest.raises(BootstrapError, match="non-finite"):
+        archive._reject_lone_surrogates(float("-inf"), where="Fuseki acquisition lock")
+
+
+def test_build_ci_image_rejects_bool_budget_before_docker(tmp_path, monkeypatch):
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bool budget downloaded"))
+    monkeypatch.setattr(archive, "run", lambda *args, **kwargs: pytest.fail("docker started"))
+    with pytest.raises(BootstrapError, match="budget"):
+        archive.build_ci_image(repository(tmp_path), timeout=True)
+
+
+def test_build_ci_image_reports_typed_docker_failure(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+
+    repo = repository(tmp_path)
+    archive_path = tmp_path / "archive.tar.gz"
+    archive_path.write_bytes(b"governed archive")
+    monkeypatch.setattr(archive, "acquire", lambda *args, **kwargs: (archive_path, {"cache": "HIT"}))
+
+    @contextmanager
+    def context(*args, **kwargs):
+        yield tmp_path
+
+    class Result:
+        returncode = 1
+        stderr = "docker failed"
+
+    monkeypatch.setattr(archive, "build_context", context)
+    monkeypatch.setattr(archive, "run", lambda *args, **kwargs: Result())
+    with pytest.raises(BootstrapError, match="verified Fuseki build failed"):
+        archive.build_ci_image(repo, timeout=10)
+
+
+def test_main_execute_rejects_non_finite_timeout(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    monkeypatch.setattr(archive, "root", lambda: repo)
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("non-finite budget downloaded"))
+    monkeypatch.setattr(sys, "argv", ["acquire_fuseki_archive.py", "--execute", "--timeout", "nan"])
+    assert archive.main() == 1
+
+
+def _replace_lock(repo: Path, text: str) -> None:
+    (repo / "infra/services.lock.json").write_text(text)
+
+
+@pytest.mark.parametrize("text", [
+    "null",
+    "{}",
+    '{"services": null}',
+    '{"services": {}}',
+    '{"services": []}',
+    '{"services": true}',
+    '{"services": "fuseki"}',
+    '{"services": [null]}',
+    '{"services": ["fuseki"]}',
+    '{"services": [{}]}',
+    '{"services": [{"id": "other"}]}',
+    '{"services": [{"id": "fuseki"}]}',
+    '{"services": [{"id": "fuseki", "build": null}]}',
+    '{"services": [{"id": "fuseki", "build": {}}]}',
+    '{"services": [{"id": "fuseki", "build": []}]}',
+])
+def test_lock_shape_is_a_typed_bootstrap_error(tmp_path, text):
+    """Null, a wrong type, an empty list and a missing build are not indexed."""
+    repo = repository(tmp_path)
+    _replace_lock(repo, text)
+    with pytest.raises(BootstrapError):
+        archive.cache_info(repo)
+
+
+@pytest.mark.parametrize("payload", [b"\xff\xfe", b"\x80", b"\xff"])
+def test_lock_rejects_non_utf8_before_use(tmp_path, payload):
+    repo = repository(tmp_path)
+    (repo / "infra/services.lock.json").write_bytes(payload)
+    with pytest.raises(BootstrapError, match="UTF-8"):
+        archive.cache_info(repo)
+
+
+def test_lock_rejects_invalid_json_before_use(tmp_path):
+    repo = repository(tmp_path)
+    _replace_lock(repo, "{")
+    with pytest.raises(BootstrapError):
+        archive.cache_info(repo)
+
+
+def test_acquire_rejects_malformed_lock_before_download(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    _replace_lock(repo, '{"services": null}')
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("malformed lock downloaded"))
+    with pytest.raises(BootstrapError):
+        archive.acquire(repo, timeout=10)
+
+
+def test_cache_hit_provenance_rejects_non_utf8(tmp_path, monkeypatch):
+    repo = repository(tmp_path)
+    info = archive.cache_info(repo)
+    directory = repo / info["path"]
+    directory.mkdir(parents=True)
+    (directory / "apache-jena-fuseki.tar.gz").write_bytes(b"governed archive")
+    (directory / "provenance.json").write_bytes(b"\xff\xfe")
+    monkeypatch.setattr(archive, "urlopen", lambda *args, **kwargs: pytest.fail("bad provenance downloaded"))
+    with pytest.raises(BootstrapError, match="UTF-8"):
+        archive.acquire(repo, timeout=10)
+    assert (directory / "apache-jena-fuseki.tar.gz").is_file()
+
+
+@pytest.mark.parametrize("error", [
+    "incomplete",
+    "protocol",
+])
+def test_http_protocol_error_is_typed_and_does_not_escape(tmp_path, monkeypatch, error):
+    """HTTPException, including IncompleteRead, is a source failure, not a raw escape."""
+    import http.client
+
+    repo = repository(tmp_path)
+    calls = []
+
+    def fetch(request, timeout):
+        calls.append(request.full_url)
+
+        class Body:
+            def geturl(self):
+                return request.full_url
+
+            def read1(self, size):
+                if error == "incomplete":
+                    raise http.client.IncompleteRead(partial=b"x")
+                raise http.client.HTTPException("protocol")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        return Body()
+
+    monkeypatch.setattr(archive, "urlopen", fetch)
+    with pytest.raises(BootstrapError, match="official sources exhausted"):
+        archive.acquire(repo, timeout=10)
+    assert calls == list(archive.SOURCES)
+    assert not list(repo.rglob("*.tar.gz")) and not list(repo.rglob("*.part"))
+
+
+def test_main_check_rejects_malformed_lock(tmp_path, monkeypatch, capsys):
+    repo = repository(tmp_path)
+    _replace_lock(repo, '{"services": null}')
+    monkeypatch.setattr(archive, "root", lambda: repo)
+    monkeypatch.setattr(sys, "argv", ["acquire_fuseki_archive.py"])
+    assert archive.main() == 1
+    assert "FAIL" in capsys.readouterr().out
