@@ -1876,6 +1876,9 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
+        # OCOR-DEV-REM-0068 (CONFINE-G6 point 4): design contract only.
+        # Later record paths are listed in the contract and are not added here.
+        "reports/assurance/OCOR-DEV-REM-0068-RCCAD/README.md",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
