@@ -1,6 +1,7 @@
 # REM-0066-CYCLE3-NO-GO
 
-Stato: aperta. Nessuna opzione è applicata da questa pubblicazione. Il branch `governed/ocor-dev-rem-0066-state-only-ci` resta `3b2ee600ee5d9e3055e3d916628d958635fefff3`. Non è un ciclo 4.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 3 e, dopo l'integrazione dell'unità che quell'opzione anticipa, opzione 1, con le precisazioni dei punti 1–6 della decisione `REM-0066-CYCLE3-NO-GO (2026-11-24)`, decisa dal PO di persona, sezione scritta a mano. Il file pubblicato a `171708381416e03d3c217efdcb60328e158f5b84` resta sha256 `e44221eb591f62640098bf50295ebdf74d6999880e48803c2f8ba4064e724fcb`. Il testo delle opzioni non cambia. Il branch `governed/ocor-dev-rem-0066-state-only-ci` resta `3b2ee600ee5d9e3055e3d916628d958635fefff3`. Non è un ciclo 4. Questa pubblicazione non si integra. Claim invariati.
 
 ## Contesto e contrasto da chiudere
 
