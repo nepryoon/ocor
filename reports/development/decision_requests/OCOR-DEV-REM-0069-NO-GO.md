@@ -1,7 +1,7 @@
 # OCOR-DEV-REM-0069-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
-Disposition: nessuna. Nessuna opzione è applicata da questa pubblicazione. Il candidato non si modifica e non si mergia. Non è un ciclo di riparazione. Questa pubblicazione non si integra. Claim invariati.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, con le precisazioni dei punti 1–5 della decisione `OCOR-DEV-REM-0069-NO-GO (2026-11-24)`, decisa dal PO di persona, sezione scritta a mano. Il file pubblicato a `a0d180df67d99175e522949089b9d507b9e2a1a8` resta sha256 `3275ead78b56ae10677350368227efe1a510c3f443e69863a43f6ec65b0041a9`. Il testo delle opzioni non cambia. Il candidato di partenza `38e15d2cb3379aecd62e2a7e4c20b5888e4ecae5` non è riscritto. Il ciclo 1 aggiunge i commit `7cf4c23e91b49b34a28ead075f25094254556764` e `86a8a2b5a6c14334a773fdd139ae986c373ef308` e non si mergia prima del verdetto. Questa pubblicazione non si integra. Claim invariati.
 
 Livello: operativo. Nessun nuovo `DEC-*`.
 Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta riguarda un ciclo di riparazione e l'eventuale stop dell'unità. Nessuna opzione è applicata da questa pubblicazione.
