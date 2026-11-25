@@ -333,6 +333,33 @@
       "stdout_sha256": "010898b0e0b9f2b593a730f74a86b2c9f1f59a628f53581dc4d6d349edde305d"
     },
     {
+      "command": "python -u scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/ocor-dev-rem-0069/campaign-eaae5f0de47c/full --expected-head eaae5f0de47ce1b082e36257ac17c422ae78844a --tool-bin /home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin --tool-bin /home/luca/.ocor-codex/impl-env/rem-0063/bin",
+      "criterion": "Redesign campaign on eaae5f0, four lanes, zero skips",
+      "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+      "execution_commit_role": "redesign_campaign_commit",
+      "note": "OCOR-DEV-REM-0069-REDESIGN (2026-11-25) point 3: the historical campaign does not transfer, so this is the one new campaign. FOUR_LANE. campaign eaae5f0de47c-1795613672. counts tests 5826, failures 0, errors 0, skipped 0. total_duration_seconds 1890.81, limit_seconds 5400. lanes [1, 1854, 2436, 1535]. host_residue containers [], networks [], volumes [], root_image false. po_decision_required false. Docker Hub remaining 100 of limit 100 at 2026-11-25T13:34:32Z, threshold 95, wait_seconds 0.567. MemAvailable 51482180 kB. Fuseki governed sha256:27ac8556041a1ec722bfd6db238a7ec090a3a17e32076c27fca0db27b909b3f4 and preserve sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1 were unchanged and the host tag was not retagged. POWER ADP0 stayed 1. stdout_sha256 is sha256 of /home/luca/.ocor-codex/ocor-dev-rem-0069/campaign-eaae5f0de47c/full/campaign_result.json. The log is outside the repository.",
+      "outcome": "PASS",
+      "stdout_sha256": "9ba50b61daffc27fe28e12d44ee12e89ab1d4d41c8b8e47fd71e3eb4713d321a"
+    },
+    {
+      "command": "bash - << 'BASH'\nset -euo pipefail\nHEAD_EXPECTED=eaae5f0de47ce1b082e36257ac17c422ae78844a\ntest \"$(git rev-parse HEAD)\" = \"$HEAD_EXPECTED\"\nhidden=\"\"\nif [ -L ocor-runtime/.venv ]; then\n  PY=\"$(readlink -f ocor-runtime/.venv)/bin/python\"\n  hidden=$(mktemp -d)\n  mv ocor-runtime/.venv \"$hidden/venv\"\nelse\n  PY=ocor-runtime/.venv/bin/python\nfi\ncleanup() {\n  git checkout -- reports/planning/OCOR_PLAN_RUN_STATE.json reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md\n  if [ -n \"$hidden\" ]; then\n    mv \"$hidden/venv\" ocor-runtime/.venv\n    rmdir \"$hidden\"\n  fi\n}\ntrap cleanup EXIT\n\"$PY\" - << 'PY'\nfrom pathlib import Path\nimport subprocess\npaths = [\n    \"reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\",\n    \"reports/evidence/G0/MANIFEST.json\",\n    \"reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json\",\n    \"reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.log\",\n    \"reports/evidence/G2/MANIFEST.json\",\n    \"reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json\",\n    \"reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.log\",\n    \"reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json\",\n    \"reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.log\",\n    \"reports/evidence/G5/MANIFEST.json\",\n    \"reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json\",\n    \"reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.log\",\n]\nsource = Path(\"scripts/validate_ocor_development_plan.py\").read_text(encoding=\"utf-8\")\nprint(\"COMMIT eaae5f0de47ce1b082e36257ac17c422ae78844a\")\nprint(\"PATH_COUNT %d\" % len(paths))\nmissing = []\nfor path in paths:\n    subprocess.check_call([\"git\", \"cat-file\", \"-e\", \"HEAD:\" + path])\n    present = path in source\n    print(\"PATH\\t%s\\tALLOWLIST_%s\" % (path, \"PRESENT\" if present else \"ABSENT\"))\n    if not present:\n        missing.append(path)\nprint(\"ALLOWLIST_MISS %d\" % len(missing))\nif missing:\n    raise SystemExit(1)\nPY\nverdict=$(\"$PY\" scripts/validate_ocor_development_plan.py --base-ref 618e72c00f994e8ea8899914548cc38743aa4569 --authorized-extension)\nprintf '%s\\n' \"$verdict\"\nprintf '%s\\n' \"OUTCOME PASS\"\nBASH\n",
+      "criterion": "VF-003 contemporary allowlist check of the actual and planned evidence paths",
+      "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+      "execution_commit_role": "redesign_campaign_commit",
+      "note": "Closes VF-003 of verdict OCOR-DEV-REM-0069-86a8a2b5a6c1-1. The historical placeholder log that listed every manifest path and the four requalification records before the first campaign is absent; those paths were already on the allowlist. This command lists the twelve paths, checks that each exists at this commit and occurs in scripts/validate_ocor_development_plan.py, and runs the plan validator with --authorized-extension. Outcome PASS, ALLOWLIST_MISS 0. The pre-campaign gate on this same commit recorded plan-rerun.log sha256 c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba and gates.json sha256 f6d2f7cb5e09f7830eacc2c0d4a16564733f892ae04b0ea0c48bc9a234303e3d. The plan-rerun log is the validator verdict line and does not list the paths; this command does. VF-004 stays NOT_CORRECTED.",
+      "outcome": "PASS",
+      "stdout_sha256": "e7fead767af1003978b9f0c17d14a3bbf5c93d80c2a7885012633bde02d2601e"
+    },
+    {
+      "command": "git diff --name-status 7cf4c23e91b49b34a28ead075f25094254556764 eaae5f0de47ce1b082e36257ac17c422ae78844a",
+      "criterion": "Evidence-proof name-status from the content commit to the redesign campaign commit is only the unit record",
+      "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+      "execution_commit_role": "redesign_campaign_commit",
+      "note": "Point 2 of OCOR-DEV-REM-0069-REDESIGN (2026-11-25). Rows executed on 7cf4c23e91b49b34a28ead075f25094254556764 stay usable while a later head changes only reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json. The stdout text matches the earlier name-status against 86a8a2b5a6c14334a773fdd139ae986c373ef308.",
+      "outcome": "UNIT_RECORD_ONLY",
+      "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
+    },
+    {
       "command": "NOT_EXECUTED",
       "criterion": "One verification, verifier from a vendor other than xAI, not started by the implementer",
       "executed_on": null,
@@ -342,28 +369,49 @@
     }
   ],
   "redesign": {
+    "admission_level": "FOUR_LANE",
     "adopted_option": "1",
     "base_head": "86a8a2b5a6c14334a773fdd139ae986c373ef308",
-    "campaign_commit": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+    "campaign_commit": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
     "campaign_transferred": false,
     "claims_unchanged": true,
     "decision": "OCOR-DEV-REM-0069-REDESIGN (2026-11-25)",
     "decision_note": "decisa dal PO di persona, sezione scritta a mano",
     "decision_request_commit": "60012a42f365f401c940bddff061b5be906b45f6",
     "decision_request_sha256": "61025b5e3555f6b26e2e13bfa426d06615b2a3cd08d5b370ec7e91c7d4920f44",
+    "gates_json_sha256": "f6d2f7cb5e09f7830eacc2c0d4a16564733f892ae04b0ea0c48bc9a234303e3d",
+    "historical_campaign_commit": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
     "implementer": {
       "model": "grok-4.7",
       "process": "Grok Build",
       "vendor": "xAI"
     },
-    "new_campaign_started": false,
+    "new_campaign_id": "eaae5f0de47c-1795613672",
+    "new_campaign_result_path": "/home/luca/.ocor-codex/ocor-dev-rem-0069/campaign-eaae5f0de47c/full/campaign_result.json",
+    "new_campaign_result_sha256": "9ba50b61daffc27fe28e12d44ee12e89ab1d4d41c8b8e47fd71e3eb4713d321a",
+    "new_campaign_started": true,
     "not_repair_cycle_2": true,
+    "plan_rerun_log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
     "precheck_record_only": "FACT3_PASS",
+    "pull_budget": {
+      "checked_at": "2026-11-25T13:34:32Z",
+      "limit": "100;w=3600",
+      "remaining": "100;w=3600",
+      "threshold": 95,
+      "wait_seconds": 0.567
+    },
     "repair_cycle": 0,
     "transfer_failure": "Measure b FACT3 FAIL. Measure d BLOB_FACT FAIL. Measure c does not contain a changed path.",
     "verdict_count_restarted": true,
     "verification": "NOT_REQUESTED",
-    "vf003": "NOT_CLOSED_IN_THIS_COMMIT",
+    "vf003": {
+      "command": "bash - << 'BASH'\nset -euo pipefail\nHEAD_EXPECTED=eaae5f0de47ce1b082e36257ac17c422ae78844a\ntest \"$(git rev-parse HEAD)\" = \"$HEAD_EXPECTED\"\nhidden=\"\"\nif [ -L ocor-runtime/.venv ]; then\n  PY=\"$(readlink -f ocor-runtime/.venv)/bin/python\"\n  hidden=$(mktemp -d)\n  mv ocor-runtime/.venv \"$hidden/venv\"\nelse\n  PY=ocor-runtime/.venv/bin/python\nfi\ncleanup() {\n  git checkout -- reports/planning/OCOR_PLAN_RUN_STATE.json reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md\n  if [ -n \"$hidden\" ]; then\n    mv \"$hidden/venv\" ocor-runtime/.venv\n    rmdir \"$hidden\"\n  fi\n}\ntrap cleanup EXIT\n\"$PY\" - << 'PY'\nfrom pathlib import Path\nimport subprocess\npaths = [\n    \"reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\",\n    \"reports/evidence/G0/MANIFEST.json\",\n    \"reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json\",\n    \"reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.log\",\n    \"reports/evidence/G2/MANIFEST.json\",\n    \"reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json\",\n    \"reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.log\",\n    \"reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json\",\n    \"reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.log\",\n    \"reports/evidence/G5/MANIFEST.json\",\n    \"reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json\",\n    \"reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.log\",\n]\nsource = Path(\"scripts/validate_ocor_development_plan.py\").read_text(encoding=\"utf-8\")\nprint(\"COMMIT eaae5f0de47ce1b082e36257ac17c422ae78844a\")\nprint(\"PATH_COUNT %d\" % len(paths))\nmissing = []\nfor path in paths:\n    subprocess.check_call([\"git\", \"cat-file\", \"-e\", \"HEAD:\" + path])\n    present = path in source\n    print(\"PATH\\t%s\\tALLOWLIST_%s\" % (path, \"PRESENT\" if present else \"ABSENT\"))\n    if not present:\n        missing.append(path)\nprint(\"ALLOWLIST_MISS %d\" % len(missing))\nif missing:\n    raise SystemExit(1)\nPY\nverdict=$(\"$PY\" scripts/validate_ocor_development_plan.py --base-ref 618e72c00f994e8ea8899914548cc38743aa4569 --authorized-extension)\nprintf '%s\\n' \"$verdict\"\nprintf '%s\\n' \"OUTCOME PASS\"\nBASH\n",
+      "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+      "historical_placeholder_log": "ABSENT",
+      "outcome": "PASS",
+      "plan_rerun_log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "stdout_sha256": "e7fead767af1003978b9f0c17d14a3bbf5c93d80c2a7885012633bde02d2601e"
+    },
     "vf004": "NOT_CORRECTED"
   },
   "repair_cycle": 1,
