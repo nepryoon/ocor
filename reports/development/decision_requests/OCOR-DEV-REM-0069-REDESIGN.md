@@ -1,10 +1,10 @@
 # OCOR-DEV-REM-0069-REDESIGN
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
-Disposition: nessuna. Nessuna opzione è applicata da questa pubblicazione. Il candidato non si modifica e non si mergia. Non è un ciclo di riparazione. Questa pubblicazione non si integra. Claim invariati.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, con le precisazioni dei punti 1–8 della decisione `OCOR-DEV-REM-0069-REDESIGN (2026-11-25)`, decisa dal PO di persona, sezione scritta a mano. Il file pubblicato a `60012a42f365f401c940bddff061b5be906b45f6` resta sha256 `61025b5e3555f6b26e2e13bfa426d06615b2a3cd08d5b370ec7e91c7d4920f44`. Il testo delle opzioni non cambia. La campagna `80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c` non si trasferisce. Il candidato `86a8a2b5a6c14334a773fdd139ae986c373ef308` non è riscritto: il commit `eaae5f0de47ce1b082e36257ac17c422ae78844a` sta sopra e non si mergia. Non è un ciclo 2. Claim invariati.
 
 Livello: operativo. Nessun nuovo `DEC-*`.
-Chi decide: il programma delle decisioni per conto del PO, secondo `DECISIONI-A-FABLE (2026-11-17)`. La richiesta riguarda il ritorno al progetto dopo due `NO_GO` della stessa classe, come dispongono i punti 2 e 3 di `DECISIONI-AL-PO (2026-11-16)`. Nessuna opzione è applicata da questa pubblicazione.
+Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta riguarda il ritorno al progetto dopo due `NO_GO` della stessa classe. La disposition è l'opzione 1 dei punti 1–8. Il testo delle opzioni sotto non cambia.
 Head di `origin/main` alla pubblicazione: `618e72c00f994e8ea8899914548cc38743aa4569`.
 Candidato: branch `governed/ocor-dev-rem-0069-fuseki-archive-copy`, HEAD `86a8a2b5a6c14334a773fdd139ae986c373ef308`, parent `7cf4c23e91b49b34a28ead075f25094254556764`. Nessun commit è aggiunto sopra quell'HEAD da questa pubblicazione. Il candidato non si modifica e non si mergia.
 Decisione che impone questa richiesta: il punto 5 di `FUSEKI-ARCHIVE-COPY-20261123-CYCLE3-NO-GO (2026-11-24)` e la frase dell'opzione 1 di `OCOR-DEV-REM-0069-NO-GO` «Con un nuovo `NO_GO` non c'è un ciclo 2: una sola richiesta nuova», adottata dai punti 1–5 di `OCOR-DEV-REM-0069-NO-GO (2026-11-24)`. Il file di quella richiesta al commit `a0d180df67d99175e522949089b9d507b9e2a1a8` resta sha256 `3275ead78b56ae10677350368227efe1a510c3f443e69863a43f6ec65b0041a9`. Il punto 2 di `DECISIONI-AL-PO (2026-11-16)` conferma che non c'è un altro ciclo: i due verdetti hanno finding bloccanti della classe Evidenza. Questa è la richiesta `-REDESIGN`. Il candidato precedente `24633cc9d4c49749bd33a386020fe0d9f6cf5174` non si modifica e non si mergia.
