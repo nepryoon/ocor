@@ -1,10 +1,11 @@
 # OCOR-DEV-REM-0069-REDESIGN-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1, con le precisazioni dei punti 1–8 della decisione `OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25)`, decisa dal PO di persona, sezione scritta a mano. Il file pubblicato a `98ba5a86dc02d31e9da9f371178171b6272fa428` resta sha256 `356e23c1a5f5614fa0897bed214b9d4ec152a7acb383b52c649609920a8ccc9a`. Il testo delle opzioni non cambia. Il commit di registrazione è `e70fa15f6c92e7a8e3364e42e5b42d0793de5ec9`, parent `7ba88cfb3eb0640bd4281a124eba8b4c72e49e1f`, sul branch `governed/ocor-dev-rem-0069-fuseki-archive-copy`. L'unico percorso cambiato è `reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json`. Nessuna pull request del candidato. VF-004 resta `NOT_CORRECTED` e non è `PASS`.
 Livello: operativo. Nessun nuovo `DEC-*`.
-Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta riguarda lo stop di un'unità dopo il `NO_GO` dell'unico ciclo di riprogettazione. Nessuna opzione si applica in questa pubblicazione.
+Chi decide: il Product Owner di persona, come dispone il punto 4 di `DECISIONI-AL-PO (2026-11-16)`, perché la richiesta riguarda lo stop di un'unità dopo il `NO_GO` dell'unico ciclo di riprogettazione. L'opzione 1 è adottata dalla sezione scritta a mano.
 Head di `origin/main` alla pubblicazione: `618e72c00f994e8ea8899914548cc38743aa4569`.
-Candidato: branch `governed/ocor-dev-rem-0069-fuseki-archive-copy`, HEAD `7ba88cfb3eb0640bd4281a124eba8b4c72e49e1f`, parent `c7ccdf86c90c872dc4b916c7cb840bb9e9451cad`. Nessun commit è aggiunto sopra quell'HEAD da questa pubblicazione. Il candidato non si modifica e non si mergia.
+Candidato: branch `governed/ocor-dev-rem-0069-fuseki-archive-copy`. Il commit di registrazione è `e70fa15f6c92e7a8e3364e42e5b42d0793de5ec9`, parent `7ba88cfb3eb0640bd4281a124eba8b4c72e49e1f`. L'unico percorso cambiato è `reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json`. Nessuna pull request. Il candidato non è su `origin/main`.
 Decisione che impone questa richiesta: il punto 7 di `OCOR-DEV-REM-0069-REDESIGN (2026-11-25)`. Il file di `OCOR-DEV-REM-0069-REDESIGN` al commit `60012a42f365f401c940bddff061b5be906b45f6` resta sha256 `61025b5e3555f6b26e2e13bfa426d06615b2a3cd08d5b370ec7e91c7d4920f44`. L'opzione 1 di quella richiesta è già applicata. Questa pubblicazione non cambia quel file e non applica una nuova opzione.
 Implementatore dell'unità: Grok Build, modello `grok-4.7`, fornitore xAI. Revisore preventivo di riserva: Cursor, modello `cursor-grok-4.6-xhigh`, fornitore xAI, stesso fornitore dell'implementatore, limite di indipendenza già dichiarato nel record. Verifier di questo verdetto: Codex, fornitore OpenAI, modello `NOT_EXPOSED_BY_RUNTIME`, diverso da xAI, non avviato dall'implementatore. Implementatore di questa pubblicazione: Grok Build, modello `grok-4.7`, fornitore xAI.
 
