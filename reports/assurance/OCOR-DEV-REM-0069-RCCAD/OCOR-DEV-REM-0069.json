@@ -91,6 +91,7 @@
       "command": "git rev-parse 24633cc9d4c49749bd33a386020fe0d9f6cf5174 && git rev-parse refs/heads/governed/fuseki-archive-copy-20261123 && if git merge-base --is-ancestor 24633cc9d4c49749bd33a386020fe0d9f6cf5174 origin/main; then echo ANCESTOR_EXIT:0; else echo ANCESTOR_EXIT:$?; fi",
       "criterion": "Candidate 24633cc9d4c49749bd33a386020fe0d9f6cf5174 is unchanged and not merged",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "exit_code": 0,
       "outcome": "PASS",
       "stdout_sha256": "9b414375fe0399323d81fef4e53c5247cd869d7732887fb96b841b8f0523f30a"
     },
@@ -98,6 +99,7 @@
       "command": "git rev-parse HEAD:scripts/acquire_fuseki_archive.py && git rev-parse HEAD:reports/tests/test_fuseki_archive_acquisition.py && sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
       "criterion": "The two acquisition blobs stay the cited blobs",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "exit_code": 0,
       "outcome": "PASS",
       "stdout_sha256": "fbd7d8b2e55f3ec47cde23dbb495ea85643207e35295bf8b1a7906937453b281"
     },
@@ -105,6 +107,7 @@
       "command": "git diff origin/main -- reports/planning/OCOR_PLAN_RUN_STATE.json",
       "criterion": "Plan state changes only in the authorized digest string",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "exit_code": 0,
       "outcome": "PASS",
       "stdout_sha256": "65f3fd0f59cc2c3a85b3409d9b4104fab74abe848331c229f6e013088756488f"
     },
@@ -112,6 +115,7 @@
       "command": "python3 /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/record_exit_read.py",
       "criterion": "exit_file_absent is false when the exit file exists and contains 1",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "exit_code": 0,
       "note": "The reader opens only guards.exit, mermaid.exit and plan.exit. plan.exit exists and contains 1, so exit_file_absent is false. guards.exit and mermaid.exit exist and contain 0, so exit_file_absent is false. The accepted plan rerun is plan-rerun.exit and is not the first-attempt file. The first plan attempt failed because the untracked symlink ocor-runtime/.venv is not ignored by the directory pattern .venv/; the rerun hid that symlink, passed, and restored the plan bytes.",
       "outcome": "PASS",
       "stdout_sha256": "ccfd69e96d82d9d7c649dfae86fb6aea4b3adb59afbc0c035d9eef54278d83c7"
@@ -120,14 +124,16 @@
       "command": "git rev-parse HEAD:scripts/acquire_fuseki_archive.py && git rev-parse HEAD:reports/tests/test_fuseki_archive_acquisition.py && sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
       "criterion": "Root code_commit and inputs of the current proof are the qualified code",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "exit_code": 0,
       "outcome": "PASS",
       "stdout_sha256": "fbd7d8b2e55f3ec47cde23dbb495ea85643207e35295bf8b1a7906937453b281"
     },
     {
-      "command": "python3 /tmp/rem0069_scan_roles.py reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
+      "command": "python3 - << 'PY'\nimport json\nimport sys\nfrom pathlib import Path\n\nrecord_path = Path(\"reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\")\nrecord = json.loads(record_path.read_text(encoding=\"utf-8\"))\nroles = record[\"roles\"]\nreview = record[\"preventive_review\"]\nerrors = []\ncompared = 0\n\ndef same(label, left, right):\n    global compared\n    compared += 1\n    if left != right:\n        errors.append(f\"{label} differs\")\n\nfor key in (\"process\", \"model\", \"vendor\", \"reserve\"):\n    same(f\"reviewer.{key}\", review[\"reviewer\"].get(key), roles[\"preventive_reviewer\"].get(key))\nsame(\"request_id\", review[\"request_id\"], roles[\"preventive_review_request_id\"])\nsame(\"verdict\", review[\"status\"], roles[\"preventive_review_verdict\"])\nsame(\"reviewed_head\", review[\"reviewed_head\"], roles[\"reviewed_head\"])\nsame(\"code_commit\", record[\"code_commit\"], roles[\"code_commit\"])\nsame(\"scanned_head\", roles[\"scanned_head\"], record[\"self_check\"][\"role_scan\"][\"scanned_head\"])\nsame(\"cell_scanned_head\", roles[\"scanned_head\"], record[\"self_check\"][\"cell_scan\"][\"scanned_head\"])\nimplementer_vendors = {item[\"vendor\"] for item in roles[\"implementers\"]}\nreviewer_vendor = roles[\"preventive_reviewer\"][\"vendor\"]\nexcluded = set(roles[\"verifier_excluded_vendors\"])\ncompared += 1\nif not implementer_vendors <= excluded:\n    errors.append(\"implementer vendor is not excluded\")\ncompared += 1\nif reviewer_vendor not in excluded:\n    errors.append(\"preventive reviewer vendor is not excluded\")\nsame(\"verifier_status\", roles[\"verifier_status\"], \"NOT_REQUESTED\")\nsame(\"effective_verifier\", roles[\"effective_verifier\"], None)\nsame(\"implementer_identity\", roles[\"implementers\"][0], record[\"implementer\"])\nif not isinstance(roles.get(\"scanned_head\"), str) or len(roles[\"scanned_head\"]) != 40:\n    errors.append(\"scanned_head is not a full commit\")\ncompared += 1\nreport = {\n    \"compared_fields\": compared,\n    \"errors\": errors,\n    \"errors_found\": len(errors),\n    \"scanned_head\": roles.get(\"scanned_head\"),\n    \"status\": \"PASS\" if not errors else \"FAIL\",\n}\nsys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + \"\\n\")\nraise SystemExit(0 if not errors else 1)\nPY",
       "criterion": "The role scan names the scanned HEAD",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
-      "note": "scanned_head is 34a66b063b7867ed938828f9f5affbc0d35f1d52.",
+      "exit_code": 0,
+      "note": "OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25) point 3. The command is inline and reads only reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json at this executed_on commit. scanned_head is 34a66b063b7867ed938828f9f5affbc0d35f1d52. status PASS.",
       "outcome": "PASS",
       "stdout_sha256": "82e0862fec0c4bf3709fbf151b5ce2d405b95c8218756b7e6b7269c890be4cc9"
     },
@@ -135,6 +141,7 @@
       "command": "ocor-runtime/.venv/bin/python reports/tests/test_schema_conformance.py",
       "criterion": "VF-004 stays NOT_CORRECTED and is not PASS",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "exit_code": 1,
       "note": "TOTAL 98 PASS 97 FAIL 1. The failing case is negativo semantico: CANONICAL_COMMIT R1 senza Human Gate, expected REJECT, got ACCEPT. The row is not marked PASS. reports/tests/conformance_results.json was restored and is not part of this change.",
       "outcome": "NOT_CORRECTED",
       "stdout_sha256": "cadf3a414a3833681f45f7bd9007a9be05dc252de470af7e1de1a484e7c5a936"
@@ -151,6 +158,7 @@
       "command": "git grep -n -I reports 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c -- ocor-runtime/tests",
       "criterion": "Point 1 search of collected tests before equivalence is registered",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+      "exit_code": 0,
       "note": "Raw stdout sha256 of git grep. Outcome of the reading is EQUIVALENCE_HOLDS. See repair_cycle_1.equivalence. No collected test reads a delta path or lists a directory that contains one.",
       "outcome": "PASS",
       "stdout_sha256": "c19f3e5e5ad5dd236d508bd559ccc8ea54dc53dd8e42f94781724a4151b2811e"
@@ -160,6 +168,7 @@
       "criterion": "Point 2 drift on the cycle-1 tree",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
+      "exit_code": 0,
       "note": "PASS, 241 inputs, 75 tasks, zero drift. The stdout does not print HEAD and does not read this unit record. The same sha256 was produced on the rejected evidence head before the VF-003 edit, because that edit does not change inputs. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed"
@@ -169,6 +178,7 @@
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0005",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
+      "exit_code": 0,
       "note": "Stdout is the PASS line. It does not print HEAD. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2"
@@ -178,6 +188,7 @@
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0050",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
+      "exit_code": 0,
       "note": "Stdout is the PASS line. It does not print HEAD. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
@@ -187,6 +198,7 @@
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0072 after the VF-003 edit",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
+      "exit_code": 0,
       "note": "Stdout is the PASS line. The manifest digest of the corrected 0072 record matches the file. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "dc02de336b090d616cc4f87d4b6bb69885d731a292e64c3ed2ea838a0807edb7"
@@ -196,6 +208,7 @@
       "criterion": "Point 2 runtime evidence for OCOR-DEV-0082",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
+      "exit_code": 0,
       "note": "Stdout is the PASS line. It does not print HEAD. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83"
@@ -204,6 +217,7 @@
       "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c --record reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json",
       "criterion": "Point 2 input check of the corrected OCOR-DEV-0072 requalification",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
+      "exit_code": 0,
       "note": "PASS, 4 inputs, findings empty. The tool prints git rev-parse HEAD, and that field is 7cf4c23e91b49b34a28ead075f25094254556764. This stdout was captured on that commit, after the VF-003 edit. A re-run on the final head stays PASS. Its stdout differs only in the head field, which becomes the final head, so its sha256 is not stored in this commit.",
       "outcome": "PASS",
       "stdout_sha256": "e101bb866ee4fe0be1159b5f6caed2eac58587f70032737b74616fa93b674f90"
@@ -212,6 +226,7 @@
       "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --execution-commit 34a66b063b7867ed938828f9f5affbc0d35f1d52 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json",
       "criterion": "Point 2 input check of the OCOR-DEV-0005, OCOR-DEV-0050 and OCOR-DEV-0082 requalifications",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
+      "exit_code": 0,
       "note": "PASS, 22 inputs, 3 records, findings empty. The tool prints git rev-parse HEAD, and that field is 7cf4c23e91b49b34a28ead075f25094254556764. This stdout was captured on that commit. A re-run on the final head stays PASS and differs only in the head field.",
       "outcome": "PASS",
       "stdout_sha256": "5e69f6c9a0d5e550e53b67fb98d6df359d06c201fab053a38a7c490ba43a0bd1"
@@ -221,6 +236,7 @@
       "criterion": "Point 2 plan validator on the cycle-1 tree",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
+      "exit_code": 0,
       "note": "The untracked symlink ocor-runtime/.venv is not in the commit. It was moved aside for this run because the validator treats it as an unauthorized untracked path, then restored. The interpreter is that venv, CPython 3.12.11. Tracked plan files were restored with git checkout and git diff --exit-code was 0. Stdout is the PASS JSON line, 37 PASS and 2 NOT_EXECUTED. The campaign-tree plan step in fast_gate remains PASS_AFTER_RERUN for its first attempt and is not this row. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
@@ -230,41 +246,46 @@
       "criterion": "Point 3 delta against the campaign commit is only the four allowed paths",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
+      "exit_code": 0,
       "note": "The stdout is repair_cycle_1.final_head.name_status_text. It does not depend on the bytes of those files. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
       "outcome": "PASS",
       "stdout_sha256": "c4b30a7459f096ed797683f44c2e4f60baedab2ce5cb603b823d25b405be7000"
     },
     {
-      "command": "sha256 of the three manifests and the four rem0069 requalification records",
+      "command": "sha256sum reports/evidence/G0/MANIFEST.json reports/evidence/G2/MANIFEST.json reports/evidence/G5/MANIFEST.json reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json",
       "criterion": "VF-005 evidence-path inventory, corrected in this record",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "PASS only together with the inventory in this commit. 0005, 0050, 0082 and the three manifests were already on the campaign commit. 0072 was published by the evidence commit and its digest in this inventory is the VF-003 text. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
+      "exit_code": 0,
+      "note": "OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25) point 3 replaces the prose row. sha256sum of the three manifests and the four rem0069 requalification records at 7cf4c23e91b49b34a28ead075f25094254556764. The seven digests are unchanged.",
       "outcome": "PASS",
-      "stdout_sha256": "07011bbc99a82bb3e90e8b78356f190bcb77776d3a385de8b063b0c70d79032d"
+      "stdout_sha256": "2db14607126c95b7e6c5b33e862bf1c85e5b221db7f530f92c4d82d1ede47523"
     },
     {
-      "command": "bind pregate-80a2c854/gates.json: commit, 50 commands, statuses, exit codes and log sha256 values",
+      "command": "python3 - << 'PY'\nimport hashlib\nimport json\nimport sys\nfrom pathlib import Path\n\ngate_path = Path('/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-80a2c854/gates.json')\nexpected = '36f86d94f4613fb898eb0038800a21abb4366794a78c97dbebc50867b9c79de6'\nraw = gate_path.read_bytes()\ndigest = hashlib.sha256(raw).hexdigest()\nif digest != expected:\n    raise SystemExit(\"gates.json sha256 mismatch: \" + digest)\ngate = json.loads(raw)\nsteps = []\nfor step in gate[\"steps\"]:\n    log = Path(step[\"log\"])\n    blob = log.read_bytes()\n    steps.append({\n        \"command\": step[\"command\"],\n        \"exit_code\": step[\"exit_code\"],\n        \"log_sha256\": hashlib.sha256(blob).hexdigest(),\n        \"name\": step[\"name\"],\n        \"status\": step[\"status\"],\n    })\nreport = {\"gates_json_sha256\": digest, \"step_count\": len(steps), \"steps\": steps}\nsys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + \"\\n\")\nPY",
       "criterion": "VF-002 fast gate bound, diagnostics distinct from accepted results",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
-      "note": "gates.json sha256 36f86d94f4613fb898eb0038800a21abb4366794a78c97dbebc50867b9c79de6. head and executed_on are the campaign commit. 47 ACCEPTED, drift on that tree is DIAGNOSTIC_NOT_ACCEPTED (EXPECTED_FAIL, exit 1), plan first attempt is DIAGNOSTIC_FIRST_ATTEMPT (PASS_AFTER_RERUN), vf004_schema_conformance is NOT_CORRECTED_NOT_PASS. The accepted plan rerun log sha256 is c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba. This row is not a PASS of VF-004.",
+      "exit_code": 0,
+      "note": "OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25) point 3 replaces the prose row. The command reads pregate-80a2c854/gates.json, checks sha256 36f86d94f4613fb898eb0038800a21abb4366794a78c97dbebc50867b9c79de6, and hashes each named log. 50 steps. vf004_schema_conformance stays NOT_CORRECTED and is not PASS. This row is not a PASS of VF-004.",
       "outcome": "RECORDED",
-      "stdout_sha256": "36f86d94f4613fb898eb0038800a21abb4366794a78c97dbebc50867b9c79de6"
+      "stdout_sha256": "6d1cd5bfd764a82dc8bfe9ee35a36b2ae824c5efb848318ec6c8de0885aad612"
     },
     {
-      "command": "set environment.clean_shell true for the campaign process and record wrapper_environment on reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json; replace that artifact digest in reports/evidence/G2/MANIFEST.json",
+      "command": "python3 - << 'PY'\nimport hashlib\nimport json\nimport sys\nfrom pathlib import Path\n\npath = Path(\"reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json\")\nraw = path.read_bytes()\ndata = json.loads(raw)\nenvironment = data[\"environment\"]\nwrapper = environment[\"wrapper_environment\"]\nif environment[\"clean_shell\"] is not True:\n    raise SystemExit(\"clean_shell is not true\")\nif wrapper[\"clean_shell\"] is not False:\n    raise SystemExit(\"wrapper clean_shell is not false\")\nreport = {\n    \"clean_shell\": environment[\"clean_shell\"],\n    \"pytest_shell\": environment[\"pytest_shell\"],\n    \"record_sha256\": hashlib.sha256(raw).hexdigest(),\n    \"startup_log_sha256\": wrapper[\"startup_log_sha256\"],\n    \"startup_script_sha256\": wrapper[\"startup_script_sha256\"],\n    \"wrapper_clean_shell\": wrapper[\"clean_shell\"],\n    \"wrapper_note\": wrapper[\"note\"],\n}\nsys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + \"\\n\")\nPY",
       "criterion": "VF-003 corrected in the requalification record",
       "executed_on": "7cf4c23e91b49b34a28ead075f25094254556764",
       "execution_commit_role": "repair_cycle_1_content_commit",
-      "note": "clean_shell true is the campaign process, bash --noprofile --norc under env -i. wrapper_environment.clean_shell false is run.sh. startup_log_sha256 b5d7527da95cd38dabf142a1a044e7807b68ca09af59c369e74f8692ff238824. startup_script_sha256 c6bedf3b4ba0d2cd9f8e57f26e29a09400d097f9091624ce18a7640b4929eaac. Corrected record sha256 e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd. This PASS is in the same commit as the correction. VF-004 is a different row and is not PASS. executed_on is the content commit 7cf4c23e91b49b34a28ead075f25094254556764. The final head is the child of that commit and changes only this unit record. Commands whose stdout does not print HEAD and does not read this record reproduce stdout_sha256 there.",
+      "exit_code": 0,
+      "note": "OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25) point 3 replaces the prose row. The command reads reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json at 7cf4c23e91b49b34a28ead075f25094254556764. clean_shell is true. wrapper_environment.clean_shell is false. record_sha256 is e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd. VF-004 is a different row and is not PASS.",
       "outcome": "PASS",
-      "stdout_sha256": "e86171db8ca225953918ff75a861db33f059f5c481bae74052ff44f4a84482fd"
+      "stdout_sha256": "a55a64f414a84e3b6b414664256639f95c3c767cba2273015200054b9f6ed596"
     },
     {
       "command": "git grep -n -I reports 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c -- ocor-runtime/tests",
       "criterion": "Redesign fact a: the campaign git grep stdout is unchanged",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "execution_commit_role": "historical_campaign_commit",
+      "exit_code": 0,
       "note": "Fact (a) of OCOR-DEV-REM-0069-REDESIGN (2026-11-25) point 3 holds. Sixty-four lines. This row does not transfer the campaign. The third fact fails on measure b.",
       "outcome": "PASS",
       "stdout_sha256": "c19f3e5e5ad5dd236d508bd559ccc8ea54dc53dd8e42f94781724a4151b2811e"
@@ -274,6 +295,7 @@
       "criterion": "Redesign measure b: classify repository reads reachable from collected tests",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "execution_commit_role": "historical_campaign_commit",
+      "exit_code": 0,
       "note": "Compared with 86a8a2b5a6c14334a773fdd139ae986c373ef308. Three lines are CAN_REACH: scripts/validate_evidence_input_drift.py:35, scripts/validate_rccad.py:381, and scripts/validate_runtime_evidence.py:460. They can read reports/evidence/G2/MANIFEST.json and reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json. FACT3 FAIL. The campaign does not transfer.",
       "outcome": "FACT3_FAIL",
       "stdout_sha256": "da2f7dca11cd5b13420f2a18734c94a21df08fa212de10758c285da5ca2acc61"
@@ -283,6 +305,7 @@
       "criterion": "Redesign measure c: collect-only audit of the campaign selection",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "execution_commit_role": "historical_campaign_commit",
+      "exit_code": 0,
       "note": "COLLECT_EXIT 0, COLLECTED 5826, OPEN_COUNT 263, VISIT_COUNT 49. No changed path is in the registry. The only reports opens are reports/contracts/governed-memory-item.schema.json and reports/contracts/ocor-governed-memory.openapi.yaml. Stdout omits pytest node ids and timings.",
       "outcome": "COLLECT_EXIT_0",
       "stdout_sha256": "85742698ab95f762b57d6b2439756a9fbc3171cabeedc3d6629ca5fd11b4d70d"
@@ -292,6 +315,7 @@
       "criterion": "Redesign measure d: blob identity of files read by measures b and c",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "execution_commit_role": "historical_campaign_commit",
+      "exit_code": 0,
       "note": "268 paths. 266 blobs match 86a8a2b5a6c14334a773fdd139ae986c373ef308. The manifest and the added OCOR-DEV-0072 requalification JSON differ. BLOB_FACT FAIL.",
       "outcome": "BLOB_FACT_FAIL",
       "stdout_sha256": "28d704a8daa357b8d9a0e6dda52bb66f53eba8e1fcb1971ccb0be486f9c62753"
@@ -301,6 +325,7 @@
       "criterion": "Python blobs used by measure b are identical on the later head",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "execution_commit_role": "historical_campaign_commit",
+      "exit_code": 0,
       "note": "Empty stdout. The pre-check below searches this same Python text.",
       "outcome": "EMPTY",
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -310,6 +335,7 @@
       "criterion": "Name-status from the historical campaign commit to the redesign base is the four allowed paths",
       "executed_on": "86a8a2b5a6c14334a773fdd139ae986c373ef308",
       "execution_commit_role": "redesign_base",
+      "exit_code": 0,
       "note": "A later commit that changes only the unit record preserves this name-status.",
       "outcome": "FOUR_PATHS",
       "stdout_sha256": "c4b30a7459f096ed797683f44c2e4f60baedab2ce5cb603b823d25b405be7000"
@@ -319,6 +345,7 @@
       "criterion": "Evidence-proof name-status from the content commit is only the unit record",
       "executed_on": "86a8a2b5a6c14334a773fdd139ae986c373ef308",
       "execution_commit_role": "redesign_base",
+      "exit_code": 0,
       "note": "Point 2 of OCOR-DEV-REM-0069-REDESIGN (2026-11-25). Rows executed on 7cf4c23e91b49b34a28ead075f25094254556764 stay usable while the verification head changes only reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json.",
       "outcome": "UNIT_RECORD_ONLY",
       "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
@@ -328,6 +355,7 @@
       "criterion": "Pre-check of measure b when the only changed path is the unit record",
       "executed_on": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
       "execution_commit_role": "python_text_identical_to_86a8a2b5",
+      "exit_code": 0,
       "note": "DIFF_LEFT is 7cf4c23e91b49b34a28ead075f25094254556764 and DIFF_RIGHT is 86a8a2b5a6c14334a773fdd139ae986c373ef308, whose name-status is the unit record. CAN_REACH_TOTAL 0. FACT3 PASS. This admits one new campaign. It is not the formal repeat required after that campaign. A registration head that changes only the unit record keeps this changed-path set; the formal stdout hash will differ because the header names those later commits.",
       "outcome": "FACT3_PASS",
       "stdout_sha256": "010898b0e0b9f2b593a730f74a86b2c9f1f59a628f53581dc4d6d349edde305d"
@@ -346,6 +374,7 @@
       "criterion": "VF-003 contemporary allowlist check of the actual and planned evidence paths",
       "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
       "execution_commit_role": "redesign_campaign_commit",
+      "exit_code": 0,
       "note": "Closes VF-003 of verdict OCOR-DEV-REM-0069-86a8a2b5a6c1-1. The historical placeholder log that listed every manifest path and the four requalification records before the first campaign is absent; those paths were already on the allowlist. This command lists the twelve paths, checks that each exists at this commit and occurs in scripts/validate_ocor_development_plan.py, and runs the plan validator with --authorized-extension. Outcome PASS, ALLOWLIST_MISS 0. The pre-campaign gate on this same commit recorded plan-rerun.log sha256 c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba and gates.json sha256 f6d2f7cb5e09f7830eacc2c0d4a16564733f892ae04b0ea0c48bc9a234303e3d. The plan-rerun log is the validator verdict line and does not list the paths; this command does. VF-004 stays NOT_CORRECTED.",
       "outcome": "PASS",
       "stdout_sha256": "e7fead767af1003978b9f0c17d14a3bbf5c93d80c2a7885012633bde02d2601e"
@@ -355,6 +384,7 @@
       "criterion": "Evidence-proof name-status from the content commit to the redesign campaign commit is only the unit record",
       "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
       "execution_commit_role": "redesign_campaign_commit",
+      "exit_code": 0,
       "note": "Point 2 of OCOR-DEV-REM-0069-REDESIGN (2026-11-25). Rows executed on 7cf4c23e91b49b34a28ead075f25094254556764 stay usable while a later head changes only reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json. The stdout text matches the earlier name-status against 86a8a2b5a6c14334a773fdd139ae986c373ef308.",
       "outcome": "UNIT_RECORD_ONLY",
       "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
@@ -364,6 +394,7 @@
       "criterion": "Redesign measure b repeated between the new campaign commit and the campaign registration commit",
       "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
       "execution_commit_role": "redesign_campaign_commit",
+      "exit_code": 0,
       "note": "DIFF_LEFT is eaae5f0de47ce1b082e36257ac17c422ae78844a and DIFF_RIGHT is c7ccdf86c90c872dc4b916c7cb840bb9e9451cad. The only changed path is the unit record. CAN_REACH_TOTAL 0. FACT3 PASS. This is the formal repeat required after the new campaign. The commit that contains this row is a later child and is not named here.",
       "outcome": "FACT3_PASS",
       "stdout_sha256": "790010e0d1a1a581e1961f19e4015d75faf7a282694b0aaab45c795de56b5ac4"
@@ -373,6 +404,7 @@
       "criterion": "Redesign measure c repeated on the new campaign commit",
       "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
       "execution_commit_role": "redesign_campaign_commit",
+      "exit_code": 0,
       "note": "COLLECT_EXIT 0, COLLECTED 5826, OPEN_COUNT 263, VISIT_COUNT 49. The changed path reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json is not an open or a visit. Stdout matches the historical collect audit. No new repository file was added.",
       "outcome": "COLLECT_EXIT_0",
       "stdout_sha256": "85742698ab95f762b57d6b2439756a9fbc3171cabeedc3d6629ca5fd11b4d70d"
@@ -382,6 +414,7 @@
       "criterion": "Redesign measure d repeated for files read by measures b and c",
       "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
       "execution_commit_role": "redesign_campaign_commit",
+      "exit_code": 0,
       "note": "266 files from the measure c opens and the concrete file targets of measure b. SAME 266. DIFFER_COUNT 0. BLOB_FACT PASS between eaae5f0de47ce1b082e36257ac17c422ae78844a and c7ccdf86c90c872dc4b916c7cb840bb9e9451cad. The unit record is not in the file list.",
       "outcome": "BLOB_FACT_PASS",
       "stdout_sha256": "dd3501ada11c0ccfb6bc69c256e772239e88e2e26f6d93c3b256364d675dd4ec"
@@ -391,6 +424,7 @@
       "criterion": "Name-status from the redesign campaign commit to the campaign registration commit is only the unit record",
       "executed_on": "c7ccdf86c90c872dc4b916c7cb840bb9e9451cad",
       "execution_commit_role": "campaign_registration_commit",
+      "exit_code": 0,
       "note": "Point 4 of OCOR-DEV-REM-0069-REDESIGN (2026-11-25) for the new campaign. The commit that contains this row is a later child of c7ccdf86c90c872dc4b916c7cb840bb9e9451cad and changes only this same path. This file does not embed its own sha.",
       "outcome": "UNIT_RECORD_ONLY",
       "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
@@ -400,6 +434,7 @@
       "criterion": "Evidence-proof name-status from the content commit to the campaign registration commit is only the unit record",
       "executed_on": "c7ccdf86c90c872dc4b916c7cb840bb9e9451cad",
       "execution_commit_role": "campaign_registration_commit",
+      "exit_code": 0,
       "note": "Point 2 of OCOR-DEV-REM-0069-REDESIGN (2026-11-25). Rows executed on 7cf4c23e91b49b34a28ead075f25094254556764 stay usable. The same single path is the diff from that content commit through the commit that contains this row.",
       "outcome": "UNIT_RECORD_ONLY",
       "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
@@ -409,15 +444,36 @@
       "criterion": "Python blobs are identical between the redesign campaign commit and the campaign registration commit",
       "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
       "execution_commit_role": "redesign_campaign_commit",
+      "exit_code": 0,
       "note": "Empty stdout. Measure b searched this same Python text.",
       "outcome": "EMPTY",
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
+      "command": "git grep -n -I reports eaae5f0de47ce1b082e36257ac17c422ae78844a -- ocor-runtime/tests",
+      "criterion": "Redesign measure a repeated on the substitute campaign commit",
+      "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+      "execution_commit_role": "substitute_campaign_commit",
+      "exit_code": 0,
+      "note": "OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25) point 2. Measure a of OCOR-DEV-REM-0069-REDESIGN (2026-11-25) point 3, repeated on eaae5f0de47ce1b082e36257ac17c422ae78844a.",
+      "outcome": "PASS",
+      "stdout_sha256": "82e17b296a90b15ae999f6c3377ffe629c4f68ac6c3ac894bb02b637c51cf0a4"
+    },
+    {
+      "command": "python3 - << 'PY'\nimport hashlib\nimport json\nimport sys\nfrom pathlib import Path\n\ngate_path = Path('/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/gates.json')\nexpected = 'f6d2f7cb5e09f7830eacc2c0d4a16564733f892ae04b0ea0c48bc9a234303e3d'\nraw = gate_path.read_bytes()\ndigest = hashlib.sha256(raw).hexdigest()\nif digest != expected:\n    raise SystemExit(\"gates.json sha256 mismatch: \" + digest)\ngate = json.loads(raw)\nsteps = []\nfor step in gate[\"steps\"]:\n    log = Path(step[\"log\"])\n    blob = log.read_bytes()\n    steps.append({\n        \"command\": step[\"command\"],\n        \"exit_code\": step[\"exit_code\"],\n        \"log_sha256\": hashlib.sha256(blob).hexdigest(),\n        \"name\": step[\"name\"],\n        \"status\": step[\"status\"],\n    })\nreport = {\"gates_json_sha256\": digest, \"step_count\": len(steps), \"steps\": steps}\nsys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + \"\\n\")\nPY",
+      "criterion": "Fifty eaae5f0 fast-gate logs bound to command, status, exit code and log sha256",
+      "executed_on": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+      "execution_commit_role": "substitute_campaign_commit",
+      "exit_code": 0,
+      "note": "OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25) point 4. gates.json sha256 f6d2f7cb5e09f7830eacc2c0d4a16564733f892ae04b0ea0c48bc9a234303e3d. 50 steps. The historical repair_cycle_1.fast_gate rows stay on 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c and do not replace these. vf004_schema_conformance is NOT_CORRECTED and is not PASS.",
+      "outcome": "RECORDED",
+      "stdout_sha256": "43be2ebd738ee60da25f11c532be7c2456aefab04295a625896dd967817df2c3"
+    },
+    {
       "command": "NOT_EXECUTED",
       "criterion": "One verification, verifier from a vendor other than xAI, not started by the implementer",
       "executed_on": null,
-      "note": "Measures b, c and d between eaae5f0de47ce1b082e36257ac17c422ae78844a and c7ccdf86c90c872dc4b916c7cb840bb9e9451cad are recorded above and pass. verify_request.json is written after this commit. The implementer does not start the verifier. The verifier vendor is not xAI. Repair cycle 0 of the restarted count is not cycle 2. No verdict is available in this commit.",
+      "note": "The registration commit authorized by OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25) option 1 asks for one verification. The implementer does not start the verifier. The verifier vendor is not xAI. No verdict is available in this commit. VF-004 stays NOT_CORRECTED and is not PASS.",
       "outcome": "NOT_EXECUTED",
       "stdout_sha256": null
     }
@@ -477,6 +533,420 @@
       "plan_rerun_log_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
       "stdout_sha256": "e7fead767af1003978b9f0c17d14a3bbf5c93d80c2a7885012633bde02d2601e"
     },
+    "vf004": "NOT_CORRECTED"
+  },
+  "registration_commit": {
+    "behaviour_campaign_commit": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+    "behaviour_campaign_id": "eaae5f0de47c-1795613672",
+    "behaviour_campaign_result_sha256": "9ba50b61daffc27fe28e12d44ee12e89ab1d4d41c8b8e47fd71e3eb4713d321a",
+    "campaign_new": false,
+    "decision": "OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25)",
+    "decision_request_commit": "98ba5a86dc02d31e9da9f371178171b6272fa428",
+    "decision_request_sha256": "356e23c1a5f5614fa0897bed214b9d4ec152a7acb383b52c649609920a8ccc9a",
+    "eaae5f0_fast_gate": {
+      "gates_json_sha256": "f6d2f7cb5e09f7830eacc2c0d4a16564733f892ae04b0ea0c48bc9a234303e3d",
+      "step_count": 50,
+      "steps": [
+        {
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport hashlib\nfrom pathlib import Path\nimport subprocess\nroot = Path('.').resolve()\nmain = subprocess.check_output(['git','show','origin/main:reports/planning/OCOR_PLAN_RUN_STATE.json'])\ncurrent = (root/'reports/planning/OCOR_PLAN_RUN_STATE.json').read_bytes()\nold = 'c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827'\nnew = '028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50'\nif main.count(old.encode()) != 1 or new.encode() in main:\n    raise SystemExit('base digest pattern is not the single expected occurrence')\nexpected = main.replace(old.encode(), new.encode(), 1)\nif current != expected:\n    raise SystemExit('plan bytes differ from the single digest substitution %s vs %s' % (len(current), len(expected)))\nif len(current) != 4991:\n    raise SystemExit('plan length %s != 4991' % (len(current),))\nprint(hashlib.sha256(current).hexdigest())\nprint('allowlist plan bytes PASS')\nPY",
+          "exit_code": 0,
+          "log_sha256": "f00586df893f13b48b4635424473b367cf0751b899d17d00b50d6791addcf28e",
+          "name": "allowlist_precheck",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python scripts/ocor_autonomous_delivery.py --dry-run",
+          "exit_code": 0,
+          "log_sha256": "9df53abfe7e4bb326109c8ae85ab076a8fb2aac4187d769ab21bb9765c45fd5e",
+          "name": "autonomous_dry",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python scripts/ocor_autonomous_delivery.py --validate",
+          "exit_code": 0,
+          "log_sha256": "811f0cc0be24f058bc79b6287f31a5a904655a77c9414ad04eb747f1c6b96f64",
+          "name": "autonomous_validate",
+          "status": "PASS"
+        },
+        {
+          "command": "python3 scripts/bootstrap_development_environment.py --check",
+          "exit_code": 0,
+          "log_sha256": "918a8e777662d9f50aa18104ec10c1c50e1f1f266e16a5b7927b7c1c9c25e644",
+          "name": "bootstrap_check",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python reports/tests/build_validation_closure_report.py",
+          "exit_code": 0,
+          "log_sha256": "5bf74c1452710b51ffa475fb17d1287b6da2c37c06b26638fd3606f184aa86db",
+          "name": "closure_report",
+          "status": "PASS"
+        },
+        {
+          "command": "OCOR_LOCAL_TERMINUSDB_PASSWORD=x OCOR_LOCAL_KEYCLOAK_PASSWORD=x OCOR_LOCAL_OPENBAO_TOKEN=x OCOR_LOCAL_POSTGRES_PASSWORD=x OCOR_LOCAL_SEAWEEDFS_PASSWORD=x OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD=x OCOR_SPIRE_BOOTSTRAP_DIR=/tmp OCOR_SPIRE_JOIN_TOKEN=x docker compose -f deploy/bootstrap/compose.yaml config --quiet",
+          "exit_code": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "compose",
+          "status": "PASS"
+        },
+        {
+          "command": "python reports/tests/build_dec208_approval_manifest.py && python reports/tests/verify_dec208_authoritative_promotion.py && ocor-runtime/.venv/bin/python reports/tests/validate_openapi_remediation_c.py",
+          "exit_code": 0,
+          "log_sha256": "2cde1c9e0de57103c4bf81e0b1c3a76a88b6a2773c994c4e9e4a4782fde0865a",
+          "name": "dec208",
+          "status": "PASS"
+        },
+        {
+          "command": "set -euo pipefail; ocor-runtime/.venv/bin/python scripts/verify.py --add reports/OCOR_Architectural_Design_Document_v1.2_Candidate.md --json; ocor-runtime/.venv/bin/python reports/tests/test_v12_candidate.py; ocor-runtime/.venv/bin/python reports/tests/test_v12_semantics.py; ocor-runtime/.venv/bin/python reports/tests/test_v12_release_gate.py; ocor-runtime/.venv/bin/python reports/tests/test_v12_approval_readiness.py; git checkout -- reports/verify_report.json",
+          "exit_code": 0,
+          "log_sha256": "abf173105c169b364e331941cc67d8cc0d536d0f3be6929c6263c0723a9d4866",
+          "name": "document_harness",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+          "exit_code": 0,
+          "log_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
+          "name": "drift",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport json\nimport subprocess\nfrom pathlib import Path\nmanifest = json.loads(Path('reports/evidence/G0/MANIFEST.json').read_text())\ntasks = sorted({item['task_id'] for item in manifest['artifacts'] if __import__('re').fullmatch(r'OCOR-DEV-[0-9]{4}', item['task_id'])})\nif not tasks:\n    raise SystemExit('no G0 tasks')\nprint('tasks', len(tasks))\nfor task in tasks:\n    subprocess.run(['ocor-runtime/.venv/bin/python','scripts/validate_runtime_evidence.py','--task',task,'--non-skipped','--manifest','reports/evidence/G0/MANIFEST.json'], check=True)\nsubprocess.run(['ocor-runtime/.venv/bin/python','ocor-runtime/tools/evidence_manifest.py','validate','--task','OCOR-DEV-0004','--non-skipped','--manifest','reports/evidence/G0/MANIFEST.json'], check=True)\nPY",
+          "exit_code": 0,
+          "log_sha256": "6a155f564a989d023d9d447b94694293190e7a98b1d37d11065b009f894980dc",
+          "name": "evidence_g0",
+          "status": "PASS"
+        },
+        {
+          "command": "python3 /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/record_exit_read.py",
+          "exit_code": 0,
+          "log_sha256": "d88a6720ca252e7fce7882b892e65cb18f6c03a49f1a54ae4aff40e727718617",
+          "name": "exit_file_record_read",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python reports/tests/test_authoritative_contract_conformance.py",
+          "exit_code": 0,
+          "log_sha256": "baaf234d6e1634b6a6f9429d7acf4375be15b4b5fbd1053b7e51c63a9f10fb71",
+          "name": "fgm",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0004.py ocor-runtime/tests/tasks/test_ocor_dev_0007.py ocor-runtime/tests/tasks/test_ocor_dev_0008.py ocor-runtime/tests/tasks/test_ocor_dev_0009.py ocor-runtime/tests/tasks/test_ocor_dev_0010.py ocor-runtime/tests/tasks/test_ocor_dev_0011.py ocor-runtime/tests/tasks/test_ocor_dev_0012.py ocor-runtime/tests/tasks/test_ocor_dev_0013.py ocor-runtime/tests/tasks/test_ocor_dev_0014.py",
+          "exit_code": 0,
+          "log_sha256": "97f129ec5831c668a52e889ed63d6c49c4eb09c768525470615281f153139c8c",
+          "name": "fitness",
+          "status": "PASS"
+        },
+        {
+          "command": "set -euo pipefail; ocor-runtime/.venv/bin/python -m pytest -v -p no:cacheprovider --junitxml=/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/guards_junit.xml reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_local_lane_campaign.py; ocor-runtime/.venv/bin/python - <<'PY'\nimport sys\nfrom pathlib import Path\nsys.path.insert(0, 'scripts')\nfrom run_qualifying_campaign import check_junit\nprint(check_junit(Path('/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/guards_junit.xml')))\nPY",
+          "exit_code": 0,
+          "log_sha256": "4af863076237e9baaab9cc7d3cdc39176cc661fa89340df144f1afae0754fe0a",
+          "name": "guards",
+          "status": "PASS"
+        },
+        {
+          "command": "sha256sum scripts/acquire_fuseki_archive.py reports/tests/test_fuseki_archive_acquisition.py",
+          "exit_code": 0,
+          "log_sha256": "5b260080bd3d365f048c860d0193b4348a869516b35042fdd355ff4590dbb519",
+          "name": "input_hashes",
+          "status": "PASS"
+        },
+        {
+          "command": "git diff --exit-code 618e72c00f994e8ea8899914548cc38743aa4569 -- inputs/",
+          "exit_code": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "inputs_diff",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+          "exit_code": 0,
+          "log_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+          "name": "language_script",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_validate_language_policy",
+          "exit_code": 0,
+          "log_sha256": "4d13287895bdb0bd46d36be5cdc76bda1df07bdb5b07275f6688c4c28b2b93c9",
+          "name": "language_unittest",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python reports/tests/test_lld_add_alignment.py --output /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/lld_add_alignment_results.json",
+          "exit_code": 0,
+          "log_sha256": "d88a5a1eeaaa1d597b1b791caa36166f52da6bf710764f1da712c76b64de7966",
+          "name": "lld",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jsonschema import Draft202012Validator, FormatChecker\nfor name in (\"toolchain\", \"services\"):\n    schema = json.loads(Path(f\"infra/{name}.lock.schema.json\").read_text())\n    data = json.loads(Path(f\"infra/{name}.lock.json\").read_text())\n    Draft202012Validator.check_schema(schema)\n    Draft202012Validator(schema, format_checker=FormatChecker()).validate(data)\nprint(\"lock schemas PASS\")\nPY",
+          "exit_code": 0,
+          "log_sha256": "ac7ad5465a15e718837d59f01c4cfb147f8cf432c3b07cfb95fdf50ec5682e21",
+          "name": "lock_schema",
+          "status": "PASS"
+        },
+        {
+          "command": "npx --yes markdownlint-cli2@0.18.1 'docs/development_plan/*.md' 'reports/planning/*.md'",
+          "exit_code": 0,
+          "log_sha256": "48b6461f4f3204e5374922a79032eee59c529a5a33047648ebbb0be362eb79f9",
+          "name": "markdownlint",
+          "status": "PASS"
+        },
+        {
+          "command": "npx --yes @mermaid-js/mermaid-cli@11.12.0 --input docs/development_plan/OCOR_DEPENDENCY_DAG.mmd --output /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/ocor-dependency-dag.svg --puppeteerConfigFile .github/mermaid-puppeteer.json --quiet",
+          "exit_code": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "name": "mermaid",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jsonschema import Draft202012Validator\nroot = Path.cwd()\nschema = json.loads((root / \"docs/development_methodology/methodology.schema.json\").read_text())\ninstance = json.loads((root / \"docs/development_methodology/methodology.json\").read_text())\nDraft202012Validator.check_schema(schema)\nDraft202012Validator(schema).validate(instance)\nprint(\"methodology schema PASS\")\nPY",
+          "exit_code": 0,
+          "log_sha256": "6ee6d13a5ff78dcfa0089126bd4823e93f7a6be9a5be217fc41e0cac43d95430",
+          "name": "methodology_schema",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m mypy",
+          "exit_code": 0,
+          "log_sha256": "8f4c82c4def5877c120713dbd513bb61a25cdc112c496163dbfb4e922933ea7c",
+          "name": "mypy",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python reports/tests/validate_openapi_governed.py",
+          "exit_code": 0,
+          "log_sha256": "ea6c5eca432eef64c81bf3a2c7f6df5e41347fd50f65dba5f93a6924806d5d85",
+          "name": "openapi",
+          "status": "PASS"
+        },
+        {
+          "command": "set +e; ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref 618e72c00f994e8ea8899914548cc38743aa4569 --authorized-extension; rc=$?; git checkout -- reports/planning/OCOR_PLAN_RUN_STATE.json; git diff --exit-code HEAD -- reports/planning/OCOR_PLAN_RUN_STATE.json; exit $rc",
+          "exit_code": 1,
+          "log_sha256": "62660875554260de8deacf5e82edfe1c57a192fb189db6fca976672734042e90",
+          "name": "plan",
+          "status": "PASS_AFTER_RERUN"
+        },
+        {
+          "command": "python3 scripts/preflight_environment.py --contract-only",
+          "exit_code": 0,
+          "log_sha256": "ec66c48e63957190fb60035b2bcce385dccf9a06120ccc68003df05c8229797e",
+          "name": "preflight",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0001.py",
+          "exit_code": 0,
+          "log_sha256": "db9852261e408649ad318479cd5c67ca5ef8f255562bc18425d88b8c16d12d8f",
+          "name": "pytest_0001",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_backlog_generator_reality_parity.py",
+          "exit_code": 0,
+          "log_sha256": "bba54d0d911e4f4b3ff7099be56f23a579126dd0cbb36d88eb246b10ef320d5b",
+          "name": "pytest_backlog",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_generate_contracts_reference_resolution.py",
+          "exit_code": 0,
+          "log_sha256": "c543177721c452f597636db560e1534cd414a8144a95325956026638f8e1c80c",
+          "name": "pytest_contracts",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_evidence_input_drift.py",
+          "exit_code": 0,
+          "log_sha256": "48d1816a8c98ecd9e3f98e3b04c3072d9c5ba61a33bdda39d86d36a8edd4812b",
+          "name": "pytest_drift_tests",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_language_migration_benchmark_harness.py",
+          "exit_code": 0,
+          "log_sha256": "adba2b54b3e90da62a5aa29838975b5cfe5203c857cc76b9d0f467736e780184",
+          "name": "pytest_lang_bench",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_runtime_evidence_validator.py",
+          "exit_code": 0,
+          "log_sha256": "93d1aecb8f55a3f67587a5dcd49ace92ca941ffb2dee03143a294fad83eab4b5",
+          "name": "pytest_runtime_evidence",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/sdk/test_typescript_sdk_conformance.py",
+          "exit_code": 0,
+          "log_sha256": "0d16a77e1e864d97e14ae2195796d95b327c649378aaefbb2afbd3fd17b71aa7",
+          "name": "pytest_sdk",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref 618e72c00f994e8ea8899914548cc38743aa4569",
+          "exit_code": 0,
+          "log_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+          "name": "rccad",
+          "status": "PASS"
+        },
+        {
+          "command": "python3 scripts/reset_test_environment.py",
+          "exit_code": 0,
+          "log_sha256": "3bade0c1983aab3ea5f4290f127f0c3d34150daf81f28fc74adb2c619100cf8f",
+          "name": "reset_dry",
+          "status": "PASS"
+        },
+        {
+          "command": "ruff check .",
+          "exit_code": 0,
+          "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "name": "ruff",
+          "status": "PASS"
+        },
+        {
+          "command": "ruff check reports/tests/test_autonomous_tooling_policy.py reports/tests/test_bootstrap_lock_validation.py scripts/ocor_bootstrap_lib.py scripts/preflight_environment.py",
+          "exit_code": 0,
+          "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "name": "ruff_subset",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/schemas/test_schema_integrity.py",
+          "exit_code": 0,
+          "log_sha256": "42317fada6dcccf66125f116d742efc2b7f7fa15372a60582b23352bdc60c64e",
+          "name": "schema_tests",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base 618e72c00f994e8ea8899914548cc38743aa4569 --head eaae5f0de47ce1b082e36257ac17c422ae78844a --branch governed/ocor-dev-rem-0069-fuseki-archive-copy",
+          "exit_code": 0,
+          "log_sha256": "6fe6f15878fe8de99df4ceafae2e2b6c326aab25be08c5161c5130011939d74c",
+          "name": "scope",
+          "status": "PASS"
+        },
+        {
+          "command": "sha256sum -c inputs/normative/SHA256SUMS",
+          "exit_code": 0,
+          "log_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+          "name": "sums_inputs",
+          "status": "PASS"
+        },
+        {
+          "command": "sha256sum -c reports/OCOR_ADD_v1.2_SHA256SUMS",
+          "exit_code": 0,
+          "log_sha256": "df21ddc1f9d3566524d70f1ac5aa99f87e6ba80c18ea5a5f15862c62075cdd74",
+          "name": "sums_reports",
+          "status": "PASS"
+        },
+        {
+          "command": "rm -rf /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/supply-archive && mkdir -p /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/supply-archive && git archive HEAD | tar -x -C /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/supply-archive && OCOR_SCAN_ROOT=/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/supply-archive OCOR_SCAN_OUTPUT=/home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/supply-output OCOR_SCANNER_VERSION=1.1.0 python3 /home/luca/.ocor-codex/ocor-dev-rem-0069/pregate-eaae5f0/supply_scan.py",
+          "exit_code": 0,
+          "log_sha256": "8de31aecc5be33dca62ae794d61cb575cf47a8120f3620974f46b389bc1434b3",
+          "name": "supply",
+          "status": "PASS"
+        },
+        {
+          "command": "python3 scripts/bootstrap_ci_environment.py --teardown --execute && test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\"",
+          "exit_code": 0,
+          "log_sha256": "9ce61139d09e0de97312cc91861802962073cf86bea24a708b0afda6ac314af2",
+          "name": "teardown_absent",
+          "status": "PASS"
+        },
+        {
+          "command": "npm install --no-audit --no-fund && npm run build",
+          "exit_code": 0,
+          "log_sha256": "878531a507aadcb579ac12dcc34b8408ea79eb738224d827a9dd81050be755d5",
+          "name": "tsc",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_rccad_methodology",
+          "exit_code": 0,
+          "log_sha256": "b32c2f5628cbdf944a83c25ce6632c56a9b12e3517160a05f1b502b06a0b3dde",
+          "name": "unittest_rccad",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_autonomous_tooling_policy reports.tests.test_bootstrap_lock_validation",
+          "exit_code": 0,
+          "log_sha256": "44c22255fb7c971906b01d78e297daedb406c6aa0ab833370c3842594b2ded9c",
+          "name": "unittest_tooling",
+          "status": "PASS"
+        },
+        {
+          "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+          "exit_code": 0,
+          "log_sha256": "8b40db645a58f507569f786e5a4bf6e8f38fd9cb6e25c6370cab7b7052a33850",
+          "name": "uv-sync",
+          "status": "PASS"
+        },
+        {
+          "command": "python3 scripts/verify_external_services.py --manifest-only",
+          "exit_code": 0,
+          "log_sha256": "33cd8f068420cb6c9f7b6c5b791e775f84bf67977c0aa6ecc4c61aa551e8e843",
+          "name": "verify_manifest",
+          "status": "PASS"
+        },
+        {
+          "command": "ocor-runtime/.venv/bin/python reports/tests/test_schema_conformance.py; rc=$?; rm -f reports/tests/conformance_results.json; exit $rc",
+          "exit_code": 1,
+          "log_sha256": "cadf3a414a3833681f45f7bd9007a9be05dc252de470af7e1de1a484e7c5a936",
+          "name": "vf004_schema_conformance",
+          "status": "NOT_CORRECTED"
+        }
+      ]
+    },
+    "head_diffs": [
+      {
+        "command": "git diff --name-status 80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c HEAD",
+        "commit": "80a2c854cfad9eeac22fa8f6cbd8efdf26d2962c",
+        "exit_code": 0,
+        "stdout": "M\treports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\nM\treports/evidence/G2/MANIFEST.json\nA\treports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json\nA\treports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.log\n",
+        "stdout_sha256": "c4b30a7459f096ed797683f44c2e4f60baedab2ce5cb603b823d25b405be7000"
+      },
+      {
+        "command": "git diff --name-status 7cf4c23e91b49b34a28ead075f25094254556764 HEAD",
+        "commit": "7cf4c23e91b49b34a28ead075f25094254556764",
+        "exit_code": 0,
+        "stdout": "M\treports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\n",
+        "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
+      },
+      {
+        "command": "git diff --name-status 86a8a2b5a6c14334a773fdd139ae986c373ef308 HEAD",
+        "commit": "86a8a2b5a6c14334a773fdd139ae986c373ef308",
+        "exit_code": 0,
+        "stdout": "M\treports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\n",
+        "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
+      },
+      {
+        "command": "git diff --name-status eaae5f0de47ce1b082e36257ac17c422ae78844a HEAD",
+        "commit": "eaae5f0de47ce1b082e36257ac17c422ae78844a",
+        "exit_code": 0,
+        "stdout": "M\treports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\n",
+        "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
+      },
+      {
+        "command": "git diff --name-status c7ccdf86c90c872dc4b916c7cb840bb9e9451cad HEAD",
+        "commit": "c7ccdf86c90c872dc4b916c7cb840bb9e9451cad",
+        "exit_code": 0,
+        "stdout": "M\treports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\n",
+        "stdout_sha256": "8523fac6b656bfed7eebc9be03159f21f55dee7e444c6e5dade52c2095488c83"
+      }
+    ],
+    "head_role": "registration commit; HEAD in the diff commands is this commit",
+    "implementer": {
+      "model": "grok-4.7",
+      "process": "Grok Build",
+      "vendor": "xAI"
+    },
+    "new_campaign": false,
+    "option": 1,
+    "parent": "7ba88cfb3eb0640bd4281a124eba8b4c72e49e1f",
+    "po_decision_note": "decisa dal PO di persona, sezione scritta a mano",
+    "verifier": "not started by the implementer; vendor other than xAI",
     "vf004": "NOT_CORRECTED"
   },
   "repair_cycle": 1,
@@ -557,7 +1027,7 @@
       "search_stdout_sha256": "c19f3e5e5ad5dd236d508bd559ccc8ea54dc53dd8e42f94781724a4151b2811e"
     },
     "evidence_inventory": {
-      "command": "sha256 of G0, G2 and G5 MANIFEST.json plus the four rem0069 requalification records, after the VF-003 edit",
+      "command": "sha256sum reports/evidence/G0/MANIFEST.json reports/evidence/G2/MANIFEST.json reports/evidence/G5/MANIFEST.json reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json",
       "covers": [
         "reports/evidence/G0/MANIFEST.json",
         "reports/evidence/G2/MANIFEST.json",
@@ -576,8 +1046,9 @@
         "reports/evidence/G5/MANIFEST.json": "7999dcf5ef76104e93de3776bc82ddef4f424ace732f7c5e46f6fe38c17a4279",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json": "a813750e85dac9e501c70fd50456c2331ef91bb4f2a7296012b1d62a3dd0abf2"
       },
+      "exit_code": 0,
       "outcome": "PASS",
-      "stdout_sha256": "07011bbc99a82bb3e90e8b78356f190bcb77776d3a385de8b063b0c70d79032d",
+      "stdout_sha256": "2db14607126c95b7e6c5b33e862bf1c85e5b221db7f530f92c4d82d1ede47523",
       "worktree_head_before_commit": "38e15d2cb3379aecd62e2a7e4c20b5888e4ecae5"
     },
     "fast_gate": {
@@ -1240,12 +1711,12 @@
       "AUTOCONTROLLO-DIGEST-COMMIT (2026-11-11)"
     ],
     "role_scan": {
-      "command": "python3 /tmp/rem0069_scan_roles.py reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
+      "command": "python3 - << 'PY'\nimport json\nimport sys\nfrom pathlib import Path\n\nrecord_path = Path(\"reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json\")\nrecord = json.loads(record_path.read_text(encoding=\"utf-8\"))\nroles = record[\"roles\"]\nreview = record[\"preventive_review\"]\nerrors = []\ncompared = 0\n\ndef same(label, left, right):\n    global compared\n    compared += 1\n    if left != right:\n        errors.append(f\"{label} differs\")\n\nfor key in (\"process\", \"model\", \"vendor\", \"reserve\"):\n    same(f\"reviewer.{key}\", review[\"reviewer\"].get(key), roles[\"preventive_reviewer\"].get(key))\nsame(\"request_id\", review[\"request_id\"], roles[\"preventive_review_request_id\"])\nsame(\"verdict\", review[\"status\"], roles[\"preventive_review_verdict\"])\nsame(\"reviewed_head\", review[\"reviewed_head\"], roles[\"reviewed_head\"])\nsame(\"code_commit\", record[\"code_commit\"], roles[\"code_commit\"])\nsame(\"scanned_head\", roles[\"scanned_head\"], record[\"self_check\"][\"role_scan\"][\"scanned_head\"])\nsame(\"cell_scanned_head\", roles[\"scanned_head\"], record[\"self_check\"][\"cell_scan\"][\"scanned_head\"])\nimplementer_vendors = {item[\"vendor\"] for item in roles[\"implementers\"]}\nreviewer_vendor = roles[\"preventive_reviewer\"][\"vendor\"]\nexcluded = set(roles[\"verifier_excluded_vendors\"])\ncompared += 1\nif not implementer_vendors <= excluded:\n    errors.append(\"implementer vendor is not excluded\")\ncompared += 1\nif reviewer_vendor not in excluded:\n    errors.append(\"preventive reviewer vendor is not excluded\")\nsame(\"verifier_status\", roles[\"verifier_status\"], \"NOT_REQUESTED\")\nsame(\"effective_verifier\", roles[\"effective_verifier\"], None)\nsame(\"implementer_identity\", roles[\"implementers\"][0], record[\"implementer\"])\nif not isinstance(roles.get(\"scanned_head\"), str) or len(roles[\"scanned_head\"]) != 40:\n    errors.append(\"scanned_head is not a full commit\")\ncompared += 1\nreport = {\n    \"compared_fields\": compared,\n    \"errors\": errors,\n    \"errors_found\": len(errors),\n    \"scanned_head\": roles.get(\"scanned_head\"),\n    \"status\": \"PASS\" if not errors else \"FAIL\",\n}\nsys.stdout.write(json.dumps(report, indent=2, sort_keys=True) + \"\\n\")\nraise SystemExit(0 if not errors else 1)\nPY",
       "compared_fields": 16,
       "decision": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
       "errors_corrected": 0,
       "errors_found": 0,
-      "note": "The scan names scanned_head 34a66b063b7867ed938828f9f5affbc0d35f1d52. Reviewer, request, verdict and excluded vendor agree across roles and preventive_review.",
+      "note": "The registration commit repeats this comparison with the inline command in the proof table. scanned_head remains 34a66b063b7867ed938828f9f5affbc0d35f1d52. The stdout sha256 is unchanged.",
       "scanned_head": "34a66b063b7867ed938828f9f5affbc0d35f1d52",
       "status": "PASS",
       "stdout_sha256": "82e0862fec0c4bf3709fbf151b5ce2d405b95c8218756b7e6b7269c890be4cc9"
