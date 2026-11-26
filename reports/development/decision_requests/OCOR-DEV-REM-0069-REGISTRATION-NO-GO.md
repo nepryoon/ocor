@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0069-REGISTRATION-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `RESOLVED_OPTION_1_APPLIED`.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Chi decide: decisione operativa sull'unità, perché il punto 7 di `OCOR-DEV-REM-0069-REDESIGN-NO-GO (2026-11-25)` ammette una sola richiesta nuova dopo il `NO_GO` dell'unico commit di registrazione e non ammette un altro ciclo. Nessuna opzione si applica in questa pubblicazione.
 Head di `origin/main` alla pubblicazione: `618e72c00f994e8ea8899914548cc38743aa4569`.
@@ -107,3 +107,9 @@ Blocca solo `OCOR-DEV-REM-0069` finché una sezione non adotta un'opzione. Non b
 ## Controllo di formato
 
 Comando, eseguito sul file di questa pubblicazione prima del push: `grep -cE '^[A-Z]?[0-9]{1,2}\. \*\*'`. Esito atteso: 3. Le opzioni sono numerate da 1 a 3, senza salti, sotto `## Opzioni`.
+
+## Disposition
+
+`OCOR-DEV-REM-0069-REGISTRATION-NO-GO (2026-11-26)` adotta l'opzione 1, con le precisazioni dei punti 1–8. Decisa dal PO di persona, sezione scritta a mano. Il testo sopra questa sezione, esclusa la riga di stato, resta il commit `5fb8d9cca762527569a77b82cb0b83e2d299f53e`, sha256 `62acf4a7b24b77ea9cae81cedbebb4ff46726aa80bc203e1b05e20c101bd8cfb`.
+
+L'opzione 1 è applicata. Un solo commit di registrazione `acac33abc2be6be9af419b61e9216d18fe14563e`, parent `e70fa15f6c92e7a8e3364e42e5b42d0793de5ec9`, branch `governed/ocor-dev-rem-0069-fuseki-archive-copy`. L'unico percorso cambiato è `reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json`. I blob `scripts/acquire_fuseki_archive.py` e `reports/tests/test_fuseki_archive_acquisition.py` restano `debf96c90a7ea6ffd89b0c10c92c93ed985d6ded` e `dee2ca8813565043b20798a634743edcf0fd5f20`. Nessuna campagna nuova: la prova di comportamento resta `eaae5f0de47c-1795613672`, `campaign_result.json` sha256 `9ba50b61daffc27fe28e12d44ee12e89ab1d4d41c8b8e47fd71e3eb4713d321a`. Le tre righe escono da `proof_table` ed entrano in `historical_artifact_control`. VF-004 resta `NOT_CORRECTED` e non è `PASS`. La richiesta di verifica è `OCOR-DEV-REM-0069-acac33abc2be-1`. Il verifier non è xAI e non lo avvia l'implementatore. Non c'è la pull request del candidato. Con un nuovo `NO_GO` non c'è un altro ciclo. Le opzioni 2 e 3 non sono applicate.
