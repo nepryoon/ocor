@@ -1,0 +1,142 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commit": "8f52865f2277e05236b3f820285ca3fad22c91ea",
+  "commit_role": "Allowlist commit. The inventory command reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below.",
+  "created_at": "2026-11-27T17:36:16Z",
+  "decision": "OCOR-DEV-REM-0068-PIN-INVENTORY (2026-11-27)",
+  "implementer": {
+    "model": "grok-4.7",
+    "process": "Grok Build",
+    "vendor": "xAI"
+  },
+  "inputs": {
+    "scripts/validate_current_evidence_head.py": "afcf4344c6ffc3c5d9a897468843e3007f70d6e9e9d9321b61f1304b87595d2f",
+    "scripts/validate_evidence_input_drift.py": "945f80d712c0abfc83bd2333bf48487844e051727809ace61749368c2bef7b8f",
+    "scripts/validate_ocor_development_plan.py": "9ccdd3ef460b0482a45a09f0b81280ad5212457e1da3e1501f898a6e2acd7236"
+  },
+  "inventory": {
+    "command": "python3 - << 'PY'\n#!/usr/bin/env python3\n\"\"\"Measure the OCOR-DEV-REM-0068 pin inventory on one commit.\n\nReads reports/evidence from that commit with discover_records and\nselect_most_recent from scripts/validate_evidence_input_drift.py in the\nsame commit. No completed_evidence_tasks filter. Prints canonical JSON.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport importlib.util\nimport json\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nCOMMIT = \"23e6b62c36627de91cb85329b9a1164f3219cd53\"\nTARGETS = [\n    \"scripts/validate_ocor_development_plan.py\",\n    \"reports/planning/OCOR_PLAN_RUN_STATE.json\",\n    \".github/workflows/ocor-tooling-bootstrap.yml\",\n]\n\n\ndef git_bytes(commit: str, path: str) -> bytes | None:\n    result = subprocess.run(\n        [\"git\", \"cat-file\", \"-e\", f\"{commit}:{path}\"],\n        check=False,\n        capture_output=True,\n    )\n    if result.returncode != 0:\n        return None\n    shown = subprocess.run(\n        [\"git\", \"show\", f\"{commit}:{path}\"],\n        check=True,\n        capture_output=True,\n    )\n    return shown.stdout\n\n\ndef main() -> int:\n    root = Path.cwd()\n    with tempfile.TemporaryDirectory(prefix=\"rem0068-inventory-\") as tmp:\n        tree = Path(tmp)\n        archive = subprocess.run(\n            [\"git\", \"archive\", COMMIT, \"reports/evidence\", \"scripts/validate_evidence_input_drift.py\"],\n            check=True,\n            capture_output=True,\n        )\n        subprocess.run([\"tar\", \"-x\", \"-C\", str(tree)], check=True, input=archive.stdout)\n        spec = importlib.util.spec_from_file_location(\n            \"drift_at_base\",\n            tree / \"scripts\" / \"validate_evidence_input_drift.py\",\n        )\n        if spec is None or spec.loader is None:\n            raise SystemExit(\"drift module missing at the measured commit\")\n        module = importlib.util.module_from_spec(spec)\n        spec.loader.exec_module(module)\n        records = module.discover_records(tree / \"reports\" / \"evidence\")\n        manifest_paths = sorted(\n            path.relative_to(tree).as_posix()\n            for path in (tree / \"reports\" / \"evidence\").rglob(\"MANIFEST.json\")\n        )\n        watched = TARGETS + manifest_paths\n        rows = []\n        for task_id in sorted(records):\n            selected = module.select_most_recent(records[task_id])\n            record = json.loads(selected.read_text(encoding=\"utf-8\"))\n            inputs = record.get(\"inputs\")\n            if not isinstance(inputs, dict):\n                continue\n            identity = record.get(\"record_id\") or record.get(\"commit\") or selected.relative_to(tree).as_posix()\n            for path in watched:\n                pin = inputs.get(path)\n                if isinstance(pin, str):\n                    rows.append(\n                        {\n                            \"file\": path,\n                            \"pin\": pin,\n                            \"record_id\": identity,\n                            \"task\": task_id,\n                        }\n                    )\n        payload = {\n            \"commit\": COMMIT,\n            \"drift_script_sha256\": hashlib.sha256(\n                (tree / \"scripts\" / \"validate_evidence_input_drift.py\").read_bytes()\n            ).hexdigest(),\n            \"manifests\": manifest_paths,\n            \"pins\": rows,\n            \"repository\": str(root),\n            \"selector\": \"discover_records+select_most_recent\",\n            \"completed_evidence_tasks_filter\": False,\n        }\n        sys.stdout.write(json.dumps(payload, indent=2, sort_keys=True) + \"\\n\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\nPY",
+    "completed_evidence_tasks_filter": false,
+    "execution_commit": "23e6b62c36627de91cb85329b9a1164f3219cd53",
+    "exit_code": 0,
+    "manifest_count": 8,
+    "pin_count": 13,
+    "pins": [
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
+        "record_id": "OCOR-DEV-0005-requalified-rem0069-34a66b063b78",
+        "task": "OCOR-DEV-0005"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
+        "record_id": "OCOR-DEV-0050-requalified-rem0069-34a66b063b78",
+        "task": "OCOR-DEV-0050"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
+        "record_id": "OCOR-DEV-0082-requalified-rem0069-34a66b063b78",
+        "task": "OCOR-DEV-0082"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0018"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0022-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0022"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0023"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "7bcb652ccbed7d5154d3231b386725dbb31bfe199c5a9ac053977e6828ce196b",
+        "record_id": "OCOR-DEV-REM-0036-requalified-rem0059-636975eaacd7",
+        "task": "OCOR-DEV-REM-0036"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "3c0fb2aaff43a3a71916d286e59b1c3b17597cef0ed1edfde714b034fa3ba4b5",
+        "record_id": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
+        "task": "OCOR-DEV-REM-0037"
+      },
+      {
+        "file": "reports/planning/OCOR_PLAN_RUN_STATE.json",
+        "pin": "ae3fde4245d75d6e2cfb0065c326552cdc7404d406e8292fa2bc87f653e39c2c",
+        "record_id": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
+        "task": "OCOR-DEV-REM-0037"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0038"
+      },
+      {
+        "file": ".github/workflows/ocor-tooling-bootstrap.yml",
+        "pin": "674d25652621ca32a06cdb8413ac9b9dda589f069825460242b66e20df39cabe",
+        "record_id": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0038"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "62661c88b7c864748d0ec8a31b9128dd8b6bb1a5ee7da34259966abdca1e6bf1",
+        "record_id": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
+        "task": "OCOR-DEV-REM-0053"
+      },
+      {
+        "file": "reports/planning/OCOR_PLAN_RUN_STATE.json",
+        "pin": "2cbe44c0bde095c486c1ab24c1e2e21e065744cf084bf9c510b116d89c7f2952",
+        "record_id": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
+        "task": "OCOR-DEV-REM-0053"
+      }
+    ],
+    "readme_match": true,
+    "selector": "discover_records+select_most_recent",
+    "stdout_sha256": "4e02244b3595b3b5433adbb05832b078597fee4a647d21199b9df8a5d3593fe1"
+  },
+  "raw_output_path": "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.log",
+  "raw_output_sha256": "4e02244b3595b3b5433adbb05832b078597fee4a647d21199b9df8a5d3593fe1",
+  "record_id": "OCOR-DEV-REM-0068",
+  "regression_requalifications": [
+    {
+      "record_id": "OCOR-DEV-0005-requalified-rem0068-8f52865f2277",
+      "result": "PASS",
+      "supersedes": "OCOR-DEV-0005-requalified-rem0069-34a66b063b78",
+      "task_id": "OCOR-DEV-0005"
+    },
+    {
+      "record_id": "OCOR-DEV-0050-requalified-rem0068-8f52865f2277",
+      "result": "PASS",
+      "supersedes": "OCOR-DEV-0050-requalified-rem0069-34a66b063b78",
+      "task_id": "OCOR-DEV-0050"
+    },
+    {
+      "record_id": "OCOR-DEV-0082-requalified-rem0068-8f52865f2277",
+      "result": "PASS",
+      "supersedes": "OCOR-DEV-0082-requalified-rem0069-34a66b063b78",
+      "task_id": "OCOR-DEV-0082"
+    }
+  ],
+  "result": "CANDIDATE",
+  "schema_version": "1.0",
+  "status": "CANDIDATE",
+  "unit": "OCOR-DEV-REM-0068"
+}
