@@ -1876,6 +1876,18 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0064.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0064.log",
+        # OCOR-DEV-REM-0069 (FUSEKI-ARCHIVE-COPY-20261123-CYCLE3-NO-GO option 1):
+        # closed set that replaces the 23 entries. This commit adds the README only.
+        "reports/assurance/OCOR-DEV-REM-0069-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0069.log",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0069.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
