@@ -2046,6 +2046,19 @@ def main() -> int:
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/reconciliation/OCOR-DEV-0083.log",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/reconciliation/OCOR-DEV-0084.json",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/reconciliation/OCOR-DEV-0084.log",
+        # OCOR-DEV-REM-0068 regression requalification. The evidence commit
+        # that stores these records does not change this script. The unit
+        # record and the pre-campaign log are allowlisted here so a later
+        # evidence commit can add them without a second digest change.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.log",
+        "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+        "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.log",
+        "reports/assurance/OCOR-DEV-REM-0068-RCCAD/pre-campaign.log",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
