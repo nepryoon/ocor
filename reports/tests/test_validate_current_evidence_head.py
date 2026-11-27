@@ -82,6 +82,8 @@ class Record:
     unreadable: bool = False
     non_utf8: bool = False
     nan_literal: bool = False
+    broken: bool = False
+    literal: bytes | None = None
 
 
 @dataclass(frozen=True)
@@ -95,6 +97,8 @@ class Reconciliation:
     unreadable: bool = False
     under_evidence: bool = False
     missing: bool = False
+    literal: bytes | None = None
+    reject: bool = False
 
 
 @dataclass(frozen=True)
@@ -108,6 +112,8 @@ class Manifest:
     relative_path: str
     entries: tuple[ManifestEntry, ...]
     unreadable: bool = False
+    literal: bytes | None = None
+    reject: bool = False
 
 
 @dataclass(frozen=True)
@@ -116,6 +122,8 @@ class World:
     records: tuple[Record, ...]
     reconciliations: tuple[Reconciliation, ...]
     manifests: tuple[Manifest, ...]
+    state_bytes: bytes | None = None
+    state_unreadable: bool = False
 
 
 @dataclass(frozen=True)
@@ -144,6 +152,8 @@ def _record_payload(record: Record) -> dict[str, object]:
 
 
 def record_bytes(record: Record) -> bytes:
+    if record.literal is not None:
+        return record.literal
     if record.non_utf8:
         return b"\xff\xfe not utf-8"
     if record.nan_literal:
@@ -151,6 +161,10 @@ def record_bytes(record: Record) -> bytes:
     if record.unreadable:
         return b"{\n"
     return (json.dumps(_record_payload(record), indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def _rejected(record: Record) -> bool:
+    return record.unreadable or record.non_utf8 or record.nan_literal or record.broken
 
 
 def _path(name: str) -> str:
@@ -163,7 +177,7 @@ def _manifest_for(names: Sequence[str], extra: tuple[ManifestEntry, ...] = ()) -
 
 
 def _listed_names(records: Sequence[Record]) -> tuple[str, ...]:
-    return tuple(Path(record.path).name for record in records if not record.unreadable)
+    return tuple(Path(record.path).name for record in records if not _rejected(record))
 
 
 def _world(
@@ -218,15 +232,22 @@ def _graph(world: World, entry: str, focus: str | None) -> Outcome:
     records = [record for record in world.records if record.path.startswith("reports/evidence/")]
     if focus is not None:
         named = [record for record in records if record.path == focus]
-        if not named or named[0].unreadable or named[0].non_utf8 or named[0].nan_literal:
+        if not named or _rejected(named[0]):
             findings.add(Finding(TASK, "UNREADABLE_JSON", entry))
             return Outcome("FAIL", tuple(sorted(findings, key=_finding_key)), ())
     for record in records:
-        if record.unreadable or record.non_utf8 or record.nan_literal or any(_lone_surrogate(value) for value in _text_fields(record)):
+        if _rejected(record) or any(_lone_surrogate(value) for value in _text_fields(record)):
             findings.add(Finding(TASK, "UNREADABLE_JSON", entry))
-    readable = [record for record in records if not record.unreadable and not record.non_utf8 and not record.nan_literal]
+    readable = [record for record in records if not _rejected(record)]
     recon = next((item for item in world.reconciliations if item.task_id == TASK), None)
-    recon_unusable = recon is None or recon.missing or recon.unreadable or recon.under_evidence or bool(recon.embedded_task_id)
+    recon_unusable = (
+        recon is None
+        or recon.missing
+        or recon.unreadable
+        or recon.reject
+        or recon.under_evidence
+        or bool(recon.embedded_task_id)
+    )
     reconciles: dict[str, str] = {}
     if recon is not None and not recon_unusable:
         reconciles = dict(recon.reconciles)
@@ -262,7 +283,7 @@ def _graph(world: World, entry: str, focus: str | None) -> Outcome:
         findings.add(Finding(TASK, "SUPERSEDES_UNRESOLVED", entry))
     if needs_recon:
         findings.add(Finding(TASK, "RECONCILIATION_ABSENT", entry))
-    if recon is not None and (recon.unreadable or recon.under_evidence or bool(recon.embedded_task_id)):
+    if recon is not None and (recon.unreadable or recon.reject or recon.under_evidence or bool(recon.embedded_task_id)):
         findings.add(Finding(TASK, "RECONCILIATION_ABSENT", entry))
     listed = {value for value in identities.values() if value}
     if recon is not None and not recon_unusable:
@@ -353,7 +374,7 @@ def _manifest_outcome(world: World, entry: str, manifest_path: str | None) -> Ou
         if not manifests:
             findings.add(Finding(TASK, "UNREADABLE_JSON", entry))
     for manifest in manifests:
-        if manifest.unreadable:
+        if manifest.unreadable or manifest.reject:
             findings.add(Finding(TASK, "UNREADABLE_JSON", entry))
             continue
         listed: set[str] = set()
@@ -373,7 +394,7 @@ def _manifest_outcome(world: World, entry: str, manifest_path: str | None) -> Ou
         for record in world.records:
             if str(Path(record.path).parent) != directory:
                 continue
-            if record.unreadable or record.non_utf8 or record.nan_literal:
+            if _rejected(record):
                 findings.add(Finding(TASK, "UNREADABLE_JSON", entry))
                 continue
             if Path(record.path).name not in listed:
@@ -390,6 +411,8 @@ def evaluate(world: World, entry: str, focus: str | None = None, manifest_path: 
     """Return the reference outcome for one entry point. Never skips."""
     if entry not in ENTRIES:
         raise ValueError(entry)
+    if world.state_unreadable:
+        return Outcome("FAIL", (Finding("UNSCOPED", "UNREADABLE_JSON", entry),), ())
     if entry == "E3":
         return _manifest_outcome(world, entry, manifest_path)
     graph = _graph(world, entry, focus)
@@ -521,7 +544,8 @@ def _write(path: Path, data: bytes) -> None:
 
 def materialise(root: Path, world: World) -> None:
     state = {"completed_evidence_tasks": list(world.completed)}
-    _write(root / "reports" / "development" / "EXECUTION_STATE.json", (json.dumps(state, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+    state_bytes = world.state_bytes if world.state_bytes is not None else (json.dumps(state, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    _write(root / "reports" / "development" / "EXECUTION_STATE.json", state_bytes)
     for record in world.records:
         _write(root / record.path, record_bytes(record))
     for recon in world.reconciliations:
@@ -538,9 +562,17 @@ def materialise(root: Path, world: World) -> None:
         target = root / "reports" / "assurance" / "OCOR-DEV-REM-0068-RCCAD" / "reconciliation" / f"{recon.task_id}.json"
         if recon.under_evidence:
             target = root / "reports" / "evidence" / GATE / f"{recon.task_id}.reconciliation.json"
-        data = b"{\n" if recon.unreadable else (json.dumps(body, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        if recon.literal is not None:
+            data = recon.literal
+        elif recon.unreadable:
+            data = b"{\n"
+        else:
+            data = (json.dumps(body, indent=2, sort_keys=True) + "\n").encode("utf-8")
         _write(target, data)
     for manifest in world.manifests:
+        if manifest.literal is not None:
+            _write(root / manifest.relative_path, manifest.literal)
+            continue
         if manifest.unreadable:
             _write(root / manifest.relative_path, b"{\n")
             continue
@@ -781,6 +813,103 @@ class ProductionTests(unittest.TestCase):
                     produced = _production(world, entry, record if entry == "E2" else None, script)
                 self.assertNotEqual(expected, produced)
                 self.assertNotIn(name, {item.code for item in produced.findings})
+
+    def test_strict_documents_match_the_oracle(self) -> None:
+        """Non-RFC JSON and wrong types fail closed; finite wrong manifest fields do not."""
+        head = _record("head.json", f"{TASK}-head")
+
+        def evidence(raw: bytes) -> World:
+            return _world((head, Record(_path("bad.json"), broken=True, literal=raw)))
+
+        def recon(raw: bytes) -> World:
+            item = Reconciliation(TASK, f"{TASK}-head", (), (), head.path, literal=raw, reject=True)
+            return _world((head,), (item,))
+
+        def state(raw: bytes) -> World:
+            return World((TASK,), (head,), (), (_manifest_for(("head.json",)),), raw, True)
+
+        def manifest(raw: bytes) -> World:
+            chosen = Manifest(
+                f"reports/evidence/{GATE}/MANIFEST.json",
+                (ManifestEntry("head.json", TASK),),
+                literal=raw,
+                reject=True,
+            )
+            return _world((head,), manifest=chosen)
+
+        valid = {
+            "reconciles": {},
+            "remaining_head": f"{TASK}-head",
+            "selection_proof": {"base": "fixture", "selected_path": head.path, "selector": "select_most_recent"},
+            "supersedes": [],
+        }
+
+        def patched(payload: dict[str, object], token: str, replacement: str) -> bytes:
+            text = json.dumps(payload, indent=2, sort_keys=True).replace(f'"{token}"', replacement, 1)
+            return (text + "\n").encode("utf-8")
+
+        nan_recon = dict(valid)
+        nan_recon["note"] = "NAN_TOKEN"
+        number_recon = dict(valid)
+        number_recon["reconciles"] = {"extra": "NUM_TOKEN"}
+        embedded = dict(valid)
+        embedded["task_id"] = "NUM_TOKEN"
+        remaining = dict(valid)
+        remaining["remaining_head"] = "NUM_TOKEN"
+        selected = dict(valid)
+        selected["selection_proof"] = {
+            "base": "fixture",
+            "selected_path": "NUM_TOKEN",
+            "selector": "select_most_recent",
+        }
+        surrogate_note = dict(valid)
+        surrogate_note["note"] = "SUR_TOKEN"
+        lone_head = json.dumps(valid, indent=2, sort_keys=True).replace(f'"{TASK}-head"', '"\\ud800"', 1)
+
+        cases: list[tuple[str, World, str, str | None]] = [
+            ("nan", evidence(b'{"score": NaN, "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("infinity", evidence(b'{"score": Infinity, "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("negative-infinity", evidence(b'{"meta": {"bound": -Infinity}, "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("supersedes-list", evidence(b'{"record_id": "OCOR-DEV-0099-list", "supersedes": ["B"], "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("supersedes-null", evidence(b'{"record_id": "OCOR-DEV-0099-null", "supersedes": null, "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("task-id-number", evidence(b'{"record_id": "OCOR-DEV-0099-num", "task_id": 1}\n'), "E1", None),
+            ("task-id-bool", evidence(b'{"record_id": "OCOR-DEV-0099-bool", "task_id": true}\n'), "E1", None),
+            ("task-id-empty", evidence(b'{"record_id": "OCOR-DEV-0099-empty", "task_id": ""}\n'), "E1", None),
+            ("record-id-number", evidence(b'{"record_id": 4, "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("record-id-null", evidence(b'{"record_id": null, "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("commit-number", evidence(b'{"commit": 1, "record_id": "OCOR-DEV-0099-c", "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("commit-null", evidence(b'{"commit": null, "record_id": "OCOR-DEV-0099-c", "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("nested-surrogate", evidence(b'{"note": {"k": "\\ud800"}, "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("key-surrogate", evidence(b'{"\\ud800": "x", "task_id": "OCOR-DEV-0099"}\n'), "E1", None),
+            ("nan-e2", evidence(b'{"score": NaN, "task_id": "OCOR-DEV-0099"}\n'), "E2", _path("bad.json")),
+            ("recon-nan", recon(patched(nan_recon, "NAN_TOKEN", "NaN")), "E1", None),
+            ("recon-infinity", recon(patched(nan_recon, "NAN_TOKEN", "Infinity")), "E1", None),
+            ("recon-number-value", recon(patched(number_recon, "NUM_TOKEN", "1")), "E1", None),
+            ("recon-embedded-number", recon(patched(embedded, "NUM_TOKEN", "1")), "E1", None),
+            ("recon-remaining-number", recon(patched(remaining, "NUM_TOKEN", "1")), "E1", None),
+            ("recon-selected-number", recon(patched(selected, "NUM_TOKEN", "1")), "E1", None),
+            ("recon-lone-remaining", recon((lone_head + "\n").encode("utf-8")), "E1", None),
+            ("recon-nested-surrogate", recon(patched(surrogate_note, "SUR_TOKEN", '"\\ud800"')), "E1", None),
+            ("state-nan", state(b'{"completed_evidence_tasks": ["OCOR-DEV-0099"], "score": NaN}\n'), "E1", None),
+            ("state-infinity", state(b'{"completed_evidence_tasks": [Infinity]}\n'), "E1", None),
+            ("state-number", state(b'{"completed_evidence_tasks": [1]}\n'), "E1", None),
+            ("state-bool", state(b'{"completed_evidence_tasks": [true]}\n'), "E1", None),
+            ("state-container", state(b'{"completed_evidence_tasks": {"task": "OCOR-DEV-0099"}}\n'), "E1", None),
+            ("state-not-object", state(b"[1]\n"), "E1", None),
+            ("state-non-utf8", state(b"\xff"), "E1", None),
+            ("manifest-nan", manifest(b'{"artifacts": [{"n": NaN, "path": "head.json", "task_id": "OCOR-DEV-0099"}]}\n'), "E1", None),
+            ("manifest-nan-e3", manifest(b'{"artifacts": [{"n": NaN, "path": "head.json", "task_id": "OCOR-DEV-0099"}]}\n'), "E3", None),
+            ("manifest-surrogate", manifest(b'{"artifacts": [{"path": "\\ud800", "task_id": "OCOR-DEV-0099"}]}\n'), "E1", None),
+            ("manifest-number", _world((head,), manifest=_manifest_for(("head.json",), (ManifestEntry(1, TASK),))), "E1", None),
+            ("manifest-bool-task", _world((head,), manifest=_manifest_for(("head.json",), (ManifestEntry("also.json", True),))), "E1", None),
+            ("empty-supersedes", _world((_record("head.json", f"{TASK}-head", ""),)), "E1", None),
+            ("empty-record-id", _world((Record(_path("head.json"), None, literal=b'{"record_id": "", "task_id": "OCOR-DEV-0099"}\n'),)), "E1", None),
+            ("emoji-pair", _world((_record("head.json", f"{TASK}-t\U0001f600"),)), "E1", None),
+            ("duplicate-keys", _world((Record(_path("head.json"), f"{TASK}-dup", literal=b'{"record_id": "OCOR-DEV-0099-dup", "task_id": "OCOR-DEV-0099", "task_id": "OCOR-DEV-0099"}\n'),)), "E1", None),
+        ]
+        for name, world, entry, focus in cases:
+            with self.subTest(name=name):
+                self.assertEqual(evaluate(world, entry, focus), _production(world, entry, focus))
 
 
 if __name__ == "__main__":
