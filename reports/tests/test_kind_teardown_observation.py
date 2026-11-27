@@ -1135,13 +1135,47 @@ def observer_constants(text):
             for t in n.targets if isinstance(t, ast.Name) and t.id in OBSERVER_CONSTANTS}
 
 
+REM0068_TOOLING = '.github/workflows/ocor-tooling-bootstrap.yml'
+REM0068_HEAD_COMMAND = (
+    'ocor-runtime/.venv/bin/python scripts/validate_current_evidence_head.py --root .'
+)
+REM0068_DRIFT_BLOCK = (
+    '        run: |\n'
+    '          ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .\n'
+    '          ocor-runtime/.venv/bin/python scripts/validate_current_evidence_head.py --root .\n'
+)
+REM0068_DRIFT_LINE = (
+    '        run: ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .\n'
+)
+
+
+def normalize_rem0068_workflow(path, text):
+    """OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27), option 1.
+
+    Only the exact drift-step block in the tooling workflow returns to the single
+    baseline line of 82b71d0. The block and the head-validation command each occur
+    exactly once, and the command is absent after the replacement. A missing,
+    duplicated or altered block is left unchanged, so the current byte proof fails.
+    No other workflow, the supervisor or the observer is rewritten.
+    """
+    if path != REM0068_TOOLING:
+        return text
+    if text.count(REM0068_DRIFT_BLOCK) != 1 or text.count(REM0068_HEAD_COMMAND) != 1:
+        return text
+    replaced = text.replace(REM0068_DRIFT_BLOCK, REM0068_DRIFT_LINE, 1)
+    if replaced.count(REM0068_HEAD_COMMAND) != 0:
+        return text
+    return replaced
+
+
 def current_baseline_proof(overrides=None):
     """NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9, REM-0038-GUARD-BASELINE-CONSOLIDATION option 1.
 
     Every workflow and the campaign supervisor must be byte-identical to 82b71d0, and the set of
     workflow files must equal that of 82b71d0 (a workflow added, removed or renamed fails). The
     observer keeps the window, cadence, sampler and kind binary of 82b71d0 and ten-second probe
-    timeouts. No normalisation applies to the working tree: a future difference needs a new exact
+    timeouts. The only working-tree normalisation is OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27)
+    option 1: the exact tooling drift-step block. Any other difference needs a new exact
     normalisation on 82b71d0 authorised by a PO decision, or a new consolidation decided by the PO.
     ``overrides`` replaces file text (``None`` removes the file) for the negative cases.
     """
@@ -1163,6 +1197,8 @@ def current_baseline_proof(overrides=None):
     digests = {}
     for path in expected + [CAMPAIGN_PATH]:
         data = current(path)
+        if path == REM0068_TOOLING and data is not None:
+            data = normalize_rem0068_workflow(path, data.decode()).encode()
         if data != baseline_bytes(path):
             raise AssertionError('Byte drift from 82b71d0: ' + path)
         digests[path] = hashlib.sha256(data).hexdigest()
@@ -1272,6 +1308,60 @@ class GuardBaselineConsolidation(unittest.TestCase):
                 self.assertGreaterEqual(observer.count(old), 1)
                 self.assertEqual(current_guard_failures({OBSERVER_PATH: observer.replace(old, new, 1)}), {CURRENT_PROOF})
         self.assertEqual(current_guard_failures({OBSERVER_PATH: None}), {CURRENT_PROOF})
+
+
+class Rem0068GuardAdmission(unittest.TestCase):
+    """OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27), option 1: the exact tooling drift-step
+    block is admitted in the current proof and normalised to the single baseline line. The
+    head-validation command occurs once. Every other difference still fails."""
+
+    TOOLING = REM0068_TOOLING
+
+    def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_line(self):
+        root = Path(__file__).resolve().parents[2]
+        tooling = (root / self.TOOLING).read_text()
+        self.assertEqual(tooling.count(REM0068_DRIFT_BLOCK), 1)
+        self.assertEqual(tooling.count(REM0068_HEAD_COMMAND), 1)
+        normalised = normalize_rem0068_workflow(self.TOOLING, tooling)
+        self.assertEqual(normalised.count(REM0068_HEAD_COMMAND), 0)
+        self.assertEqual(normalised.count(REM0068_DRIFT_LINE), 1)
+        self.assertEqual(normalised.encode(), baseline_bytes(self.TOOLING))
+        self.assertEqual(normalize_rem0068_workflow(CAMPAIGN_PATH, baseline_text(CAMPAIGN_PATH)), baseline_text(CAMPAIGN_PATH))
+        self.assertEqual(normalize_rem0068_workflow(OBSERVER_PATH, baseline_text(OBSERVER_PATH)), baseline_text(OBSERVER_PATH))
+        self.assertEqual(current_guard_failures({}), set())
+
+    def test_every_other_difference_of_the_real_workflow_still_fails(self):
+        root = Path(__file__).resolve().parents[2]
+        tooling = (root / self.TOOLING).read_text()
+        command_line = '          ' + REM0068_HEAD_COMMAND + '\n'
+        self.assertEqual(tooling.count(command_line), 1)
+        other = '.github/workflows/ocor-rccad.yml'
+        absent = tooling.replace(command_line, '', 1)
+        duplicated = tooling.replace(command_line, command_line + command_line, 1)
+        rewritten = tooling.replace(REM0068_HEAD_COMMAND, REM0068_HEAD_COMMAND + ' --extra', 1)
+        moved = tooling.replace(command_line, '', 1).replace(
+            '      - name: Validate language policy (DEC-212)\n',
+            '      - name: Validate language policy (DEC-212)\n' + command_line,
+            1,
+        )
+        other_byte = tooling.replace(
+            'Validate evidence input drift against HEAD (R3)',
+            'Validate evidence input drift against HEAD (R4)',
+            1,
+        )
+        for label, overrides in [
+            ('command absent', {self.TOOLING: absent}),
+            ('command duplicated', {self.TOOLING: duplicated}),
+            ('command rewritten', {self.TOOLING: rewritten}),
+            ('command moved', {self.TOOLING: moved}),
+            ('any other byte', {self.TOOLING: other_byte}),
+            ('command in another workflow', {other: baseline_text(other) + command_line}),
+        ]:
+            with self.subTest(change=label):
+                path, text = next(iter(overrides.items()))
+                self.assertNotEqual(text, baseline_text(path))
+                self.assertNotEqual(normalize_rem0068_workflow(path, text).encode(), baseline_bytes(path))
+                self.assertEqual(current_guard_failures(overrides), {CURRENT_PROOF})
 
 if __name__ == '__main__':
     unittest.main()
