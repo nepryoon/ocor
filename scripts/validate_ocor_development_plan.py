@@ -1888,6 +1888,11 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.log",
+        # OCOR-DEV-REM-0068 RED: the contract README is already in the diff, and this
+        # commit adds the current-head test plus red.log. The production script is later.
+        "reports/assurance/OCOR-DEV-REM-0068-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0068-RCCAD/red.log",
+        "reports/tests/test_validate_current_evidence_head.py",
     }
     planning_paths = {
         "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json",
