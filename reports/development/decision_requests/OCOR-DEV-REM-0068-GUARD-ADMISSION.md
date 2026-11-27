@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0068-GUARD-ADMISSION
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`.
+Status: `RESOLVED_OPTION_1_APPLIED`.
 
 Una sola domanda, di livello normativo: come si ammette, nel proof di byte
 `bytes-82b71d0`, il solo comando che il contratto di `OCOR-DEV-REM-0068` aggiunge
@@ -122,3 +122,34 @@ Opzione 1.
   validatore del piano non ammette ancora questo percorso: il file entra
   nell'allowlist con il change set che applica la decisione, non prima.
 - Claim invariati. VF-004 non si segna `PASS`.
+
+## Disposition
+
+`OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27)`. È adottata l'opzione 1.
+Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`.
+
+Il testo deciso resta il commit `49c04bae7696419ca1c00a80ed49858dcf197614`,
+sha256 `7b553458d57000a26bd157fae431b7cdbd184a8e6fd009b8685c2e5f7fc4aee9`.
+Questo commit aggiunge solo lo stato e questa disposition.
+
+Sul branch `governed/ocor-dev-rem-0068-current-head`:
+
+- `e74895832df289ff7762bc8e9748097d38b74860` ammette il delta esatto nel proof
+  corrente, senza spostare `82b71d0`.
+- `d6f72ad425345d70010d2e204dd04ae2a8330a18` ammette nell'allowlist i record di
+  riqualifica. Il digest di `scripts/validate_ocor_development_plan.py` cambia
+  solo per quei percorsi.
+- `59788e3b0bbc3c6dbf129bf721b619c14e63a49f` registra le riqualifiche di sola
+  regressione di `OCOR-DEV-0005` e `OCOR-DEV-0050`, perché fissano il file del
+  proof, e di `OCOR-DEV-0082` solo perché quel digest cambia. `OCOR-DEV-0082`
+  non fissa il file del proof e quel file non è fra i suoi input.
+
+`PRE-CAMPAIGN-GATE` su `59788e3b0bbc3c6dbf129bf721b619c14e63a49f` è passato.
+`vf004_schema_conformance` resta `NOT_CORRECTED` e non è `PASS`. La revisione
+preventiva è `OCOR-DEV-REM-0068-59788e3b0bbc-pre`. La suite completa non parte
+in questa iterazione.
+
+Questo file non entra nel branch di codice e non modifica
+`scripts/validate_ocor_development_plan.py`. Nessuna pull request: il
+validatore del piano non ammette il percorso. Claim invariati. Nessun nuovo
+`DEC-*`.
