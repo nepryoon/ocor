@@ -2056,6 +2056,16 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.log",
+        # OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27) option 1. The proof
+        # file change supersedes the 0005 and 0050 heads. 0082 does not pin
+        # the proof file; it is requalified only because this allowlist digest
+        # changes. The evidence commit does not change this script.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-guard.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-guard.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-guard.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-guard.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-guard.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-guard.log",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.log",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/pre-campaign.log",
