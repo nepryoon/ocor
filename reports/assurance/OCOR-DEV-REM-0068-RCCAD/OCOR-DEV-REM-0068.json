@@ -7,17 +7,97 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit": "d6f72ad425345d70010d2e204dd04ae2a8330a18",
-  "commit_role": "Guard-admission allowlist commit. The inventory command reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27) option 1 changes the plan-validator digest; this pin follows that commit. The proof normalisation remains e74895832df289ff7762bc8e9748097d38b74860. The previous pin commit remains 1e36db6b780746c25882849d40bb153a1c1323a4.",
+  "commit": "34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5",
+  "commit_role": "Parser execution commit 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. It refuses non-RFC JSON on every parse path of scripts/validate_current_evidence_head.py. RED tests are 83894f411b37594dc9db056ca18a5279fe21c9a1. The inventory command still reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. The guard-admission allowlist remains d6f72ad425345d70010d2e204dd04ae2a8330a18. The proof normalisation remains e74895832df289ff7762bc8e9748097d38b74860. The previous pin commit remains 1e36db6b780746c25882849d40bb153a1c1323a4.",
   "created_at": "2026-11-27T17:36:16Z",
   "decision": "OCOR-DEV-REM-0068-PIN-INVENTORY (2026-11-27)",
+  "execution_input_checks": [
+    {
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5 --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5",
+      "name": "unit-record",
+      "status": "PASS",
+      "stdout_sha256": "81a4b9b70b2932f2b30f244600d4a66830456ccde67349f96d6a2d0c883103fe"
+    },
+    {
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 8f52865f2277e05236b3f820285ca3fad22c91ea --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068.json",
+      "exit_code": 1,
+      "findings": [
+        {
+          "input_path": "reports/tests/test_kind_teardown_observation.py",
+          "path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068.json",
+          "reason": "changed between the execution commit and HEAD"
+        },
+        {
+          "input_path": "reports/tests/test_kind_teardown_observation.py",
+          "path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068.json",
+          "reason": "working tree differs from the execution commit"
+        },
+        {
+          "input_path": "scripts/validate_ocor_development_plan.py",
+          "path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068.json",
+          "reason": "changed between the execution commit and HEAD"
+        },
+        {
+          "input_path": "scripts/validate_ocor_development_plan.py",
+          "path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068.json",
+          "reason": "working tree differs from the execution commit"
+        },
+        {
+          "input_path": "reports/tests/test_kind_teardown_observation.py",
+          "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.json",
+          "reason": "changed between the execution commit and HEAD"
+        },
+        {
+          "input_path": "reports/tests/test_kind_teardown_observation.py",
+          "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.json",
+          "reason": "working tree differs from the execution commit"
+        },
+        {
+          "input_path": "scripts/validate_ocor_development_plan.py",
+          "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.json",
+          "reason": "changed between the execution commit and HEAD"
+        },
+        {
+          "input_path": "scripts/validate_ocor_development_plan.py",
+          "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068.json",
+          "reason": "working tree differs from the execution commit"
+        },
+        {
+          "input_path": "scripts/validate_ocor_development_plan.py",
+          "path": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068.json",
+          "reason": "changed between the execution commit and HEAD"
+        },
+        {
+          "input_path": "scripts/validate_ocor_development_plan.py",
+          "path": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068.json",
+          "reason": "working tree differs from the execution commit"
+        }
+      ],
+      "measured_head": "34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5",
+      "name": "requalified-rem0068",
+      "status": "FAIL",
+      "stdout_sha256": "3a508589ebf6ab9f55cac94fcf11a1e204aa7ca32c6f13ce5756d325d939ae25"
+    },
+    {
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit d6f72ad425345d70010d2e204dd04ae2a8330a18 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-guard.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-guard.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-guard.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5",
+      "name": "requalified-rem0068-guard",
+      "status": "PASS",
+      "stdout_sha256": "4ec55d3b1641f4f635a4ce7a654d407f7cdb13a89298c58a534dc565b3bbbed5"
+    }
+  ],
   "implementer": {
     "model": "grok-4.7",
     "process": "Grok Build",
     "vendor": "xAI"
   },
   "inputs": {
-    "scripts/validate_current_evidence_head.py": "72dd3f65e123386a0a3921c793a072f80cdbbbc552cc05b6723214abf7dcc1b7",
+    "scripts/validate_current_evidence_head.py": "4010314098677a6a0f669d9008f4f6573bac66279747101680589f2feb2180f4",
     "scripts/validate_evidence_input_drift.py": "945f80d712c0abfc83bd2333bf48487844e051727809ace61749368c2bef7b8f",
     "scripts/validate_ocor_development_plan.py": "37b603499a18f65a3f94ac2078f2830908a9b4f93c35cdd75c06013bb17dc91b"
   },
@@ -112,6 +192,39 @@
     "selector": "discover_records+select_most_recent",
     "stdout_sha256": "4e02244b3595b3b5433adbb05832b078597fee4a647d21199b9df8a5d3593fe1"
   },
+  "preventive_review": {
+    "advisory_dispositions": [
+      {
+        "disposition": "ACCEPTED. SELF-CHECK-CELL-SCAN (2026-11-09), SELF-CHECK-PATH-INVENTORY (2026-11-09) and RECORD-ROLES-COHERENCE-SCAN (2026-11-09) were already required before the next verify request. The table was absent at review time. The _load_record row would have caught the blocking parser defect had that cell been FIXED rather than absent. The scans are recorded in self_check.",
+        "id": "P3"
+      }
+    ],
+    "blocking_dispositions": [
+      {
+        "disposition": "CORRECTED at 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. One strict loader serves _load_record, _parse_recon, _load_manifest and _completed. NaN, Infinity, -Infinity and a lone surrogate anywhere in the tree are rejected. A present evidence task_id, supersedes, record_id or commit of the wrong type, and a present empty task_id, make the record UNREADABLE_JSON. Absent task_id still uses the fallback. Empty supersedes stays a string. Empty record_id and empty commit stay absent. The same defects in a reconciliation stay RECONCILIATION_ABSENT, including a lone surrogate in an identity field. A non-RFC manifest is UNREADABLE_JSON; a finite wrong-type path or task_id stays MANIFEST_FIELD. An unusable EXECUTION_STATE.json is UNREADABLE_JSON. Duplicate keys are still accepted. The production comparison is ProductionTests.test_strict_documents_match_the_oracle.",
+        "id": "P1"
+      },
+      {
+        "disposition": "CORRECTED in this record. scripts/check_execution_commit_inputs.py was run on this record, on the three requalified-rem0068 records and on the three requalified-rem0068-guard records. Command, exit code and stdout sha256 are in execution_input_checks. The stdout hash is measured while HEAD is the parser commit, before the commit that stores this record, because the checker prints HEAD. The superseded rem0068 records fail because test_kind_teardown_observation.py (0005 and 0050) and validate_ocor_development_plan.py (0005, 0050 and 0082) changed after 8f52865f. Their guard successors, checked at d6f72ad4, pass.",
+        "id": "P2"
+      }
+    ],
+    "counts": {
+      "advisory": 1,
+      "blocking": 2
+    },
+    "created_at": "2026-11-27T22:41:25+01:00",
+    "independence_limit": "Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10) and GROK-50X (2026-11-10): same vendor (xAI) as an implementer of this task (Grok Build, grok-4.7), different Grok generation (cursor-grok-4.6-xhigh). The loop excludes this reviewer from the final verification.",
+    "outcome_sha256": "2728d4e9f1e8790f7ecdc040dc136c6fe529ad34e77ba089aa93991b3c86a5fb",
+    "request_id": "OCOR-DEV-REM-0068-59788e3b0bbc-pre",
+    "reviewed_head": "59788e3b0bbc3c6dbf129bf721b619c14e63a49f",
+    "reviewer": {
+      "model": "cursor-grok-4.6-xhigh",
+      "process": "Cursor CLI",
+      "vendor": "xAI"
+    },
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "raw_output_path": "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.log",
   "raw_output_sha256": "4e02244b3595b3b5433adbb05832b078597fee4a647d21199b9df8a5d3593fe1",
   "record_id": "OCOR-DEV-REM-0068",
@@ -155,6 +268,155 @@
   ],
   "result": "CANDIDATE",
   "schema_version": "1.0",
+  "self_check": {
+    "at_review_time": "ABSENT",
+    "cell_scan": [
+      {
+        "checks": {
+          "JSONDecodeError": "FIXED. Matrix class 17 and the broken-object fixture.",
+          "UnicodeDecodeError": "FIXED. non_utf8 fixture and matrix class 17.",
+          "bytes": "N/A. JSON has no bytes type; non-UTF-8 is UnicodeDecodeError.",
+          "duplicate_keys": "N/A. Not in the corrected class. The last key still wins.",
+          "lone_surrogate": "FIXED in values and keys, including nested values. A valid surrogate pair stays accepted.",
+          "non_finite": "FIXED for NaN, Infinity and nested -Infinity via parse_constant.",
+          "wrong_type": "FIXED for a present number, bool, null, list, or empty task_id. Absent task_id keeps the fallback. Empty supersedes stays a string."
+        },
+        "class_name": "UNREADABLE_JSON",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_load_record",
+        "line": 738,
+        "negative_test": "ProductionTests.test_strict_documents_match_the_oracle",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "P1"
+      },
+      {
+        "checks": {
+          "JSONDecodeError": "FIXED.",
+          "UnicodeDecodeError": "FIXED.",
+          "bytes": "N/A. Same reason as records.",
+          "duplicate_keys": "N/A. Same reason as records.",
+          "lone_surrogate": "FIXED for the whole tree. The reason code stays RECONCILIATION_ABSENT.",
+          "non_finite": "FIXED. The reason code stays RECONCILIATION_ABSENT, not UNREADABLE_JSON.",
+          "wrong_container": "A supersedes value that is not a list of strings was already rejected.",
+          "wrong_type": "FIXED for a present non-string remaining_head, selected_path, reconciles value, or embedded task_id. An empty embedded task_id stays absent."
+        },
+        "class_name": "RECONCILIATION_ABSENT",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_parse_recon",
+        "line": 815,
+        "negative_test": "ProductionTests.test_strict_documents_match_the_oracle recon cases",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "P1"
+      },
+      {
+        "checks": {
+          "JSONDecodeError": "FIXED. Matrix class 17 entry E3.",
+          "UnicodeDecodeError": "FIXED.",
+          "bytes": "N/A. Same reason as records.",
+          "duplicate_keys": "N/A. Same reason as records.",
+          "lone_surrogate": "FIXED. A surrogate path is UNREADABLE_JSON.",
+          "non_finite": "FIXED.",
+          "wrong_type": "N/A for UNREADABLE_JSON. A finite number or bool stays MANIFEST_FIELD, including the empty-string matrix cell."
+        },
+        "class_name": "UNREADABLE_JSON",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_load_manifest",
+        "line": 864,
+        "negative_test": "manifest-nan, manifest-nan-e3, manifest-surrogate, manifest-number, manifest-bool-task",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "P1"
+      },
+      {
+        "checks": {
+          "JSONDecodeError": "FIXED for a non-object document and a non-list completed_evidence_tasks.",
+          "UnicodeDecodeError": "FIXED.",
+          "bytes": "N/A. Same reason as records.",
+          "duplicate_keys": "N/A. Same reason as records.",
+          "empty_element": "FIXED as unreadable. The sealed list has no empty string.",
+          "lone_surrogate": "FIXED by the same tree walk. The sealed state file has none.",
+          "missing_file_or_key": "N/A for the new refusal. A missing file and a missing key stay an empty completed set. The sealed state file has the key.",
+          "non_finite": "FIXED.",
+          "wrong_type": "FIXED for a number or bool element."
+        },
+        "class_name": "UNREADABLE_JSON",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_completed",
+        "line": 883,
+        "negative_test": "state-nan, state-infinity, state-number, state-bool, state-container, state-not-object, state-non-utf8",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "P1"
+      }
+    ],
+    "path_inventory": [
+      {
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_loads",
+        "kind": "shared RFC 8259 loader",
+        "line": 105
+      },
+      {
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_load_record",
+        "kind": "evidence JSON",
+        "line": 738
+      },
+      {
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_parse_recon",
+        "kind": "reconciliation JSON",
+        "line": 815
+      },
+      {
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_load_manifest",
+        "kind": "manifest JSON",
+        "line": 864
+      },
+      {
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_completed",
+        "kind": "EXECUTION_STATE.json",
+        "line": 883
+      }
+    ],
+    "pin_measurement": {
+      "current_head_hits": 0,
+      "discovered_tasks": 83,
+      "selector": "discover_records+select_most_recent",
+      "watched": [
+        "reports/tests/test_validate_current_evidence_head.py",
+        "scripts/validate_current_evidence_head.py"
+      ]
+    },
+    "role_coherence": {
+      "implementer": {
+        "model": "grok-4.7",
+        "process": "Grok Build",
+        "vendor": "xAI"
+      },
+      "note": "The corrective commits on governed/ocor-dev-rem-0068-current-head were produced by this implementer. The preventive reviewer is the same vendor and a different Grok generation. Final verification needs a vendor other than xAI.",
+      "preventive_reviewer": {
+        "model": "cursor-grok-4.6-xhigh",
+        "process": "Cursor CLI",
+        "vendor": "xAI"
+      }
+    },
+    "sections": [
+      "AUTOCONTROLLO-DIGEST-COMMIT (2026-11-11)",
+      "PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)",
+      "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "SELF-CHECK-CHECKLIST (2026-11-08)",
+      "SELF-CHECK-CLASS-COVERAGE (2026-11-08)",
+      "SELF-CHECK-ORACLE (2026-11-14)",
+      "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
+      "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)"
+    ]
+  },
   "status": "CANDIDATE",
   "unit": "OCOR-DEV-REM-0068"
 }
