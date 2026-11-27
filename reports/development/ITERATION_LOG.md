@@ -13640,3 +13640,7 @@ Prossima azione: il loop avvia la verifica indipendente `FUSEKI-REBUILD-IDENTITY
 - `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json` — exit 0 — stdout sha256 `66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83` — 0.031 s.
 - `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python -m mypy` — exit 0 — stdout sha256 `606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130` — 4.635 s.
 - Dopo queste righe si rieseguono `scripts/validate_language_policy.py`, `scripts/validate_rccad.py --base-ref origin/main` e `scripts/validate_ocor_change_scope.py` con il branch `governed/state-sync-rem0068-guard-admission-20261127`. Un esito diverso da 0 ferma il commit. L'hash di quella riesecuzione non entra in questo registro.
+
+## 2026-11-27 — rilettura del preambolo prima della pull request di stato
+
+- Rilettura di `/home/luca/.ocor-codex/openhands_preamble.md` il `2026-11-27T18:25:20Z`. Byte 668427, sha256 `7f9c902e4a7d0dae3259729893850c6369139d1e3513f3aa4e1706b196c51790`, identico alla rilettura `2026-11-27T18:12:21Z`, 249 sezioni. L'ultima sezione è `## OCOR-DEV-REM-0068-PIN-INVENTORY (2026-11-27) — decisione del PO`. Esito `SECTION_ABSENT` per `OCOR-DEV-REM-0068-GUARD-ADMISSION`. Nessuna opzione è applicata.
