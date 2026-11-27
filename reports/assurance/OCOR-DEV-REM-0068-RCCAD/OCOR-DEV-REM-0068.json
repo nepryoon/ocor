@@ -89,6 +89,33 @@
       "name": "requalified-rem0068-guard",
       "status": "PASS",
       "stdout_sha256": "4ec55d3b1641f4f635a4ce7a654d407f7cdb13a89298c58a534dc565b3bbbed5"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5 --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "7594851f3a2eb6b0ee81e8691992f1fe7cbc17d0",
+      "name": "unit-record-at-campaign-head",
+      "status": "PASS",
+      "stdout_sha256": "cf68b8da4f73f7bf1f082a1ac2f874919d17d1088801a7fbd4108f8c3f361aa1"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit d6f72ad425345d70010d2e204dd04ae2a8330a18 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-guard.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-guard.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-guard.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "7594851f3a2eb6b0ee81e8691992f1fe7cbc17d0",
+      "name": "requalified-rem0068-guard-at-campaign-head",
+      "status": "PASS",
+      "stdout_sha256": "34c3cc5ffff99f40b76de1e7272c2f912d0bbbf9009c0b153531cc888c29846d"
+    },
+    {
+      "command": "python3 - << 'PY'\nimport hashlib\nimport pathlib\nimport sys\n\nfiles = [\n    (\n        \"/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-7594851f3a2e/full/campaign_result.json\",\n        9071,\n        \"e66f942fbec8ef5662b24124d9f633f86c8afcb4c579720cdcbe0378b01f10a7\",\n    ),\n    (\n        \"/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-7594851f3a2e/campaign.log\",\n        10078,\n        \"ebaac2a9f8db8288531ef56b3a57b100e04795cb6fd17342ad2347c8526ec23f\",\n    ),\n]\nok = True\nfor path, size, expected in files:\n    data = pathlib.Path(path).read_bytes()\n    digest = hashlib.sha256(data).hexdigest()\n    match = digest == expected and len(data) == size\n    print(f\"{path} bytes={len(data)} sha256={digest} match={str(match).lower()}\")\n    ok = ok and match\nprint(\"ARTIFACT_PASS\" if ok else \"ARTIFACT_FAIL\")\nsys.exit(0 if ok else 1)\nPY",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "7594851f3a2eb6b0ee81e8691992f1fe7cbc17d0",
+      "name": "campaign-artifacts",
+      "status": "PASS",
+      "stdout_sha256": "27f957a8dd9622615a0e5e79880409f98010286ccd2d019ea5380bb387028c53"
     }
   ],
   "implementer": {
@@ -224,6 +251,120 @@
       "vendor": "xAI"
     },
     "verdict": "BLOCKING_FINDINGS"
+  },
+  "qualifying_campaign": {
+    "admission_level": "FOUR_LANE",
+    "campaign_id": "7594851f3a2e-1795820422",
+    "campaign_log_bytes": 10078,
+    "campaign_log_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-7594851f3a2e/campaign.log",
+    "campaign_log_sha256": "ebaac2a9f8db8288531ef56b3a57b100e04795cb6fd17342ad2347c8526ec23f",
+    "campaign_result_bytes": 9071,
+    "campaign_result_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-7594851f3a2e/full/campaign_result.json",
+    "campaign_result_sha256": "e66f942fbec8ef5662b24124d9f633f86c8afcb4c579720cdcbe0378b01f10a7",
+    "command": "python -u scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-7594851f3a2e/full --expected-head 7594851f3a2eb6b0ee81e8691992f1fe7cbc17d0 --tool-bin /home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin --tool-bin /home/luca/.ocor-codex/impl-env/rem-0063/bin",
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5826
+    },
+    "criterion": "Qualifying campaign on 7594851f, four lanes, zero skips",
+    "docker_hub": {
+      "checked_at": "2026-11-27T23:00:22Z",
+      "limit": "100;w=3600",
+      "remaining": "100;w=3600",
+      "threshold": 95,
+      "wait_seconds": 0.61
+    },
+    "executed_on": "7594851f3a2eb6b0ee81e8691992f1fe7cbc17d0",
+    "exit_code": 0,
+    "finished_at": "2026-11-27T23:31:27Z",
+    "fuseki_host_id_end": "sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1",
+    "fuseki_host_id_start": "sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1",
+    "fuseki_host_tag": "ocor/jena-fuseki:6.2.0",
+    "fuseki_retag": false,
+    "host_residue": {
+      "containers": [],
+      "networks": [],
+      "root_image": false,
+      "volumes": []
+    },
+    "lane_results": [
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 1
+        },
+        "lane": 1,
+        "lane_duration_seconds": 888.706,
+        "selected_sha256": "45d04d158c5ed1a9f7ff05b17f4d15146c2467ae9d98e254a02c1d2f61bb083b",
+        "status": "PASS"
+      },
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 1854
+        },
+        "lane": 2,
+        "lane_duration_seconds": 1403.568,
+        "selected_sha256": "292e8723d8a4d647b498c69a027f79a601f51da3b081f7797ec011fa79e2ad0e",
+        "status": "PASS"
+      },
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 2436
+        },
+        "lane": 3,
+        "lane_duration_seconds": 1616.873,
+        "selected_sha256": "6fc9aae96e58467acece239c344a1027a0728771136b8517c2802dcf902809fe",
+        "status": "PASS"
+      },
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 1535
+        },
+        "lane": 4,
+        "lane_duration_seconds": 1246.499,
+        "selected_sha256": "36971b157f11f2da2ce5596fe31733fa762345d564156aa1244a08e13974b5cb",
+        "status": "PASS"
+      }
+    ],
+    "lanes": [
+      1,
+      1854,
+      2436,
+      1535
+    ],
+    "limit_seconds": 5400,
+    "mem_available_kib": 52825636,
+    "mode": "FOUR_LANE",
+    "note": "The python stdout of the campaign command is byte-identical to campaign_result.json, so stdout_sha256 is the sha256 of that file. The wrapper log includes the rate-limit reading and the Fuseki identity and is outside the repository. FOUR_LANE. tests 5826, failures 0, errors 0, skipped 0. total_duration_seconds 1864.835, under 3600, so po_decision_required is false and no duration decision request is opened. Docker Hub remaining 100 of limit 100 at 2026-11-27T23:00:22Z, threshold 95, wait_seconds 0.61. Host tag ocor/jena-fuseki:6.2.0 stayed sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1 and was not retagged. POWER ADP0 stayed 1. Host residue after teardown is empty. Pre-existing unlabeled volumes and the empty kind network were not removed. vf004_schema_conformance stays NOT_CORRECTED and is not PASS. The registration commit changes only this record.",
+    "outcome": "PASS",
+    "po_decision_required": false,
+    "power_adp0_end": "1",
+    "power_adp0_start": "1",
+    "qualifying_scope": true,
+    "registration_name_status": {
+      "command": "git diff --name-status 7594851f3a2eb6b0ee81e8691992f1fe7cbc17d0",
+      "stdout": "M\treports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json\n",
+      "stdout_sha256": "bc8453a8741744ac8784ae8f003aa936fe078b9dbfb1c18583decef633d53920"
+    },
+    "selection_scope": "FULL_SUITE",
+    "started_at": "2026-11-27T23:00:21Z",
+    "stdout_sha256": "e66f942fbec8ef5662b24124d9f633f86c8afcb4c579720cdcbe0378b01f10a7",
+    "threshold_seconds": 3600,
+    "total_duration_seconds": 1864.835,
+    "vf004_schema_conformance": "NOT_CORRECTED"
   },
   "raw_output_path": "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.log",
   "raw_output_sha256": "4e02244b3595b3b5433adbb05832b078597fee4a647d21199b9df8a5d3593fe1",
