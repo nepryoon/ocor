@@ -771,7 +771,8 @@ def _parse_recon(task_id: str, raw: bytes, *, under_evidence: bool, unreadable: 
         return Recon(task_id, "", (), (), "", None, True, under_evidence, False)
     embedded = data.get("task_id")
     embedded_task = embedded if isinstance(embedded, str) and embedded else None
-    remaining = data.get("remaining_head") if isinstance(data.get("remaining_head"), str) else ""
+    remaining_raw = data.get("remaining_head")
+    remaining = remaining_raw if isinstance(remaining_raw, str) else ""
     selected = ""
     proof = data.get("selection_proof")
     if isinstance(proof, dict) and isinstance(proof.get("selected_path"), str):
@@ -905,10 +906,9 @@ def evaluate(store: Store, entry: str, focus: str | None, manifest_path: str | N
     if entry in {"E1", "E3"}:
         manifests = _manifests(store)
         if manifest_path is not None:
-            manifests = tuple(item for item in manifests if item.relative_path == manifest_path)
+            manifests = [item for item in manifests if item.relative_path == manifest_path]
             if not manifests:
                 manifest_findings.append(_finding(fallback, "UNREADABLE_JSON", entry))
-                manifests = ()
         manifest_findings.extend(
             _manifest_findings(manifests, records, entry, fallback, set(store.files("reports/evidence")))
         )
