@@ -19,6 +19,7 @@ import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 EXCLUDED_PARTS = {"blockers", "local-gates"}
 RECON_DIR = "reports/assurance/OCOR-DEV-REM-0068-RCCAD/reconciliation"
@@ -85,6 +86,36 @@ def _sha256(data: bytes) -> str:
 
 def _lone(value: str) -> bool:
     return any(0xD800 <= ord(char) <= 0xDFFF for char in value)
+
+
+def _refuse_constant(value: str) -> Any:
+    raise ValueError(value)
+
+
+def _lone_tree(value: object) -> bool:
+    if isinstance(value, str):
+        return _lone(value)
+    if isinstance(value, dict):
+        return any(_lone_tree(key) or _lone_tree(item) for key, item in value.items())
+    if isinstance(value, list):
+        return any(_lone_tree(item) for item in value)
+    return False
+
+
+def _loads(raw: bytes) -> object:
+    """RFC 8259 document. NaN, Infinity, and a lone surrogate raise ValueError."""
+    data = json.loads(raw.decode("utf-8"), parse_constant=_refuse_constant)
+    if _lone_tree(data):
+        raise ValueError("lone surrogate")
+    return data
+
+
+def _unreadable_record(relative: str, raw: bytes, fallback_task: str) -> Rec:
+    return Rec(relative, fallback_task, None, None, None, raw, True)
+
+
+def _bad_recon(task_id: str, under_evidence: bool) -> Recon:
+    return Recon(task_id, "", (), (), "", None, True, under_evidence, False)
 
 
 def _finding(task_id: str, code: str, entry: str) -> dict[str, str]:
@@ -706,18 +737,39 @@ class Store:
 
 def _load_record(relative: str, raw: bytes, fallback_task: str) -> Rec:
     try:
-        text = raw.decode("utf-8")
-        data = json.loads(text)
+        data = _loads(raw)
     except (UnicodeError, json.JSONDecodeError, ValueError):
-        return Rec(relative, fallback_task, None, None, None, raw, True)
+        return _unreadable_record(relative, raw, fallback_task)
     if not isinstance(data, dict):
-        return Rec(relative, fallback_task, None, None, None, raw, True)
-    task_id = data.get("task_id")
-    if not isinstance(task_id, str) or not task_id:
+        return _unreadable_record(relative, raw, fallback_task)
+    if "task_id" not in data:
         task_id = fallback_task
-    record_id = data.get("record_id") if isinstance(data.get("record_id"), str) and data.get("record_id") else None
-    supersedes = data.get("supersedes") if isinstance(data.get("supersedes"), str) else None
-    commit = data.get("commit") if isinstance(data.get("commit"), str) else None
+    else:
+        raw_task = data["task_id"]
+        if not isinstance(raw_task, str) or not raw_task:
+            return _unreadable_record(relative, raw, fallback_task)
+        task_id = raw_task
+    if "record_id" not in data:
+        record_id: str | None = None
+    else:
+        raw_id = data["record_id"]
+        if not isinstance(raw_id, str):
+            return _unreadable_record(relative, raw, fallback_task)
+        record_id = raw_id or None
+    if "supersedes" not in data:
+        supersedes: str | None = None
+    else:
+        raw_sup = data["supersedes"]
+        if not isinstance(raw_sup, str):
+            return _unreadable_record(relative, raw, fallback_task)
+        supersedes = raw_sup
+    if "commit" not in data:
+        commit: str | None = None
+    else:
+        raw_commit = data["commit"]
+        if not isinstance(raw_commit, str):
+            return _unreadable_record(relative, raw, fallback_task)
+        commit = raw_commit or None
     record = Rec(relative, task_id, record_id, supersedes, commit, raw, False)
     if _text_broken(record):
         return Rec(relative, task_id, record_id, supersedes, commit, raw, True)
@@ -762,35 +814,50 @@ def _evidence_recon(task_id: str, store: Store) -> tuple[str, bytes, bool] | Non
 
 def _parse_recon(task_id: str, raw: bytes, *, under_evidence: bool, unreadable: bool) -> Recon:
     if unreadable:
-        return Recon(task_id, "", (), (), "", None, True, under_evidence, False)
+        return _bad_recon(task_id, under_evidence)
     try:
-        data = json.loads(raw.decode("utf-8"))
+        data = _loads(raw)
     except (UnicodeError, json.JSONDecodeError, ValueError):
-        return Recon(task_id, "", (), (), "", None, True, under_evidence, False)
+        return _bad_recon(task_id, under_evidence)
     if not isinstance(data, dict):
-        return Recon(task_id, "", (), (), "", None, True, under_evidence, False)
-    embedded = data.get("task_id")
-    embedded_task = embedded if isinstance(embedded, str) and embedded else None
-    remaining_raw = data.get("remaining_head")
-    remaining = remaining_raw if isinstance(remaining_raw, str) else ""
+        return _bad_recon(task_id, under_evidence)
+    if "task_id" not in data:
+        embedded_task: str | None = None
+    else:
+        embedded = data["task_id"]
+        if not isinstance(embedded, str):
+            return _bad_recon(task_id, under_evidence)
+        embedded_task = embedded or None
+    if "remaining_head" not in data:
+        remaining = ""
+    else:
+        remaining_raw = data["remaining_head"]
+        if not isinstance(remaining_raw, str):
+            return _bad_recon(task_id, under_evidence)
+        remaining = remaining_raw
     selected = ""
-    proof = data.get("selection_proof")
-    if isinstance(proof, dict) and isinstance(proof.get("selected_path"), str):
-        selected = proof["selected_path"]
+    if "selection_proof" in data:
+        proof = data["selection_proof"]
+        if not isinstance(proof, dict):
+            return _bad_recon(task_id, under_evidence)
+        if "selected_path" in proof:
+            selected_raw = proof["selected_path"]
+            if not isinstance(selected_raw, str):
+                return _bad_recon(task_id, under_evidence)
+            selected = selected_raw
     supersedes_raw = data.get("supersedes")
-    supersedes: tuple[str, ...] = ()
-    if isinstance(supersedes_raw, list) and all(isinstance(item, str) for item in supersedes_raw):
-        supersedes = tuple(supersedes_raw)
-    else:
-        return Recon(task_id, remaining, (), (), selected, embedded_task, True, under_evidence, False)
+    if not isinstance(supersedes_raw, list) or not all(isinstance(item, str) for item in supersedes_raw):
+        return _bad_recon(task_id, under_evidence)
+    supersedes: tuple[str, ...] = tuple(supersedes_raw)
     reconciles_raw = data.get("reconciles")
+    if not isinstance(reconciles_raw, dict):
+        return _bad_recon(task_id, under_evidence)
     pairs: list[tuple[str, str]] = []
-    if isinstance(reconciles_raw, dict):
-        for key, value in reconciles_raw.items():
-            if isinstance(key, str) and isinstance(value, str) and key and value:
-                pairs.append((key, value))
-    else:
-        return Recon(task_id, remaining, supersedes, (), selected, embedded_task, True, under_evidence, False)
+    for key, value in reconciles_raw.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            return _bad_recon(task_id, under_evidence)
+        if key and value:
+            pairs.append((key, value))
     return Recon(task_id, remaining, supersedes, tuple(pairs), selected, embedded_task, False, under_evidence, False)
 
 
@@ -799,7 +866,7 @@ def _load_manifest(relative: str, store: Store) -> Manifest:
     if raw is None:
         return Manifest(relative, (), True)
     try:
-        data = json.loads(raw.decode("utf-8"))
+        data = _loads(raw)
     except (UnicodeError, json.JSONDecodeError, ValueError):
         return Manifest(relative, (), True)
     if not isinstance(data, dict) or not isinstance(data.get("artifacts"), list):
@@ -813,18 +880,32 @@ def _load_manifest(relative: str, store: Store) -> Manifest:
     return Manifest(relative, tuple(entries), False)
 
 
-def _completed(store: Store) -> list[str]:
+def _completed(store: Store) -> list[str] | None:
+    """Completed task ids, or None when the state document is not usable JSON.
+
+    A missing file and a missing key stay an empty list. A non-object document,
+    a non-list ``completed_evidence_tasks``, or a non-string item is unreadable.
+    """
     raw = store.read("reports/development/EXECUTION_STATE.json")
     if raw is None:
         return []
     try:
-        data = json.loads(raw.decode("utf-8"))
+        data = _loads(raw)
     except (UnicodeError, json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    if "completed_evidence_tasks" not in data:
         return []
-    tasks = data.get("completed_evidence_tasks") if isinstance(data, dict) else None
+    tasks = data["completed_evidence_tasks"]
     if not isinstance(tasks, list):
-        return []
-    return sorted({item for item in tasks if isinstance(item, str) and item})
+        return None
+    chosen: list[str] = []
+    for item in tasks:
+        if not isinstance(item, str) or not item:
+            return None
+        chosen.append(item)
+    return sorted(set(chosen))
 
 
 def _evidence_records(store: Store, fallback_task: str) -> list[Rec]:
@@ -876,6 +957,8 @@ def _task_records(records: Sequence[Rec], task_id: str) -> list[Rec]:
 
 def evaluate(store: Store, entry: str, focus: str | None, manifest_path: str | None) -> tuple[str, list[dict[str, str]], dict[str, str]]:
     completed = _completed(store)
+    if completed is None:
+        return "FAIL", [_finding("UNSCOPED", "UNREADABLE_JSON", entry)], {}
     fallback = completed[0] if len(completed) == 1 else "UNSCOPED"
     records = _evidence_records(store, fallback)
     # A lone completed task owns unreadable files that carry no task_id of their own.
