@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0069-INVENTORY-NO-GO
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
+Stato: `RESOLVED_OPTION_2_APPLIED`.
 Livello: operativo. Nessun nuovo `DEC-*`.
 Chi decide: decisione operativa sull'unità, perché il punto 7 di `OCOR-DEV-REM-0069-REGISTRATION-NO-GO (2026-11-26)` ammette una sola richiesta nuova dopo il `NO_GO` del commit di registrazione e non ammette un altro ciclo. Nessuna opzione si applica in questa pubblicazione.
 Head di `origin/main` alla pubblicazione: `618e72c00f994e8ea8899914548cc38743aa4569`.
@@ -126,3 +126,9 @@ Blocca solo `OCOR-DEV-REM-0069` finché una sezione non adotta un'opzione. Non b
 ## Controllo di formato
 
 Comando, eseguito sul file di questa pubblicazione prima del push: `grep -cE '^[A-Z]?[0-9]{1,2}\. \*\*'`. Esito atteso: 3. Le opzioni sono numerate da 1 a 3, senza salti, sotto `## Opzioni`.
+
+## Disposition
+
+`OCOR-DEV-REM-0069-INVENTORY-NO-GO (2026-11-26)` adotta l'opzione 2, con le precisazioni dei punti 1–9. Decisa dal PO di persona, sezione scritta a mano. Il testo sopra questa sezione, esclusa la riga di stato, resta il commit `3ff7e77b46d09838213b82936b961e501443f34c`, sha256 `074a16ce03384f9eae39594605736684b2350d9de56aaf290df0a90085f6a213`.
+
+L'opzione 2 è applicata. Due commit sul branch `governed/ocor-dev-rem-0069-fuseki-archive-copy`, senza rebase, reset o force-push. Il primo è `7976e39148bae5f41461a834b0f117a9e6a3563f`, parent `acac33abc2be6be9af419b61e9216d18fe14563e`, unico percorso `reports/assurance/OCOR-DEV-REM-0069-RCCAD/README.md`. Il secondo è `64f3b41f4e1a6fd4424707ecb2072708d00fce7b`, parent il primo, unico percorso `reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json`. È il commit di registrazione. I blob `scripts/acquire_fuseki_archive.py` e `reports/tests/test_fuseki_archive_acquisition.py` restano `debf96c90a7ea6ffd89b0c10c92c93ed985d6ded` e `dee2ca8813565043b20798a634743edcf0fd5f20`. Nessuna campagna nuova: la prova di comportamento resta `eaae5f0de47c-1795613672`, `campaign_result.json` sha256 `9ba50b61daffc27fe28e12d44ee12e89ab1d4d41c8b8e47fd71e3eb4713d321a`. VF-004 resta `NOT_CORRECTED` e non è `PASS`. La richiesta di verifica è `OCOR-DEV-REM-0069-64f3b41f4e1a-1`. Il verifier non è xAI e non lo avvia l'implementatore. Non c'è la pull request del candidato. Con un nuovo `NO_GO` non c'è un altro ciclo. Le opzioni 1 e 3 non sono applicate.
