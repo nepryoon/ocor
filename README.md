@@ -1,4 +1,4 @@
-# OCOR
+# OCOR (Operational Causal Ontology Runtime)
 
 OCOR is a sovereign, vendor-neutral semantic and operational core. It connects
 ontology definitions, evidence, governed decisions and controlled actions so that
