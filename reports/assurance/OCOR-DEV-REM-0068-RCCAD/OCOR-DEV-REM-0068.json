@@ -7,8 +7,8 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit": "1e36db6b780746c25882849d40bb153a1c1323a4",
-  "commit_role": "Mypy narrowing commit. The inventory command reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. The parser change narrows remaining_head to str and keeps the manifest filter a list. Parent allowlist commit remains 8f52865f2277e05236b3f820285ca3fad22c91ea.",
+  "commit": "d6f72ad425345d70010d2e204dd04ae2a8330a18",
+  "commit_role": "Guard-admission allowlist commit. The inventory command reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27) option 1 changes the plan-validator digest; this pin follows that commit. The proof normalisation remains e74895832df289ff7762bc8e9748097d38b74860. The previous pin commit remains 1e36db6b780746c25882849d40bb153a1c1323a4.",
   "created_at": "2026-11-27T17:36:16Z",
   "decision": "OCOR-DEV-REM-0068-PIN-INVENTORY (2026-11-27)",
   "implementer": {
@@ -19,7 +19,7 @@
   "inputs": {
     "scripts/validate_current_evidence_head.py": "72dd3f65e123386a0a3921c793a072f80cdbbbc552cc05b6723214abf7dcc1b7",
     "scripts/validate_evidence_input_drift.py": "945f80d712c0abfc83bd2333bf48487844e051727809ace61749368c2bef7b8f",
-    "scripts/validate_ocor_development_plan.py": "9ccdd3ef460b0482a45a09f0b81280ad5212457e1da3e1501f898a6e2acd7236"
+    "scripts/validate_ocor_development_plan.py": "37b603499a18f65a3f94ac2078f2830908a9b4f93c35cdd75c06013bb17dc91b"
   },
   "inventory": {
     "command": "python3 - << 'PY'\n#!/usr/bin/env python3\n\"\"\"Measure the OCOR-DEV-REM-0068 pin inventory on one commit.\n\nReads reports/evidence from that commit with discover_records and\nselect_most_recent from scripts/validate_evidence_input_drift.py in the\nsame commit. No completed_evidence_tasks filter. Prints canonical JSON.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport importlib.util\nimport json\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nCOMMIT = \"23e6b62c36627de91cb85329b9a1164f3219cd53\"\nTARGETS = [\n    \"scripts/validate_ocor_development_plan.py\",\n    \"reports/planning/OCOR_PLAN_RUN_STATE.json\",\n    \".github/workflows/ocor-tooling-bootstrap.yml\",\n]\n\n\ndef git_bytes(commit: str, path: str) -> bytes | None:\n    result = subprocess.run(\n        [\"git\", \"cat-file\", \"-e\", f\"{commit}:{path}\"],\n        check=False,\n        capture_output=True,\n    )\n    if result.returncode != 0:\n        return None\n    shown = subprocess.run(\n        [\"git\", \"show\", f\"{commit}:{path}\"],\n        check=True,\n        capture_output=True,\n    )\n    return shown.stdout\n\n\ndef main() -> int:\n    root = Path.cwd()\n    with tempfile.TemporaryDirectory(prefix=\"rem0068-inventory-\") as tmp:\n        tree = Path(tmp)\n        archive = subprocess.run(\n            [\"git\", \"archive\", COMMIT, \"reports/evidence\", \"scripts/validate_evidence_input_drift.py\"],\n            check=True,\n            capture_output=True,\n        )\n        subprocess.run([\"tar\", \"-x\", \"-C\", str(tree)], check=True, input=archive.stdout)\n        spec = importlib.util.spec_from_file_location(\n            \"drift_at_base\",\n            tree / \"scripts\" / \"validate_evidence_input_drift.py\",\n        )\n        if spec is None or spec.loader is None:\n            raise SystemExit(\"drift module missing at the measured commit\")\n        module = importlib.util.module_from_spec(spec)\n        spec.loader.exec_module(module)\n        records = module.discover_records(tree / \"reports\" / \"evidence\")\n        manifest_paths = sorted(\n            path.relative_to(tree).as_posix()\n            for path in (tree / \"reports\" / \"evidence\").rglob(\"MANIFEST.json\")\n        )\n        watched = TARGETS + manifest_paths\n        rows = []\n        for task_id in sorted(records):\n            selected = module.select_most_recent(records[task_id])\n            record = json.loads(selected.read_text(encoding=\"utf-8\"))\n            inputs = record.get(\"inputs\")\n            if not isinstance(inputs, dict):\n                continue\n            identity = record.get(\"record_id\") or record.get(\"commit\") or selected.relative_to(tree).as_posix()\n            for path in watched:\n                pin = inputs.get(path)\n                if isinstance(pin, str):\n                    rows.append(\n                        {\n                            \"file\": path,\n                            \"pin\": pin,\n                            \"record_id\": identity,\n                            \"task\": task_id,\n                        }\n                    )\n        payload = {\n            \"commit\": COMMIT,\n            \"drift_script_sha256\": hashlib.sha256(\n                (tree / \"scripts\" / \"validate_evidence_input_drift.py\").read_bytes()\n            ).hexdigest(),\n            \"manifests\": manifest_paths,\n            \"pins\": rows,\n            \"repository\": str(root),\n            \"selector\": \"discover_records+select_most_recent\",\n            \"completed_evidence_tasks_filter\": False,\n        }\n        sys.stdout.write(json.dumps(payload, indent=2, sort_keys=True) + \"\\n\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\nPY",
@@ -132,6 +132,24 @@
       "record_id": "OCOR-DEV-0082-requalified-rem0068-8f52865f2277",
       "result": "PASS",
       "supersedes": "OCOR-DEV-0082-requalified-rem0069-34a66b063b78",
+      "task_id": "OCOR-DEV-0082"
+    },
+    {
+      "record_id": "OCOR-DEV-0005-requalified-rem0068-guard-d6f72ad42534",
+      "result": "PASS",
+      "supersedes": "OCOR-DEV-0005-requalified-rem0068-8f52865f2277",
+      "task_id": "OCOR-DEV-0005"
+    },
+    {
+      "record_id": "OCOR-DEV-0050-requalified-rem0068-guard-d6f72ad42534",
+      "result": "PASS",
+      "supersedes": "OCOR-DEV-0050-requalified-rem0068-8f52865f2277",
+      "task_id": "OCOR-DEV-0050"
+    },
+    {
+      "record_id": "OCOR-DEV-0082-requalified-rem0068-guard-d6f72ad42534",
+      "result": "PASS",
+      "supersedes": "OCOR-DEV-0082-requalified-rem0068-8f52865f2277",
       "task_id": "OCOR-DEV-0082"
     }
   ],
