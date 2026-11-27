@@ -122,4 +122,6 @@ jobs:
           ocor-runtime/.venv/bin/python -m unittest -v reports.tests.test_validate_language_policy
           ocor-runtime/.venv/bin/python scripts/validate_language_policy.py
       - name: Validate evidence input drift against HEAD (R3)
-        run: ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .
+        run: |
+          ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .
+          ocor-runtime/.venv/bin/python scripts/validate_current_evidence_head.py --root .
