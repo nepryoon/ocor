@@ -13568,3 +13568,25 @@ Prossima azione: il loop avvia la verifica indipendente `FUSEKI-REBUILD-IDENTITY
 - `/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json` — exit 0 — stdout sha256 `66ee0274e8d57f72510495dc9c4a71ac1334a886c6fbea7ddd7e135395909b83` — 0.029 s.
 - Dopo queste righe si rieseguono `scripts/validate_language_policy.py`, `scripts/validate_rccad.py --base-ref origin/main` e `scripts/validate_ocor_change_scope.py` con il branch `governed/state-sync-rem0069-inventory-nogo-reconfirm22-20261127`. Un esito diverso da 0 ferma il commit. L'hash di quella riesecuzione non entra in questo registro: il testo lo cambierebbe.
 - Rilettura prima del commit di questo state sync, `2026-11-27T12:42:26Z`. Preambolo `/home/luca/.ocor-codex/openhands_preamble.md`, sha256 `b26f78765b6ebb892cc58f12b51973c8bdfc4f99767629ac24b5148f4239d216`, 653863 byte, 3997 newline, 247 sezioni. L'ultima sezione è `## OCOR-DEV-REM-0069-REGISTRATION-NO-GO (2026-11-26) — decisione del PO`. Nessuna sezione decide `OCOR-DEV-REM-0069-INVENTORY-NO-GO`. Esito ancora `SECTION_ABSENT`. Nessuna opzione applicata. Il commit segue solo perché questa lettura ha lo stesso sha256 della lettura delle `2026-11-27T12:41:31Z`.
+
+## 2026-11-27 — OCOR-DEV-REM-0069-INVENTORY-NO-GO opzione 2
+
+- Decisione `OCOR-DEV-REM-0069-INVENTORY-NO-GO (2026-11-26)`, opzione 2, punti 1–9. Decisa dal PO di persona, sezione scritta a mano.
+- Disposition `2c0d44283ac0b9b2a51e117e88eedc30571b69f4` sul branch `governed/decision-request-ocor-dev-rem-0069-inventory-nogo`, sha256 `b1fa82c66cb4d7c7ec7600e7caa9ef3da4397d507747bbc215e47e39a44a2d27`. Il testo sopra `## Disposition`, esclusa la riga di stato, resta il commit `3ff7e77b46d09838213b82936b961e501443f34c`, sha256 `074a16ce03384f9eae39594605736684b2350d9de56aaf290df0a90085f6a213`. `grep -cE '^[A-Z]?[0-9]{1,2}\. \*\*'` resta 3.
+- Primo commit `7976e39148bae5f41461a834b0f117a9e6a3563f`, parent `acac33abc2be6be9af419b61e9216d18fe14563e`, solo `reports/assurance/OCOR-DEV-REM-0069-RCCAD/README.md`.
+- Secondo commit `64f3b41f4e1a6fd4424707ecb2072708d00fce7b`, parent il primo, solo `reports/assurance/OCOR-DEV-REM-0069-RCCAD/OCOR-DEV-REM-0069.json`. È l'HEAD che chiede la verifica `OCOR-DEV-REM-0069-64f3b41f4e1a-1`. `repair_cycle` resta 1. Non è un ciclo nuovo di codice.
+- Nessuna campagna nuova. VF-004 resta `NOT_CORRECTED` e non è `PASS`. I blob restano `debf96c90a7ea6ffd89b0c10c92c93ed985d6ded` e `dee2ca8813565043b20798a634743edcf0fd5f20`.
+- Il verifier è di un fornitore diverso da xAI e non lo avvia l'implementatore. Nessuna pull request del candidato. Con un nuovo `NO_GO` non c'è un altro ciclo.
+- Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
+- Gate di questo state sync, dopo l'aggiornamento dei JSON di stato. Suite completa non eseguita. Stack non avviato. Nessuna pull request: `NO_PULL_REQUEST_PROVISIONING_NOT_REPEATED`.
+- `sha256sum -c inputs/normative/SHA256SUMS` — exit 0 — stdout sha256 `0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34`.
+- `scripts/verify.py --json` — exit 0 — stdout sha256 `61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413`. `reports/verify_report.json` ripristinato.
+- `scripts/validate_evidence_input_drift.py --root .` — exit 0 — stdout sha256 `5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed`.
+- `scripts/validate_language_policy.py` — exit 0 — stdout sha256 `ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d`.
+- `/home/luca/.local/bin/ruff check .` — exit 0 — stdout sha256 `82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18`.
+- `scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main` — exit 0 — stdout sha256 `c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba`. I file di piano tracciati sono ripristinati.
+- `scripts/validate_rccad.py --base-ref origin/main` — exit 0 — stdout sha256 `0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f`.
+- `scripts/validate_ocor_change_scope.py` sui quattro percorsi di stato — exit 0 — stdout sha256 `008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32`.
+- `scripts/validate_runtime_evidence.py` per OCOR-DEV-0005, OCOR-DEV-0050 e OCOR-DEV-0082 — exit 0.
+- `python -m mypy` — exit 0 — stdout sha256 `606cb758d5a67af9bb6045432cb0949a74d26c566b2db93a25d1e618153b7130`.
+- Dopo queste righe si rieseguono `scripts/validate_language_policy.py`, `scripts/validate_rccad.py --base-ref origin/main` e `scripts/validate_ocor_change_scope.py`. Un esito diverso da 0 ferma il commit. L'hash di quella riesecuzione non entra in questo registro.
