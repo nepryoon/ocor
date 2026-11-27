@@ -82,22 +82,34 @@ New entries inserted in this commit. This commit creates only the README. The ot
 - `reports/evidence/G2/OCOR-DEV-0082.requalified-rem0069.json` and `.log`
 - `reports/evidence/G5/OCOR-DEV-0050.requalified-rem0069.json` and `.log`
 
-The unit record is the JSON file. Proof command, outcome, and output sha256 go in that JSON. There is no separate unit log in the repository. `reports/development/ITERATION_LOG.md` is not edited on this branch. No campaign raw log is a repository path. No G4 record is created. The rejected requalifications of `OCOR-DEV-REM-0018`, `OCOR-DEV-REM-0022`, `OCOR-DEV-REM-0023`, `OCOR-DEV-REM-0036`, `OCOR-DEV-REM-0037`, `OCOR-DEV-REM-0038`, and `OCOR-DEV-REM-0053` are not carried: they are not the inventory on this base.
+The unit record is the JSON file. Proof command, outcome, and output sha256 go in that JSON. There is no separate unit log in the repository. `reports/development/ITERATION_LOG.md` is not edited on this branch. No campaign raw log is a repository path. No G4 record is created. The rejected requalifications of `OCOR-DEV-REM-0018`, `OCOR-DEV-REM-0022`, `OCOR-DEV-REM-0023`, `OCOR-DEV-REM-0036`, `OCOR-DEV-REM-0037`, `OCOR-DEV-REM-0038`, and `OCOR-DEV-REM-0053` are not carried as new records. Their current heads are part of the inventory of pins of `scripts/validate_ocor_development_plan.py` on this base. `OCOR-DEV-REM-0018`, `OCOR-DEV-REM-0022`, `OCOR-DEV-REM-0023`, and `OCOR-DEV-REM-0038` remain pinned to `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827`, without a successor, as a residual accepted by `OCOR-DEV-REM-0069-INVENTORY-NO-GO (2026-11-26)`. `OCOR-DEV-REM-0036`, `OCOR-DEV-REM-0037`, and `OCOR-DEV-REM-0053` already pinned a different digest before this unit.
 
 ## Requalifications
 
-Inventory on `origin/main` `618e72c00f994e8ea8899914548cc38743aa4569`, using `select_most_recent` in `scripts/validate_evidence_input_drift.py`. A prior scan of nine tasks does not replace it. Selected heads whose `inputs` pin a file this unit changes:
+Inventory of the pins of `scripts/validate_ocor_development_plan.py` on this candidate, using `select_most_recent` in `scripts/validate_evidence_input_drift.py` on `reports/evidence`, without a filter on `completed_evidence_tasks`. A prior scan of nine tasks does not replace it. Ten current heads pin that script. Heads outside `completed_evidence_tasks` are part of this inventory.
+
+The `OCOR-DEV-0072` row is unchanged. It pins `scripts/acquire_fuseki_archive.py`, not the plan script:
 
 | Task | Gate | `record_id` named by `supersedes` | Pinned file |
 | --- | --- | --- | --- |
-| `OCOR-DEV-0005` | G0 | `OCOR-DEV-0005-requalified-fuseki-20261121-dd0467f18816` | `scripts/validate_ocor_development_plan.py` |
-| `OCOR-DEV-0050` | G5 | `OCOR-DEV-0050-requalified-fuseki-20261121-dd0467f18816` | `scripts/validate_ocor_development_plan.py` |
 | `OCOR-DEV-0072` | G2 | `OCOR-DEV-0072-requalified-rem0038-36e61515552d` | `scripts/acquire_fuseki_archive.py` |
-| `OCOR-DEV-0082` | G2 | `OCOR-DEV-0082-requalified-fuseki-20261121-dd0467f18816` | `scripts/validate_ocor_development_plan.py` |
 
-No selected head pins `reports/tests/test_fuseki_archive_acquisition.py`, `reports/planning/OCOR_PLAN_RUN_STATE.json`, or any `MANIFEST.json`. The four identities above are `record_id` values. `supersedes` names that identity and does not name the new record. Four tasks, including `OCOR-DEV-0050`, is more than three. CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 point 4, which point 1c of this decision applies here, already authorises those substantial requalifications. No sealed record is rewritten.
+| Task | Current head `record_id` | Pin of `scripts/validate_ocor_development_plan.py` | Disposition |
+| --- | --- | --- | --- |
+| `OCOR-DEV-0005` | `OCOR-DEV-0005-requalified-rem0069-34a66b063b78` | `028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50` | Requalified by this unit |
+| `OCOR-DEV-0050` | `OCOR-DEV-0050-requalified-rem0069-34a66b063b78` | `028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50` | Requalified by this unit |
+| `OCOR-DEV-0082` | `OCOR-DEV-0082-requalified-rem0069-34a66b063b78` | `028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50` | Requalified by this unit |
+| `OCOR-DEV-REM-0018` | `OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816` | `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827` | Remains pinned to `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827`, without a successor, as a residual accepted by `OCOR-DEV-REM-0069-INVENTORY-NO-GO (2026-11-26)` |
+| `OCOR-DEV-REM-0022` | `OCOR-DEV-REM-0022-requalified-fuseki-20261121-dd0467f18816` | `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827` | Remains pinned to `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827`, without a successor, as a residual accepted by `OCOR-DEV-REM-0069-INVENTORY-NO-GO (2026-11-26)` |
+| `OCOR-DEV-REM-0023` | `OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816` | `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827` | Remains pinned to `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827`, without a successor, as a residual accepted by `OCOR-DEV-REM-0069-INVENTORY-NO-GO (2026-11-26)` |
+| `OCOR-DEV-REM-0038` | `OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816` | `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827` | Remains pinned to `c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827`, without a successor, as a residual accepted by `OCOR-DEV-REM-0069-INVENTORY-NO-GO (2026-11-26)` |
+| `OCOR-DEV-REM-0036` | `OCOR-DEV-REM-0036-requalified-rem0059-636975eaacd7` | `7bcb652ccbed7d5154d3231b386725dbb31bfe199c5a9ac053977e6828ce196b` | Pin already different from the base before this unit |
+| `OCOR-DEV-REM-0037` | `OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3` | `3c0fb2aaff43a3a71916d286e59b1c3b17597cef0ed1edfde714b034fa3ba4b5` | Pin already different from the base before this unit |
+| `OCOR-DEV-REM-0053` | `OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c` | `62661c88b7c864748d0ec8a31b9128dd8b6bb1a5ee7da34259966abdca1e6bf1` | Pin already different from the base before this unit |
 
-The code phase remeasures on the `origin/main` from which it merges. If that main has moved, the affected records are redone on the newly selected head. If the pin set is not exactly these four tasks, stop and open one decision request.
+No selected head pins `reports/tests/test_fuseki_archive_acquisition.py`, `reports/planning/OCOR_PLAN_RUN_STATE.json`, or any `MANIFEST.json`. The four requalification identities `OCOR-DEV-0005-requalified-fuseki-20261121-dd0467f18816`, `OCOR-DEV-0050-requalified-fuseki-20261121-dd0467f18816`, `OCOR-DEV-0072-requalified-rem0038-36e61515552d`, and `OCOR-DEV-0082-requalified-fuseki-20261121-dd0467f18816` are `record_id` values. `supersedes` names that identity and does not name the new record. Four tasks, including `OCOR-DEV-0050`, is more than three. CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 point 4, which point 1c of this decision applies here, already authorises those substantial requalifications. No sealed record is rewritten.
+
+The code phase remeasures on the `origin/main` from which it merges. If that main has moved, the affected records are redone on the newly selected head. If the pin set of `scripts/validate_ocor_development_plan.py` is not exactly these ten tasks, stop and open one decision request.
 
 Head counts on this base, same selector: 22 tasks have more than one current head, and 5 groups have two or more successors of the same predecessor (`OCOR-DEV-0049` one group, `OCOR-DEV-0050` three groups, `OCOR-DEV-0075` one group). CI-FUSEKI-ARCHIVE-TIMEOUT-20261123 point 4 says the head counts do not increase. The code phase remeasures both counts before publishing the records. If either count would increase, stop and open one decision request. Do not write `verify_request.json`.
 
