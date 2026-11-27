@@ -77,7 +77,8 @@ Grok Build, `grok-4.7`, xAI.
 
 ## Opzioni
 
-1. Ammettere il delta esatto nel solo proof corrente, senza spostare `82b71d0`.
+1. **Ammettere il delta esatto nel proof corrente.** Il delta esatto è
+   ammesso nel solo proof corrente, senza spostare `82b71d0`.
    In `reports/tests/test_kind_teardown_observation.py` una normalizzazione
    sostituisce, una sola volta e con conteggio verificato, il blocco del fatto 1
    con la riga unica di `82b71d0`, e solo in
@@ -95,11 +96,13 @@ Grok Build, `grok-4.7`, xAI.
    preventiva. Questo file resta su questo branch: non entra nel branch di codice
    e non modifica `scripts/validate_ocor_development_plan.py`.
 
-2. Togliere il comando dal workflow e non eseguirlo in CI. Il proof di byte torna
+2. **Togliere il comando dal workflow.** Il comando non viene eseguito in CI.
+   Il proof di byte torna
    verde senza modificare il test. Il contratto rivisto, che chiede quel comando
    nello step di drift, non è soddisfatto. Lo script resta eseguibile in locale.
 
-3. Non ammettere il delta e non togliere il comando. Il proof resta rosso, la
+3. **Non ammettere il delta.** Il comando resta nel workflow. Il proof resta
+   rosso, la
    revisione preventiva e la campagna di `OCOR-DEV-REM-0068` non partono, e la
    baseline si rivaluta solo con un consolidamento deciso a parte dopo il merge.
 
