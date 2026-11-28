@@ -1481,13 +1481,12 @@ class RedesignOption1Tests(unittest.TestCase):
             self.assertEqual({}, decision["entries"]["E3"], graph)
 
     def test_select_graph_refuses_each_non_json_completed_member(self) -> None:
-        """A set, a non-string key, and NaN or Infinity, including nested, are unreadable."""
+        """A set, and NaN or Infinity, including nested, are unreadable."""
         module = self._module()
         select = getattr(module, "select_graph", None)
         self.assertTrue(callable(select), "production must expose select_graph")
         members = (
             set(),
-            {1: "x"},
             float("nan"),
             float("inf"),
             float("-inf"),
@@ -1502,6 +1501,59 @@ class RedesignOption1Tests(unittest.TestCase):
             self.assertEqual("FAIL", entry["status"], member)
             self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in entry["findings"]], member)
             self.assertEqual({}, entry["validated_heads"], member)
+
+    def test_select_graph_completed_set_matches_the_json_oracle(self) -> None:
+        """stdlib json is the oracle. The module is stricter only for a non-empty string."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        unencodable = (
+            b"raw",
+            set(),
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+            {"nested": float("nan")},
+            [float("-inf")],
+        )
+        # json.dumps coerces an int key to a string, so this object encodes.
+        # _completed still refuses it: a completed item must be a non-empty string.
+        stricter = (None, True, False, 0, 1.5, "", {1: "x"}, {"task": "x"}, ["nested"])
+        usable = ("OCOR-DEV-0099", "\ud800\udc00")
+        lone_surrogate = ("\ud800",)
+        seen = 0
+        for member in unencodable:
+            with self.assertRaises((TypeError, ValueError)):
+                json.dumps({"completed_evidence_tasks": [member]}, allow_nan=False)
+            decision = select({"completed": [member], "records": [], "manifests": [], "reconciliations": []})
+            entry = decision["entries"]["E1"]
+            self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in entry["findings"]], member)
+            seen += 1
+        for member in stricter:
+            json.dumps({"completed_evidence_tasks": [member]}, allow_nan=False)
+            decision = select({"completed": [member], "records": [], "manifests": [], "reconciliations": []})
+            entry = decision["entries"]["E1"]
+            self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in entry["findings"]], member)
+            seen += 1
+        for member in usable:
+            json.dumps({"completed_evidence_tasks": [member]}, allow_nan=False)
+            decision = select({"completed": [member], "records": [], "manifests": [], "reconciliations": []})
+            self.assertNotIn(
+                "UNREADABLE_JSON",
+                [item["code"] for item in decision["entries"]["E1"]["findings"]],
+                member,
+            )
+            seen += 1
+        for member in lone_surrogate:
+            json.dumps({"completed_evidence_tasks": [member]}, allow_nan=False)
+            decision = select({"completed": [member], "records": [], "manifests": [], "reconciliations": []})
+            entry = decision["entries"]["E1"]
+            self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in entry["findings"]], member)
+            seen += 1
+        empty = select({"completed": [], "records": [], "manifests": [], "reconciliations": []})
+        self.assertEqual("PASS", empty["entries"]["E1"]["status"])
+        seen += 1
+        self.assertEqual(20, seen)
 
     def test_evidence_archive_is_not_an_evidence_node_on_e1(self) -> None:
         world, _inside, _outside = self._archive_world()
