@@ -1249,11 +1249,31 @@ def _pack(status: str, findings: Sequence[Mapping[str, str]], heads: Mapping[str
     }
 
 
+def _state_bytes(tasks: list[object]) -> bytes:
+    """Encode the completed set. A value JSON cannot encode is an unreadable state."""
+    try:
+        encoded = json.dumps(
+            {"completed_evidence_tasks": tasks},
+            allow_nan=False,
+            indent=2,
+            sort_keys=True,
+        )
+    except (TypeError, ValueError):
+        return b"\xff"
+    return (encoded + "\n").encode("utf-8")
+
+
 def select_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
     """One pure decision on an explicit graph. E1, E2, and E3 are projections of it.
 
     The graph carries bytes. This function does not read the worktree or a git commit.
+    A graph that is not an object, or a completed set JSON cannot encode, is unreadable.
     """
+    if not isinstance(graph, Mapping):
+        graph = {}
+        state_bytes = b"\xff"
+    else:
+        state_bytes = None
     completed = graph.get("completed")
     tasks = [item for item in completed] if isinstance(completed, list) else []
     files: dict[str, bytes] = {}
@@ -1263,10 +1283,7 @@ def select_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
     for item in [*records, *manifests, *reconciliations]:
         if isinstance(item, Mapping) and isinstance(item.get("path"), str) and isinstance(item.get("raw"), bytes):
             files[item["path"]] = item["raw"]
-    state = {"completed_evidence_tasks": tasks}
-    files["reports/development/EXECUTION_STATE.json"] = (
-        json.dumps(state, indent=2, sort_keys=True) + "\n"
-    ).encode("utf-8")
+    files["reports/development/EXECUTION_STATE.json"] = state_bytes if state_bytes is not None else _state_bytes(tasks)
     store = Store(Path("."), None, files)
     root_status, root_findings, root_heads = evaluate(store, "E1", None, None)
     by_record: dict[str, dict[str, object]] = {}
