@@ -1431,6 +1431,41 @@ class RedesignOption1Tests(unittest.TestCase):
         self.assertEqual(decision["entries"]["E3"][manifest.relative_path]["status"], admitted["status"])
         self.assertEqual(decision["entries"]["E3"][manifest.relative_path]["findings"], admitted["findings"])
 
+    def test_select_graph_refuses_a_non_object(self) -> None:
+        """A graph that is not an object is unreadable. It does not raise."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        decision = select("nope")  # type: ignore[misc]
+        entry = decision["entries"]["E1"]
+        self.assertEqual("FAIL", entry["status"])
+        self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in entry["findings"]])
+        self.assertEqual({}, entry["validated_heads"])
+        self.assertEqual({}, decision["entries"]["E2"])
+        self.assertEqual({}, decision["entries"]["E3"])
+
+    def test_select_graph_refuses_a_non_json_completed_set(self) -> None:
+        """A completed item that JSON cannot encode is unreadable. The record stays in E2."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        record = _record("kept.json", f"{TASK}-kept")
+        graph = {
+            "completed": [b"not-json"],
+            "manifests": [],
+            "reconciliations": [],
+            "records": [{"path": record.path, "raw": record_bytes(record)}],
+        }
+        decision = select(graph)  # type: ignore[misc]
+        self.assertEqual("FAIL", decision["entries"]["E1"]["status"])
+        self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in decision["entries"]["E1"]["findings"]])
+        self.assertEqual({}, decision["entries"]["E1"]["validated_heads"])
+        self.assertIn(record.path, decision["entries"]["E2"])
+        projected = decision["entries"]["E2"][record.path]
+        self.assertEqual("FAIL", projected["status"])
+        self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in projected["findings"]])
+        self.assertEqual({}, projected["validated_heads"])
+
     def test_evidence_archive_is_not_an_evidence_node_on_e1(self) -> None:
         world, _inside, _outside = self._archive_world()
         payload = self._payload(self._completed(world, "E1"))
