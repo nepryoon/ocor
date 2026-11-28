@@ -7,8 +7,8 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit": "34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5",
-  "commit_role": "Parser execution commit 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. It refuses non-RFC JSON on every parse path of scripts/validate_current_evidence_head.py. RED tests are 83894f411b37594dc9db056ca18a5279fe21c9a1. The inventory command still reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. The guard-admission allowlist remains d6f72ad425345d70010d2e204dd04ae2a8330a18. The proof normalisation remains e74895832df289ff7762bc8e9748097d38b74860. The previous pin commit remains 1e36db6b780746c25882849d40bb153a1c1323a4.",
+  "commit": "f8c8b339c8566a851f2ae2c11ffc155ee8af076c",
+  "commit_role": "Execution commit f8c8b339c8566a851f2ae2c11ffc155ee8af076c. NUL-delimited git blob names are kept with surrogateescape until read, a listed evidence blob that cannot be read is an unreadable record, and the blob name is not document text. RED is 61bdc36ef7042f63fb77ad17ee13afc15cf7841d. The strict parser remains 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. Repair 1 of NO_GO OCOR-DEV-REM-0068-c6410c0c7c31-0 remains 043e7039e891f96e20df91bcfcf409078d535231. The inventory command still reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. The guard-admission allowlist remains d6f72ad425345d70010d2e204dd04ae2a8330a18. The proof normalisation remains e74895832df289ff7762bc8e9748097d38b74860. The previous pin commit remains 1e36db6b780746c25882849d40bb153a1c1323a4.",
   "created_at": "2026-11-27T17:36:16Z",
   "decision": "OCOR-DEV-REM-0068-PIN-INVENTORY (2026-11-27)",
   "execution_input_checks": [
@@ -116,6 +116,62 @@
       "name": "campaign-artifacts",
       "status": "PASS",
       "stdout_sha256": "27f957a8dd9622615a0e5e79880409f98010286ccd2d019ea5380bb387028c53"
+    },
+    {
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 043e7039e891f96e20df91bcfcf409078d535231 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-repair1.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-repair1.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-repair1.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "ad46e5c3babcaef4c13f1b294b2c7b623d582377",
+      "name": "requalified-rem0068-repair1",
+      "status": "PASS",
+      "stdout_sha256": "96e180e83cd004e905e19328efc9a243029795b44978d93d840359670f248f84"
+    },
+    {
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 043e7039e891f96e20df91bcfcf409078d535231 --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-repair1.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-repair1.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-repair1.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "f8c8b339c8566a851f2ae2c11ffc155ee8af076c",
+      "name": "requalified-rem0068-repair1-at-path-correction",
+      "status": "PASS",
+      "stdout_sha256": "e9283bd3dbdb510946c8c8cac3ee570a63c525b0375f0cfab9faac3ef0130247"
+    },
+    {
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit 043e7039e891f96e20df91bcfcf409078d535231 --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 1,
+      "findings": [
+        {
+          "declared_commit": "34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5",
+          "path": "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+          "reason": "declared commit differs from the execution commit"
+        },
+        {
+          "execution_sha256": "6228f83a7ff7d098d44ae5ff35c6bb6aac25bbefff278dc3e5c853a5f46abedb",
+          "input_path": "scripts/validate_current_evidence_head.py",
+          "path": "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+          "reason": "input hash mismatch",
+          "recorded_sha256": "4010314098677a6a0f669d9008f4f6573bac66279747101680589f2feb2180f4"
+        },
+        {
+          "execution_sha256": "ce925a4e2c3fdfb939418e5c3ba1aa2045d8e9d6618cccf0aae9130a1b1819f5",
+          "input_path": "scripts/validate_ocor_development_plan.py",
+          "path": "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+          "reason": "input hash mismatch",
+          "recorded_sha256": "37b603499a18f65a3f94ac2078f2830908a9b4f93c35cdd75c06013bb17dc91b"
+        }
+      ],
+      "measured_head": "ad46e5c3babcaef4c13f1b294b2c7b623d582377",
+      "name": "unit-record-at-043e7039",
+      "status": "FAIL",
+      "stdout_sha256": "b9824d23f60d7123b31c02c87276dd3b5f184bc93c6a1e628125952d0c839026"
+    },
+    {
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit f8c8b339c8566a851f2ae2c11ffc155ee8af076c --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "f8c8b339c8566a851f2ae2c11ffc155ee8af076c",
+      "name": "unit-record-at-path-correction",
+      "status": "PASS",
+      "stdout_sha256": "f99efa6f1d12141495e50eca9ecc11d4bd7282d710a9991abe8587dc8c5e68d5"
     }
   ],
   "implementer": {
@@ -124,9 +180,9 @@
     "vendor": "xAI"
   },
   "inputs": {
-    "scripts/validate_current_evidence_head.py": "4010314098677a6a0f669d9008f4f6573bac66279747101680589f2feb2180f4",
+    "scripts/validate_current_evidence_head.py": "44d1a10b996c9fec134fda0589798a84b7194b1a231d1e6044b2bb46538a9ad4",
     "scripts/validate_evidence_input_drift.py": "945f80d712c0abfc83bd2333bf48487844e051727809ace61749368c2bef7b8f",
-    "scripts/validate_ocor_development_plan.py": "37b603499a18f65a3f94ac2078f2830908a9b4f93c35cdd75c06013bb17dc91b"
+    "scripts/validate_ocor_development_plan.py": "ce925a4e2c3fdfb939418e5c3ba1aa2045d8e9d6618cccf0aae9130a1b1819f5"
   },
   "inventory": {
     "command": "python3 - << 'PY'\n#!/usr/bin/env python3\n\"\"\"Measure the OCOR-DEV-REM-0068 pin inventory on one commit.\n\nReads reports/evidence from that commit with discover_records and\nselect_most_recent from scripts/validate_evidence_input_drift.py in the\nsame commit. No completed_evidence_tasks filter. Prints canonical JSON.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport importlib.util\nimport json\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nCOMMIT = \"23e6b62c36627de91cb85329b9a1164f3219cd53\"\nTARGETS = [\n    \"scripts/validate_ocor_development_plan.py\",\n    \"reports/planning/OCOR_PLAN_RUN_STATE.json\",\n    \".github/workflows/ocor-tooling-bootstrap.yml\",\n]\n\n\ndef git_bytes(commit: str, path: str) -> bytes | None:\n    result = subprocess.run(\n        [\"git\", \"cat-file\", \"-e\", f\"{commit}:{path}\"],\n        check=False,\n        capture_output=True,\n    )\n    if result.returncode != 0:\n        return None\n    shown = subprocess.run(\n        [\"git\", \"show\", f\"{commit}:{path}\"],\n        check=True,\n        capture_output=True,\n    )\n    return shown.stdout\n\n\ndef main() -> int:\n    root = Path.cwd()\n    with tempfile.TemporaryDirectory(prefix=\"rem0068-inventory-\") as tmp:\n        tree = Path(tmp)\n        archive = subprocess.run(\n            [\"git\", \"archive\", COMMIT, \"reports/evidence\", \"scripts/validate_evidence_input_drift.py\"],\n            check=True,\n            capture_output=True,\n        )\n        subprocess.run([\"tar\", \"-x\", \"-C\", str(tree)], check=True, input=archive.stdout)\n        spec = importlib.util.spec_from_file_location(\n            \"drift_at_base\",\n            tree / \"scripts\" / \"validate_evidence_input_drift.py\",\n        )\n        if spec is None or spec.loader is None:\n            raise SystemExit(\"drift module missing at the measured commit\")\n        module = importlib.util.module_from_spec(spec)\n        spec.loader.exec_module(module)\n        records = module.discover_records(tree / \"reports\" / \"evidence\")\n        manifest_paths = sorted(\n            path.relative_to(tree).as_posix()\n            for path in (tree / \"reports\" / \"evidence\").rglob(\"MANIFEST.json\")\n        )\n        watched = TARGETS + manifest_paths\n        rows = []\n        for task_id in sorted(records):\n            selected = module.select_most_recent(records[task_id])\n            record = json.loads(selected.read_text(encoding=\"utf-8\"))\n            inputs = record.get(\"inputs\")\n            if not isinstance(inputs, dict):\n                continue\n            identity = record.get(\"record_id\") or record.get(\"commit\") or selected.relative_to(tree).as_posix()\n            for path in watched:\n                pin = inputs.get(path)\n                if isinstance(pin, str):\n                    rows.append(\n                        {\n                            \"file\": path,\n                            \"pin\": pin,\n                            \"record_id\": identity,\n                            \"task\": task_id,\n                        }\n                    )\n        payload = {\n            \"commit\": COMMIT,\n            \"drift_script_sha256\": hashlib.sha256(\n                (tree / \"scripts\" / \"validate_evidence_input_drift.py\").read_bytes()\n            ).hexdigest(),\n            \"manifests\": manifest_paths,\n            \"pins\": rows,\n            \"repository\": str(root),\n            \"selector\": \"discover_records+select_most_recent\",\n            \"completed_evidence_tasks_filter\": False,\n        }\n        sys.stdout.write(json.dumps(payload, indent=2, sort_keys=True) + \"\\n\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\nPY",
@@ -252,6 +308,49 @@
     },
     "verdict": "BLOCKING_FINDINGS"
   },
+  "preventive_review_repair_cycles": [
+    {
+      "advisory_dispositions": [
+        {
+          "disposition": "ACCEPTED as a historical limit of 043e7039e891f96e20df91bcfcf409078d535231: the repair-1 tests and the production change share one commit, and that history is not rewritten. This correction has a separate RED commit 61bdc36ef7042f63fb77ad17ee13afc15cf7841d before the production change. The mutation list does not name _off_chain_multiple_heads. test_reconciliation_rejects_an_extraneous_branch remains the proof of that class. No further code change follows from this advisory.",
+          "id": "P3"
+        },
+        {
+          "disposition": "The dossier is updated in this record for the repair-cycle review, the execution commit, and rows for Store.files and _off_chain_multiple_heads. VF-009 and VF-010 of verdict OCOR-DEV-REM-0068-c6410c0c7c31-0 stay low and are not closed here. The parser cell scan already in self_check is unchanged.",
+          "id": "P4"
+        }
+      ],
+      "blocking_dispositions": [
+        {
+          "disposition": "CORRECTED at f8c8b339c8566a851f2ae2c11ffc155ee8af076c. RED is 61bdc36ef7042f63fb77ad17ee13afc15cf7841d. NUL-delimited git names are kept with surrogateescape and are not dropped before read. A listed evidence blob that cannot be read is an unreadable record. The blob name is not document text, so a non-UTF-8 filename with valid JSON remains a second head. The fixture forces core.quotepath true. Proof: RepairCycle1Tests.test_non_utf8_git_path_second_head_is_examined.",
+          "id": "P1"
+        },
+        {
+          "disposition": "CORRECTED in this record. The three repair1 records were checked against execution commit 043e7039e891f96e20df91bcfcf409078d535231. The measurement at head ad46e5c3babcaef4c13f1b294b2c7b623d582377 is exit 0, status PASS, stdout sha256 96e180e83cd004e905e19328efc9a243029795b44978d93d840359670f248f84. The same command at head f8c8b339c8566a851f2ae2c11ffc155ee8af076c is exit 0, status PASS, stdout sha256 e9283bd3dbdb510946c8c8cac3ee570a63c525b0375f0cfab9faac3ef0130247. The unit record declared 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5, so the 043e7039 command on this record exited 1: the declared commit differed and two input hashes differed. That stdout sha256 is b9824d23f60d7123b31c02c87276dd3b5f184bc93c6a1e628125952d0c839026. This record now declares f8c8b339c8566a851f2ae2c11ffc155ee8af076c. Its PASS is measured while HEAD is that commit, before the commit that stores this record.",
+          "id": "P2"
+        }
+      ],
+      "counts": {
+        "advisory": 2,
+        "blocking": 2
+      },
+      "created_at": "2026-11-28T03:39:01+01:00",
+      "cycle": 1,
+      "final_code_commit": "f8c8b339c8566a851f2ae2c11ffc155ee8af076c",
+      "independence_limit": "Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10) and GROK-50X (2026-11-10): same vendor (xAI) as an implementer of this task (Grok Build, grok-4.7), different Grok generation (cursor-grok-4.6-xhigh). The loop excludes this reviewer from the final verification.",
+      "outcome_sha256": "1edb7d93173ba35b06171158e2b53fd6426c0093afa1e69f44197d6d3a6b2142",
+      "red_commit": "61bdc36ef7042f63fb77ad17ee13afc15cf7841d",
+      "request_id": "OCOR-DEV-REM-0068-ad46e5c3babc-pre",
+      "reserve": true,
+      "reviewed_head": "ad46e5c3babcaef4c13f1b294b2c7b623d582377",
+      "reviewer": {
+        "model": "cursor-grok-4.6-xhigh",
+        "process": "Cursor CLI",
+        "vendor": "xAI"
+      },
+      "verdict": "BLOCKING_FINDINGS"
+    }
+  ],
   "qualifying_campaign": {
     "admission_level": "FOUR_LANE",
     "campaign_id": "7594851f3a2e-1795820422",
@@ -490,6 +589,34 @@
         "outcome_at_review": "ABSENT",
         "outcome_now": "FIXED",
         "would_have_caught": "P1"
+      },
+      {
+        "checks": {
+          "blob_name_is_not_document_text": "FIXED. _text_broken does not scan record.path, so a non-UTF-8 filename with valid JSON stays readable and counts as a head.",
+          "non_utf8_name": "FIXED. ls-tree -z names are decoded with surrogateescape. A UnicodeError does not drop the name.",
+          "read_none": "FIXED. A listed evidence JSON whose read returns None is an unreadable record, not a skip."
+        },
+        "class_name": "MULTIPLE_HEADS",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "Store.files",
+        "line": 779,
+        "negative_test": "RepairCycle1Tests.test_non_utf8_git_path_second_head_is_examined",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "P1"
+      },
+      {
+        "checks": {
+          "extraneous_branch": "COVERED by test_reconciliation_rejects_an_extraneous_branch. The function is not named in MUTATION_CHECKS."
+        },
+        "class_name": "MULTIPLE_HEADS",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_off_chain_multiple_heads",
+        "line": 691,
+        "negative_test": "RepairCycle1Tests.test_reconciliation_rejects_an_extraneous_branch",
+        "outcome_at_review": "PRESENT",
+        "outcome_now": "UNCHANGED",
+        "would_have_caught": "P3"
       }
     ],
     "path_inventory": [
@@ -522,6 +649,27 @@
         "function": "_completed",
         "kind": "EXECUTION_STATE.json",
         "line": 883
+      },
+      {
+        "consumers": [
+          "_evidence_recon line 876",
+          "_evidence_records line 985",
+          "_manifests line 1002",
+          "evaluate line 1074"
+        ],
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "Store.files",
+        "kind": "git commit listing",
+        "line": 779
+      },
+      {
+        "consumers": [
+          "_graph_findings line 632"
+        ],
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_off_chain_multiple_heads",
+        "kind": "reconciliation chain",
+        "line": 691
       }
     ],
     "pin_measurement": {
@@ -539,7 +687,7 @@
         "process": "Grok Build",
         "vendor": "xAI"
       },
-      "note": "The corrective commits on governed/ocor-dev-rem-0068-current-head were produced by this implementer. The preventive reviewer is the same vendor and a different Grok generation. Final verification needs a vendor other than xAI.",
+      "note": "The corrective commits on governed/ocor-dev-rem-0068-current-head were produced by this implementer. The preventive reviewer is the same vendor and a different Grok generation. Final verification needs a vendor other than xAI. Repair-cycle review OCOR-DEV-REM-0068-ad46e5c3babc-pre is the same reviewer and vendor. The correction code commit is f8c8b339c8566a851f2ae2c11ffc155ee8af076c.",
       "preventive_reviewer": {
         "model": "cursor-grok-4.6-xhigh",
         "process": "Cursor CLI",
