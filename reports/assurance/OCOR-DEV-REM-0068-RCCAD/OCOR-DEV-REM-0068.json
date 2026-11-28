@@ -172,186 +172,27 @@
       "name": "unit-record-at-path-correction",
       "status": "PASS",
       "stdout_sha256": "f99efa6f1d12141495e50eca9ecc11d4bd7282d710a9991abe8587dc8c5e68d5"
-    }
-  ],
-  "implementer": {
-    "model": "grok-4.7",
-    "process": "Grok Build",
-    "vendor": "xAI"
-  },
-  "inputs": {
-    "scripts/validate_current_evidence_head.py": "44d1a10b996c9fec134fda0589798a84b7194b1a231d1e6044b2bb46538a9ad4",
-    "scripts/validate_evidence_input_drift.py": "945f80d712c0abfc83bd2333bf48487844e051727809ace61749368c2bef7b8f",
-    "scripts/validate_ocor_development_plan.py": "ce925a4e2c3fdfb939418e5c3ba1aa2045d8e9d6618cccf0aae9130a1b1819f5"
-  },
-  "inventory": {
-    "command": "python3 - << 'PY'\n#!/usr/bin/env python3\n\"\"\"Measure the OCOR-DEV-REM-0068 pin inventory on one commit.\n\nReads reports/evidence from that commit with discover_records and\nselect_most_recent from scripts/validate_evidence_input_drift.py in the\nsame commit. No completed_evidence_tasks filter. Prints canonical JSON.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport importlib.util\nimport json\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nCOMMIT = \"23e6b62c36627de91cb85329b9a1164f3219cd53\"\nTARGETS = [\n    \"scripts/validate_ocor_development_plan.py\",\n    \"reports/planning/OCOR_PLAN_RUN_STATE.json\",\n    \".github/workflows/ocor-tooling-bootstrap.yml\",\n]\n\n\ndef git_bytes(commit: str, path: str) -> bytes | None:\n    result = subprocess.run(\n        [\"git\", \"cat-file\", \"-e\", f\"{commit}:{path}\"],\n        check=False,\n        capture_output=True,\n    )\n    if result.returncode != 0:\n        return None\n    shown = subprocess.run(\n        [\"git\", \"show\", f\"{commit}:{path}\"],\n        check=True,\n        capture_output=True,\n    )\n    return shown.stdout\n\n\ndef main() -> int:\n    root = Path.cwd()\n    with tempfile.TemporaryDirectory(prefix=\"rem0068-inventory-\") as tmp:\n        tree = Path(tmp)\n        archive = subprocess.run(\n            [\"git\", \"archive\", COMMIT, \"reports/evidence\", \"scripts/validate_evidence_input_drift.py\"],\n            check=True,\n            capture_output=True,\n        )\n        subprocess.run([\"tar\", \"-x\", \"-C\", str(tree)], check=True, input=archive.stdout)\n        spec = importlib.util.spec_from_file_location(\n            \"drift_at_base\",\n            tree / \"scripts\" / \"validate_evidence_input_drift.py\",\n        )\n        if spec is None or spec.loader is None:\n            raise SystemExit(\"drift module missing at the measured commit\")\n        module = importlib.util.module_from_spec(spec)\n        spec.loader.exec_module(module)\n        records = module.discover_records(tree / \"reports\" / \"evidence\")\n        manifest_paths = sorted(\n            path.relative_to(tree).as_posix()\n            for path in (tree / \"reports\" / \"evidence\").rglob(\"MANIFEST.json\")\n        )\n        watched = TARGETS + manifest_paths\n        rows = []\n        for task_id in sorted(records):\n            selected = module.select_most_recent(records[task_id])\n            record = json.loads(selected.read_text(encoding=\"utf-8\"))\n            inputs = record.get(\"inputs\")\n            if not isinstance(inputs, dict):\n                continue\n            identity = record.get(\"record_id\") or record.get(\"commit\") or selected.relative_to(tree).as_posix()\n            for path in watched:\n                pin = inputs.get(path)\n                if isinstance(pin, str):\n                    rows.append(\n                        {\n                            \"file\": path,\n                            \"pin\": pin,\n                            \"record_id\": identity,\n                            \"task\": task_id,\n                        }\n                    )\n        payload = {\n            \"commit\": COMMIT,\n            \"drift_script_sha256\": hashlib.sha256(\n                (tree / \"scripts\" / \"validate_evidence_input_drift.py\").read_bytes()\n            ).hexdigest(),\n            \"manifests\": manifest_paths,\n            \"pins\": rows,\n            \"repository\": str(root),\n            \"selector\": \"discover_records+select_most_recent\",\n            \"completed_evidence_tasks_filter\": False,\n        }\n        sys.stdout.write(json.dumps(payload, indent=2, sort_keys=True) + \"\\n\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\nPY",
-    "completed_evidence_tasks_filter": false,
-    "execution_commit": "23e6b62c36627de91cb85329b9a1164f3219cd53",
-    "exit_code": 0,
-    "manifest_count": 8,
-    "pin_count": 13,
-    "pins": [
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
-        "record_id": "OCOR-DEV-0005-requalified-rem0069-34a66b063b78",
-        "task": "OCOR-DEV-0005"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
-        "record_id": "OCOR-DEV-0050-requalified-rem0069-34a66b063b78",
-        "task": "OCOR-DEV-0050"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
-        "record_id": "OCOR-DEV-0082-requalified-rem0069-34a66b063b78",
-        "task": "OCOR-DEV-0082"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
-        "record_id": "OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816",
-        "task": "OCOR-DEV-REM-0018"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
-        "record_id": "OCOR-DEV-REM-0022-requalified-fuseki-20261121-dd0467f18816",
-        "task": "OCOR-DEV-REM-0022"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
-        "record_id": "OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816",
-        "task": "OCOR-DEV-REM-0023"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "7bcb652ccbed7d5154d3231b386725dbb31bfe199c5a9ac053977e6828ce196b",
-        "record_id": "OCOR-DEV-REM-0036-requalified-rem0059-636975eaacd7",
-        "task": "OCOR-DEV-REM-0036"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "3c0fb2aaff43a3a71916d286e59b1c3b17597cef0ed1edfde714b034fa3ba4b5",
-        "record_id": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
-        "task": "OCOR-DEV-REM-0037"
-      },
-      {
-        "file": "reports/planning/OCOR_PLAN_RUN_STATE.json",
-        "pin": "ae3fde4245d75d6e2cfb0065c326552cdc7404d406e8292fa2bc87f653e39c2c",
-        "record_id": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
-        "task": "OCOR-DEV-REM-0037"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
-        "record_id": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
-        "task": "OCOR-DEV-REM-0038"
-      },
-      {
-        "file": ".github/workflows/ocor-tooling-bootstrap.yml",
-        "pin": "674d25652621ca32a06cdb8413ac9b9dda589f069825460242b66e20df39cabe",
-        "record_id": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
-        "task": "OCOR-DEV-REM-0038"
-      },
-      {
-        "file": "scripts/validate_ocor_development_plan.py",
-        "pin": "62661c88b7c864748d0ec8a31b9128dd8b6bb1a5ee7da34259966abdca1e6bf1",
-        "record_id": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
-        "task": "OCOR-DEV-REM-0053"
-      },
-      {
-        "file": "reports/planning/OCOR_PLAN_RUN_STATE.json",
-        "pin": "2cbe44c0bde095c486c1ab24c1e2e21e065744cf084bf9c510b116d89c7f2952",
-        "record_id": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
-        "task": "OCOR-DEV-REM-0053"
-      }
-    ],
-    "readme_match": true,
-    "selector": "discover_records+select_most_recent",
-    "stdout_sha256": "4e02244b3595b3b5433adbb05832b078597fee4a647d21199b9df8a5d3593fe1"
-  },
-  "preventive_review": {
-    "advisory_dispositions": [
-      {
-        "disposition": "ACCEPTED. SELF-CHECK-CELL-SCAN (2026-11-09), SELF-CHECK-PATH-INVENTORY (2026-11-09) and RECORD-ROLES-COHERENCE-SCAN (2026-11-09) were already required before the next verify request. The table was absent at review time. The _load_record row would have caught the blocking parser defect had that cell been FIXED rather than absent. The scans are recorded in self_check.",
-        "id": "P3"
-      }
-    ],
-    "blocking_dispositions": [
-      {
-        "disposition": "CORRECTED at 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. One strict loader serves _load_record, _parse_recon, _load_manifest and _completed. NaN, Infinity, -Infinity and a lone surrogate anywhere in the tree are rejected. A present evidence task_id, supersedes, record_id or commit of the wrong type, and a present empty task_id, make the record UNREADABLE_JSON. Absent task_id still uses the fallback. Empty supersedes stays a string. Empty record_id and empty commit stay absent. The same defects in a reconciliation stay RECONCILIATION_ABSENT, including a lone surrogate in an identity field. A non-RFC manifest is UNREADABLE_JSON; a finite wrong-type path or task_id stays MANIFEST_FIELD. An unusable EXECUTION_STATE.json is UNREADABLE_JSON. Duplicate keys are still accepted. The production comparison is ProductionTests.test_strict_documents_match_the_oracle.",
-        "id": "P1"
-      },
-      {
-        "disposition": "CORRECTED in this record. scripts/check_execution_commit_inputs.py was run on this record, on the three requalified-rem0068 records and on the three requalified-rem0068-guard records. Command, exit code and stdout sha256 are in execution_input_checks. The stdout hash is measured while HEAD is the parser commit, before the commit that stores this record, because the checker prints HEAD. The superseded rem0068 records fail because test_kind_teardown_observation.py (0005 and 0050) and validate_ocor_development_plan.py (0005, 0050 and 0082) changed after 8f52865f. Their guard successors, checked at d6f72ad4, pass.",
-        "id": "P2"
-      }
-    ],
-    "counts": {
-      "advisory": 1,
-      "blocking": 2
     },
-    "created_at": "2026-11-27T22:41:25+01:00",
-    "independence_limit": "Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10) and GROK-50X (2026-11-10): same vendor (xAI) as an implementer of this task (Grok Build, grok-4.7), different Grok generation (cursor-grok-4.6-xhigh). The loop excludes this reviewer from the final verification.",
-    "outcome_sha256": "2728d4e9f1e8790f7ecdc040dc136c6fe529ad34e77ba089aa93991b3c86a5fb",
-    "request_id": "OCOR-DEV-REM-0068-59788e3b0bbc-pre",
-    "reviewed_head": "59788e3b0bbc3c6dbf129bf721b619c14e63a49f",
-    "reviewer": {
-      "model": "cursor-grok-4.6-xhigh",
-      "process": "Cursor CLI",
-      "vendor": "xAI"
-    },
-    "verdict": "BLOCKING_FINDINGS"
-  },
-  "preventive_review_repair_cycles": [
     {
-      "advisory_dispositions": [
-        {
-          "disposition": "ACCEPTED as a historical limit of 043e7039e891f96e20df91bcfcf409078d535231: the repair-1 tests and the production change share one commit, and that history is not rewritten. This correction has a separate RED commit 61bdc36ef7042f63fb77ad17ee13afc15cf7841d before the production change. The mutation list does not name _off_chain_multiple_heads. test_reconciliation_rejects_an_extraneous_branch remains the proof of that class. No further code change follows from this advisory.",
-          "id": "P3"
-        },
-        {
-          "disposition": "The dossier is updated in this record for the repair-cycle review, the execution commit, and rows for Store.files and _off_chain_multiple_heads. VF-009 and VF-010 of verdict OCOR-DEV-REM-0068-c6410c0c7c31-0 stay low and are not closed here. The parser cell scan already in self_check is unchanged.",
-          "id": "P4"
-        }
-      ],
-      "blocking_dispositions": [
-        {
-          "disposition": "CORRECTED at f8c8b339c8566a851f2ae2c11ffc155ee8af076c. RED is 61bdc36ef7042f63fb77ad17ee13afc15cf7841d. NUL-delimited git names are kept with surrogateescape and are not dropped before read. A listed evidence blob that cannot be read is an unreadable record. The blob name is not document text, so a non-UTF-8 filename with valid JSON remains a second head. The fixture forces core.quotepath true. Proof: RepairCycle1Tests.test_non_utf8_git_path_second_head_is_examined.",
-          "id": "P1"
-        },
-        {
-          "disposition": "CORRECTED in this record. The three repair1 records were checked against execution commit 043e7039e891f96e20df91bcfcf409078d535231. The measurement at head ad46e5c3babcaef4c13f1b294b2c7b623d582377 is exit 0, status PASS, stdout sha256 96e180e83cd004e905e19328efc9a243029795b44978d93d840359670f248f84. The same command at head f8c8b339c8566a851f2ae2c11ffc155ee8af076c is exit 0, status PASS, stdout sha256 e9283bd3dbdb510946c8c8cac3ee570a63c525b0375f0cfab9faac3ef0130247. The unit record declared 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5, so the 043e7039 command on this record exited 1: the declared commit differed and two input hashes differed. That stdout sha256 is b9824d23f60d7123b31c02c87276dd3b5f184bc93c6a1e628125952d0c839026. This record now declares f8c8b339c8566a851f2ae2c11ffc155ee8af076c. Its PASS is measured while HEAD is that commit, before the commit that stores this record.",
-          "id": "P2"
-        }
-      ],
-      "counts": {
-        "advisory": 2,
-        "blocking": 2
-      },
-      "created_at": "2026-11-28T03:39:01+01:00",
-      "cycle": 1,
-      "final_code_commit": "f8c8b339c8566a851f2ae2c11ffc155ee8af076c",
-      "independence_limit": "Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10) and GROK-50X (2026-11-10): same vendor (xAI) as an implementer of this task (Grok Build, grok-4.7), different Grok generation (cursor-grok-4.6-xhigh). The loop excludes this reviewer from the final verification.",
-      "outcome_sha256": "1edb7d93173ba35b06171158e2b53fd6426c0093afa1e69f44197d6d3a6b2142",
-      "red_commit": "61bdc36ef7042f63fb77ad17ee13afc15cf7841d",
-      "request_id": "OCOR-DEV-REM-0068-ad46e5c3babc-pre",
-      "reserve": true,
-      "reviewed_head": "ad46e5c3babcaef4c13f1b294b2c7b623d582377",
-      "reviewer": {
-        "model": "cursor-grok-4.6-xhigh",
-        "process": "Cursor CLI",
-        "vendor": "xAI"
-      },
-      "verdict": "BLOCKING_FINDINGS"
+      "command": "python3 scripts/check_execution_commit_inputs.py --root . --execution-commit f8c8b339c8566a851f2ae2c11ffc155ee8af076c --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "8a4020b1d04afe9d8549112d52094fd742da916f",
+      "name": "unit-record-at-8a4020b1",
+      "status": "PASS",
+      "stdout_sha256": "461dba8a8592e5b12d65ee9463a5201898fa5784fcd15a8b79c32f90e7641a22"
+    },
+    {
+      "command": "python3 - << 'PY'\nimport hashlib\nimport pathlib\nimport sys\n\nfiles = [\n    (\n        \"/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-8a4020b1/full/campaign_result.json\",\n        9055,\n        \"6f700bf50b353469a002d2fd5acdf8943c0a9b693df4d765a0ab9a0031e27ef9\",\n    ),\n    (\n        \"/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-8a4020b1/campaign.log\",\n        10121,\n        \"a760a3a0164278ea6f6cf9458074b8514ba6c8a2e7b796848dbcdc25e975eac1\",\n    ),\n]\nok = True\nfor path, size, expected in files:\n    data = pathlib.Path(path).read_bytes()\n    digest = hashlib.sha256(data).hexdigest()\n    match = digest == expected and len(data) == size\n    print(f\"{path} bytes={len(data)} sha256={digest} match={str(match).lower()}\")\n    ok = ok and match\nprint(\"ARTIFACT_PASS\" if ok else \"ARTIFACT_FAIL\")\nsys.exit(0 if ok else 1)\nPY",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "8a4020b1d04afe9d8549112d52094fd742da916f",
+      "name": "campaign-artifacts-8a4020b1",
+      "status": "PASS",
+      "stdout_sha256": "f996e7695b8d7f879606377719c921a3441e975e9d789c1caa0a3ba2b3dfd252"
     }
   ],
-  "qualifying_campaign": {
+  "historical_qualifying_campaign": {
     "admission_level": "FOUR_LANE",
     "campaign_id": "7594851f3a2e-1795820422",
     "campaign_log_bytes": 10078,
@@ -463,6 +304,309 @@
     "stdout_sha256": "e66f942fbec8ef5662b24124d9f633f86c8afcb4c579720cdcbe0378b01f10a7",
     "threshold_seconds": 3600,
     "total_duration_seconds": 1864.835,
+    "vf004_schema_conformance": "NOT_CORRECTED"
+  },
+  "implementer": {
+    "model": "grok-4.7",
+    "process": "Grok Build",
+    "vendor": "xAI"
+  },
+  "inputs": {
+    "scripts/validate_current_evidence_head.py": "44d1a10b996c9fec134fda0589798a84b7194b1a231d1e6044b2bb46538a9ad4",
+    "scripts/validate_evidence_input_drift.py": "945f80d712c0abfc83bd2333bf48487844e051727809ace61749368c2bef7b8f",
+    "scripts/validate_ocor_development_plan.py": "ce925a4e2c3fdfb939418e5c3ba1aa2045d8e9d6618cccf0aae9130a1b1819f5"
+  },
+  "inventory": {
+    "command": "python3 - << 'PY'\n#!/usr/bin/env python3\n\"\"\"Measure the OCOR-DEV-REM-0068 pin inventory on one commit.\n\nReads reports/evidence from that commit with discover_records and\nselect_most_recent from scripts/validate_evidence_input_drift.py in the\nsame commit. No completed_evidence_tasks filter. Prints canonical JSON.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport importlib.util\nimport json\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nCOMMIT = \"23e6b62c36627de91cb85329b9a1164f3219cd53\"\nTARGETS = [\n    \"scripts/validate_ocor_development_plan.py\",\n    \"reports/planning/OCOR_PLAN_RUN_STATE.json\",\n    \".github/workflows/ocor-tooling-bootstrap.yml\",\n]\n\n\ndef git_bytes(commit: str, path: str) -> bytes | None:\n    result = subprocess.run(\n        [\"git\", \"cat-file\", \"-e\", f\"{commit}:{path}\"],\n        check=False,\n        capture_output=True,\n    )\n    if result.returncode != 0:\n        return None\n    shown = subprocess.run(\n        [\"git\", \"show\", f\"{commit}:{path}\"],\n        check=True,\n        capture_output=True,\n    )\n    return shown.stdout\n\n\ndef main() -> int:\n    root = Path.cwd()\n    with tempfile.TemporaryDirectory(prefix=\"rem0068-inventory-\") as tmp:\n        tree = Path(tmp)\n        archive = subprocess.run(\n            [\"git\", \"archive\", COMMIT, \"reports/evidence\", \"scripts/validate_evidence_input_drift.py\"],\n            check=True,\n            capture_output=True,\n        )\n        subprocess.run([\"tar\", \"-x\", \"-C\", str(tree)], check=True, input=archive.stdout)\n        spec = importlib.util.spec_from_file_location(\n            \"drift_at_base\",\n            tree / \"scripts\" / \"validate_evidence_input_drift.py\",\n        )\n        if spec is None or spec.loader is None:\n            raise SystemExit(\"drift module missing at the measured commit\")\n        module = importlib.util.module_from_spec(spec)\n        spec.loader.exec_module(module)\n        records = module.discover_records(tree / \"reports\" / \"evidence\")\n        manifest_paths = sorted(\n            path.relative_to(tree).as_posix()\n            for path in (tree / \"reports\" / \"evidence\").rglob(\"MANIFEST.json\")\n        )\n        watched = TARGETS + manifest_paths\n        rows = []\n        for task_id in sorted(records):\n            selected = module.select_most_recent(records[task_id])\n            record = json.loads(selected.read_text(encoding=\"utf-8\"))\n            inputs = record.get(\"inputs\")\n            if not isinstance(inputs, dict):\n                continue\n            identity = record.get(\"record_id\") or record.get(\"commit\") or selected.relative_to(tree).as_posix()\n            for path in watched:\n                pin = inputs.get(path)\n                if isinstance(pin, str):\n                    rows.append(\n                        {\n                            \"file\": path,\n                            \"pin\": pin,\n                            \"record_id\": identity,\n                            \"task\": task_id,\n                        }\n                    )\n        payload = {\n            \"commit\": COMMIT,\n            \"drift_script_sha256\": hashlib.sha256(\n                (tree / \"scripts\" / \"validate_evidence_input_drift.py\").read_bytes()\n            ).hexdigest(),\n            \"manifests\": manifest_paths,\n            \"pins\": rows,\n            \"repository\": str(root),\n            \"selector\": \"discover_records+select_most_recent\",\n            \"completed_evidence_tasks_filter\": False,\n        }\n        sys.stdout.write(json.dumps(payload, indent=2, sort_keys=True) + \"\\n\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\nPY",
+    "completed_evidence_tasks_filter": false,
+    "execution_commit": "23e6b62c36627de91cb85329b9a1164f3219cd53",
+    "exit_code": 0,
+    "manifest_count": 8,
+    "pin_count": 13,
+    "pins": [
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
+        "record_id": "OCOR-DEV-0005-requalified-rem0069-34a66b063b78",
+        "task": "OCOR-DEV-0005"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
+        "record_id": "OCOR-DEV-0050-requalified-rem0069-34a66b063b78",
+        "task": "OCOR-DEV-0050"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "028861101cb4f6a71af4063ae44bcc5eb58aec6835f5c1975d2dd5afb6677a50",
+        "record_id": "OCOR-DEV-0082-requalified-rem0069-34a66b063b78",
+        "task": "OCOR-DEV-0082"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0018-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0018"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0022-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0022"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0023-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0023"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "7bcb652ccbed7d5154d3231b386725dbb31bfe199c5a9ac053977e6828ce196b",
+        "record_id": "OCOR-DEV-REM-0036-requalified-rem0059-636975eaacd7",
+        "task": "OCOR-DEV-REM-0036"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "3c0fb2aaff43a3a71916d286e59b1c3b17597cef0ed1edfde714b034fa3ba4b5",
+        "record_id": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
+        "task": "OCOR-DEV-REM-0037"
+      },
+      {
+        "file": "reports/planning/OCOR_PLAN_RUN_STATE.json",
+        "pin": "ae3fde4245d75d6e2cfb0065c326552cdc7404d406e8292fa2bc87f653e39c2c",
+        "record_id": "OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3",
+        "task": "OCOR-DEV-REM-0037"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "c284752fc081be0a9e7ee63da42460aa3e54fd79a562c32ab8bc98d329123827",
+        "record_id": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0038"
+      },
+      {
+        "file": ".github/workflows/ocor-tooling-bootstrap.yml",
+        "pin": "674d25652621ca32a06cdb8413ac9b9dda589f069825460242b66e20df39cabe",
+        "record_id": "OCOR-DEV-REM-0038-requalified-fuseki-20261121-dd0467f18816",
+        "task": "OCOR-DEV-REM-0038"
+      },
+      {
+        "file": "scripts/validate_ocor_development_plan.py",
+        "pin": "62661c88b7c864748d0ec8a31b9128dd8b6bb1a5ee7da34259966abdca1e6bf1",
+        "record_id": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
+        "task": "OCOR-DEV-REM-0053"
+      },
+      {
+        "file": "reports/planning/OCOR_PLAN_RUN_STATE.json",
+        "pin": "2cbe44c0bde095c486c1ab24c1e2e21e065744cf084bf9c510b116d89c7f2952",
+        "record_id": "OCOR-DEV-REM-0053-requalified-rem0054-ff0508c04e5c",
+        "task": "OCOR-DEV-REM-0053"
+      }
+    ],
+    "readme_match": true,
+    "selector": "discover_records+select_most_recent",
+    "stdout_sha256": "4e02244b3595b3b5433adbb05832b078597fee4a647d21199b9df8a5d3593fe1"
+  },
+  "pre_campaign_gate": {
+    "gates_json_bytes": 24960,
+    "gates_json_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/pregate-8a4020b1/gates.json",
+    "gates_json_sha256": "42d984150806888717d014ccd3e3acef8f7364a75afda48bb1f843e19101ee68",
+    "head": "8a4020b1d04afe9d8549112d52094fd742da916f",
+    "result": "PASS",
+    "runner_bytes": 3197,
+    "runner_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/pregate-8a4020b1/runner.out",
+    "runner_sha256": "e654b5f6939a4b8796d4f99e3feb52fb04183dc40bf26b7f4bc15e07153daa42",
+    "unexpected_failures": [],
+    "vf004_schema_conformance": "NOT_CORRECTED"
+  },
+  "preventive_review": {
+    "advisory_dispositions": [
+      {
+        "disposition": "ACCEPTED. SELF-CHECK-CELL-SCAN (2026-11-09), SELF-CHECK-PATH-INVENTORY (2026-11-09) and RECORD-ROLES-COHERENCE-SCAN (2026-11-09) were already required before the next verify request. The table was absent at review time. The _load_record row would have caught the blocking parser defect had that cell been FIXED rather than absent. The scans are recorded in self_check.",
+        "id": "P3"
+      }
+    ],
+    "blocking_dispositions": [
+      {
+        "disposition": "CORRECTED at 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. One strict loader serves _load_record, _parse_recon, _load_manifest and _completed. NaN, Infinity, -Infinity and a lone surrogate anywhere in the tree are rejected. A present evidence task_id, supersedes, record_id or commit of the wrong type, and a present empty task_id, make the record UNREADABLE_JSON. Absent task_id still uses the fallback. Empty supersedes stays a string. Empty record_id and empty commit stay absent. The same defects in a reconciliation stay RECONCILIATION_ABSENT, including a lone surrogate in an identity field. A non-RFC manifest is UNREADABLE_JSON; a finite wrong-type path or task_id stays MANIFEST_FIELD. An unusable EXECUTION_STATE.json is UNREADABLE_JSON. Duplicate keys are still accepted. The production comparison is ProductionTests.test_strict_documents_match_the_oracle.",
+        "id": "P1"
+      },
+      {
+        "disposition": "CORRECTED in this record. scripts/check_execution_commit_inputs.py was run on this record, on the three requalified-rem0068 records and on the three requalified-rem0068-guard records. Command, exit code and stdout sha256 are in execution_input_checks. The stdout hash is measured while HEAD is the parser commit, before the commit that stores this record, because the checker prints HEAD. The superseded rem0068 records fail because test_kind_teardown_observation.py (0005 and 0050) and validate_ocor_development_plan.py (0005, 0050 and 0082) changed after 8f52865f. Their guard successors, checked at d6f72ad4, pass.",
+        "id": "P2"
+      }
+    ],
+    "counts": {
+      "advisory": 1,
+      "blocking": 2
+    },
+    "created_at": "2026-11-27T22:41:25+01:00",
+    "independence_limit": "Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10) and GROK-50X (2026-11-10): same vendor (xAI) as an implementer of this task (Grok Build, grok-4.7), different Grok generation (cursor-grok-4.6-xhigh). The loop excludes this reviewer from the final verification.",
+    "outcome_sha256": "2728d4e9f1e8790f7ecdc040dc136c6fe529ad34e77ba089aa93991b3c86a5fb",
+    "request_id": "OCOR-DEV-REM-0068-59788e3b0bbc-pre",
+    "reviewed_head": "59788e3b0bbc3c6dbf129bf721b619c14e63a49f",
+    "reviewer": {
+      "model": "cursor-grok-4.6-xhigh",
+      "process": "Cursor CLI",
+      "vendor": "xAI"
+    },
+    "verdict": "BLOCKING_FINDINGS"
+  },
+  "preventive_review_repair_cycles": [
+    {
+      "advisory_dispositions": [
+        {
+          "disposition": "ACCEPTED as a historical limit of 043e7039e891f96e20df91bcfcf409078d535231: the repair-1 tests and the production change share one commit, and that history is not rewritten. This correction has a separate RED commit 61bdc36ef7042f63fb77ad17ee13afc15cf7841d before the production change. The mutation list does not name _off_chain_multiple_heads. test_reconciliation_rejects_an_extraneous_branch remains the proof of that class. No further code change follows from this advisory.",
+          "id": "P3"
+        },
+        {
+          "disposition": "The dossier is updated in this record for the repair-cycle review, the execution commit, and rows for Store.files and _off_chain_multiple_heads. VF-009 and VF-010 of verdict OCOR-DEV-REM-0068-c6410c0c7c31-0 stay low and are not closed here. The parser cell scan already in self_check is unchanged.",
+          "id": "P4"
+        }
+      ],
+      "blocking_dispositions": [
+        {
+          "disposition": "CORRECTED at f8c8b339c8566a851f2ae2c11ffc155ee8af076c. RED is 61bdc36ef7042f63fb77ad17ee13afc15cf7841d. NUL-delimited git names are kept with surrogateescape and are not dropped before read. A listed evidence blob that cannot be read is an unreadable record. The blob name is not document text, so a non-UTF-8 filename with valid JSON remains a second head. The fixture forces core.quotepath true. Proof: RepairCycle1Tests.test_non_utf8_git_path_second_head_is_examined.",
+          "id": "P1"
+        },
+        {
+          "disposition": "CORRECTED in this record. The three repair1 records were checked against execution commit 043e7039e891f96e20df91bcfcf409078d535231. The measurement at head ad46e5c3babcaef4c13f1b294b2c7b623d582377 is exit 0, status PASS, stdout sha256 96e180e83cd004e905e19328efc9a243029795b44978d93d840359670f248f84. The same command at head f8c8b339c8566a851f2ae2c11ffc155ee8af076c is exit 0, status PASS, stdout sha256 e9283bd3dbdb510946c8c8cac3ee570a63c525b0375f0cfab9faac3ef0130247. The unit record declared 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5, so the 043e7039 command on this record exited 1: the declared commit differed and two input hashes differed. That stdout sha256 is b9824d23f60d7123b31c02c87276dd3b5f184bc93c6a1e628125952d0c839026. This record now declares f8c8b339c8566a851f2ae2c11ffc155ee8af076c. Its PASS is measured while HEAD is that commit, before the commit that stores this record.",
+          "id": "P2"
+        }
+      ],
+      "counts": {
+        "advisory": 2,
+        "blocking": 2
+      },
+      "created_at": "2026-11-28T03:39:01+01:00",
+      "cycle": 1,
+      "final_code_commit": "f8c8b339c8566a851f2ae2c11ffc155ee8af076c",
+      "independence_limit": "Reserve reviewer under LOOP-GROK-PRIMARY (2026-11-10) and GROK-50X (2026-11-10): same vendor (xAI) as an implementer of this task (Grok Build, grok-4.7), different Grok generation (cursor-grok-4.6-xhigh). The loop excludes this reviewer from the final verification.",
+      "outcome_sha256": "1edb7d93173ba35b06171158e2b53fd6426c0093afa1e69f44197d6d3a6b2142",
+      "red_commit": "61bdc36ef7042f63fb77ad17ee13afc15cf7841d",
+      "request_id": "OCOR-DEV-REM-0068-ad46e5c3babc-pre",
+      "reserve": true,
+      "reviewed_head": "ad46e5c3babcaef4c13f1b294b2c7b623d582377",
+      "reviewer": {
+        "model": "cursor-grok-4.6-xhigh",
+        "process": "Cursor CLI",
+        "vendor": "xAI"
+      },
+      "verdict": "BLOCKING_FINDINGS"
+    }
+  ],
+  "qualifying_campaign": {
+    "admission_level": "FOUR_LANE",
+    "campaign_id": "8a4020b1d04a-1795835003",
+    "campaign_log_bytes": 10121,
+    "campaign_log_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-8a4020b1/campaign.log",
+    "campaign_log_sha256": "a760a3a0164278ea6f6cf9458074b8514ba6c8a2e7b796848dbcdc25e975eac1",
+    "campaign_result_bytes": 9055,
+    "campaign_result_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-8a4020b1/full/campaign_result.json",
+    "campaign_result_sha256": "6f700bf50b353469a002d2fd5acdf8943c0a9b693df4d765a0ab9a0031e27ef9",
+    "command": "python -u scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/ocor-dev-rem-0068/campaign-8a4020b1/full --expected-head 8a4020b1d04afe9d8549112d52094fd742da916f --tool-bin /home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin --tool-bin /home/luca/.ocor-codex/impl-env/rem-0063/bin",
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5826
+    },
+    "criterion": "Qualifying campaign on 8a4020b1, four lanes, zero skips",
+    "docker_hub": {
+      "checked_at": "2026-11-28T03:03:23Z",
+      "limit": "100;w=3600",
+      "remaining": "100;w=3600",
+      "threshold": 95,
+      "wait_seconds": 0.549
+    },
+    "executed_on": "8a4020b1d04afe9d8549112d52094fd742da916f",
+    "exit_code": 0,
+    "finished_at": "2026-11-28T03:34:40Z",
+    "fuseki_host_id_end": "sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1",
+    "fuseki_host_id_start": "sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1",
+    "fuseki_host_tag": "ocor/jena-fuseki:6.2.0",
+    "fuseki_retag": false,
+    "host_residue": {
+      "containers": [],
+      "networks": [],
+      "root_image": false,
+      "volumes": []
+    },
+    "lane_results": [
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 1
+        },
+        "lane": 1,
+        "lane_duration_seconds": 702.272,
+        "selected_sha256": "45d04d158c5ed1a9f7ff05b17f4d15146c2467ae9d98e254a02c1d2f61bb083b",
+        "status": "PASS"
+      },
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 1854
+        },
+        "lane": 2,
+        "lane_duration_seconds": 1404.613,
+        "selected_sha256": "292e8723d8a4d647b498c69a027f79a601f51da3b081f7797ec011fa79e2ad0e",
+        "status": "PASS"
+      },
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 2436
+        },
+        "lane": 3,
+        "lane_duration_seconds": 1627.804,
+        "selected_sha256": "6fc9aae96e58467acece239c344a1027a0728771136b8517c2802dcf902809fe",
+        "status": "PASS"
+      },
+      {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 1535
+        },
+        "lane": 4,
+        "lane_duration_seconds": 1217.061,
+        "selected_sha256": "36971b157f11f2da2ce5596fe31733fa762345d564156aa1244a08e13974b5cb",
+        "status": "PASS"
+      }
+    ],
+    "lanes": [
+      1,
+      1854,
+      2436,
+      1535
+    ],
+    "limit_seconds": 5400,
+    "mem_available_kib": 52543072,
+    "mode": "FOUR_LANE",
+    "note": "The python stdout of the campaign command is byte-identical to campaign_result.json, so stdout_sha256 is the sha256 of that file. The wrapper log includes the rate-limit reading and the Fuseki identity and is outside the repository. FOUR_LANE. tests 5826, failures 0, errors 0, skipped 0. The JUnit union is exact: collected 5826, executed 5826, missing empty, unexpected empty, duplicated empty, lanes 1, 1854, 2436 and 1535. total_duration_seconds 1877.402, under 3600, so po_decision_required is false and no duration decision request is opened. Docker Hub remaining 100 of limit 100 at 2026-11-28T03:03:23Z, threshold 95, wait_seconds 0.549. Host tag ocor/jena-fuseki:6.2.0 stayed sha256:f5a11814be3a91bccb54a38afc1e0bfceeb9bacd6071a3d06741aae5ff8940c1 and was not retagged. POWER ADP0 stayed 1 and BAT0 stayed Not charging. Host residue after teardown is empty. Pre-existing unlabeled volumes and the empty kind network were not removed. vf004_schema_conformance stays NOT_CORRECTED and is not PASS. The scripts at this campaign head are the execution commit f8c8b339c8566a851f2ae2c11ffc155ee8af076c. The 7594851f campaign stays as historical_qualifying_campaign and is not rerun. The registration commit changes only this record.",
+    "outcome": "PASS",
+    "po_decision_required": false,
+    "power_adp0_end": "1",
+    "power_adp0_start": "1",
+    "qualifying_scope": true,
+    "registration_name_status": {
+      "command": "git diff --name-status 8a4020b1d04afe9d8549112d52094fd742da916f",
+      "stdout": "M\treports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json\n",
+      "stdout_sha256": "bc8453a8741744ac8784ae8f003aa936fe078b9dbfb1c18583decef633d53920"
+    },
+    "selection_scope": "FULL_SUITE",
+    "started_at": "2026-11-28T03:03:23Z",
+    "stdout_sha256": "6f700bf50b353469a002d2fd5acdf8943c0a9b693df4d765a0ab9a0031e27ef9",
+    "threshold_seconds": 3600,
+    "total_duration_seconds": 1877.402,
     "vf004_schema_conformance": "NOT_CORRECTED"
   },
   "raw_output_path": "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.log",
