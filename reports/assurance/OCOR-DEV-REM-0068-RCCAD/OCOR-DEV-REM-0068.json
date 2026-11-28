@@ -7,8 +7,8 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "commit": "f8c8b339c8566a851f2ae2c11ffc155ee8af076c",
-  "commit_role": "Execution commit f8c8b339c8566a851f2ae2c11ffc155ee8af076c. NUL-delimited git blob names are kept with surrogateescape until read, a listed evidence blob that cannot be read is an unreadable record, and the blob name is not document text. RED is 61bdc36ef7042f63fb77ad17ee13afc15cf7841d. The strict parser remains 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. Repair 1 of NO_GO OCOR-DEV-REM-0068-c6410c0c7c31-0 remains 043e7039e891f96e20df91bcfcf409078d535231. The inventory command still reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. The guard-admission allowlist remains d6f72ad425345d70010d2e204dd04ae2a8330a18. The proof normalisation remains e74895832df289ff7762bc8e9748097d38b74860. The previous pin commit remains 1e36db6b780746c25882849d40bb153a1c1323a4.",
+  "commit": "39785fe47ab1a858ad62fb86647979bd806d8d34",
+  "commit_role": "Execution commit f8c8b339c8566a851f2ae2c11ffc155ee8af076c. NUL-delimited git blob names are kept with surrogateescape until read, a listed evidence blob that cannot be read is an unreadable record, and the blob name is not document text. RED is 61bdc36ef7042f63fb77ad17ee13afc15cf7841d. The strict parser remains 34f11f2ed0e5d43ac35a7c8f2a1d15ba76af6ac5. Repair 1 of NO_GO OCOR-DEV-REM-0068-c6410c0c7c31-0 remains 043e7039e891f96e20df91bcfcf409078d535231. The inventory command still reads origin/main 23e6b62c36627de91cb85329b9a1164f3219cd53 and does not depend on this commit. The evidence commit that stores this record does not change the inputs below. The guard-admission allowlist remains d6f72ad425345d70010d2e204dd04ae2a8330a18. The proof normalisation remains e74895832df289ff7762bc8e9748097d38b74860. The previous pin commit remains 1e36db6b780746c25882849d40bb153a1c1323a4. Option 1 of OCOR-DEV-REM-0068-REDESIGN (2026-11-28) sets this execution commit to 39785fe47ab1a858ad62fb86647979bd806d8d34. select_graph refuses a non-object graph and a completed value JSON cannot encode. A completed value that encodes but is not a non-empty string, and a lone surrogate, are UNREADABLE_JSON. A valid surrogate pair stays a task id. Oracle and node tests are at e165938e879c0e73005b116b31a2eb3d4202c4dd and do not change the three inputs. Not repair cycle 2. The evidence commit that stores this record does not change the inputs below.",
   "created_at": "2026-11-27T17:36:16Z",
   "decision": "OCOR-DEV-REM-0068-PIN-INVENTORY (2026-11-27)",
   "execution_input_checks": [
@@ -190,6 +190,15 @@
       "name": "campaign-artifacts-8a4020b1",
       "status": "PASS",
       "stdout_sha256": "f996e7695b8d7f879606377719c921a3441e975e9d789c1caa0a3ba2b3dfd252"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 39785fe47ab1a858ad62fb86647979bd806d8d34 --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 0,
+      "findings": [],
+      "measured_head": "e165938e879c0e73005b116b31a2eb3d4202c4dd",
+      "name": "unit-record-option1",
+      "status": "PASS",
+      "stdout_sha256": "071ab7fb714d4047fd8dfeb11059eeaaa2b47f26b1688ee2dbf6bfb69bd72226"
     }
   ],
   "historical_qualifying_campaign": {
@@ -312,7 +321,7 @@
     "vendor": "xAI"
   },
   "inputs": {
-    "scripts/validate_current_evidence_head.py": "44d1a10b996c9fec134fda0589798a84b7194b1a231d1e6044b2bb46538a9ad4",
+    "scripts/validate_current_evidence_head.py": "4e38df1ab6841c47992f6d05de78da139ffe7285cabeaeee9c0ff0cdfce350a5",
     "scripts/validate_evidence_input_drift.py": "945f80d712c0abfc83bd2333bf48487844e051727809ace61749368c2bef7b8f",
     "scripts/validate_ocor_development_plan.py": "ce925a4e2c3fdfb939418e5c3ba1aa2045d8e9d6618cccf0aae9130a1b1819f5"
   },
@@ -761,6 +770,66 @@
         "outcome_at_review": "PRESENT",
         "outcome_now": "UNCHANGED",
         "would_have_caught": "P3"
+      },
+      {
+        "checks": {
+          "JSONDecodeError": "N/A. This function encodes with json.dumps. It does not decode. The bytes it writes are decoded by _loads through _completed.",
+          "UnicodeDecodeError": "N/A. This function does not decode. A value JSON cannot encode returns the single byte 0xFF, which _completed refuses as UnicodeDecodeError.",
+          "bytes": "FIXED. Class UNREADABLE_JSON. A bytes item makes json.dumps raise TypeError. The function returns 0xFF instead of raising.",
+          "duplicate_keys": "N/A. The encoder writes one object and one key. It does not parse a document that contains duplicate keys.",
+          "lone_surrogate": "FIXED. Class UNREADABLE_JSON. json.dumps accepts a lone surrogate as an escape. _loads then rejects it. A valid surrogate pair stays a task id.",
+          "non_finite": "FIXED. Class UNREADABLE_JSON. NaN, Infinity, -Infinity, and the same values nested in an object or a list, make json.dumps raise ValueError because allow_nan is false.",
+          "set": "FIXED. Class UNREADABLE_JSON. A set makes json.dumps raise TypeError. The function returns 0xFF instead of raising.",
+          "wrong_type": "FIXED. Class UNREADABLE_JSON. None, bool, number, empty string, object, and list encode, then _completed refuses them because a completed item must be a non-empty string. json.dumps coerces an int key to a string, and that object is refused for the same reason."
+        },
+        "class_name": "UNREADABLE_JSON",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_state_bytes",
+        "line": 1252,
+        "negative_test": "reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_completed_set_matches_the_json_oracle reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_refuses_each_non_json_completed_member",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "select_graph did not exist at the previous review, so this row was absent. The untyped AttributeError and TypeError are the class."
+      },
+      {
+        "checks": {
+          "JSONDecodeError": "N/A. The value is already a Python object supplied by the caller. This function does not decode file bytes or process output.",
+          "UnicodeDecodeError": "N/A. No bytes are decoded here. Document bytes are decoded by _load_record, _parse_recon, _load_manifest, and _completed.",
+          "bytes": "N/A. A bytes value is not a list, so the collection is absent. Document bytes travel in raw and are decoded by the existing loaders.",
+          "duplicate_keys": "N/A. This function does not parse JSON text.",
+          "lone_surrogate": "N/A. This function does not decode text. A surrogate inside a stored document is refused by _loads.",
+          "non_finite": "N/A. This function only tests isinstance(value, list). A list that contains NaN is kept, and _state_bytes refuses the completed set.",
+          "wrong_type": "FIXED. Class of a graph collection that is not a list. None, a string, and a mapping become an empty list before any iteration."
+        },
+        "class_name": "UNREADABLE_JSON",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_graph_list",
+        "line": 1266,
+        "negative_test": "reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_ignores_a_collection_that_is_not_a_list",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "select_graph did not exist at the previous review, so this row was absent. The untyped AttributeError and TypeError are the class."
+      },
+      {
+        "checks": {
+          "JSONDecodeError": "FIXED. Class UNREADABLE_JSON. The completed set is encoded by _state_bytes and decoded by _completed. A graph that is not an object never reaches the decoder and is already UNREADABLE_JSON.",
+          "UnicodeDecodeError": "FIXED. Class UNREADABLE_JSON. The unreadable completed set is the single byte 0xFF. Record bytes that are not UTF-8 stay the existing _load_record refusal.",
+          "bytes": "FIXED. Class UNREADABLE_JSON. A bytes completed item is refused by _state_bytes. A record raw that is not bytes is not stored, and E2 still names that path as UNREADABLE_JSON.",
+          "duplicate_keys": "N/A. select_graph does not parse caller JSON text. Duplicate keys inside a stored document stay the existing loader behavior, where the last key wins.",
+          "lone_surrogate": "FIXED. Class UNREADABLE_JSON. A lone surrogate in the completed set encodes and _loads rejects it. A valid surrogate pair stays a task id.",
+          "non_finite": "FIXED. Class UNREADABLE_JSON. NaN, Infinity, and -Infinity in the completed set, including nested values, are refused by _state_bytes.",
+          "non_object": "FIXED. Class UNREADABLE_JSON. A string, None, a bool, a number, and a list are not mappings. The result does not raise AttributeError.",
+          "process_errors": "N/A. select_graph starts no process, pipe, connection, or file. It only reads the explicit graph.",
+          "wrong_type": "FIXED. Class UNREADABLE_JSON. A completed item that is not a non-empty string is refused by _completed. A collection that is not a list is absent."
+        },
+        "class_name": "UNREADABLE_JSON",
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "select_graph",
+        "line": 1273,
+        "negative_test": "reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_completed_set_matches_the_json_oracle reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_refuses_each_non_json_completed_member reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_refuses_a_non_object reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_refuses_each_non_object_graph reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_ignores_a_collection_that_is_not_a_list reports/tests/test_validate_current_evidence_head.py::RedesignOption1Tests::test_select_graph_presents_a_non_bytes_raw_as_unreadable",
+        "outcome_at_review": "ABSENT",
+        "outcome_now": "FIXED",
+        "would_have_caught": "select_graph did not exist at the previous review, so this row was absent. The untyped AttributeError and TypeError are the class."
       }
     ],
     "path_inventory": [
@@ -814,6 +883,32 @@
         "function": "_off_chain_multiple_heads",
         "kind": "reconciliation chain",
         "line": 691
+      },
+      {
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_state_bytes",
+        "kind": "completed set encoded as EXECUTION_STATE.json bytes",
+        "line": 1252,
+        "oracle": "json.dumps allow_nan=False, 20 cases in the oracle test"
+      },
+      {
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "_graph_list",
+        "kind": "in-memory graph collection, not file bytes",
+        "line": 1266
+      },
+      {
+        "consumers": [
+          "_state_bytes",
+          "_graph_list",
+          "_load_record via Store",
+          "_completed via evaluate"
+        ],
+        "file": "scripts/validate_current_evidence_head.py",
+        "function": "select_graph",
+        "kind": "explicit evidence graph of bytes",
+        "line": 1273,
+        "oracle": "json.dumps allow_nan=False for the completed set; isinstance(graph, Mapping) for the graph object"
       }
     ],
     "pin_measurement": {
@@ -831,7 +926,7 @@
         "process": "Grok Build",
         "vendor": "xAI"
       },
-      "note": "The corrective commits on governed/ocor-dev-rem-0068-current-head were produced by this implementer. The preventive reviewer is the same vendor and a different Grok generation. Final verification needs a vendor other than xAI. Repair-cycle review OCOR-DEV-REM-0068-ad46e5c3babc-pre is the same reviewer and vendor. The correction code commit is f8c8b339c8566a851f2ae2c11ffc155ee8af076c.",
+      "note": "The corrective commits on governed/ocor-dev-rem-0068-current-head were produced by this implementer. The preventive reviewer is the same vendor and a different Grok generation. Final verification needs a vendor other than xAI. Repair-cycle review OCOR-DEV-REM-0068-ad46e5c3babc-pre is the same reviewer and vendor. The correction code commit is f8c8b339c8566a851f2ae2c11ffc155ee8af076c. Option 1 code commit is 39785fe47ab1a858ad62fb86647979bd806d8d34. The option 1 preventive review has not been written yet. Implementer remains Grok Build, grok-4.7, xAI.",
       "preventive_reviewer": {
         "model": "cursor-grok-4.6-xhigh",
         "process": "Cursor CLI",
@@ -848,8 +943,171 @@
       "SELF-CHECK-ORACLE (2026-11-14)",
       "SELF-CHECK-PATH-INVENTORY (2026-11-09)",
       "TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)"
-    ]
+    ],
+    "redesign_option1_inventory": {
+      "changeset_files": [
+        "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+        "reports/tests/test_validate_current_evidence_head.py",
+        "scripts/validate_current_evidence_head.py"
+      ],
+      "command": "git diff --name-only 44f2ca31c1266bf5f7df92ba208baf630c486858 HEAD",
+      "function_and_class_count": 65,
+      "functions_and_classes": [
+        "Rec",
+        "Recon",
+        "ManifestEntry",
+        "Manifest",
+        "_sha256",
+        "_lone",
+        "_refuse_constant",
+        "_lone_tree",
+        "_json_container_depth",
+        "_loads",
+        "_unreadable_record",
+        "_bad_recon",
+        "_finding",
+        "_historical",
+        "_referenced",
+        "_historical_keys",
+        "_ambiguous_keys",
+        "_canonical",
+        "_is_evidence_path",
+        "_below",
+        "_cyclic",
+        "check_outside_evidence",
+        "check_ambiguous_identity",
+        "check_unreadable_json",
+        "_text_broken",
+        "check_self_supersedes",
+        "check_supersedes_unresolved",
+        "check_reconciliation_absent",
+        "check_reconciliation_unlisted",
+        "check_cycle",
+        "check_two_successors",
+        "check_multiple_heads",
+        "check_not_current_head",
+        "check_manifest_field",
+        "check_manifest_missing",
+        "check_manifest_unlisted",
+        "_resolve",
+        "_retired",
+        "_unresolved_targets",
+        "_graph_findings",
+        "_current_paths",
+        "_apply_unresolved",
+        "_off_chain_multiple_heads",
+        "_validated_head",
+        "_dedupe",
+        "Store",
+        "_load_record",
+        "_load_recon",
+        "_parse_recon",
+        "_load_manifest",
+        "_completed",
+        "_evidence_records",
+        "_manifests",
+        "_present_paths",
+        "_manifest_findings",
+        "_task_records",
+        "evaluate",
+        "_retag",
+        "_emit",
+        "_invocation_refused",
+        "_pack",
+        "_state_bytes",
+        "_graph_list",
+        "select_graph",
+        "main"
+      ],
+      "method_count": 3,
+      "methods": [
+        "Store.__init__",
+        "Store.read",
+        "Store.files"
+      ],
+      "new_functions": [
+        "_graph_list",
+        "_state_bytes",
+        "select_graph"
+      ],
+      "note": "Option 1 since the contract commit changes the production script, its tests, and this record. The test module and the contract README do not decode production inputs. Every new parser in the production script has a row. Existing loader rows are unchanged. scripts/validate_ocor_development_plan.py and reports/tests/test_kind_teardown_observation.py are not part of this option 1 diff.",
+      "section": "SELF-CHECK-PATH-INVENTORY (2026-11-09)"
+    },
+    "digest_check": {
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 39785fe47ab1a858ad62fb86647979bd806d8d34 --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 0,
+      "head": "e165938e879c0e73005b116b31a2eb3d4202c4dd",
+      "section": "AUTOCONTROLLO-DIGEST-COMMIT (2026-11-11)",
+      "status": "PASS",
+      "stdout_sha256": "071ab7fb714d4047fd8dfeb11059eeaaa2b47f26b1688ee2dbf6bfb69bd72226",
+      "note": "Measured while HEAD is the test commit and this record is not yet the HEAD commit. The checker prints HEAD. The three input blobs stay those of 39785fe47ab1a858ad62fb86647979bd806d8d34."
+    },
+    "redesign_option1_cell_scan": {
+      "cells": 59,
+      "collected": 6,
+      "command": "ocor-runtime/.venv/bin/python /tmp/rem0068_cell_scan.py",
+      "command_source_sha256": "b29c35bd1ec7f7ecd2c6471a6d7556b302d3bf5aa45bf70ac4f4d4e5ffe7c6e1",
+      "counts": {
+        "FIXED": 36,
+        "N/A": 21,
+        "OTHER": 1,
+        "PASS": 1
+      },
+      "errors_found": 0,
+      "exit_code": 0,
+      "head": "e165938e879c0e73005b116b31a2eb3d4202c4dd",
+      "rows": 9,
+      "section": "SELF-CHECK-CELL-SCAN (2026-11-09)",
+      "status": "PASS",
+      "stdout_sha256": "03e6a86c0bb6224cbe858fc6cecd88489bdda40f3dfaa661f401f05c54f7bc98"
+    },
+    "redesign_option1_role_coherence": {
+      "command": "ocor-runtime/.venv/bin/python /tmp/rem0068_coherence.py",
+      "command_source_sha256": "03e73a5146a7d767cf9ba861fe1b1c71acfb8f592276b310a00fa97bd8fe2b00",
+      "compared": 15,
+      "errors_found": 0,
+      "exit_code": 0,
+      "head": "e165938e879c0e73005b116b31a2eb3d4202c4dd",
+      "section": "RECORD-ROLES-COHERENCE-SCAN (2026-11-09)",
+      "status": "PASS",
+      "stdout_sha256": "9a4a343f2a168689d1fef1806d467c1daa2737c46d005be0b8b010174d003bc0"
+    }
   },
   "status": "CANDIDATE",
-  "unit": "OCOR-DEV-REM-0068"
+  "unit": "OCOR-DEV-REM-0068",
+  "redesign_option1": {
+    "decision": "OCOR-DEV-REM-0068-REDESIGN (2026-11-28) option 1",
+    "implementer": {
+      "model": "grok-4.7",
+      "process": "Grok Build",
+      "vendor": "xAI"
+    },
+    "not_repair_cycle_2": true,
+    "parent_red": "561931f72ba40c8ece1e20e0fa7956b456b692b2",
+    "contract": "44f2ca31c1266bf5f7df92ba208baf630c486858",
+    "typed_refusal_red": "284407e8873cea23f17b8d6df5de0677002decbf",
+    "typed_refusal_green": "3f71fc08185ff65e6e29752e91fc69986438ead8",
+    "mypy_narrowing": "39785fe47ab1a858ad62fb86647979bd806d8d34",
+    "test_head": "e165938e879c0e73005b116b31a2eb3d4202c4dd",
+    "execution_commit": "39785fe47ab1a858ad62fb86647979bd806d8d34",
+    "task_suite": {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_validate_current_evidence_head.py",
+      "exit_code": 0,
+      "head": "e165938e879c0e73005b116b31a2eb3d4202c4dd",
+      "log_path": "/home/luca/.ocor-codex/rem-0068/task-suite-e165938e.log",
+      "log_sha256": "6e799cce2e3e687b14751e6eed2656f3a9592ad2a133371e2ac8ba13e93240b9",
+      "passed": 51,
+      "script_blob": "75bac1b38ae08a40513f9a3c1505a22b6c471ccc",
+      "subtests_passed": 301
+    },
+    "historical_task_suite_on_14a538df": {
+      "exit_code": 0,
+      "head": "14a538df9488e9620b9029ee2cd9815282e06195",
+      "log_path": "/home/luca/.ocor-codex/rem-0068/task-suite-14a538df.log",
+      "log_sha256": "e73939318a6d924c3782ede17ea85956ca17f1ae3fc976e7f635a2b1ce5f7614",
+      "passed": 44,
+      "subtests_passed": 301
+    },
+    "vf004_schema_conformance": "NOT_CORRECTED"
+  }
 }
