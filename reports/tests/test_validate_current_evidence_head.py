@@ -16,6 +16,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import random
 import subprocess
 import sys
@@ -669,6 +670,8 @@ def _production(world: World, entry: str, focus: str | None = None, script: Path
 
 def _commit(root: Path) -> None:
     subprocess.check_call(["git", "init", "-q"], cwd=root)
+    # Quote non-ASCII names, as Git does by default. Listing must not depend on quotepath=false.
+    subprocess.check_call(["git", "config", "core.quotepath", "true"], cwd=root)
     subprocess.check_call(["git", "add", "-A"], cwd=root)
     subprocess.check_call(["git", "-c", "user.email=dev@example.com", "-c", "user.name=OCOR Test", "commit", "-q", "-m", "fixture"], cwd=root)
 
@@ -1092,6 +1095,34 @@ class RepairCycle1Tests(unittest.TestCase):
         probed = self._assert_gate(world, "E2", first.path)
         self.assertNotEqual("PASS", probed.status)
         self.assertIn("MULTIPLE_HEADS", {item.code for item in probed.findings})
+
+    def test_non_utf8_git_path_second_head_is_examined(self) -> None:
+        """A blob name Git cannot show as UTF-8 is still a second head under core.quotepath=true."""
+        bad_name = os.fsdecode(b"bad\xff.json")
+        self.assertIn(b"\xff", os.fsencode(bad_name))
+        first = _record("a.json", f"{TASK}-a")
+        second = _record(bad_name, f"{TASK}-b")
+        world = _world((first, second))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            materialise(root, world)
+            _commit(root)
+            quoted = subprocess.check_output(["git", "config", "--get", "core.quotepath"], cwd=root, text=True).strip()
+            self.assertEqual("true", quoted)
+            listing = subprocess.check_output(["git", "ls-tree", "-r", "-z", "--name-only", "HEAD"], cwd=root)
+            self.assertIn(os.fsencode(second.path), listing.split(b"\0"))
+            commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+            completed = subprocess.run(
+                [sys.executable, str(SCRIPT), "--root", str(root), "--execution-commit", commit, "--record", first.path],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        payload = json.loads(completed.stdout)
+        self.assertNotEqual("PASS", payload["status"], payload)
+        self.assertEqual({}, payload["validated_heads"])
+        self.assertIn("MULTIPLE_HEADS", {item["code"] for item in payload["findings"]})
 
     def test_alias_must_name_a_listed_distinct_record(self) -> None:
         old = _record("a.json", f"{TASK}-a")
