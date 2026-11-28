@@ -1263,6 +1263,13 @@ def _state_bytes(tasks: list[object]) -> bytes:
     return (encoded + "\n").encode("utf-8")
 
 
+def _graph_list(value: object) -> list[Any]:
+    """A graph field is used only when it is a list. Anything else is absent."""
+    if isinstance(value, list):
+        return value
+    return []
+
+
 def select_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
     """One pure decision on an explicit graph. E1, E2, and E3 are projections of it.
 
@@ -1277,9 +1284,9 @@ def select_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
     completed = graph.get("completed")
     tasks = [item for item in completed] if isinstance(completed, list) else []
     files: dict[str, bytes] = {}
-    records = graph.get("records") if isinstance(graph.get("records"), list) else []
-    manifests = graph.get("manifests") if isinstance(graph.get("manifests"), list) else []
-    reconciliations = graph.get("reconciliations") if isinstance(graph.get("reconciliations"), list) else []
+    records = _graph_list(graph.get("records"))
+    manifests = _graph_list(graph.get("manifests"))
+    reconciliations = _graph_list(graph.get("reconciliations"))
     for item in [*records, *manifests, *reconciliations]:
         if isinstance(item, Mapping) and isinstance(item.get("path"), str) and isinstance(item.get("raw"), bytes):
             files[item["path"]] = item["raw"]

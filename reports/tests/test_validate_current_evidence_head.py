@@ -1466,6 +1466,43 @@ class RedesignOption1Tests(unittest.TestCase):
         self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in projected["findings"]])
         self.assertEqual({}, projected["validated_heads"])
 
+    def test_select_graph_refuses_each_non_object_graph(self) -> None:
+        """None, a bool, a number and a list are the same unreadable graph."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        for graph in (None, True, 1, ["x"]):
+            decision = select(graph)  # type: ignore[misc]
+            entry = decision["entries"]["E1"]
+            self.assertEqual("FAIL", entry["status"], graph)
+            self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in entry["findings"]], graph)
+            self.assertEqual({}, entry["validated_heads"], graph)
+            self.assertEqual({}, decision["entries"]["E2"], graph)
+            self.assertEqual({}, decision["entries"]["E3"], graph)
+
+    def test_select_graph_refuses_each_non_json_completed_member(self) -> None:
+        """A set, a non-string key, and NaN or Infinity, including nested, are unreadable."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        members = (
+            set(),
+            {1: "x"},
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+            {"nested": float("nan")},
+            [float("inf")],
+        )
+        for member in members:
+            decision = select(
+                {"completed": [member], "manifests": [], "reconciliations": [], "records": []}
+            )
+            entry = decision["entries"]["E1"]
+            self.assertEqual("FAIL", entry["status"], member)
+            self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in entry["findings"]], member)
+            self.assertEqual({}, entry["validated_heads"], member)
+
     def test_evidence_archive_is_not_an_evidence_node_on_e1(self) -> None:
         world, _inside, _outside = self._archive_world()
         payload = self._payload(self._completed(world, "E1"))
