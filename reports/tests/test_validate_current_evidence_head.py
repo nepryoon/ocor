@@ -1568,22 +1568,26 @@ class RedesignOption1Tests(unittest.TestCase):
         self.assertEqual({}, decision["entries"]["E2"])
         self.assertEqual({}, decision["entries"]["E3"])
 
-    def test_select_graph_skips_a_record_whose_raw_is_not_bytes(self) -> None:
-        """A node whose raw is not bytes is not a presented document."""
+    def test_select_graph_presents_a_non_bytes_raw_as_unreadable(self) -> None:
+        """A node whose raw is not bytes is not stored. E2 still names that path."""
         module = self._module()
         select = getattr(module, "select_graph", None)
         self.assertTrue(callable(select), "production must expose select_graph")
+        path = "reports/evidence/G0/x.json"
         decision = select(
             {
                 "completed": [],
                 "manifests": [],
                 "reconciliations": [],
-                "records": [{"path": "reports/evidence/G0/x.json", "raw": "not-bytes"}],
+                "records": [{"path": path, "raw": "not-bytes"}],
             }
         )
         self.assertEqual("PASS", decision["entries"]["E1"]["status"])
-        self.assertEqual({}, decision["entries"]["E2"])
         self.assertEqual({}, decision["entries"]["E3"])
+        projected = decision["entries"]["E2"][path]
+        self.assertEqual("FAIL", projected["status"])
+        self.assertEqual(["UNREADABLE_JSON"], [item["code"] for item in projected["findings"]])
+        self.assertEqual({}, projected["validated_heads"])
 
     def test_evidence_archive_is_not_an_evidence_node_on_e1(self) -> None:
         world, _inside, _outside = self._archive_world()
