@@ -5,7 +5,9 @@ The reference selector in this module is the oracle. It uses the Python standard
 library only and does not import production code. The production subject is
 ``scripts/validate_current_evidence_head.py``, which this RED commit does not add.
 Tests that invoke it fail while the script is absent. Cell count is 3 entries by
-17 classes (51). No cell outcome is a silent skip.
+17 classes (51). No cell outcome is a silent skip. OCOR-DEV-REM-0068-REDESIGN
+(2026-11-28) option 1 adds 18 cells. Those cells call production directly and do
+not alter the 51-cell oracle.
 
 Contract: reports/assurance/OCOR-DEV-REM-0068-RCCAD/README.md, including
 OCOR-DEV-REM-0068-PIN-INVENTORY (2026-11-27).
@@ -47,6 +49,8 @@ CODES = frozenset(
         "MANIFEST_MISSING",
         "MANIFEST_UNLISTED",
         "UNREADABLE_JSON",
+        "OUTSIDE_EVIDENCE",
+        "AMBIGUOUS_IDENTITY",
     }
 )
 ENTRIES = ("E1", "E2", "E3")
@@ -1196,6 +1200,360 @@ class RepairCycle1Tests(unittest.TestCase):
         self.assertEqual("PASS", self._assert_gate(world, "E1").status)
         self.assertEqual("PASS", self._assert_gate(world, "E2", focus).status)
         self.assertEqual((), self._assert_gate(world, "E3").findings)
+
+
+def json_depth(value: object) -> int:
+    """Contract depth: a scalar is 0; an empty container is 1; any other container is 1 plus its deepest child."""
+    if isinstance(value, dict):
+        if not value:
+            return 1
+        return 1 + max(json_depth(item) for item in value.values())
+    if isinstance(value, list):
+        if not value:
+            return 1
+        return 1 + max(json_depth(item) for item in value)
+    return 0
+
+
+def _document(task_id: str, record_id: str, supersedes: str | None = None, commit: str | None = None) -> bytes:
+    payload: dict[str, object] = {"record_id": record_id, "task_id": task_id}
+    if commit is not None:
+        payload["commit"] = commit
+    if supersedes is not None:
+        payload["supersedes"] = supersedes
+    return (json.dumps(payload, sort_keys=True) + "\n").encode("utf-8")
+
+
+def document_at_depth(depth: int) -> bytes:
+    """One evidence object whose contract depth is exactly ``depth``."""
+    inner: object = "x"
+    for _ in range(depth - 1):
+        inner = {"k": inner}
+    payload = {"nest": inner, "record_id": f"{TASK}-deep", "task_id": TASK}
+    if json_depth(payload) != depth:
+        raise AssertionError(json_depth(payload))
+    return (json.dumps(payload, sort_keys=True) + "\n").encode("utf-8")
+
+
+class RedesignOption1Tests(unittest.TestCase):
+    """Eighteen cells of OCOR-DEV-REM-0068-REDESIGN (2026-11-28) option 1.
+
+    The production script is the subject. This class does not remove or loosen a cycle-0 test.
+    ``select_graph`` is the one pure function on the explicit graph. E1, E2, and E3 project it.
+    """
+
+    def _module(self):
+        import importlib.util
+
+        name = "validate_current_evidence_head_subject"
+        spec = importlib.util.spec_from_file_location(name, SCRIPT)
+        if spec is None or spec.loader is None:
+            self.fail(f"production script missing: {SCRIPT}")
+        module = importlib.util.module_from_spec(spec)
+        # dataclasses resolve the class module through sys.modules during exec.
+        sys.modules[name] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules.pop(name, None)
+            raise
+        return module
+
+    def _completed(self, world: World, entry: str, focus: str | None = None) -> subprocess.CompletedProcess[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            materialise(root, world)
+            if entry == "E1":
+                args = ["--root", str(root)]
+            elif entry == "E2":
+                if focus is None:
+                    self.fail("E2 requires a record path")
+                _commit(root)
+                commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+                args = ["--root", str(root), "--execution-commit", commit, "--record", focus]
+            else:
+                if not world.manifests:
+                    self.fail("E3 requires a manifest")
+                args = ["--root", str(root), "--manifest", world.manifests[0].relative_path]
+            return subprocess.run(
+                [sys.executable, str(SCRIPT), *args],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+    def _payload(self, completed: subprocess.CompletedProcess[str]) -> dict[str, object]:
+        self.assertTrue(completed.stdout.strip(), completed.stderr[-800:])
+        self.assertNotIn("Traceback", completed.stderr)
+        payload = json.loads(completed.stdout)
+        self.assertIsInstance(payload, dict)
+        return payload
+
+    def _assert_codes(self, world: World, entry: str, focus: str | None, required: frozenset[str], *, passed: bool) -> None:
+        payload = self._payload(self._completed(world, entry, focus))
+        codes = {str(item["code"]) for item in payload["findings"]}  # type: ignore[index]
+        self.assertTrue(codes <= CODES, codes)
+        if passed:
+            self.assertEqual("PASS", payload["status"])
+            self.assertEqual(set(), codes)
+            return
+        self.assertNotEqual("PASS", payload["status"])
+        self.assertTrue(required <= codes, payload)
+        for item in payload["findings"]:  # type: ignore[union-attr]
+            self.assertTrue(item["task_id"])
+            self.assertEqual(entry, item["entry"])
+
+    def _archive_world(self) -> tuple[World, str, str]:
+        inside = _record("A.json", f"{TASK}-A")
+        outside = Record("reports/evidence-archive/G0/B.json", f"{TASK}-B", f"{TASK}-A")
+        world = _world((inside, outside), manifest=_manifest_for(("A.json",)))
+        return world, inside.path, outside.path
+
+    def _suffix_world(self) -> tuple[World, str]:
+        first = _record("a.json", f"{TASK}-A")
+        second = _record("b.json", f"{TASK}-B", f"{TASK}-A")
+        extra = _record("second.reconciliation.json", f"{TASK}-D")
+        manifest = _manifest_for(("a.json", "b.json", "second.reconciliation.json"))
+        return _world((first, second, extra), manifest=manifest), second.path
+
+    def _collision_world(self, include_new: bool) -> tuple[World, str]:
+        """Cycle-1 VF-004. The commit key is not an identity. ``C`` shares A's execution commit."""
+        shared = "4" * 40
+        old = Record(_path("a.json"), None, None, shared)
+        digest = _sha256(record_bytes(old))
+        successor = Record(_path("b.json"), "B", "A")
+        records = [old, successor]
+        names = ["a.json", "b.json"]
+        if include_new:
+            fresh = Record(
+                _path("c.json"),
+                literal=(
+                    json.dumps(
+                        {"commit": shared, "created_at": "2026-11-28T03:00:00Z", "task_id": TASK},
+                        sort_keys=True,
+                    )
+                    + "\n"
+                ).encode("utf-8"),
+            )
+            records.append(fresh)
+            names.append("c.json")
+        recon = Reconciliation(
+            TASK,
+            "A",
+            (),
+            ((old.path, "A"), (shared, "A"), (f"{old.path}@sha256:{digest}", "A")),
+            old.path,
+        )
+        return _world(records, (recon,), _manifest_for(tuple(names))), successor.path
+
+    def _ambiguous_world(self) -> tuple[World, str]:
+        shared = "d" * 40
+        left = Record(_path("a.json"), None, None, shared)
+        right = Record(_path("b.json"), None, None, shared)
+        recon = Reconciliation(TASK, "SHARED", (), ((shared, "SHARED"),), left.path)
+        world = _world((left, right), (recon,), _manifest_for(("a.json", "b.json")))
+        return world, left.path
+
+    def _depth_world(self, raw: bytes) -> World:
+        return _world((Record(_path("deep.json"), literal=raw),), manifest=_manifest_for(("deep.json",)))
+
+    def _two_gates(self, *, state_missing: bool) -> World:
+        other = "OCOR-DEV-0098"
+        records = (
+            Record("reports/evidence/G0/a.json", literal=_document(TASK, f"{TASK}-A")),
+            Record("reports/evidence/G0/b.json", literal=_document(TASK, f"{TASK}-B", f"{TASK}-A")),
+            Record("reports/evidence/G1/x.json", literal=_document(other, f"{other}-X")),
+        )
+        manifests = (
+            Manifest(
+                "reports/evidence/G0/MANIFEST.json",
+                (ManifestEntry("a.json", TASK), ManifestEntry("b.json", TASK)),
+            ),
+            Manifest("reports/evidence/G1/MANIFEST.json", (ManifestEntry("x.json", other),)),
+        )
+        return World((TASK, other), records, (), manifests, state_missing=state_missing)
+
+    def test_select_graph_projects_the_three_entries(self) -> None:
+        """One pure function. The three entries on the same graph are its projections."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        old = _record("old.json", f"{TASK}-old")
+        nxt = _record("next.json", f"{TASK}-next", old.record_id)
+        manifest = _manifest_for(("old.json", "next.json"))
+        manifest_bytes = (
+            json.dumps(
+                {"artifacts": [{"path": item.path, "task_id": item.task_id} for item in manifest.entries]},
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+        graph = {
+            "completed": [TASK],
+            "manifests": [{"path": manifest.relative_path, "raw": manifest_bytes}],
+            "reconciliations": [],
+            "records": [
+                {"path": old.path, "raw": record_bytes(old)},
+                {"path": nxt.path, "raw": record_bytes(nxt)},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            previous = os.getcwd()
+            os.chdir(tmp)
+            try:
+                decision = select(graph)  # type: ignore[misc]
+            finally:
+                os.chdir(previous)
+        self.assertEqual("PASS", decision["entries"]["E1"]["status"])
+        self.assertEqual({TASK: f"{TASK}-next"}, decision["entries"]["E1"]["validated_heads"])
+        self.assertEqual("FAIL", decision["entries"]["E2"][old.path]["status"])
+        self.assertIn("NOT_CURRENT_HEAD", {item["code"] for item in decision["entries"]["E2"][old.path]["findings"]})
+        self.assertEqual("PASS", decision["entries"]["E2"][nxt.path]["status"])
+        self.assertEqual({TASK: f"{TASK}-next"}, decision["entries"]["E2"][nxt.path]["validated_heads"])
+        self.assertEqual("PASS", decision["entries"]["E3"][manifest.relative_path]["status"])
+        self.assertEqual([], decision["entries"]["E3"][manifest.relative_path]["findings"])
+        world = _world((old, nxt), manifest=manifest)
+        root = self._payload(self._completed(world, "E1"))
+        current = self._payload(self._completed(world, "E2", nxt.path))
+        retired = self._payload(self._completed(world, "E2", old.path))
+        admitted = self._payload(self._completed(world, "E3"))
+        self.assertEqual(decision["entries"]["E1"]["status"], root["status"])
+        self.assertEqual(decision["entries"]["E1"]["validated_heads"], root["validated_heads"])
+        self.assertEqual(decision["entries"]["E2"][nxt.path]["status"], current["status"])
+        self.assertEqual(decision["entries"]["E2"][nxt.path]["validated_heads"], current["validated_heads"])
+        self.assertEqual(decision["entries"]["E2"][old.path]["status"], retired["status"])
+        self.assertEqual(
+            {item["code"] for item in decision["entries"]["E2"][old.path]["findings"]},
+            {item["code"] for item in retired["findings"]},
+        )
+        self.assertEqual(decision["entries"]["E3"][manifest.relative_path]["status"], admitted["status"])
+        self.assertEqual(decision["entries"]["E3"][manifest.relative_path]["findings"], admitted["findings"])
+
+    def test_evidence_archive_is_not_an_evidence_node_on_e1(self) -> None:
+        world, _inside, _outside = self._archive_world()
+        payload = self._payload(self._completed(world, "E1"))
+        self.assertEqual("PASS", payload["status"])
+        self.assertEqual({TASK: f"{TASK}-A"}, payload["validated_heads"])
+        self.assertNotIn(f"{TASK}-B", set(payload["validated_heads"].values()))
+
+    def test_evidence_archive_does_not_retire_the_evidence_head_on_e2(self) -> None:
+        world, inside, _outside = self._archive_world()
+        payload = self._payload(self._completed(world, "E2", inside))
+        self.assertEqual("PASS", payload["status"], payload)
+        self.assertEqual({TASK: f"{TASK}-A"}, payload["validated_heads"])
+
+    def test_record_outside_the_evidence_directory_is_outside_evidence(self) -> None:
+        world, _inside, outside = self._archive_world()
+        self._assert_codes(world, "E2", outside, frozenset({"OUTSIDE_EVIDENCE"}), passed=False)
+
+    def test_reconciliation_suffix_under_evidence_is_a_second_head_on_e1(self) -> None:
+        world, _focus = self._suffix_world()
+        self._assert_codes(world, "E1", None, frozenset({"MULTIPLE_HEADS"}), passed=False)
+
+    def test_reconciliation_suffix_under_evidence_is_a_second_head_on_e2(self) -> None:
+        world, focus = self._suffix_world()
+        self._assert_codes(world, "E2", focus, frozenset({"MULTIPLE_HEADS"}), passed=False)
+
+    def test_execution_commit_collision_is_reconciliation_absent_on_e1(self) -> None:
+        base, _focus = self._collision_world(False)
+        held = self._payload(self._completed(base, "E1"))
+        self.assertEqual("PASS", held["status"], held)
+        self.assertEqual({TASK: "B"}, held["validated_heads"])
+        world, _focus = self._collision_world(True)
+        self._assert_codes(world, "E1", None, frozenset({"RECONCILIATION_ABSENT"}), passed=False)
+
+    def test_execution_commit_collision_is_reconciliation_absent_on_e2(self) -> None:
+        world, focus = self._collision_world(True)
+        self._assert_codes(world, "E2", focus, frozenset({"RECONCILIATION_ABSENT"}), passed=False)
+
+    def test_one_historical_key_on_two_records_is_ambiguous_on_e1(self) -> None:
+        world, _focus = self._ambiguous_world()
+        self._assert_codes(world, "E1", None, frozenset({"AMBIGUOUS_IDENTITY"}), passed=False)
+
+    def test_one_historical_key_on_two_records_is_ambiguous_on_e2(self) -> None:
+        world, focus = self._ambiguous_world()
+        self._assert_codes(world, "E2", focus, frozenset({"AMBIGUOUS_IDENTITY"}), passed=False)
+
+    def _assert_depth_accepted(self, entry: str) -> None:
+        raw = document_at_depth(11)
+        world = self._depth_world(raw)
+        focus = _path("deep.json") if entry == "E2" else None
+        payload = self._payload(self._completed(world, entry, focus))
+        self.assertEqual("PASS", payload["status"], payload)
+        if entry == "E3":
+            self.assertEqual({}, payload["validated_heads"])
+        else:
+            self.assertEqual({TASK: f"{TASK}-deep"}, payload["validated_heads"])
+
+    def _assert_depth_rejected(self, entry: str) -> None:
+        focus = _path("deep.json") if entry == "E2" else None
+        with self.subTest(document="depth-12"):
+            bounded = self._depth_world(document_at_depth(12))
+            self._assert_codes(bounded, entry, focus, frozenset({"UNREADABLE_JSON"}), passed=False)
+        with self.subTest(document="depth-600"):
+            nested = '{"extension":' + ("[" * 600) + "0" + ("]" * 600)
+            nested += ',"record_id":"' + TASK + '-deep","task_id":"' + TASK + '"}'
+            crashed = self._depth_world(nested.encode("utf-8") + b"\n")
+            self._assert_codes(crashed, entry, focus, frozenset({"UNREADABLE_JSON"}), passed=False)
+
+    def test_depth_11_is_loaded_on_e1(self) -> None:
+        self._assert_depth_accepted("E1")
+
+    def test_depth_11_is_loaded_on_e2(self) -> None:
+        self._assert_depth_accepted("E2")
+
+    def test_depth_11_is_loaded_on_e3(self) -> None:
+        self._assert_depth_accepted("E3")
+
+    def test_depth_above_the_limit_is_unreadable_json_on_e1(self) -> None:
+        self._assert_depth_rejected("E1")
+
+    def test_depth_above_the_limit_is_unreadable_json_on_e2(self) -> None:
+        self._assert_depth_rejected("E2")
+
+    def test_depth_above_the_limit_is_unreadable_json_on_e3(self) -> None:
+        self._assert_depth_rejected("E3")
+
+    def test_e3_on_one_manifest_does_not_fail_for_another_gate(self) -> None:
+        world = self._two_gates(state_missing=False)
+        root = self._payload(self._completed(world, "E1"))
+        self.assertEqual("PASS", root["status"], root)
+        self.assertEqual({"OCOR-DEV-0098": "OCOR-DEV-0098-X", TASK: f"{TASK}-B"}, root["validated_heads"])
+        admitted = self._payload(self._completed(world, "E3"))
+        self.assertEqual("PASS", admitted["status"], admitted)
+        self.assertEqual([], admitted["findings"])
+        self.assertNotIn("MANIFEST_UNLISTED", {item["code"] for item in admitted["findings"]})
+
+    def test_e3_without_execution_state_is_not_unreadable_json(self) -> None:
+        world = self._two_gates(state_missing=True)
+        # The requested manifest and its listed files are enough. The absent state file is not a record.
+        admitted = self._payload(self._completed(world, "E3"))
+        self.assertEqual("PASS", admitted["status"], admitted)
+        self.assertNotIn("UNREADABLE_JSON", {item["code"] for item in admitted["findings"]})
+        self.assertEqual([], admitted["findings"])
+
+    def test_removing_each_new_check_changes_the_outcome(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        for name, (entry, focus, world) in (
+            ("OUTSIDE_EVIDENCE", ("E2", self._archive_world()[2], self._archive_world()[0])),
+            ("AMBIGUOUS_IDENTITY", ("E1", None, self._ambiguous_world()[0])),
+        ):
+            with self.subTest(check=name):
+                start = f"# CHECK {name}\n"
+                end = f"# END CHECK {name}\n"
+                if start not in source or end not in source or source.index(start) > source.index(end):
+                    self.fail(f"production is missing the marked check {name}")
+                block = source.split(start, 1)[1].split(end, 1)[0]
+                mutated = source.replace(start + block + end, start + "    return []\n" + end, 1)
+                with tempfile.TemporaryDirectory() as tmp:
+                    script = Path(tmp) / "validate_current_evidence_head.py"
+                    script.write_text(mutated, encoding="utf-8")
+                    expected = self._payload(self._completed(world, entry, focus))
+                    self.assertIn(name, {item["code"] for item in expected["findings"]})
+                    produced = _production(world, entry, focus, script)
+                self.assertNotIn(name, {item.code for item in produced.findings})
 
 
 if __name__ == "__main__":
