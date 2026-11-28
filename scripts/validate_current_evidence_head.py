@@ -18,18 +18,21 @@ import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 EXCLUDED_PARTS = {"blockers", "local-gates"}
 RECON_DIR = "reports/assurance/OCOR-DEV-REM-0068-RCCAD/reconciliation"
+JSON_DEPTH_LIMIT = 11
 CODES = (
+    "AMBIGUOUS_IDENTITY",
     "CYCLE",
     "MANIFEST_FIELD",
     "MANIFEST_MISSING",
     "MANIFEST_UNLISTED",
     "MULTIPLE_HEADS",
     "NOT_CURRENT_HEAD",
+    "OUTSIDE_EVIDENCE",
     "RECONCILIATION_ABSENT",
     "RECONCILIATION_UNLISTED",
     "SELF_SUPERSEDES",
@@ -93,18 +96,68 @@ def _refuse_constant(value: str) -> Any:
 
 
 def _lone_tree(value: object) -> bool:
-    if isinstance(value, str):
-        return _lone(value)
-    if isinstance(value, dict):
-        return any(_lone_tree(key) or _lone_tree(item) for key, item in value.items())
-    if isinstance(value, list):
-        return any(_lone_tree(item) for item in value)
+    """Walk a decoded JSON value on an explicit stack. Depth 11 never recurses."""
+    stack: list[object] = [value]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, str):
+            if _lone(current):
+                return True
+            continue
+        if isinstance(current, dict):
+            stack.extend(current.keys())
+            stack.extend(current.values())
+            continue
+        if isinstance(current, list):
+            stack.extend(current)
     return False
 
 
+def _json_container_depth(raw: bytes) -> int:
+    """Container nesting of one JSON text. Strings do not count. No call recursion."""
+    text = raw.decode("utf-8")
+    maximum = 0
+    depth = 0
+    in_string = False
+    escape = False
+    for char in text:
+        if in_string:
+            if escape:
+                escape = False
+                continue
+            if char == "\\":
+                escape = True
+                continue
+            if char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+            continue
+        if char in "{[":
+            depth += 1
+            if depth > maximum:
+                maximum = depth
+            if maximum > JSON_DEPTH_LIMIT:
+                return maximum
+            continue
+        if char in "}]" and depth:
+            depth -= 1
+    return maximum
+
+
 def _loads(raw: bytes) -> object:
-    """RFC 8259 document. NaN, Infinity, and a lone surrogate raise ValueError."""
-    data = json.loads(raw.decode("utf-8"), parse_constant=_refuse_constant)
+    """RFC 8259 document. NaN, Infinity, a lone surrogate, or depth above 11 raise ValueError.
+
+    The depth walk uses an explicit index. ``json.loads`` runs only at or below the limit,
+    so a document of several hundred containers cannot raise ``RecursionError``.
+    """
+    if _json_container_depth(raw) > JSON_DEPTH_LIMIT:
+        raise ValueError("json depth")
+    try:
+        data = json.loads(raw.decode("utf-8"), parse_constant=_refuse_constant)
+    except RecursionError as exc:
+        raise ValueError("json depth") from exc
     if _lone_tree(data):
         raise ValueError("lone surrogate")
     return data
@@ -141,17 +194,56 @@ def _referenced(value: str, record: Rec) -> bool:
     return record.commit is not None and value == record.commit
 
 
-def _canonical(record: Rec, reconciles: Mapping[str, str]) -> str | None:
-    if isinstance(record.record_id, str) and record.record_id:
-        return record.record_id
+def _historical_keys(record: Rec) -> list[str]:
     keys = [record.path, f"{record.path}@sha256:{_sha256(record.raw)}"]
     if record.commit is not None:
         keys.append(record.commit)
-    for key in keys:
+    return keys
+
+
+def _ambiguous_keys(readable: Sequence[Rec], reconciles: Mapping[str, str]) -> set[str]:
+    """Historical keys that more than one record without ``record_id`` receives.
+
+    The execution commit is a key only when reconciliation names it. A shared commit is
+    not an identity: the key is ambiguous and neither record takes it.
+    """
+    receivers: dict[str, set[str]] = {}
+    for record in readable:
+        if isinstance(record.record_id, str) and record.record_id:
+            continue
+        for key in _historical_keys(record):
+            mapped = reconciles.get(key)
+            if isinstance(mapped, str) and mapped:
+                receivers.setdefault(key, set()).add(record.path)
+    return {key for key, paths in receivers.items() if len(paths) > 1}
+
+
+def _canonical(
+    record: Rec,
+    reconciles: Mapping[str, str],
+    ambiguous: set[str] | None = None,
+) -> str | None:
+    if isinstance(record.record_id, str) and record.record_id:
+        return record.record_id
+    blocked = ambiguous or set()
+    for key in _historical_keys(record):
+        if key in blocked:
+            continue
         mapped = reconciles.get(key)
         if isinstance(mapped, str) and mapped:
             return mapped
     return None
+
+
+def _is_evidence_path(relative: str) -> bool:
+    """True only for a descendant of the ``reports/evidence`` directory, by components."""
+    parts = PurePosixPath(relative).parts
+    return len(parts) >= 3 and parts[0] == "reports" and parts[1] == "evidence"
+
+
+def _below(path: str, prefix: str) -> bool:
+    """Path equality or a real child. ``reports/evidence-archive`` is not under ``reports/evidence``."""
+    return path == prefix or path.startswith(prefix + "/")
 
 
 def _cyclic(edges: Mapping[str, set[str]]) -> bool:
@@ -172,6 +264,44 @@ def _cyclic(edges: Mapping[str, set[str]]) -> bool:
         return False
 
     return any(walk(node) for node in list(edges))
+
+
+def check_outside_evidence(
+    relative: str,
+    raw: bytes | None,
+    entry: str,
+    fallback_task: str,
+) -> list[dict[str, str]]:
+# CHECK OUTSIDE_EVIDENCE
+    if _is_evidence_path(relative):
+        return []
+    task_id = relative
+    if raw:
+        try:
+            data = _loads(raw)
+        except (UnicodeError, json.JSONDecodeError, ValueError, RecursionError):
+            data = None
+        if isinstance(data, dict):
+            carried = data.get("task_id")
+            if isinstance(carried, str) and carried:
+                task_id = carried
+    if not task_id:
+        task_id = fallback_task or relative
+    return [_finding(task_id, "OUTSIDE_EVIDENCE", entry)]
+# END CHECK OUTSIDE_EVIDENCE
+
+
+def check_ambiguous_identity(
+    readable: Sequence[Rec],
+    reconciles: Mapping[str, str],
+    entry: str,
+    task_id: str,
+) -> list[dict[str, str]]:
+# CHECK AMBIGUOUS_IDENTITY
+    if not _ambiguous_keys(readable, reconciles):
+        return []
+    return [_finding(task_id, "AMBIGUOUS_IDENTITY", entry)]
+# END CHECK AMBIGUOUS_IDENTITY
 
 
 def check_unreadable_json(
@@ -607,10 +737,12 @@ def _graph_findings(records: Sequence[Rec], recon: Recon | None, entry: str, foc
         if not recon.selected_path or any(_lone(value) for value in values):
             recon_unusable = True
             reconciles = {}
-    identities = {record.path: _canonical(record, reconciles) for record in readable}
+    ambiguous = _ambiguous_keys(readable, reconciles)
+    identities = {record.path: _canonical(record, reconciles, ambiguous) for record in readable}
     resolved = _resolve(readable, identities, reconciles)
     unresolved = _unresolved_targets(readable, reconciles)
     findings: list[dict[str, str]] = list(unread)
+    findings.extend(check_ambiguous_identity(readable, reconciles, entry, task_id))
     findings.extend(check_self_supersedes(readable, identities, reconciles, entry))
     findings.extend(check_supersedes_unresolved(readable, identities, reconciles, entry))
     findings.extend(check_reconciliation_unlisted(readable, identities, recon, recon_unusable, entry))
@@ -754,13 +886,16 @@ def _dedupe(findings: Iterable[Mapping[str, str]]) -> list[dict[str, str]]:
 
 
 class Store:
-    """Bytes of one tree: the worktree, or one git commit."""
+    """Bytes of one tree: the worktree, one git commit, or an explicit graph."""
 
-    def __init__(self, root: Path, commit: str | None) -> None:
+    def __init__(self, root: Path, commit: str | None, files: Mapping[str, bytes] | None = None) -> None:
         self.root = root
         self.commit = commit
+        self._memory = None if files is None else dict(files)
 
     def read(self, relative: str) -> bytes | None:
+        if self._memory is not None:
+            return self._memory.get(relative)
         if self.commit is None:
             path = self.root / relative
             if not path.is_file():
@@ -777,6 +912,8 @@ class Store:
         return probe.stdout
 
     def files(self, prefix: str) -> list[str]:
+        if self._memory is not None:
+            return sorted(path for path in self._memory if _below(path, prefix))
         if self.commit is None:
             base = self.root / prefix
             if not base.exists():
@@ -801,7 +938,7 @@ class Store:
                 continue
             # Git blob names are raw bytes. surrogateescape keeps a non-UTF-8 name until read.
             line = raw_name.decode("utf-8", "surrogateescape")
-            if line.startswith(prefix):
+            if _below(line, prefix):
                 names.append(line)
         return sorted(names)
 
@@ -848,39 +985,12 @@ def _load_record(relative: str, raw: bytes, fallback_task: str) -> Rec:
 
 
 def _load_recon(task_id: str, store: Store) -> Recon:
+    """Reconciliation is only the exact directory and the exact ``<task>.json`` name."""
     relative = f"{RECON_DIR}/{task_id}.json"
     raw = store.read(relative)
-    under = _evidence_recon(task_id, store)
-    if raw is None and under is None:
+    if raw is None:
         return Recon(task_id, "", (), (), "", None, False, False, True)
-    if raw is None and under is not None:
-        return _parse_recon(task_id, under[1], under_evidence=True, unreadable=under[2])
-    assert raw is not None
-    parsed = _parse_recon(task_id, raw, under_evidence=False, unreadable=False)
-    if under is not None:
-        return Recon(
-            task_id,
-            parsed.remaining_head,
-            parsed.supersedes,
-            parsed.reconciles,
-            parsed.selected_path,
-            parsed.embedded_task_id,
-            parsed.unreadable,
-            True,
-            False,
-        )
-    return parsed
-
-
-def _evidence_recon(task_id: str, store: Store) -> tuple[str, bytes, bool] | None:
-    for relative in store.files("reports/evidence"):
-        if not relative.endswith(f"/{task_id}.reconciliation.json"):
-            continue
-        raw = store.read(relative)
-        if raw is None:
-            return relative, b"", True
-        return relative, raw, False
-    return None
+    return _parse_recon(task_id, raw, under_evidence=False, unreadable=False)
 
 
 def _parse_recon(task_id: str, raw: bytes, *, under_evidence: bool, unreadable: bool) -> Recon:
@@ -986,7 +1096,8 @@ def _evidence_records(store: Store, fallback_task: str) -> list[Rec]:
         if not relative.endswith(".json"):
             continue
         name = Path(relative).name
-        if name == "MANIFEST.json" or name.endswith(".reconciliation.json"):
+        # A name ending in ``.reconciliation.json`` under evidence is an evidence record.
+        if name == "MANIFEST.json":
             continue
         if EXCLUDED_PARTS & set(Path(relative).parts):
             continue
@@ -1031,9 +1142,16 @@ def _task_records(records: Sequence[Rec], task_id: str) -> list[Rec]:
 
 def evaluate(store: Store, entry: str, focus: str | None, manifest_path: str | None) -> tuple[str, list[dict[str, str]], dict[str, str]]:
     completed = _completed(store)
-    if completed is None:
+    # E3 admits one manifest. A missing state file is not a record and is not UNREADABLE_JSON.
+    if completed is None and entry != "E3":
         return "FAIL", [_finding("UNSCOPED", "UNREADABLE_JSON", entry)], {}
+    if completed is None:
+        completed = []
     fallback = completed[0] if len(completed) == 1 else "UNSCOPED"
+    if entry == "E2" and focus is not None:
+        outside = check_outside_evidence(focus, store.read(focus), entry, fallback)
+        if outside:
+            return "FAIL", _dedupe(outside), {}
     records = _evidence_records(store, fallback)
     # A lone completed task owns unreadable files that carry no task_id of their own.
     if len(completed) == 1:
@@ -1068,10 +1186,22 @@ def evaluate(store: Store, entry: str, focus: str | None, manifest_path: str | N
                 manifest_findings.append(_finding(fallback, "UNREADABLE_JSON", entry))
         # A named manifest that is absent is UNREADABLE_JSON only. Do not also
         # mark every canonical record MANIFEST_UNLISTED for that missing file.
-        scan_uncovered = manifest_path is None or bool(manifests)
+        # E3 does not scan another gate: class 16 stays inside the requested directory.
+        scan_uncovered = manifest_path is None
+        manifest_records = records
+        if entry == "E3":
+            directories = {str(Path(item.relative_path).parent) for item in manifests}
+            manifest_records = [
+                record for record in records if str(Path(record.path).parent) in directories
+            ]
         manifest_findings.extend(
             _manifest_findings(
-                manifests, records, entry, fallback, set(store.files("reports/evidence")), scan_uncovered,
+                manifests,
+                manifest_records,
+                entry,
+                fallback,
+                set(store.files("reports/evidence")),
+                scan_uncovered,
             )
         )
     if entry == "E3":
@@ -1109,6 +1239,57 @@ def _invocation_refused(commit: str | None, record: str | None, manifest: str | 
     if manifest is not None and presented_pair:
         return True
     return presented_pair and not complete_pair
+
+
+def _pack(status: str, findings: Sequence[Mapping[str, str]], heads: Mapping[str, str]) -> dict[str, object]:
+    return {
+        "findings": [dict(item) for item in findings],
+        "status": status,
+        "validated_heads": dict(sorted(heads.items())),
+    }
+
+
+def select_graph(graph: Mapping[str, Any]) -> dict[str, Any]:
+    """One pure decision on an explicit graph. E1, E2, and E3 are projections of it.
+
+    The graph carries bytes. This function does not read the worktree or a git commit.
+    """
+    completed = graph.get("completed")
+    tasks = [item for item in completed] if isinstance(completed, list) else []
+    files: dict[str, bytes] = {}
+    records = graph.get("records") if isinstance(graph.get("records"), list) else []
+    manifests = graph.get("manifests") if isinstance(graph.get("manifests"), list) else []
+    reconciliations = graph.get("reconciliations") if isinstance(graph.get("reconciliations"), list) else []
+    for item in [*records, *manifests, *reconciliations]:
+        if isinstance(item, Mapping) and isinstance(item.get("path"), str) and isinstance(item.get("raw"), bytes):
+            files[item["path"]] = item["raw"]
+    state = {"completed_evidence_tasks": tasks}
+    files["reports/development/EXECUTION_STATE.json"] = (
+        json.dumps(state, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+    store = Store(Path("."), None, files)
+    root_status, root_findings, root_heads = evaluate(store, "E1", None, None)
+    by_record: dict[str, dict[str, object]] = {}
+    for item in records:
+        if not isinstance(item, Mapping) or not isinstance(item.get("path"), str):
+            continue
+        path = item["path"]
+        status, findings, heads = evaluate(store, "E2", path, None)
+        by_record[path] = _pack(status, findings, heads)
+    by_manifest: dict[str, dict[str, object]] = {}
+    for item in manifests:
+        if not isinstance(item, Mapping) or not isinstance(item.get("path"), str):
+            continue
+        path = item["path"]
+        status, findings, heads = evaluate(store, "E3", None, path)
+        by_manifest[path] = _pack(status, findings, heads)
+    return {
+        "entries": {
+            "E1": _pack(root_status, root_findings, root_heads),
+            "E2": by_record,
+            "E3": by_manifest,
+        }
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
