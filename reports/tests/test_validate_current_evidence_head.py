@@ -1555,6 +1555,36 @@ class RedesignOption1Tests(unittest.TestCase):
         seen += 1
         self.assertEqual(20, seen)
 
+    def test_select_graph_ignores_a_collection_that_is_not_a_list(self) -> None:
+        """A records, manifests, or reconciliations value that is not a list is absent."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        decision = select(
+            {"completed": [], "records": "nope", "manifests": None, "reconciliations": {"a": 1}}
+        )
+        self.assertEqual("PASS", decision["entries"]["E1"]["status"])
+        self.assertEqual({}, decision["entries"]["E1"]["validated_heads"])
+        self.assertEqual({}, decision["entries"]["E2"])
+        self.assertEqual({}, decision["entries"]["E3"])
+
+    def test_select_graph_skips_a_record_whose_raw_is_not_bytes(self) -> None:
+        """A node whose raw is not bytes is not a presented document."""
+        module = self._module()
+        select = getattr(module, "select_graph", None)
+        self.assertTrue(callable(select), "production must expose select_graph")
+        decision = select(
+            {
+                "completed": [],
+                "manifests": [],
+                "reconciliations": [],
+                "records": [{"path": "reports/evidence/G0/x.json", "raw": "not-bytes"}],
+            }
+        )
+        self.assertEqual("PASS", decision["entries"]["E1"]["status"])
+        self.assertEqual({}, decision["entries"]["E2"])
+        self.assertEqual({}, decision["entries"]["E3"])
+
     def test_evidence_archive_is_not_an_evidence_node_on_e1(self) -> None:
         world, _inside, _outside = self._archive_world()
         payload = self._payload(self._completed(world, "E1"))
