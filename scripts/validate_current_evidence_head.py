@@ -207,7 +207,8 @@ def check_unreadable_json(
 def _text_broken(record: Rec) -> bool:
     if record.unreadable:
         return False
-    values = [record.path, record.task_id]
+    # The blob name is not document text. A non-UTF-8 path stays a readable record.
+    values = [record.task_id]
     for value in (record.record_id, record.supersedes, record.commit):
         if isinstance(value, str):
             values.append(value)
@@ -798,10 +799,8 @@ class Store:
         for raw_name in listing.stdout.split(b"\0"):
             if not raw_name:
                 continue
-            try:
-                line = raw_name.decode("utf-8")
-            except UnicodeError:
-                continue
+            # Git blob names are raw bytes. surrogateescape keeps a non-UTF-8 name until read.
+            line = raw_name.decode("utf-8", "surrogateescape")
             if line.startswith(prefix):
                 names.append(line)
         return sorted(names)
@@ -993,6 +992,7 @@ def _evidence_records(store: Store, fallback_task: str) -> list[Rec]:
             continue
         raw = store.read(relative)
         if raw is None:
+            records.append(_unreadable_record(relative, b"", fallback_task))
             continue
         records.append(_load_record(relative, raw, fallback_task))
     return records
