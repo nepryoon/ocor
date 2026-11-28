@@ -1040,7 +1040,14 @@
       "section": "AUTOCONTROLLO-DIGEST-COMMIT (2026-11-11)",
       "status": "PASS",
       "stdout_sha256": "071ab7fb714d4047fd8dfeb11059eeaaa2b47f26b1688ee2dbf6bfb69bd72226",
-      "note": "Measured while HEAD is the test commit and this record is not yet the HEAD commit. The checker prints HEAD. The three input blobs stay those of 39785fe47ab1a858ad62fb86647979bd806d8d34."
+      "note": "Measured while HEAD is the test commit and this record is not yet the HEAD commit. The checker prints HEAD. The three input blobs stay those of 39785fe47ab1a858ad62fb86647979bd806d8d34.",
+      "replay_at_04bee645": {
+        "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 39785fe47ab1a858ad62fb86647979bd806d8d34 --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+        "exit_code": 0,
+        "head": "04bee645367176bf485ea2993b5516588a0f0101",
+        "status": "PASS",
+        "stdout_sha256": "2e555eadd299a7cbf28575ec513c49f78259435d57616dea7ab8e9e0f77c36ea"
+      }
     },
     "redesign_option1_cell_scan": {
       "cells": 59,
@@ -1108,6 +1115,331 @@
       "passed": 44,
       "subtests_passed": 301
     },
-    "vf004_schema_conformance": "NOT_CORRECTED"
+    "vf004_schema_conformance": "NOT_CORRECTED",
+    "pre_campaign_gate": {
+      "base": "23e6b62c36627de91cb85329b9a1164f3219cd53",
+      "branch": "governed/ocor-dev-rem-0068-current-head",
+      "gates_json_bytes": 24958,
+      "gates_json_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/pregate-04bee645/gates.json",
+      "gates_json_sha256": "ff662c3b339fa5c8ae233feacfeb95d81d0582894f93dcb41e07946ee4e4f671",
+      "head": "04bee645367176bf485ea2993b5516588a0f0101",
+      "not_executed": [
+        {
+          "name": "integration-postgresql",
+          "reason": "The workflow job needs a postgres:16 service. The qualifying campaign runs the live PostgreSQL tests. This gate does not mark the job PASS."
+        },
+        {
+          "name": "qualifying-campaign-shards",
+          "reason": "Full-suite shards, aggregation, and uploads are the four-lane campaign after this gate."
+        },
+        {
+          "name": "actions-cache-and-artifacts",
+          "reason": "GitHub Actions cache and artifact upload or download have no local credential."
+        },
+        {
+          "name": "mandatory-gates-aggregator",
+          "reason": "The aggregator reads GitHub Actions needs.*.result. There is no local job graph."
+        },
+        {
+          "name": "auto-merge",
+          "reason": "GitHub auto-merge is not exercised from this gate."
+        },
+        {
+          "name": "conditional-0049-aggregator",
+          "reason": "The five full-suite parts are not produced by this gate."
+        }
+      ],
+      "result": "PASS",
+      "runner_bytes": 3195,
+      "runner_path": "/home/luca/.ocor-codex/ocor-dev-rem-0068/pregate-04bee645/runner.out",
+      "runner_sha256": "a62e33070d4fe24866a5bf850fa6f86b0d2285b6f0da86fed6da13dce41d5a70",
+      "started_at": "2026-11-28T09:45:12Z",
+      "steps": [
+        {
+          "exit_code": 0,
+          "name": "autonomous_dry",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "autonomous_validate",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "bootstrap_check",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "closure_report",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "compose",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "current_evidence_head",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "dec208",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "document_harness",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "drift",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "evidence_g0",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "execution_inputs",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "exit_file_record_read",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "fgm",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "fitness",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "guards",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "inputs_diff",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "language_script",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "language_unittest",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "lld",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "lock_schema",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "markdownlint",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "mermaid",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "methodology_schema",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "mypy",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "openapi",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "plan",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "poc_backend",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "poc_runtime",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "preflight",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "pytest_0001",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "pytest_backlog",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "pytest_contracts",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "pytest_drift_tests",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "pytest_lang_bench",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "pytest_runtime_evidence",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "pytest_sdk",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "rccad",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "reset_dry",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "ruff",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "ruff_subset",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "runtime_0005",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "runtime_0050",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "runtime_0082",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "schema_tests",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "scope",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "sums_inputs",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "sums_reports",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "supply",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "teardown_absent",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "tsc",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "unittest_rccad",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "unittest_tooling",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "uv-sync",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 0,
+          "name": "verify_manifest",
+          "status": "PASS"
+        },
+        {
+          "exit_code": 1,
+          "name": "vf004_schema_conformance",
+          "status": "NOT_CORRECTED"
+        }
+      ],
+      "unexpected_failures": [],
+      "vf004_schema_conformance": "NOT_CORRECTED"
+    },
+    "digest_replay_at_gate_head": {
+      "command": "ocor-runtime/.venv/bin/python scripts/check_execution_commit_inputs.py --root . --execution-commit 39785fe47ab1a858ad62fb86647979bd806d8d34 --record reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
+      "exit_code": 0,
+      "head": "04bee645367176bf485ea2993b5516588a0f0101",
+      "status": "PASS",
+      "stdout_sha256": "2e555eadd299a7cbf28575ec513c49f78259435d57616dea7ab8e9e0f77c36ea"
+    }
   }
 }
