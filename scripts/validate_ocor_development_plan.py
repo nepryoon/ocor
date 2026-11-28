@@ -2066,6 +2066,15 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-guard.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-guard.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-guard.log",
+        # OCOR-DEV-REM-0068 repair 1. The proof file and this allowlist change
+        # again. 0005 and 0050 pin the proof file. 0082 pins only this script.
+        # The evidence commit does not change this script.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-repair1.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0068-repair1.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-repair1.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0068-repair1.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-repair1.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0068-repair1.log",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.json",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/OCOR-DEV-REM-0068.log",
         "reports/assurance/OCOR-DEV-REM-0068-RCCAD/pre-campaign.log",

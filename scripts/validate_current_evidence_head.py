@@ -217,14 +217,24 @@ def _text_broken(record: Rec) -> bool:
 def check_self_supersedes(
     readable: Sequence[Rec],
     identities: Mapping[str, str | None],
+    reconciles: Mapping[str, str],
     entry: str,
 ) -> list[dict[str, str]]:
 # CHECK SELF_SUPERSEDES
     findings: list[dict[str, str]] = []
+    listed = {value for value in identities.values() if value}
     for record in readable:
         raw = record.supersedes
         identity = identities.get(record.path)
-        if isinstance(raw, str) and identity is not None and raw == identity:
+        if not isinstance(raw, str) or identity is None or _lone(raw):
+            continue
+        if raw == identity:
+            findings.append(_finding(record.task_id, "SELF_SUPERSEDES", entry))
+            continue
+        if raw in listed:
+            continue
+        mapped = reconciles.get(raw)
+        if isinstance(mapped, str) and mapped in listed and mapped == identity:
             findings.append(_finding(record.task_id, "SELF_SUPERSEDES", entry))
     return findings
 # END CHECK SELF_SUPERSEDES
@@ -248,10 +258,14 @@ def check_supersedes_unresolved(
             continue
         if raw in listed:
             continue
-        if _historical(raw, readable):
-            continue
         mapped = reconciles.get(raw)
-        if isinstance(mapped, str) and mapped:
+        mapped_listed = isinstance(mapped, str) and bool(mapped) and mapped in listed
+        if _historical(raw, readable):
+            if mapped_listed or not (isinstance(mapped, str) and mapped):
+                continue
+            findings.append(_finding(record.task_id, "SUPERSEDES_UNRESOLVED", entry))
+            continue
+        if mapped_listed:
             continue
         findings.append(_finding(record.task_id, "SUPERSEDES_UNRESOLVED", entry))
     return findings
@@ -299,7 +313,7 @@ def check_reconciliation_absent(
         if identities.get(record.path) and identities.get(record.path) not in retired and record.path not in unresolved
     ]
     blocked = list(other_findings) + findings
-    if len(current) == 0 and readable and not blocked:
+    if len(current) == 0 and not blocked:
         findings.append(_finding(task_id, "RECONCILIATION_ABSENT", entry))
     return findings
 # END CHECK RECONCILIATION_ABSENT
@@ -486,6 +500,7 @@ def check_manifest_unlisted(
     records: Sequence[Rec],
     entry: str,
     fallback_task: str,
+    scan_uncovered: bool = False,
 ) -> list[dict[str, str]]:
 # CHECK MANIFEST_UNLISTED
     findings: list[dict[str, str]] = []
@@ -501,6 +516,15 @@ def check_manifest_unlisted(
             if str(Path(record.path).parent) != directory or record.unreadable or _text_broken(record):
                 continue
             if Path(record.path).name not in listed:
+                findings.append(_finding(record.task_id or fallback_task, "MANIFEST_UNLISTED", entry))
+    if scan_uncovered:
+        covered = {str(Path(manifest.relative_path).parent) for manifest in manifests}
+        for record in records:
+            if not record.path.startswith("reports/evidence/"):
+                continue
+            if record.unreadable or _text_broken(record):
+                continue
+            if str(Path(record.path).parent) not in covered:
                 findings.append(_finding(record.task_id or fallback_task, "MANIFEST_UNLISTED", entry))
     return findings
 # END CHECK MANIFEST_UNLISTED
@@ -525,12 +549,9 @@ def _resolve(
         if raw in listed:
             resolved[record.path] = raw
             continue
-        if _historical(raw, readable):
-            mapped = reconciles.get(raw)
-            resolved[record.path] = mapped if mapped else None
-            continue
         mapped = reconciles.get(raw)
-        resolved[record.path] = mapped if isinstance(mapped, str) and mapped else None
+        mapped_listed = isinstance(mapped, str) and bool(mapped) and mapped in listed
+        resolved[record.path] = mapped if mapped_listed else None
     return resolved
 
 
@@ -589,7 +610,7 @@ def _graph_findings(records: Sequence[Rec], recon: Recon | None, entry: str, foc
     resolved = _resolve(readable, identities, reconciles)
     unresolved = _unresolved_targets(readable, reconciles)
     findings: list[dict[str, str]] = list(unread)
-    findings.extend(check_self_supersedes(readable, identities, entry))
+    findings.extend(check_self_supersedes(readable, identities, reconciles, entry))
     findings.extend(check_supersedes_unresolved(readable, identities, reconciles, entry))
     findings.extend(check_reconciliation_unlisted(readable, identities, recon, recon_unusable, entry))
     findings.extend(check_cycle(readable, identities, resolved, entry, task_id))
@@ -605,6 +626,13 @@ def _graph_findings(records: Sequence[Rec], recon: Recon | None, entry: str, foc
     )
     findings.extend(absent)
     blocked = _dedupe(findings)
+    if not blocked:
+        blocked.extend(
+            _off_chain_multiple_heads(
+                readable, identities, resolved, reconciles, recon, recon_unusable, unresolved, entry, task_id,
+            )
+        )
+        blocked = _dedupe(blocked)
     head = _validated_head(readable, identities, resolved, reconciles, recon, recon_unusable, unresolved, blocked)
     focus_findings = check_not_current_head(
         readable, identities, resolved, reconciles, recon, recon_unusable, blocked, focus, entry,
@@ -657,6 +685,40 @@ def _apply_unresolved(
     kept.extend(check_two_successors(visible, identities, resolved, reconciles, recon, recon_unusable, entry, task_id))
     kept.extend(check_multiple_heads(visible, identities, resolved, reconciles, recon, recon_unusable, entry, task_id))
     return kept
+
+
+def _off_chain_multiple_heads(
+    readable: Sequence[Rec],
+    identities: Mapping[str, str | None],
+    resolved: Mapping[str, str | None],
+    reconciles: Mapping[str, str],
+    recon: Recon | None,
+    recon_unusable: bool,
+    unresolved: set[str],
+    entry: str,
+    task_id: str,
+) -> list[dict[str, str]]:
+    """A usable reconciliation admits only the chain that starts at ``remaining_head``.
+
+    The chain grows by resolved supersedes edges whose target is already on it.
+    A current identity outside that chain is another head (``MULTIPLE_HEADS``).
+    """
+    if recon is None or recon_unusable:
+        return []
+    current = _current_paths(readable, identities, resolved, reconciles, recon, recon_unusable, unresolved)
+    chain = {recon.remaining_head}
+    growing = True
+    while growing:
+        growing = False
+        for record in readable:
+            source = identities.get(record.path)
+            target = resolved.get(record.path)
+            if source and target in chain and source not in chain:
+                chain.add(source)
+                growing = True
+    if any(identities.get(record.path) not in chain for record in current):
+        return [_finding(task_id, "MULTIPLE_HEADS", entry)]
+    return []
 
 
 def _validated_head(
@@ -723,16 +785,26 @@ class Store:
                 if path.is_file():
                     found.append(path.relative_to(self.root).as_posix())
             return sorted(found)
+        # Without -z, git quotes non-ASCII paths and the quoted line fails the prefix test.
         listing = subprocess.run(
-            ["git", "ls-tree", "-r", "--name-only", self.commit],
+            ["git", "ls-tree", "-r", "-z", "--name-only", self.commit],
             cwd=self.root,
             capture_output=True,
-            text=True,
             check=False,
         )
         if listing.returncode != 0:
             return []
-        return sorted(line for line in listing.stdout.splitlines() if line.startswith(prefix))
+        names: list[str] = []
+        for raw_name in listing.stdout.split(b"\0"):
+            if not raw_name:
+                continue
+            try:
+                line = raw_name.decode("utf-8")
+            except UnicodeError:
+                continue
+            if line.startswith(prefix):
+                names.append(line)
+        return sorted(names)
 
 
 def _load_record(relative: str, raw: bytes, fallback_task: str) -> Rec:
@@ -881,14 +953,15 @@ def _load_manifest(relative: str, store: Store) -> Manifest:
 
 
 def _completed(store: Store) -> list[str] | None:
-    """Completed task ids, or None when the state document is not usable JSON.
+    """Completed task ids, or None when the state document cannot name that set.
 
-    A missing file and a missing key stay an empty list. A non-object document,
-    a non-list ``completed_evidence_tasks``, or a non-string item is unreadable.
+    A missing file, a missing ``completed_evidence_tasks`` key, a non-object
+    document, a non-list value, or a non-string item is unreadable. An empty
+    list is a usable set.
     """
     raw = store.read("reports/development/EXECUTION_STATE.json")
     if raw is None:
-        return []
+        return None
     try:
         data = _loads(raw)
     except (UnicodeError, json.JSONDecodeError, ValueError):
@@ -896,7 +969,7 @@ def _completed(store: Store) -> list[str] | None:
     if not isinstance(data, dict):
         return None
     if "completed_evidence_tasks" not in data:
-        return []
+        return None
     tasks = data["completed_evidence_tasks"]
     if not isinstance(tasks, list):
         return None
@@ -939,6 +1012,7 @@ def _manifest_findings(
     entry: str,
     fallback_task: str,
     files: set[str],
+    scan_uncovered: bool,
 ) -> list[dict[str, str]]:
     findings: list[dict[str, str]] = []
     # Class 15 is a listed file absent from the tree. Logs and other non-record
@@ -946,7 +1020,7 @@ def _manifest_findings(
     present = set(files) | _present_paths(records)
     findings.extend(check_manifest_field(manifests, entry, fallback_task))
     findings.extend(check_manifest_missing(manifests, present, entry))
-    findings.extend(check_manifest_unlisted(manifests, records, entry, fallback_task))
+    findings.extend(check_manifest_unlisted(manifests, records, entry, fallback_task, scan_uncovered))
     findings.extend(check_unreadable_json(records, fallback_task, entry, None, manifests))
     return findings
 
@@ -992,8 +1066,13 @@ def evaluate(store: Store, entry: str, focus: str | None, manifest_path: str | N
             manifests = [item for item in manifests if item.relative_path == manifest_path]
             if not manifests:
                 manifest_findings.append(_finding(fallback, "UNREADABLE_JSON", entry))
+        # A named manifest that is absent is UNREADABLE_JSON only. Do not also
+        # mark every canonical record MANIFEST_UNLISTED for that missing file.
+        scan_uncovered = manifest_path is None or bool(manifests)
         manifest_findings.extend(
-            _manifest_findings(manifests, records, entry, fallback, set(store.files("reports/evidence")))
+            _manifest_findings(
+                manifests, records, entry, fallback, set(store.files("reports/evidence")), scan_uncovered,
+            )
         )
     if entry == "E3":
         findings = manifest_findings
@@ -1023,6 +1102,15 @@ def _emit(status: str, entry: str, findings: Sequence[Mapping[str, str]], heads:
     return 0 if status == "PASS" and not findings else 1
 
 
+def _invocation_refused(commit: str | None, record: str | None, manifest: str | None) -> bool:
+    """E2 is only the pair. A presented commit or record is never dropped, including next to E3."""
+    presented_pair = commit is not None or record is not None
+    complete_pair = commit is not None and record is not None
+    if manifest is not None and presented_pair:
+        return True
+    return presented_pair and not complete_pair
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
@@ -1031,6 +1119,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--manifest", default=None)
     args = parser.parse_args(argv)
     root = args.root.resolve()
+    if _invocation_refused(args.execution_commit, args.record, args.manifest):
+        return _emit("FAIL", "E2", [_finding("UNSCOPED", "UNREADABLE_JSON", "E2")], {})
     if args.manifest is not None:
         entry = "E3"
         commit = None

@@ -1175,8 +1175,10 @@ def current_baseline_proof(overrides=None):
     workflow files must equal that of 82b71d0 (a workflow added, removed or renamed fails). The
     observer keeps the window, cadence, sampler and kind binary of 82b71d0 and ten-second probe
     timeouts. The only working-tree normalisation is OCOR-DEV-REM-0068-GUARD-ADMISSION (2026-11-27)
-    option 1: the exact tooling drift-step block. Any other difference needs a new exact
-    normalisation on 82b71d0 authorised by a PO decision, or a new consolidation decided by the PO.
+    option 1: the exact tooling drift-step block, and only when that block and the
+    head-validation command each occur once. Restoring the 82b71d0 workflow fails this
+    proof. Any other difference needs a new exact normalisation on 82b71d0 authorised by
+    a PO decision, or a new consolidation decided by the PO.
     ``overrides`` replaces file text (``None`` removes the file) for the negative cases.
     """
     root = Path(__file__).resolve().parents[2]
@@ -1198,7 +1200,10 @@ def current_baseline_proof(overrides=None):
     for path in expected + [CAMPAIGN_PATH]:
         data = current(path)
         if path == REM0068_TOOLING and data is not None:
-            data = normalize_rem0068_workflow(path, data.decode()).encode()
+            text = data.decode()
+            if text.count(REM0068_DRIFT_BLOCK) != 1 or text.count(REM0068_HEAD_COMMAND) != 1:
+                raise AssertionError('REM-0068 tooling block is not the single authorised drift step: ' + path)
+            data = normalize_rem0068_workflow(path, text).encode()
         if data != baseline_bytes(path):
             raise AssertionError('Byte drift from 82b71d0: ' + path)
         digests[path] = hashlib.sha256(data).hexdigest()
@@ -1362,6 +1367,12 @@ class Rem0068GuardAdmission(unittest.TestCase):
                 self.assertNotEqual(text, baseline_text(path))
                 self.assertNotEqual(normalize_rem0068_workflow(path, text).encode(), baseline_bytes(path))
                 self.assertEqual(current_guard_failures(overrides), {CURRENT_PROOF})
+
+    def test_restoring_the_baseline_workflow_fails_the_current_proof(self):
+        restored = baseline_text(self.TOOLING)
+        self.assertEqual(restored.count(REM0068_DRIFT_BLOCK), 0)
+        self.assertEqual(restored.count(REM0068_HEAD_COMMAND), 0)
+        self.assertEqual(current_guard_failures({self.TOOLING: restored}), {CURRENT_PROOF})
 
 if __name__ == '__main__':
     unittest.main()

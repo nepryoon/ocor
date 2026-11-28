@@ -124,6 +124,7 @@ class World:
     manifests: tuple[Manifest, ...]
     state_bytes: bytes | None = None
     state_unreadable: bool = False
+    state_missing: bool = False
 
 
 @dataclass(frozen=True)
@@ -255,6 +256,7 @@ def _graph(world: World, entry: str, focus: str | None) -> Outcome:
             findings.add(Finding(TASK, "RECONCILIATION_ABSENT", entry))
             recon_unusable = True
     identities = {record.path: _canonical(record, reconciles) for record in readable}
+    listed_ids = {value for value in identities.values() if value}
     needs_recon = any(identities[record.path] is None for record in readable)
     resolved: dict[str, str | None] = {}
     for record in readable:
@@ -264,20 +266,32 @@ def _graph(world: World, entry: str, focus: str | None) -> Outcome:
             continue
         if _lone_surrogate(raw):
             continue
-        if identities[record.path] is not None and raw == identities[record.path]:
+        identity = identities[record.path]
+        mapped = reconciles.get(raw)
+        mapped_listed = isinstance(mapped, str) and bool(mapped) and mapped in listed_ids
+        if identity is not None and raw == identity:
             resolved[record.path] = raw
             findings.add(Finding(TASK, "SELF_SUPERSEDES", entry))
             continue
-        if raw in set(filter(None, identities.values())):
+        if raw in listed_ids:
             resolved[record.path] = raw
             continue
         if _historical(raw, readable):
-            mapped = reconciles.get(raw)
-            if mapped:
+            if mapped_listed:
                 resolved[record.path] = mapped
+                if mapped == identity:
+                    findings.add(Finding(TASK, "SELF_SUPERSEDES", entry))
+            elif isinstance(mapped, str) and mapped:
+                resolved[record.path] = None
+                findings.add(Finding(TASK, "SUPERSEDES_UNRESOLVED", entry))
             else:
                 needs_recon = True
                 resolved[record.path] = None
+            continue
+        if mapped_listed:
+            resolved[record.path] = mapped
+            if mapped == identity:
+                findings.add(Finding(TASK, "SELF_SUPERSEDES", entry))
             continue
         resolved[record.path] = None
         findings.add(Finding(TASK, "SUPERSEDES_UNRESOLVED", entry))
@@ -285,7 +299,7 @@ def _graph(world: World, entry: str, focus: str | None) -> Outcome:
         findings.add(Finding(TASK, "RECONCILIATION_ABSENT", entry))
     if recon is not None and (recon.unreadable or recon.reject or recon.under_evidence or bool(recon.embedded_task_id)):
         findings.add(Finding(TASK, "RECONCILIATION_ABSENT", entry))
-    listed = {value for value in identities.values() if value}
+    listed = listed_ids
     if recon is not None and not recon_unusable:
         listed_ok = recon.remaining_head in listed and recon.selected_path in identities and identities.get(recon.selected_path) == recon.remaining_head
         if recon.remaining_head in recon.supersedes or any(item not in listed for item in recon.supersedes) or not listed_ok:
@@ -327,8 +341,21 @@ def _graph(world: World, entry: str, focus: str | None) -> Outcome:
         findings.add(Finding(TASK, "TWO_SUCCESSORS", entry))
     if len(current) >= 2 and not (fork and len(current) == sum(len(group) for group in groups.values() if len(group) >= 2)):
         findings.add(Finding(TASK, "MULTIPLE_HEADS", entry))
-    if len(current) == 0 and readable and not findings:
+    if len(current) == 0 and not findings:
         findings.add(Finding(TASK, "RECONCILIATION_ABSENT", entry))
+    if recon is not None and not recon_unusable and not findings:
+        chain = {recon.remaining_head}
+        growing = True
+        while growing:
+            growing = False
+            for record in readable:
+                source = identities[record.path]
+                target = resolved.get(record.path)
+                if source and target in chain and source not in chain:
+                    chain.add(source)
+                    growing = True
+        if any(identities[record.path] not in chain for record in current):
+            findings.add(Finding(TASK, "MULTIPLE_HEADS", entry))
     validated: tuple[tuple[str, str], ...] = ()
     if not findings and len(current) == 1:
         head = identities[current[0].path]
@@ -399,6 +426,13 @@ def _manifest_outcome(world: World, entry: str, manifest_path: str | None) -> Ou
                 continue
             if Path(record.path).name not in listed:
                 findings.add(Finding(TASK, "MANIFEST_UNLISTED", entry))
+    if manifest_path is None or manifests:
+        covered = {str(Path(manifest.relative_path).parent) for manifest in manifests}
+        for record in world.records:
+            if not record.path.startswith("reports/evidence/") or _rejected(record):
+                continue
+            if str(Path(record.path).parent) not in covered:
+                findings.add(Finding(TASK, "MANIFEST_UNLISTED", entry))
     status = "PASS" if not findings else "FAIL"
     return Outcome(status, tuple(sorted(findings, key=_finding_key)), ())
 
@@ -411,7 +445,7 @@ def evaluate(world: World, entry: str, focus: str | None = None, manifest_path: 
     """Return the reference outcome for one entry point. Never skips."""
     if entry not in ENTRIES:
         raise ValueError(entry)
-    if world.state_unreadable:
+    if world.state_unreadable or world.state_missing or _state_document_rejected(world.state_bytes):
         return Outcome("FAIL", (Finding("UNSCOPED", "UNREADABLE_JSON", entry),), ())
     if entry == "E3":
         return _manifest_outcome(world, entry, manifest_path)
@@ -422,6 +456,20 @@ def evaluate(world: World, entry: str, focus: str | None = None, manifest_path: 
     findings = tuple(sorted(set(graph.findings) | set(manifest.findings), key=_finding_key))
     validated = () if findings else graph.validated_heads
     return Outcome("PASS" if not findings else "FAIL", findings, validated)
+
+
+def _state_document_rejected(raw: bytes | None) -> bool:
+    """True when an explicit state document cannot name the completed-task set."""
+    if raw is None:
+        return False
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError):
+        return True
+    if not isinstance(data, dict) or "completed_evidence_tasks" not in data:
+        return True
+    tasks = data["completed_evidence_tasks"]
+    return not isinstance(tasks, list) or any(not isinstance(item, str) or not item for item in tasks)
 
 
 def _record(name: str, record_id: str | None, supersedes: str | None = None, commit: str | None = None) -> Record:
@@ -543,11 +591,13 @@ def _write(path: Path, data: bytes) -> None:
 
 
 def materialise(root: Path, world: World) -> None:
-    state = {"completed_evidence_tasks": list(world.completed)}
-    state_bytes = world.state_bytes if world.state_bytes is not None else (json.dumps(state, indent=2, sort_keys=True) + "\n").encode("utf-8")
-    _write(root / "reports" / "development" / "EXECUTION_STATE.json", state_bytes)
+    if not world.state_missing:
+        state = {"completed_evidence_tasks": list(world.completed)}
+        state_bytes = world.state_bytes if world.state_bytes is not None else (json.dumps(state, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        _write(root / "reports" / "development" / "EXECUTION_STATE.json", state_bytes)
     for record in world.records:
         _write(root / record.path, record_bytes(record))
+    written_recons: set[Path] = set()
     for recon in world.reconciliations:
         if recon.missing:
             continue
@@ -568,6 +618,10 @@ def materialise(root: Path, world: World) -> None:
             data = b"{\n"
         else:
             data = (json.dumps(body, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        # The oracle keeps the first reconciliation of a task. A later file for the same path would hide it.
+        if target in written_recons:
+            continue
+        written_recons.add(target)
         _write(target, data)
     for manifest in world.manifests:
         if manifest.literal is not None:
@@ -591,7 +645,6 @@ def _production(world: World, entry: str, focus: str | None = None, script: Path
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         materialise(root, world)
-        manifest = world.manifests[0].relative_path
         if entry == "E1":
             args = ["--root", str(root)]
         elif entry == "E2":
@@ -601,7 +654,9 @@ def _production(world: World, entry: str, focus: str | None = None, script: Path
             commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
             args = ["--root", str(root), "--execution-commit", commit, "--record", focus]
         else:
-            args = ["--root", str(root), "--manifest", manifest]
+            if not world.manifests:
+                raise AssertionError("E3 requires a manifest path")
+            args = ["--root", str(root), "--manifest", world.manifests[0].relative_path]
         completed = subprocess.run([sys.executable, str(subject), *args], cwd=root, text=True, capture_output=True, check=False)
     try:
         payload = json.loads(completed.stdout)
@@ -616,6 +671,66 @@ def _commit(root: Path) -> None:
     subprocess.check_call(["git", "init", "-q"], cwd=root)
     subprocess.check_call(["git", "add", "-A"], cwd=root)
     subprocess.check_call(["git", "-c", "user.email=dev@example.com", "-c", "user.name=OCOR Test", "commit", "-q", "-m", "fixture"], cwd=root)
+
+
+def _rewrite_alias(value: str | None, path_map: Mapping[str, str], id_map: Mapping[str, str]) -> str | None:
+    if value is None:
+        return None
+    if value in id_map:
+        return id_map[value]
+    if value in path_map:
+        return path_map[value]
+    marker = "@sha256:"
+    if marker in value:
+        path, _sep, digest = value.partition(marker)
+        if path in path_map:
+            return f"{path_map[path]}{marker}{digest}"
+    return value
+
+
+def _suffix_world(world: World, suffix: str) -> World:
+    """Disjoint copy so a combined graph keeps every record as its own file."""
+    path_map = {
+        record.path: str(Path(record.path).with_name(f"{Path(record.path).stem}-{suffix}{Path(record.path).suffix}"))
+        for record in world.records
+    }
+    id_map = {record.record_id: f"{record.record_id}-{suffix}" for record in world.records if record.record_id}
+    records = tuple(
+        Record(
+            path_map[record.path],
+            id_map.get(record.record_id) if record.record_id else None,
+            _rewrite_alias(record.supersedes, path_map, id_map),
+            record.commit,
+            record.unreadable,
+            record.non_utf8,
+            record.nan_literal,
+            record.broken,
+            record.literal,
+        )
+        for record in world.records
+    )
+    reconciliations = tuple(
+        Reconciliation(
+            recon.task_id,
+            id_map.get(recon.remaining_head, recon.remaining_head),
+            tuple(id_map.get(item, item) for item in recon.supersedes),
+            tuple((_rewrite_alias(key, path_map, id_map) or key, id_map.get(value, value)) for key, value in recon.reconciles),
+            path_map.get(recon.selected_path, recon.selected_path),
+            recon.embedded_task_id,
+            recon.unreadable,
+            recon.under_evidence,
+            recon.missing,
+            recon.literal,
+            recon.reject,
+        )
+        for recon in world.reconciliations
+    )
+    return World(world.completed, records, reconciliations, world.manifests, world.state_bytes, world.state_unreadable, world.state_missing)
+
+
+def _combine(left: World, right: World) -> World:
+    shifted = _suffix_world(right, "b")
+    return World(left.completed, left.records + shifted.records, left.reconciliations + shifted.reconciliations, left.manifests)
 
 
 def _random_world(seed: int) -> World:
@@ -707,12 +822,20 @@ class OracleTests(unittest.TestCase):
                 with self.subTest(left=left, right=right):
                     first, _focus = world_for(left, "E1")
                     second, _other = world_for(right, "E1")
-                    merged = World(first.completed, first.records + second.records, first.reconciliations + second.reconciliations, first.manifests)
+                    merged = _combine(first, second)
                     once = evaluate(merged, "E1")
                     twice = evaluate(merged, "E1")
+                    produced = _production(merged, "E1")
                     self.assertEqual(once, twice)
+                    self.assertEqual(once.status, produced.status)
+                    self.assertEqual(
+                        tuple((item.task_id, item.code) for item in once.findings),
+                        tuple((item.task_id, item.code) for item in produced.findings),
+                    )
                     self.assertTrue({item.code for item in once.findings} <= CODES)
                     if once.status == "PASS":
+                        self.assertEqual(once.validated_heads, produced.validated_heads)
+                        self.assertEqual(1, len(once.validated_heads))
                         self.assertEqual((), once.findings)
 
     def test_seeded_random_graphs_stay_inside_the_outcome_function(self) -> None:
@@ -720,10 +843,20 @@ class OracleTests(unittest.TestCase):
             world = _random_world(680068 + offset)
             once = evaluate(world, "E1")
             twice = evaluate(world, "E1")
+            produced = _production(world, "E1")
             self.assertEqual(once, twice)
+            self.assertEqual(once.status, produced.status)
+            self.assertEqual(
+                tuple((item.task_id, item.code) for item in once.findings),
+                tuple((item.task_id, item.code) for item in produced.findings),
+            )
             self.assertTrue({item.code for item in once.findings} <= CODES)
             if once.status == "PASS":
+                self.assertEqual(once.validated_heads, produced.validated_heads)
                 self.assertEqual(1, len(once.validated_heads))
+                identity = once.validated_heads[0][1]
+                focus = next(record.path for record in world.records if record.record_id == identity)
+                self.assertEqual(evaluate(world, "E2", focus), _production(world, "E2", focus))
             else:
                 self.assertGreaterEqual(len(once.findings), 1)
 
@@ -910,6 +1043,128 @@ class ProductionTests(unittest.TestCase):
         for name, world, entry, focus in cases:
             with self.subTest(name=name):
                 self.assertEqual(evaluate(world, entry, focus), _production(world, entry, focus))
+
+
+class RepairCycle1Tests(unittest.TestCase):
+    """Negatives for OCOR-DEV-REM-0068-c6410c0c7c31-0. The oracle is the expected result."""
+
+    def _assert_gate(self, world: World, entry: str, focus: str | None = None) -> Outcome:
+        expected = evaluate(world, entry, focus)
+        self.assertEqual(expected, _production(world, entry, focus))
+        return expected
+
+    def test_missing_execution_state_is_rejected(self) -> None:
+        head = _record("head.json", f"{TASK}-head")
+        world = World((TASK,), (head,), (), (_manifest_for(("head.json",)),), state_missing=True)
+        outcome = self._assert_gate(world, "E1")
+        self.assertEqual(frozenset({("UNSCOPED", "UNREADABLE_JSON")}), {(item.task_id, item.code) for item in outcome.findings})
+        self.assertEqual((), outcome.validated_heads)
+
+    def test_missing_completed_key_is_rejected(self) -> None:
+        head = _record("head.json", f"{TASK}-head")
+        world = World((TASK,), (head,), (), (_manifest_for(("head.json",)),), b'{"other": []}\n')
+        outcome = self._assert_gate(world, "E1")
+        self.assertEqual(frozenset({("UNSCOPED", "UNREADABLE_JSON")}), {(item.task_id, item.code) for item in outcome.findings})
+
+    def test_completed_task_without_records_has_a_finding(self) -> None:
+        world = World((TASK,), (), (), (_manifest_for(()),))
+        outcome = self._assert_gate(world, "E1")
+        self.assertEqual(frozenset({"RECONCILIATION_ABSENT"}), {item.code for item in outcome.findings})
+        self.assertEqual(TASK, outcome.findings[0].task_id)
+        self.assertEqual((), outcome.validated_heads)
+
+    def test_positive_chain_still_validates_one_head(self) -> None:
+        world, focus = world_for(2, "E1")
+        root = self._assert_gate(world, "E1")
+        self.assertEqual("PASS", root.status)
+        self.assertEqual(((TASK, f"{TASK}-next"),), root.validated_heads)
+        current = self._assert_gate(world, "E2", focus)
+        self.assertEqual("PASS", current.status)
+        manifest = self._assert_gate(world, "E3")
+        self.assertEqual((), manifest.findings)
+
+    def test_escaped_git_path_second_head_is_examined(self) -> None:
+        first = _record("a.json", f"{TASK}-a")
+        second = _record("t\u00eate.json", f"{TASK}-tete")
+        world = _world((first, second))
+        outcome = self._assert_gate(world, "E1")
+        self.assertEqual(frozenset({"MULTIPLE_HEADS"}), {item.code for item in outcome.findings})
+        probed = self._assert_gate(world, "E2", first.path)
+        self.assertNotEqual("PASS", probed.status)
+        self.assertIn("MULTIPLE_HEADS", {item.code for item in probed.findings})
+
+    def test_alias_must_name_a_listed_distinct_record(self) -> None:
+        old = _record("a.json", f"{TASK}-a")
+        nxt = _record("b.json", f"{TASK}-b", "old-string")
+        valid = Reconciliation(TASK, f"{TASK}-b", (f"{TASK}-a",), (("old-string", f"{TASK}-a"),), nxt.path)
+        accepted = self._assert_gate(_world((old, nxt), (valid,)), "E1")
+        self.assertEqual("PASS", accepted.status)
+        self.assertEqual(((TASK, f"{TASK}-b"),), accepted.validated_heads)
+        self.assertEqual("PASS", self._assert_gate(_world((old, nxt), (valid,)), "E2", nxt.path).status)
+        ghost = Reconciliation(TASK, f"{TASK}-b", (f"{TASK}-a",), (("old-string", "ghost"),), nxt.path)
+        rejected = self._assert_gate(_world((old, nxt), (ghost,)), "E1")
+        self.assertIn("SUPERSEDES_UNRESOLVED", {item.code for item in rejected.findings})
+        self.assertNotEqual("PASS", rejected.status)
+        self_record = _record("b.json", f"{TASK}-b", _path("b.json"))
+        recon = Reconciliation(TASK, f"{TASK}-b", (), ((_path("b.json"), f"{TASK}-b"),), self_record.path)
+        aliased = self._assert_gate(_world((self_record,), (recon,)), "E1")
+        self.assertIn("SELF_SUPERSEDES", {item.code for item in aliased.findings})
+        self.assertNotEqual("PASS", self._assert_gate(_world((self_record,), (recon,)), "E2", self_record.path).status)
+
+    def test_reconciliation_rejects_an_extraneous_branch(self) -> None:
+        chosen = _record("a.json", f"{TASK}-a")
+        retired = _record("b.json", f"{TASK}-b", f"{TASK}-a")
+        stray = _record("c.json", f"{TASK}-c")
+        recon = Reconciliation(TASK, f"{TASK}-a", (f"{TASK}-b",), (), chosen.path)
+        outcome = self._assert_gate(_world((chosen, retired, stray), (recon,)), "E1")
+        self.assertIn("MULTIPLE_HEADS", {item.code for item in outcome.findings})
+        self.assertNotEqual("PASS", outcome.status)
+        self.assertEqual((), outcome.validated_heads)
+
+    def test_reconciliation_accepts_a_successor_of_the_choice(self) -> None:
+        chosen = _record("a.json", f"{TASK}-a")
+        isolated = _record("b.json", f"{TASK}-b")
+        successor = _record("c.json", f"{TASK}-c", f"{TASK}-a")
+        recon = Reconciliation(TASK, f"{TASK}-a", (f"{TASK}-b",), (), chosen.path)
+        outcome = self._assert_gate(_world((chosen, isolated, successor), (recon,)), "E1")
+        self.assertEqual("PASS", outcome.status)
+        self.assertEqual(((TASK, f"{TASK}-c"),), outcome.validated_heads)
+
+    def test_missing_gate_manifest_is_unlisted(self) -> None:
+        record = _record("a.json", f"{TASK}-a")
+        world = World((TASK,), (record,), (), ())
+        outcome = self._assert_gate(world, "E1")
+        self.assertIn("MANIFEST_UNLISTED", {item.code for item in outcome.findings})
+        self.assertNotEqual("PASS", outcome.status)
+        self.assertEqual((), outcome.validated_heads)
+
+    def test_incomplete_cli_pair_and_manifest_combination_are_rejected(self) -> None:
+        world, focus = world_for(2, "E1")
+        assert focus is not None
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            materialise(root, world)
+            _commit(root)
+            commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+            manifest = world.manifests[0].relative_path
+            refused = (
+                ["--root", str(root), "--execution-commit", "0" * 40],
+                ["--root", str(root), "--record", focus],
+                ["--root", str(root), "--manifest", manifest, "--execution-commit", commit, "--record", focus],
+                ["--root", str(root), "--manifest", manifest, "--execution-commit", commit],
+            )
+            for args in refused:
+                with self.subTest(args=args[-2:]):
+                    completed = subprocess.run([sys.executable, str(SCRIPT), *args], cwd=root, text=True, capture_output=True, check=False)
+                    self.assertNotEqual(0, completed.returncode, completed.stdout)
+                    payload = json.loads(completed.stdout)
+                    self.assertEqual("FAIL", payload["status"])
+                    self.assertNotEqual("E1", payload["entry"])
+                    self.assertEqual([], payload["validated_heads"] if isinstance(payload["validated_heads"], list) else list(payload["validated_heads"]))
+                    self.assertTrue(payload["findings"])
+        self.assertEqual("PASS", self._assert_gate(world, "E1").status)
+        self.assertEqual("PASS", self._assert_gate(world, "E2", focus).status)
+        self.assertEqual((), self._assert_gate(world, "E3").findings)
 
 
 if __name__ == "__main__":
