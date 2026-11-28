@@ -1,7 +1,7 @@
 # OCOR-DEV-REM-0068-REDESIGN
 
-Stato: `OPEN_PO_DECISION_REQUIRED`.
-Disposition: nessuna. Nessuna opzione è applicata da questa pubblicazione. Il candidato non si modifica e non si mergia. Non è un ciclo di riparazione. Questa pubblicazione non si integra. Claim invariati.
+Stato: `DECIDED_BY_PO`.
+Disposition: opzione 1 di `OCOR-DEV-REM-0068-REDESIGN (2026-11-28)`, registrata nella sezione Disposition. La pubblicazione `af3eb66ef9a40fc24c72ab63864e878f36e785cb` non applicava alcuna opzione. Questo commit registra la decisione e non attua il codice. Claim invariati.
 
 Livello: normativo. La questione sceglie la proprietà di accettazione del gate della testa corrente. Nessun nuovo `DEC-*`.
 Chi decide: il programma delle decisioni per conto del PO, secondo `DECISIONI-A-FABLE (2026-11-17)`. La richiesta riguarda il ritorno al progetto dopo due `NO_GO` della stessa classe, come dispongono i punti 2 e 3 di `DECISIONI-AL-PO (2026-11-16)`. Nessuna opzione è applicata da questa pubblicazione.
@@ -102,3 +102,14 @@ Opzione 1. È la sola che realizza per intero la proprietà già adottata ed eli
 Unità bloccata da questa richiesta finché è aperta: `OCOR-DEV-REM-0068`. Finché la richiesta è aperta non si modifica né si mergia `83c91b6775dd779d30fee608b26c91f11a808ae3`, non si apre la sua pull request, non si apre un ciclo 2 e non si avvia una campagna. `OCOR-DEV-REM-0060` non si avvia. Il ciclo 4 di `OCOR-DEV-REM-0066` non parte. `EVIDENCE-INPUTS-AND-RETENTION` non si apre prima che `OCOR-DEV-REM-0068` sia su `origin/main`.
 
 Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim da questa pubblicazione. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. L'estensione dell'allowlist per il percorso di questa richiesta è un change set a parte e non fa parte di questa pubblicazione: il validatore del piano non si modifica qui.
+
+## Disposition
+
+`OCOR-DEV-REM-0068-REDESIGN (2026-11-28)`. Decisa per conto del PO, modello `claude-fable-5-2`, effort `max`. Opzione adottata: 1. Vale come decisione del PO a ogni effetto.
+
+Il file della richiesta al commit `af3eb66ef9a40fc24c72ab63864e878f36e785cb` ha sha256 `ba518f39ccc7a3e709e4dd4a834cd264d90db08b20b374348f3cc38fe4013195`. Le frasi di questo file che dicono che la richiesta è aperta e che nessuna opzione è applicata descrivono quella pubblicazione. Da questo commit non valgono più come blocco.
+
+L'opzione 1 si attua sul branch `governed/ocor-dev-rem-0068-current-head`, sopra `83c91b6775dd779d30fee608b26c91f11a808ae3`, senza rebase, reset o force-push. Il commit di contratto è `44f2ca31c1266bf5f7df92ba208baf630c486858`: cambia solo `reports/assurance/OCOR-DEV-REM-0068-RCCAD/README.md`. Non è un ciclo di riparazione 2. Il passo successivo è RED. Non si apre la pull request del codice, non si avvia la campagna e non si scrive `verify_request.json` in questo commit. `OCOR-DEV-REM-0060` non parte. `EVIDENCE-INPUTS-AND-RETENTION` non si apre prima che `OCOR-DEV-REM-0068` sia su `origin/main`. Il ciclo 4 di `OCOR-DEV-REM-0066` e ogni unità che cambia `scripts/validate_ocor_development_plan.py` o `reports/tests/test_kind_teardown_observation.py` restano fermi. `vf004_schema_conformance` resta `NOT_CORRECTED` e non è `PASS`.
+
+Nessun nuovo `DEC-*`. Nessuna modifica a `inputs/`, ai record sigillati, ai gate, alle soglie o ai claim. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
